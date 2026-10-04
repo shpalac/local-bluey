@@ -18,6 +18,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _baseUrl = TextEditingController();
   final _model = TextEditingController();
   final _apiKey = TextEditingController();
+  final _transcriptionBaseUrl = TextEditingController();
+  final _transcriptionModel = TextEditingController();
   BrainBackend _backend = BrainSettings.defaults.backend;
   bool _loaded = false;
   bool _testing = false;
@@ -32,6 +34,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _baseUrl.text = settings.baseUrl;
         _model.text = settings.model;
         _apiKey.text = settings.apiKey ?? '';
+        _transcriptionBaseUrl.text = settings.transcriptionBaseUrl ?? '';
+        _transcriptionModel.text = settings.transcriptionModel;
         _loaded = true;
       });
     });
@@ -42,6 +46,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _baseUrl.dispose();
     _model.dispose();
     _apiKey.dispose();
+    _transcriptionBaseUrl.dispose();
+    _transcriptionModel.dispose();
     super.dispose();
   }
 
@@ -50,6 +56,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     baseUrl: _baseUrl.text.trim(),
     model: _model.text.trim(),
     apiKey: _apiKey.text.trim().isEmpty ? null : _apiKey.text.trim(),
+    transcriptionBaseUrl: _transcriptionBaseUrl.text.trim().isEmpty
+        ? null
+        : _transcriptionBaseUrl.text.trim(),
+    transcriptionModel: _transcriptionModel.text.trim().isEmpty
+        ? 'whisper-1'
+        : _transcriptionModel.text.trim(),
   );
 
   Future<void> _save() async {
@@ -138,6 +150,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 obscureText: true,
               ),
             ],
+            const SizedBox(height: 24),
+            Text('Transcription', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _transcriptionBaseUrl,
+              decoration: const InputDecoration(
+                labelText: 'Transcription base URL (optional)',
+                hintText: 'Defaults to the brain base URL',
+              ),
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _transcriptionModel,
+              decoration: const InputDecoration(labelText: 'Transcription model'),
+            ),
             const SizedBox(height: 24),
             Row(
               children: [

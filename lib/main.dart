@@ -8,8 +8,12 @@ import 'package:window_manager/window_manager.dart';
 import 'link/mac_link.dart';
 import 'link/models.dart';
 import 'link/phone_server.dart';
+import 'services/audio_capture.dart';
 import 'services/brain_host.dart';
 import 'services/native_control.dart';
+import 'services/settings_store.dart';
+import 'services/tool_executor.dart';
+import 'services/transcription.dart';
 import 'ui/face_screen.dart';
 import 'ui/settings_screen.dart';
 
@@ -54,6 +58,9 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   bool _awake = false;
   bool _trusted = false;
   String? _bubble;
+  final _capture = AudioCapture();
+  final _transcription = TranscriptionService();
+  final _tools = ToolExecutor();
 
   @override
   void initState() {
@@ -119,10 +126,68 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     _server.broadcast(Packet(command: awake ? 'wake' : 'sleep'));
   }
 
+  Future<void> _onHoldEnd() async {
+    final file = await _capture.stop();
+    if (file == null) {
+      setState(() {
+        _bubble = null;
+        _face.value = FaceState(
+          mood: _awake ? Mood.listening : Mood.sleepy,
+        );
+      });
+      return;
+    }
+    setState(() => _face.value = FaceState(mood: Mood.thinking));
+    try {
+      final text = await _transcription.transcribe(
+        file,
+        await SettingsStore.load(),
+      );
+      if (text.isEmpty) {
+        setState(() => _bubble = "Didn't catch that.");
+        return;
+      }
+      setState(() => _bubble = text);
+      final brain = BrainHost.brain.value;
+      if (brain == null) {
+        setState(() => _bubble = 'Set up the brain in settings first.');
+        return;
+      }
+      var reply = await brain.ask(text);
+      // Tool loop: let the brain act, then react to what happened.
+      for (var i = 0; i < 5 && reply.toolCall != null; i++) {
+        final result = await _tools.execute(reply.toolCall!);
+        reply = await brain.toolResult(
+          reply.toolCall!.name,
+          result.text,
+          images: [
+            if (result.imageBase64 != null) result.imageBase64!,
+          ],
+        );
+      }
+      if (reply.spoken.isNotEmpty) {
+        setState(() => _bubble = reply.spoken);
+        _server.broadcast(Packet(command: 'say', text: reply.spoken));
+      }
+    } on TranscriptionException catch (e) {
+      setState(() => _bubble = 'Transcription failed: $e');
+    } catch (e) {
+      setState(() => _bubble = 'Error: $e');
+    } finally {
+      setState(() {
+        _face.value = FaceState(
+          mood: _awake ? Mood.listening : Mood.sleepy,
+        );
+        _server.sendFace(_face.value);
+      });
+    }
+  }
+
   @override
   void dispose() {
     trayManager.removeListener(this);
     _server.stop();
+    _capture.dispose();
     super.dispose();
   }
 
@@ -152,20 +217,18 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           awake: _awake,
           bubble: _bubble,
           onWakeChanged: _setAwake,
-          onHoldStart: () {
+          onHoldStart: () async {
             setState(() {
               _face.value = FaceState(mood: Mood.listening);
               _bubble = 'Listening…';
             });
+            if (await _capture.hasPermission()) {
+              await _capture.start();
+            } else {
+              setState(() => _bubble = 'No microphone permission.');
+            }
           },
-          onHoldEnd: () {
-            setState(() {
-              _bubble = null;
-              _face.value = FaceState(
-                mood: _awake ? Mood.listening : Mood.sleepy,
-              );
-            });
-          },
+          onHoldEnd: _onHoldEnd,
         ),
       ),
       bottomNavigationBar: _trusted
