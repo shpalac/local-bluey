@@ -54,6 +54,7 @@ void main() {
   });
 
   _boundedHistoryTests();
+  _streamingTests();
 }
 
 class FakeProvider extends LlmProvider {
@@ -96,5 +97,29 @@ void _boundedHistoryTests() {
     await brain.ask('three', images: const ['img3']);
     final withImages = brain.history.where((m) => m.images.isNotEmpty);
     expect(withImages.length, lessThanOrEqualTo(Brain.keepImagesInLast + 1));
+  });
+}
+
+class _StreamProvider extends LlmProvider {
+  @override
+  String get name => 'stream';
+  @override
+  Future<String> chat(List<LlmMessage> messages) async => 'whole';
+  @override
+  Stream<String> chatStream(List<LlmMessage> messages) =>
+      Stream.fromIterable(['Hel', 'lo ', 'there']);
+}
+
+void _streamingTests() {
+  test('askStreaming yields partials and returns the full reply', () async {
+    final partials = <String>[];
+    final brain = Brain(provider: _StreamProvider());
+    final reply = await brain.askStreaming(
+      'hi',
+      onToken: (p) => partials.add(p),
+    );
+    expect(partials, ['Hel', 'Hel lo ', 'Hel lo there']);
+    expect(reply.spoken, 'Hel lo there');
+    expect(brain.history.last.content, 'Hel lo there');
   });
 }

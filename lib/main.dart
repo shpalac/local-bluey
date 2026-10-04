@@ -12,6 +12,8 @@ import 'link/phone_server.dart';
 import 'services/audio_capture.dart';
 import 'services/brain_host.dart';
 import 'services/native_control.dart';
+import 'llm/llm_provider.dart' show BlueyStatus;
+import 'services/conversation.dart';
 import 'services/safety_gate.dart';
 import 'services/settings_store.dart';
 import 'services/speech.dart';
@@ -66,6 +68,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   final _speech = SpeechService();
   final _tools = ToolExecutor();
   final _safety = SafetyGate();
+  BlueyStatus _status = BlueyStatus.listening;
 
   @override
   void initState() {
@@ -77,6 +80,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     _server.requests.listen(_onPhoneRequest);
     _checkTrust();
     BrainHost.reload();
+    ConversationStore.instance.load();
     _safety.onConfirm = _confirmAction;
     _safety.onKill(() {
       setState(() => _bubble = 'Stopped.');
@@ -198,7 +202,10 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       });
       return;
     }
-    setState(() => _face.value = FaceState(mood: Mood.thinking));
+    setState(() {
+      _face.value = FaceState(mood: Mood.thinking);
+      _status = BlueyStatus.thinking;
+    });
     try {
       final text = await _transcription.transcribe(
         file,
@@ -209,6 +216,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         return;
       }
       setState(() => _bubble = text);
+      ConversationStore.instance.add('user', text);
       final brain = BrainHost.brain.value;
       if (brain == null) {
         setState(() => _bubble = 'Set up the brain in settings first.');
@@ -216,7 +224,14 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       }
       const maxToolSteps = 5;
       const stepTimeout = Duration(seconds: 60);
-      var reply = await brain.ask(text).timeout(stepTimeout);
+      var reply = await brain
+          .askStreaming(
+            text,
+            onToken: (partial) {
+              if (mounted) setState(() => _bubble = partial);
+            },
+          )
+          .timeout(stepTimeout);
       // Tool loop: let the brain act, then react to what happened.
       var steps = 0;
       while (reply.toolCall != null && steps < maxToolSteps) {
@@ -232,6 +247,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
               .timeout(stepTimeout);
           continue;
         }
+        setState(() => _status = BlueyStatus.acting);
         final result = await _tools.execute(call);
         reply = await brain
             .toolResult(
@@ -247,6 +263,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         setState(() => _bubble = 'Too many steps - stopping here.');
       }
       if (reply.spoken.isNotEmpty) {
+        ConversationStore.instance.add('bluey', reply.spoken);
         setState(() {
           _bubble = reply.spoken;
           _face.value = FaceState(mood: Mood.talking);
@@ -265,14 +282,21 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         }
       }
     } on TranscriptionException catch (e) {
-      setState(() => _bubble = 'Transcription failed: $e');
+      setState(() {
+        _bubble = 'Transcription failed: $e';
+        _status = BlueyStatus.error;
+      });
     } catch (e) {
-      setState(() => _bubble = 'Error: $e');
+      setState(() {
+        _bubble = 'Error: $e';
+        _status = BlueyStatus.error;
+      });
     } finally {
       setState(() {
         _face.value = FaceState(
           mood: _awake ? Mood.listening : Mood.sleepy,
         );
+        _status = BlueyStatus.listening;
         _server.sendFace(_face.value);
       });
     }
@@ -311,6 +335,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           face: face,
           awake: _awake,
           bubble: _bubble,
+          status: _status,
           onWakeChanged: _setAwake,
           onHoldStart: () async {
             setState(() {

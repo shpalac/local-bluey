@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../llm/llm_provider.dart';
 import '../link/models.dart';
+import '../services/conversation.dart';
 
 /// Bluey's face: two eyes that follow the gaze, colored by mood.
 /// Gestures (ported from the iOS SwiftUI face):
@@ -12,6 +14,7 @@ class FaceScreen extends StatefulWidget {
     required this.face,
     this.awake = false,
     this.bubble,
+    this.status = BlueyStatus.listening,
     this.onWakeChanged,
     this.onHoldStart,
     this.onHoldEnd,
@@ -22,6 +25,9 @@ class FaceScreen extends StatefulWidget {
 
   /// Current speech-bubble text, null when hidden.
   final String? bubble;
+
+  /// Working state for the status chip.
+  final BlueyStatus status;
   final ValueChanged<bool>? onWakeChanged;
   final VoidCallback? onHoldStart;
   final VoidCallback? onHoldEnd;
@@ -80,6 +86,19 @@ class _FaceScreenState extends State<FaceScreen> {
                 ),
               ),
             ),
+            Positioned(
+              top: 12,
+              left: 0,
+              right: 0,
+              child: Center(child: _StatusChip(status: widget.status)),
+            ),
+            const Positioned(
+              top: 44,
+              left: 24,
+              right: 24,
+              height: 140,
+              child: _AnswerLog(),
+            ),
             if (widget.bubble != null)
               Positioned(
                 left: 24,
@@ -100,6 +119,76 @@ class _FaceScreenState extends State<FaceScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+
+  final BlueyStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, color) = switch (status) {
+      BlueyStatus.listening => ('Listening', const Color(0xFF5BC8E5)),
+      BlueyStatus.thinking => ('Thinking', const Color(0xFF9B8CE5)),
+      BlueyStatus.acting => ('Acting', const Color(0xFFE5A75B)),
+      BlueyStatus.error => ('Error', Colors.redAccent),
+      BlueyStatus.offline => ('Offline', Colors.grey),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color),
+      ),
+      child: Text(label, style: TextStyle(color: color, fontSize: 12)),
+    );
+  }
+}
+
+/// Scrollable history of everything asked and answered; survives restarts.
+class _AnswerLog extends StatelessWidget {
+  const _AnswerLog();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: ConversationStore.instance,
+      builder: (context, _) {
+        final entries = ConversationStore.instance.entries;
+        if (entries.isEmpty) return const SizedBox.shrink();
+        return ListView.builder(
+          reverse: true,
+          itemCount: entries.length,
+          itemBuilder: (context, index) {
+            final entry = entries[entries.length - 1 - index];
+            final isUser = entry.role == 'user';
+            return Align(
+              alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 2),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: isUser
+                      ? Colors.white.withValues(alpha: 0.14)
+                      : Colors.white.withValues(alpha: 0.07),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  entry.text,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

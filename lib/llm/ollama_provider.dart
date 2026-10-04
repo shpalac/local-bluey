@@ -39,6 +39,36 @@ class OllamaProvider extends LlmProvider {
     );
     return message['content'] as String? ?? '';
   }
+
+  @override
+  Stream<String> chatStream(List<LlmMessage> messages) async* {
+    final request = http.Request('POST', Uri.parse('$baseUrl/api/chat'));
+    request.headers['Content-Type'] = 'application/json';
+    request.body = jsonEncode({
+      'model': model,
+      'stream': true,
+      'messages': messages.map((m) => m.toJson()).toList(),
+    });
+    final streamed = await _client.send(request);
+    if (streamed.statusCode != 200) {
+      throw LlmException('Ollama ${streamed.statusCode}');
+    }
+    await for (final chunk in streamed.stream.transform(utf8.decoder)) {
+      for (final line in chunk.split('\n')) {
+        if (line.trim().isEmpty) continue;
+        try {
+          final body = Map<String, dynamic>.from(jsonDecode(line) as Map);
+          final message = Map<String, dynamic>.from(
+            body['message'] as Map? ?? const {},
+          );
+          final content = message['content'] as String? ?? '';
+          if (content.isNotEmpty) yield content;
+        } catch (_) {
+          // Partial JSON line - skip.
+        }
+      }
+    }
+  }
 }
 
 class LlmException implements Exception {

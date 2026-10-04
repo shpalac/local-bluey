@@ -65,4 +65,43 @@ class OpenAiCompatibleProvider extends LlmProvider {
     );
     return message['content'] as String? ?? '';
   }
+
+  @override
+  Stream<String> chatStream(List<LlmMessage> messages) async* {
+    final headers = {'Content-Type': 'application/json'};
+    if (apiKey != null && apiKey!.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $apiKey';
+    }
+    final request = http.Request('POST', Uri.parse('$baseUrl/chat/completions'));
+    request.headers.addAll(headers);
+    request.body = jsonEncode({
+      'model': model,
+      'stream': true,
+      'messages': messages.map(_toApi),
+    });
+    final streamed = await _client.send(request);
+    if (streamed.statusCode != 200) {
+      throw LlmException('OpenAI-compatible ${streamed.statusCode}');
+    }
+    await for (final chunk in streamed.stream.transform(utf8.decoder)) {
+      for (final line in chunk.split('\n')) {
+        final trimmed = line.trim();
+        if (!trimmed.startsWith('data:')) continue;
+        final payload = trimmed.substring(5).trim();
+        if (payload == '[DONE]') return;
+        try {
+          final body = Map<String, dynamic>.from(jsonDecode(payload) as Map);
+          final choices = body['choices'] as List? ?? const [];
+          if (choices.isEmpty) continue;
+          final delta = Map<String, dynamic>.from(
+            (choices.first as Map)['delta'] as Map? ?? const {},
+          );
+          final content = delta['content'] as String? ?? '';
+          if (content.isNotEmpty) yield content;
+        } catch (_) {
+          // Partial JSON line - skip.
+        }
+      }
+    }
+  }
 }
