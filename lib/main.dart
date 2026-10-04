@@ -22,6 +22,7 @@ import 'services/perf_monitor.dart';
 import 'services/routines.dart';
 import 'services/safety_gate.dart';
 import 'services/strings.dart';
+import 'services/biometric_lock.dart';
 import 'services/haptics.dart';
 import 'services/host_control.dart';
 import 'services/support_matrix.dart';
@@ -30,6 +31,7 @@ import 'services/speech.dart';
 import 'services/tool_executor.dart';
 import 'services/transcription.dart';
 import 'ui/face_screen.dart';
+import 'ui/lock_gate.dart';
 import 'ui/onboarding_screen.dart';
 import 'ui/settings_screen.dart';
 import 'ui/unsupported_screen.dart';
@@ -39,6 +41,7 @@ void main() async {
   await Strings.load();
   await RoutineStore.instance.load();
   await CharacterStore.instance.load();
+  await BiometricLock.instance.load();
   final profile = SupportMatrix.profile();
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
@@ -50,7 +53,10 @@ void main() async {
 /// platforms get an explanatory screen, never the client UI.
 Widget homeForProfile(PlatformProfile profile) => switch (profile.role) {
   AppRole.host => const MacHome(),
-  AppRole.phoneClient => const IosHome(),
+  AppRole.phoneClient => const LockGate(
+    reason: 'Unlock the Bluey remote',
+    child: IosHome(),
+  ),
   AppRole.unsupported => UnsupportedScreen(profile: profile),
 };
 
@@ -407,7 +413,12 @@ class _MacHomeState extends State<MacHome> with TrayListener {
             tooltip: 'Brain settings',
             onPressed: () async {
               final saved = await Navigator.of(context).push<bool>(
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const LockGate(
+                    reason: 'Unlock Bluey settings',
+                    child: SettingsScreen(),
+                  ),
+                ),
               );
               if (saved ?? false) BrainHost.reload();
             },

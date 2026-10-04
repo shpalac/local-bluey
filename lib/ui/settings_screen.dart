@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../llm/llm_provider.dart';
 import '../llm/ollama_provider.dart' show LlmException;
+import '../services/biometric_lock.dart';
 import '../services/haptics.dart';
 import '../services/perf_monitor.dart';
 import '../services/privacy_guard.dart';
@@ -347,6 +348,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+}
+
+/// Optional biometric/passcode app lock (#92), persisted via BiometricLock.
+class _AppLockTile extends StatefulWidget {
+  const _AppLockTile();
+
+  @override
+  State<_AppLockTile> createState() => _AppLockTileState();
+}
+
+class _AppLockTileState extends State<_AppLockTile> {
+  bool _enabled = BiometricLock.instance.enabled;
+
+  @override
+  Widget build(BuildContext context) => SwitchListTile(
+    secondary: const Icon(Icons.lock_outline),
+    title: const Text('App lock'),
+    subtitle: const Text(
+      'Require Face ID / Touch ID or passcode for the remote and Settings.',
+    ),
+    value: _enabled,
+    onChanged: (value) {
+      setState(() => _enabled = value);
+      BiometricLock.instance.setEnabled(value);
+    },
+  );
 }
 
 /// Phone-remote haptics toggle (#88), persisted via RemoteHaptics.
