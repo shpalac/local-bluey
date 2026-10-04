@@ -91,7 +91,12 @@ class PhoneServer {
     broadcast(Packet(face: face));
   }
 
+  bool _stopped = false;
+
+  /// Idempotent shutdown.
   Future<void> stop() async {
+    if (_stopped) return;
+    _stopped = true;
     if (_registration != null) await nsd.unregister(_registration!);
     await _server?.close();
     for (final link in _phones.keys) {

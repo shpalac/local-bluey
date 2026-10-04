@@ -7,20 +7,41 @@ class Brain {
   Brain({required this.provider, List<LlmMessage>? history})
     : _history = history ?? [LlmMessage('system', buildSystemPrompt())];
 
+  /// Conversation never grows past this many messages; the system prompt
+  /// always stays. Older turns are dropped oldest-first.
+  static const maxHistory = 40;
+
+  /// Screenshots are huge: only the most recent exchanges keep theirs.
+  static const keepImagesInLast = 2;
+
   final LlmProvider provider;
   final List<LlmMessage> _history;
 
   List<LlmMessage> get history => List.unmodifiable(_history);
+
+  void _boundedAdd(LlmMessage message) {
+    _history.add(message);
+    // Prune images from anything older than the last exchanges.
+    for (var i = 1; i < _history.length - keepImagesInLast; i++) {
+      final m = _history[i];
+      if (m.images.isNotEmpty) {
+        _history[i] = LlmMessage(m.role, m.content);
+      }
+    }
+    while (_history.length > maxHistory) {
+      _history.removeAt(1); // keep the system prompt at index 0
+    }
+  }
 
   /// Sends the user's words (transcribed speech) and returns Bluey's reply.
   Future<BrainReply> ask(
     String userText, {
     List<String> images = const [],
   }) async {
-    _history.add(LlmMessage('user', userText, images: images));
+    _boundedAdd(LlmMessage('user', userText, images: images));
     final raw = await provider.chat(_history);
     final parsed = parseAssistantReply(raw);
-    _history.add(LlmMessage('assistant', raw));
+    _boundedAdd(LlmMessage('assistant', raw));
     return BrainReply(spoken: parsed.spoken, toolCall: parsed.toolCall);
   }
 
@@ -30,12 +51,12 @@ class Brain {
     String result, {
     List<String> images = const [],
   }) async {
-    _history.add(
+    _boundedAdd(
       LlmMessage('tool', 'Result of $toolName:\n$result', images: images),
     );
     final raw = await provider.chat(_history);
     final parsed = parseAssistantReply(raw);
-    _history.add(LlmMessage('assistant', raw));
+    _boundedAdd(LlmMessage('assistant', raw));
     return BrainReply(spoken: parsed.spoken, toolCall: parsed.toolCall);
   }
 
