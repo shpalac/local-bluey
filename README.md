@@ -70,3 +70,19 @@ Everything the app stores lives on this device; Settings > Data and privacy list
 - `flutter test` - unit + widget tests (tool-call parsing, executor math, protocol round-trips)
 - `flutter test integration_test` - E2E: hold-to-talk → mock LLM → tool call through the MethodChannel
 - CI (GitHub Actions, `macos-latest`): tests, analyze, `flutter build macos`, `flutter build ios --no-codesign`
+
+## OS integration (#91)
+
+Deep links use the `localbluey://` scheme. Supported actions (validated in `lib/services/deep_links.dart`):
+
+- `localbluey://wake` / `localbluey://sleep` - same wake/sleep path as the face gesture
+- `localbluey://ask?text=<question>` - asks Bluey (text required)
+- `localbluey://stop` - kill switch
+- `localbluey://mute` - stops in-flight speech
+- `localbluey://status` - shows current state
+
+Deep links never run computer-control or other confirm-required actions silently; those stay behind the in-app safety gate (#19, #57).
+
+The macOS tray offers quick actions: Ask Bluey (wake), Mute replies, Status, plus Show/Hide/Stop/Resume/Quit.
+
+Platform limits: the global push-to-talk hotkey, iOS App Intents/Shortcuts, and widgets need native platform registration and are tracked as follow-up work.
