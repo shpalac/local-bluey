@@ -49,6 +49,56 @@ class DataRegistry {
 
   static final List<DataStoreInfo> stores = [
     DataStoreInfo(
+      id: 'haptics_pref',
+      sourceFile: 'lib/services/haptics.dart',
+      whatEn: 'Haptics on/off preference',
+      whatHe: 'העדפת רטט',
+      where: 'SharedPreferences (haptics.enabled)',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async =>
+          (await SharedPreferences.getInstance()).remove('haptics.enabled'),
+    ),
+    DataStoreInfo(
+      id: 'app_lock_pref',
+      sourceFile: 'lib/services/biometric_lock.dart',
+      whatEn: 'App-lock on/off preference',
+      whatHe: 'העדפת נעילת האפליקציה',
+      where: 'SharedPreferences (lock.enabled)',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async =>
+          (await SharedPreferences.getInstance()).remove('lock.enabled'),
+    ),
+    DataStoreInfo(
+      id: 'notify_prefs',
+      sourceFile: 'lib/services/discover.dart',
+      whatEn: 'Per-type notification opt-ins',
+      whatHe: 'הסכמות התראות לפי סוג',
+      where: 'SharedPreferences (notify.*)',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        for (final key in prefs.getKeys().where(
+          (k) => k.startsWith('notify.'),
+        )) {
+          await prefs.remove(key);
+        }
+      },
+    ),
+    DataStoreInfo(
+      id: 'theme_mode_pref',
+      sourceFile: 'lib/ui/theme.dart',
+      whatEn: 'Appearance override (system/light/dark)',
+      whatHe: 'העדפת מראה (מערכת/בהיר/כהה)',
+      where: 'SharedPreferences (theme.mode)',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async =>
+          (await SharedPreferences.getInstance()).remove('theme.mode'),
+    ),
+    DataStoreInfo(
       id: 'conversation',
       sourceFile: 'lib/services/conversation.dart',
       whatEn: 'Conversation history and running summary',
