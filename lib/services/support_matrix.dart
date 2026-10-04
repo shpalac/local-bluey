@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'strings.dart';
+
 /// What the app is on this device: the host (the Mac being controlled) or a
 /// phone client (remote mic + face). Resolved from capabilities, never from
 /// scattered Platform checks (#51).
@@ -68,6 +70,21 @@ class SupportMatrix {
 
   static AppRole resolveRole({String? operatingSystem}) =>
       profile(operatingSystem: operatingSystem).role;
+
+  /// Why this platform has no supported role (#84). Localized for the
+  /// unsupported screen.
+  static String unsupportedReason(PlatformProfile profile) {
+    if (!_profiles.containsKey(profile.os)) {
+      return Strings.t(
+        'This operating system (${profile.os}) is not recognized.',
+        'מערכת ההפעלה (${profile.os}) לא מוכרת.',
+      );
+    }
+    return Strings.t(
+      'This platform can be neither a host nor a remote client.',
+      'הפלטפורמה הזו לא יכולה לשמש כמארח וגם לא כשלט.',
+    );
+  }
 
   /// Name this device presents to its pair over the link.
   static String deviceName({String? operatingSystem}) =>

@@ -9,18 +9,23 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Least privilege by default; jobs escalate only when they must.
+permissions:
+  contents: read
+
 env:
   # Pinned so builds are reproducible; bump deliberately.
   FLUTTER_VERSION: "3.47.6"
 
 jobs:
-  test-and-build:
-    runs-on: macos-latest
-    timeout-minutes: 25
+  # Fast lane on Linux: format, static analysis and unit/widget tests.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
@@ -28,34 +33,68 @@ jobs:
 
       - run: flutter pub get --enforce-lockfile
 
+      - name: Format check
+        run: dart format --set-exit-if-changed lib test
+
       - name: Analyze
         run: flutter analyze
 
       - name: Unit + widget tests (mocked contracts)
-        run: flutter test --reporter expanded
+        run: flutter test --reporter expanded 2>&1 | tee test-output.log
         timeout-minutes: 8
 
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: test-logs
+          path: test-output.log
+          retention-days: 7
+
+  # Builds stay on macOS: iOS/macOS outputs need Xcode.
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+
       - name: Build macOS
-        run: flutter build macos
+        run: flutter build macos 2>&1 | tee build-macos.log
         timeout-minutes: 12
 
       - name: Build iOS (no codesign)
-        run: flutter build ios --no-codesign
+        run: flutter build ios --no-codesign 2>&1 | tee build-ios.log
         timeout-minutes: 12
 
       - name: Build Android (debug APK)
-        run: flutter build apk --debug
+        run: flutter build apk --debug 2>&1 | tee build-android.log
         timeout-minutes: 12
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: build-logs
+          path: build-*.log
+          retention-days: 7
 
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0 # gitleaks scans history
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
@@ -70,21 +109,40 @@ jobs:
           /tmp/osv-scanner scan --lockfile=pubspec.lock
 
       - name: Secrets scan
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_SUMMARY: "true"
 
-  # Native-validation lane: exercises the real device bridge. Runs only when
-  # a self-hosted Mac runner with a signed environment is available; mocked
-  # contract tests stay in the main lane above.
+  # Fails if any third-party action is referenced by a movable tag instead of
+  # a full-length commit SHA.
+  pinned-actions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Verify actions are pinned by SHA
+        run: |
+          set -e
+          bad=$(grep -rhoE '^[[:space:]]+uses: [^@]+@[^ #]+' .github/workflows | grep -vE '@[0-9a-f]{40}$' || true)
+          if [ -n "$bad" ]; then
+            echo "Unpinned actions found:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "All actions pinned by SHA."
+
+  # Native-validation lane: exercises the real device bridge. Enable by
+  # removing `if: false` once a self-hosted Mac runner with a signed
+  # environment is registered on the repo; mocked contract tests stay in the
+  # main lane above.
   native-validation:
     runs-on: [self-hosted, macos]
     if: ${{ false }} # enable when a self-hosted runner exists
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
