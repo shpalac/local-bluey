@@ -22,6 +22,7 @@ import 'services/perf_monitor.dart';
 import 'services/routines.dart';
 import 'services/safety_gate.dart';
 import 'services/strings.dart';
+import 'services/haptics.dart';
 import 'services/host_control.dart';
 import 'services/support_matrix.dart';
 import 'services/settings_store.dart';
@@ -551,16 +552,24 @@ class _IosHomeState extends State<IosHome> {
   @override
   void initState() {
     super.initState();
+    unawaited(RemoteHaptics.instance.load());
     _link = MacLink(deviceName: SupportMatrix.deviceName());
     _link.faces.listen((face) {
       if (mounted) setState(() => _face = face);
     });
     _link.connected.listen((connected) {
       if (mounted) setState(() => _connected = connected);
+      // Connect/disconnect get their own haptic (#88).
+      unawaited(
+        RemoteHaptics.instance.fire(
+          connected ? RemoteHapticEvent.connect : RemoteHapticEvent.disconnect,
+        ),
+      );
     });
     _link.packets.listen((packet) async {
       if (packet.command == 'say' && packet.text != null) {
         setState(() => _bubble = packet.text);
+        unawaited(RemoteHaptics.instance.fire(RemoteHapticEvent.answer));
         if (packet.audio != null) {
           final bytes = base64Decode(packet.audio!);
           final file = File(
@@ -620,7 +629,12 @@ class _IosHomeState extends State<IosHome> {
         onHoldStart: () async {
           setState(() => _bubble = 'Listening…');
           _link.send(Packet(command: 'holdStart'));
-          if (await _capture.hasPermission()) await _capture.start();
+          unawaited(RemoteHaptics.instance.fire(RemoteHapticEvent.holdStart));
+          if (await _capture.hasPermission()) {
+            await _capture.start();
+          } else {
+            unawaited(RemoteHaptics.instance.fire(RemoteHapticEvent.error));
+          }
         },
         onHoldEnd: () async {
           setState(() => _bubble = null);
