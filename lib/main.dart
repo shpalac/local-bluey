@@ -18,6 +18,7 @@ import 'services/brain_host.dart';
 import 'llm/llm_provider.dart' show BlueyStatus;
 import 'services/conversation.dart';
 import 'services/perf_monitor.dart';
+import 'services/routines.dart';
 import 'services/safety_gate.dart';
 import 'services/strings.dart';
 import 'services/host_control.dart';
@@ -33,6 +34,7 @@ import 'ui/settings_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Strings.load();
+  await RoutineStore.instance.load();
   final profile = SupportMatrix.profile();
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
@@ -258,6 +260,11 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       }
       setState(() => _bubble = text);
       ConversationStore.instance.add('user', text);
+      // A routine trigger expands into its standing instructions (#56).
+      final routine = RoutineStore.instance.match(text);
+      final effectiveText = routine == null
+          ? text
+          : '$text\n\n[Routine "${routine.name}"] ${routine.instructions}';
       final brain = BrainHost.brain.value;
       if (brain == null) {
         setState(() => _bubble = 'Set up the brain in settings first.');
@@ -269,7 +276,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         'thinking.brain',
         () => brain
           .askStreaming(
-            text,
+            effectiveText,
             onToken: (partial) {
               if (mounted) setState(() => _bubble = partial);
             },
