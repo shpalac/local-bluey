@@ -3,6 +3,7 @@ import 'dart:ui' show Offset;
 
 import '../llm/tools.dart';
 import 'action_log.dart';
+import 'undo.dart';
 import 'native_control.dart';
 import 'privacy_guard.dart';
 
@@ -35,6 +36,10 @@ class ToolExecutor {
   DateTime? _lastSnapshotAt;
   Offset _home = Offset.zero;
   void Function()? onSleep;
+
+  /// The most recent action the host can reverse (#89), exposed so the UI
+  /// can offer undo. Null when the last action was final.
+  UndoSpec? lastUndoable;
 
   /// A target id or grid point is only trusted while the snapshot it came
   /// from is fresh. Past this, the brain must look again.
@@ -72,6 +77,7 @@ class ToolExecutor {
       rethrow;
     }
     final failed = _isFailure(result);
+    lastUndoable = failed ? null : undoFor(call.name, call.arguments);
     await _log(
       call,
       result.text.split('\n').first,
