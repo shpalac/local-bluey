@@ -8,8 +8,10 @@ import 'package:window_manager/window_manager.dart';
 import 'link/mac_link.dart';
 import 'link/models.dart';
 import 'link/phone_server.dart';
+import 'services/brain_host.dart';
 import 'services/native_control.dart';
 import 'ui/face_screen.dart';
+import 'ui/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +63,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     _server.start();
     _server.requests.listen(_onPhoneRequest);
     _checkTrust();
+    BrainHost.reload();
   }
 
   Future<void> _checkTrust() async {
@@ -126,6 +129,22 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: 'Brain settings',
+            onPressed: () async {
+              final saved = await Navigator.of(context).push<bool>(
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
+              );
+              if (saved ?? false) BrainHost.reload();
+            },
+          ),
+        ],
+      ),
+      extendBodyBehindAppBar: true,
       body: ValueListenableBuilder<FaceState>(
         valueListenable: _face,
         builder: (context, face, _) => FaceScreen(
