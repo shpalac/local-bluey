@@ -113,16 +113,16 @@ class _FaceScreenState extends State<FaceScreen> {
                 child: _AnswerLog(),
               ),
               // Bubble fades in/out; reduce-motion makes it instant (#88).
-              AnimatedSwitcher(
-                duration: motionDuration(context),
-                child: widget.bubble == null
-                    ? const SizedBox.shrink()
-                    : Positioned(
-                        key: ValueKey(widget.bubble),
-                        left: 24,
-                        right: 24,
-                        bottom: 60,
-                        child: Container(
+              Positioned(
+                left: 24,
+                right: 24,
+                bottom: 60,
+                child: AnimatedSwitcher(
+                  duration: motionDuration(context),
+                  child: widget.bubble == null
+                      ? const SizedBox.shrink()
+                      : Container(
+                          key: ValueKey(widget.bubble),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.92),
@@ -136,7 +136,7 @@ class _FaceScreenState extends State<FaceScreen> {
                             ),
                           ),
                         ),
-                      ),
+                ),
               ),
             ],
           ),
