@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../llm/llm_provider.dart';
 import '../llm/ollama_provider.dart' show LlmException;
+import '../services/perf_monitor.dart';
 import '../services/privacy_guard.dart';
+import '../services/safety_gate.dart';
 import '../services/strings.dart';
 import '../services/settings_store.dart';
 
@@ -32,12 +34,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _speechLanguage = Strings.speechLanguage;
   bool _testing = false;
   String? _testResult;
+  final _allowlist = TextEditingController();
+  final _gate = SafetyGate();
+  bool _safetyEnabled = true;
+  bool _perfOverlay = false;
 
   @override
   void initState() {
     super.initState();
     PrivacyGuard.isLocalOnly().then((v) {
       if (mounted) setState(() => _localOnly = v);
+    });
+    _gate.allowlist().then((v) {
+      if (mounted) setState(() => _allowlist.text = v.join(', '));
+    });
+    _gate.isEnabled().then((v) {
+      if (mounted) setState(() => _safetyEnabled = v);
+    });
+    PerfMonitor.instance.isOverlayEnabled().then((v) {
+      if (mounted) setState(() => _perfOverlay = v);
     });
     SettingsStore.load().then((settings) {
       setState(() {
@@ -65,6 +80,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _ttsBaseUrl.dispose();
     _ttsModel.dispose();
     _ttsVoice.dispose();
+    _allowlist.dispose();
     super.dispose();
   }
 
@@ -89,6 +105,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     await SettingsStore.save(_current());
+    await _gate.setEnabled(_safetyEnabled);
+    await _gate.setAllowlist(
+      _allowlist.text
+          .split(',')
+          .map((e) => e.trim().toLowerCase())
+          .where((e) => e.isNotEmpty)
+          .toSet(),
+    );
+    await PerfMonitor.instance.setOverlayEnabled(_perfOverlay);
     if (mounted) Navigator.of(context).pop(true);
   }
 
@@ -226,6 +251,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 setState(() => _localOnly = v);
                 await PrivacyGuard.setLocalOnly(v);
               },
+            ),
+            SwitchListTile(
+              title: const Text('Safety gate'),
+              subtitle: const Text(
+                'Confirm risky actions; kill switch and app allowlist',
+              ),
+              value: _safetyEnabled,
+              onChanged: (v) => setState(() => _safetyEnabled = v),
+            ),
+            TextFormField(
+              controller: _allowlist,
+              decoration: const InputDecoration(
+                labelText: 'App allowlist (comma separated, empty = all)',
+              ),
+            ),
+            SwitchListTile(
+              title: const Text('Performance overlay'),
+              subtitle: const Text(
+                'Show live stage timings on the face screen',
+              ),
+              value: _perfOverlay,
+              onChanged: (v) => setState(() => _perfOverlay = v),
             ),
             const SizedBox(height: 24),
             Text('Transcription', style: Theme.of(context).textTheme.titleSmall),

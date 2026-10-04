@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Measures the pipeline's working points (#37): idle, listening
 /// (transcription), thinking (brain roundtrip) and acting (tool execution).
@@ -12,6 +14,23 @@ class PerfMonitor {
   static final PerfMonitor instance = PerfMonitor._();
 
   final Map<String, List<int>> _samplesMs = {};
+
+  static const _kOverlay = 'perf_overlay_enabled';
+
+  /// Live flag the face screen listens to for the perf overlay (#61).
+  final ValueNotifier<bool> overlayEnabled = ValueNotifier(false);
+
+  Future<bool> isOverlayEnabled() async {
+    final v = (await SharedPreferences.getInstance()).getBool(_kOverlay) ??
+        false;
+    overlayEnabled.value = v;
+    return v;
+  }
+
+  Future<void> setOverlayEnabled(bool value) async {
+    overlayEnabled.value = value;
+    await (await SharedPreferences.getInstance()).setBool(_kOverlay, value);
+  }
 
   Future<T> measure<T>(String stage, Future<T> Function() work) async {
     final start = DateTime.now();
