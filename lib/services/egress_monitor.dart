@@ -46,11 +46,17 @@ class EgressMonitor {
 
   static const keepEntries = 300;
 
+  /// Entries older than this are pruned on every write (#83).
+  static int retentionDays = 30;
+
   final List<EgressEntry> entries = [];
 
   Future<void> record(String url, String kind, int bytes) async {
     final host = Uri.tryParse(url)?.host ?? url;
     entries.add(EgressEntry(host: host, kind: kind, bytes: bytes));
+    entries.removeWhere(
+      (e) => DateTime.now().difference(e.at).inDays > retentionDays,
+    );
     while (entries.length > keepEntries) {
       entries.removeAt(0);
     }
@@ -69,9 +75,19 @@ class EgressMonitor {
       host == '::1' ||
       host.endsWith('.local');
 
-  Future<File> _file() async => File(
-    '${(await getApplicationDocumentsDirectory()).path}/egress.jsonl',
-  );
+  Future<File> _file() async =>
+      File('${(await getApplicationDocumentsDirectory()).path}/egress.jsonl');
+
+  /// Deletes the record, in memory and on disk (#83).
+  Future<void> clear() async {
+    entries.clear();
+    try {
+      final file = await _file();
+      if (await file.exists()) await file.delete();
+    } catch (e) {
+      debugPrint('EgressMonitor clear failed: $e');
+    }
+  }
 
   /// "what was sent, where, when" - one line per destination.
   String report() {
@@ -80,13 +96,15 @@ class EgressMonitor {
     for (final e in entries) {
       byHost.putIfAbsent(e.host, () => []).add(e);
     }
-    return byHost.entries.map((entry) {
-      final total = entry.value.fold<int>(0, (s, e) => s + e.bytes);
-      final kinds = entry.value.map((e) => e.kind).toSet().join(', ');
-      final last = entry.value.last.at;
-      return '${entry.key}: ${entry.value.length} calls ($kinds), '
-          '$total bytes, last $last';
-    }).join('\n');
+    return byHost.entries
+        .map((entry) {
+          final total = entry.value.fold<int>(0, (s, e) => s + e.bytes);
+          final kinds = entry.value.map((e) => e.kind).toSet().join(', ');
+          final last = entry.value.last.at;
+          return '${entry.key}: ${entry.value.length} calls ($kinds), '
+              '$total bytes, last $last';
+        })
+        .join('\n');
   }
 
   /// Offline self-test: every configured endpoint must resolve to this

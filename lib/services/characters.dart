@@ -61,8 +61,7 @@ class BlueyCharacters {
   static const captain = Character(
     id: 'captain',
     name: 'Captain',
-    persona:
-        'You are Captain, a brisk, dry-witted ship captain. Very short answers.',
+    persona: 'You are Captain, a brisk, dry-witted ship captain. Very short answers.',
     voice: 'onyx',
     moodColors: {
       Mood.listening: Color(0xFF3BAFDA),
@@ -99,6 +98,12 @@ class CharacterStore {
         (await SharedPreferences.getInstance()).getString(_kCharacter) ??
         BlueyCharacters.bluey.id;
     current.value = BlueyCharacters.byId(id);
+  }
+
+  /// Resets to the default character and removes the stored choice (#83).
+  Future<void> clear() async {
+    current.value = BlueyCharacters.bluey;
+    await (await SharedPreferences.getInstance()).remove(_kCharacter);
   }
 
   Future<void> select(String id) async {

@@ -226,8 +226,10 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       _awake = awake;
       _face.value = FaceState(mood: awake ? Mood.listening : Mood.sleepy);
       if (awake) {
-        final line = CharacterStore.instance.current.value
-            .react('wake', DateTime.now().millisecond);
+        final line = CharacterStore.instance.current.value.react(
+          'wake',
+          DateTime.now().millisecond,
+        );
         if (line.isNotEmpty) _bubble = line;
       }
     });
@@ -240,9 +242,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     if (file == null) {
       setState(() {
         _bubble = null;
-        _face.value = FaceState(
-          mood: _awake ? Mood.listening : Mood.sleepy,
-        );
+        _face.value = FaceState(mood: _awake ? Mood.listening : Mood.sleepy);
       });
       return;
     }
@@ -282,13 +282,13 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       var reply = await PerfMonitor.instance.measure(
         'thinking.brain',
         () => brain
-          .askStreaming(
-            effectiveText,
-            onToken: (partial) {
-              if (mounted) setState(() => _bubble = partial);
-            },
-          )
-          .timeout(stepTimeout),
+            .askStreaming(
+              effectiveText,
+              onToken: (partial) {
+                if (mounted) setState(() => _bubble = partial);
+              },
+            )
+            .timeout(stepTimeout),
       );
       // Tool loop: let the brain act, then react to what happened.
       var steps = 0;
@@ -314,9 +314,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
             .toolResult(
               call.name,
               result.text,
-              images: [
-                if (result.imageBase64 != null) result.imageBase64!,
-              ],
+              images: [if (result.imageBase64 != null) result.imageBase64!],
             )
             .timeout(stepTimeout);
       }
@@ -345,7 +343,11 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           );
           final audio = await _speech.synthesize(reply.spoken, voiced);
           _server.broadcast(
-            Packet(command: 'say', text: reply.spoken, audio: base64Encode(audio)),
+            Packet(
+              command: 'say',
+              text: reply.spoken,
+              audio: base64Encode(audio),
+            ),
           );
           unawaited(_speech.playBytes(audio));
         } on SpeechException catch (e) {
@@ -365,9 +367,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       });
     } finally {
       setState(() {
-        _face.value = FaceState(
-          mood: _awake ? Mood.listening : Mood.sleepy,
-        );
+        _face.value = FaceState(mood: _awake ? Mood.listening : Mood.sleepy);
         _status = BlueyStatus.listening;
         _server.sendFace(_face.value);
       });
@@ -430,52 +430,52 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           }
         },
         child: ValueListenableBuilder<FaceState>(
-        valueListenable: _face,
-        builder: (context, face, _) => FaceScreen(
-          face: face,
-          awake: _awake,
-          bubble: _bubble,
-          status: _status,
-          onWakeChanged: _setAwake,
-          onHoldStart: () async {
-            setState(() {
-              _face.value = FaceState(mood: Mood.listening);
-              _bubble = 'Listening…';
-            });
-            if (await _capture.hasPermission()) {
-              await _capture.start();
-            } else {
-              setState(() => _bubble = 'No microphone permission.');
-            }
-          },
-          onHoldEnd: _onHoldEnd,
-          perfOverlay: ValueListenableBuilder<bool>(
-            valueListenable: PerfMonitor.instance.overlayEnabled,
-            builder: (context, enabled, _) {
-              if (!enabled) return const SizedBox.shrink();
-              final medians = PerfMonitor.instance.medians();
-              if (medians.isEmpty) return const SizedBox.shrink();
-              final text = medians.entries
-                  .map((e) => '${e.key}: ${e.value}ms')
-                  .join('  ·  ');
-              return Container(
-                margin: const EdgeInsets.all(8),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  text,
-                  style: const TextStyle(color: Colors.white70, fontSize: 11),
-                ),
-              );
+          valueListenable: _face,
+          builder: (context, face, _) => FaceScreen(
+            face: face,
+            awake: _awake,
+            bubble: _bubble,
+            status: _status,
+            onWakeChanged: _setAwake,
+            onHoldStart: () async {
+              setState(() {
+                _face.value = FaceState(mood: Mood.listening);
+                _bubble = 'Listening…';
+              });
+              if (await _capture.hasPermission()) {
+                await _capture.start();
+              } else {
+                setState(() => _bubble = 'No microphone permission.');
+              }
             },
+            onHoldEnd: _onHoldEnd,
+            perfOverlay: ValueListenableBuilder<bool>(
+              valueListenable: PerfMonitor.instance.overlayEnabled,
+              builder: (context, enabled, _) {
+                if (!enabled) return const SizedBox.shrink();
+                final medians = PerfMonitor.instance.medians();
+                if (medians.isEmpty) return const SizedBox.shrink();
+                final text = medians.entries
+                    .map((e) => '${e.key}: ${e.value}ms')
+                    .join('  ·  ');
+                return Container(
+                  margin: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    text,
+                    style: const TextStyle(color: Colors.white70, fontSize: 11),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
         ),
       ),
       bottomNavigationBar: Column(
@@ -492,8 +492,9 @@ class _MacHomeState extends State<MacHome> with TrayListener {
               }
               if (BrainHost.remoteActive.value) {
                 return const MaterialBanner(
-                  content:
-                      Text('Cloud provider active - data leaves this Mac.'),
+                  content: Text(
+                    'Cloud provider active - data leaves this Mac.',
+                  ),
                   actions: [SizedBox.shrink()],
                 );
               }
@@ -604,8 +605,7 @@ class _IosHomeState extends State<IosHome> {
         face: _face,
         awake: _awake,
         bubble: _bubble,
-        status:
-            _connected ? BlueyStatus.listening : BlueyStatus.offline,
+        status: _connected ? BlueyStatus.listening : BlueyStatus.offline,
         onWakeChanged: (awake) {
           setState(() => _awake = awake);
           _link.send(Packet(command: awake ? 'wake' : 'sleep'));
@@ -636,7 +636,10 @@ class _IosHomeState extends State<IosHome> {
                     : 'Connecting to ${_link.macName}…',
               ),
               actions: [
-                TextButton(onPressed: _pickMac, child: const Text('Choose Mac')),
+                TextButton(
+                  onPressed: _pickMac,
+                  child: const Text('Choose Mac'),
+                ),
               ],
             ),
     );

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -103,18 +104,40 @@ class SettingsStore {
     final backendName = prefs.getString(_kBackend);
     final apiKey = await _secure.read(key: _kApiKey);
     return BrainSettings(
-      backend: BrainBackend.values.asNameMap()[backendName] ??
+      backend:
+          BrainBackend.values.asNameMap()[backendName] ??
           BrainSettings.defaults.backend,
       baseUrl: prefs.getString(_kBaseUrl) ?? BrainSettings.defaults.baseUrl,
       model: prefs.getString(_kModel) ?? BrainSettings.defaults.model,
       apiKey: apiKey,
       transcriptionBaseUrl: prefs.getString(_kTranscriptionBaseUrl),
-      transcriptionModel:
-          prefs.getString(_kTranscriptionModel) ?? 'whisper-1',
+      transcriptionModel: prefs.getString(_kTranscriptionModel) ?? 'whisper-1',
       ttsBaseUrl: prefs.getString(_kTtsBaseUrl),
       ttsModel: prefs.getString(_kTtsModel) ?? 'tts-1',
       ttsVoice: prefs.getString(_kTtsVoice) ?? 'alloy',
     );
+  }
+
+  /// Removes every stored setting and the API key (#83).
+  static Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    for (final key in [
+      _kBackend,
+      _kBaseUrl,
+      _kModel,
+      _kTranscriptionBaseUrl,
+      _kTranscriptionModel,
+      _kTtsBaseUrl,
+      _kTtsModel,
+      _kTtsVoice,
+    ]) {
+      await prefs.remove(key);
+    }
+    try {
+      await _secure.delete(key: _kApiKey);
+    } on MissingPluginException {
+      // Tests without a platform channel: nothing to delete.
+    }
   }
 
   static Future<void> save(BrainSettings settings) async {

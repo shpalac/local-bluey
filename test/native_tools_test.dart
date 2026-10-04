@@ -19,10 +19,7 @@ void main() {
                 'content': 'Looking now.',
                 'tool_calls': [
                   {
-                    'function': {
-                      'name': 'look_at_screen',
-                      'arguments': '{}',
-                    },
+                    'function': {'name': 'look_at_screen', 'arguments': '{}'},
                   },
                 ],
               },

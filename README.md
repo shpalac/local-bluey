@@ -51,6 +51,20 @@ flutter run -d ios     # the iPhone app - it finds the Mac over Bonjour
 
 No API keys in the repo: Ollama needs none; remote endpoints are configured in the app.
 
+## Local data and retention
+
+Everything the app stores lives on this device; Settings > Data and privacy lists each store with a clear button, and "Delete all local data" returns the app to first-run state (it does not touch your remote provider account data).
+
+| Store | Where | Retention |
+| --- | --- | --- |
+| Conversation history + summary | Documents/conversation.json | Until deleted |
+| Action log | Documents/actions.jsonl | 500 entries / 30 days |
+| Egress record | Documents/egress.jsonl | 300 entries / 30 days |
+| Routines | Documents/routines.json | Until deleted |
+| Perf samples | Documents/perf.jsonl | Until deleted |
+| Settings (API key in Keychain) | SharedPreferences + secure storage | Until deleted |
+| Character, language, onboarding, safety, privacy, wake-word, pairing/link keys | SharedPreferences | Until deleted |
+
 ## Development
 
 - `flutter test` - unit + widget tests (tool-call parsing, executor math, protocol round-trips)

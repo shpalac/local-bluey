@@ -133,8 +133,10 @@ class PhoneServer {
       return;
     }
     final key = _generateKey();
-    await (await SharedPreferences.getInstance())
-        .setString(_kLinkKeyHash, _hash(key));
+    await (await SharedPreferences.getInstance()).setString(
+      _kLinkKeyHash,
+      _hash(key),
+    );
     _authenticated.add(link);
     link.send(Packet(command: 'paired', text: key));
   }
@@ -153,8 +155,10 @@ class PhoneServer {
 
   static String _generateKey() {
     final random = Random.secure();
-    return List.generate(16, (_) => random.nextInt(16).toRadixString(16))
-        .join();
+    return List.generate(
+      16,
+      (_) => random.nextInt(16).toRadixString(16),
+    ).join();
   }
 
   /// Sends the face to every phone, skipping updates too small to see.

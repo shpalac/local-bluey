@@ -37,7 +37,12 @@ void main() {
   test('allowlist rejects non-listed apps without asking', () async {
     SharedPreferences.setMockInitialValues({'safety.appAllowlist': 'safari'});
     var asked = 0;
-    final gate = SafetyGate(onConfirm: (_) async { asked++; return true; });
+    final gate = SafetyGate(
+      onConfirm: (_) async {
+        asked++;
+        return true;
+      },
+    );
     expect(await gate.authorize('open_app', {'name': 'Terminal'}), isFalse);
     expect(asked, 0);
     expect(await gate.authorize('open_app', {'name': 'Safari'}), isTrue);

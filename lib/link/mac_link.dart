@@ -86,16 +86,19 @@ class MacLink {
         if (packet.hello != null) macName = packet.hello;
         switch (packet.command) {
           case 'authRequired':
-            final key = (await SharedPreferences.getInstance())
-                .getString(_kLinkKey);
+            final key = (await SharedPreferences.getInstance()).getString(
+              _kLinkKey,
+            );
             if (key != null) {
               link.send(Packet(command: 'auth', text: key));
             }
             return;
           case 'paired':
             if (packet.text != null) {
-              await (await SharedPreferences.getInstance())
-                  .setString(_kLinkKey, packet.text!);
+              await (await SharedPreferences.getInstance()).setString(
+                _kLinkKey,
+                packet.text!,
+              );
             }
             _paired.add(true);
             return;

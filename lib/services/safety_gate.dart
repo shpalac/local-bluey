@@ -59,8 +59,10 @@ class SafetyGate {
   }
 
   Future<void> setAllowlist(Set<String> apps) async =>
-      (await SharedPreferences.getInstance())
-          .setString(_kAllowlist, apps.join(','));
+      (await SharedPreferences.getInstance()).setString(
+        _kAllowlist,
+        apps.join(','),
+      );
 
   /// True when the tool call may execute.
   Future<bool> authorize(String tool, Map<String, dynamic> arguments) async {
@@ -82,9 +84,10 @@ class SafetyGate {
 
   static String describe(String tool, Map<String, dynamic> arguments) =>
       switch (tool) {
-        'click' => 'Click ${arguments['target_id'] ?? 'at a spot'}'
-            '${arguments['double'] == true ? ' (double)' : ''}'
-            '${arguments['right'] == true ? ' (right)' : ''}',
+        'click' =>
+          'Click ${arguments['target_id'] ?? 'at a spot'}'
+              '${arguments['double'] == true ? ' (double)' : ''}'
+              '${arguments['right'] == true ? ' (right)' : ''}',
         'type_text' =>
           'Type "${(arguments['text'] as String? ?? '').truncate(40)}"',
         'press_keys' => 'Press ${arguments['keys']}',

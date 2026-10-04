@@ -54,13 +54,18 @@ class OpenAiCompatibleProvider extends LlmProvider {
       if (apiKey != null && apiKey!.isNotEmpty) {
         headers['Authorization'] = 'Bearer $apiKey';
       }
-      final payload = jsonEncode({'model': model, 'messages': messages.map(_toApi).toList()});
+      final payload = jsonEncode({
+        'model': model,
+        'messages': messages.map(_toApi).toList(),
+      });
       final response = await _client.post(
         Uri.parse('$baseUrl/chat/completions'),
         headers: headers,
         body: payload,
       );
-      unawaited(EgressMonitor.instance.record(baseUrl, 'brain', payload.length));
+      unawaited(
+        EgressMonitor.instance.record(baseUrl, 'brain', payload.length),
+      );
       if (response.statusCode != 200) {
         throw LlmException(
           'OpenAI-compatible ${response.statusCode}: ${response.body}',
@@ -73,7 +78,6 @@ class OpenAiCompatibleProvider extends LlmProvider {
         (choices.first as Map)['message'] as Map? ?? const {},
       );
       return message['content'] as String? ?? '';
-  
     });
   }
 
@@ -85,16 +89,18 @@ class OpenAiCompatibleProvider extends LlmProvider {
         headers['Authorization'] = 'Bearer $apiKey';
       }
       final payload = jsonEncode({
-          'model': model,
-          'tools': kToolsAsFunctions(),
-          'messages': messages.map(_toApi).toList(),
-        });
+        'model': model,
+        'tools': kToolsAsFunctions(),
+        'messages': messages.map(_toApi).toList(),
+      });
       final response = await _client.post(
         Uri.parse('$baseUrl/chat/completions'),
         headers: headers,
         body: payload,
       );
-      unawaited(EgressMonitor.instance.record(baseUrl, 'brain', payload.length));
+      unawaited(
+        EgressMonitor.instance.record(baseUrl, 'brain', payload.length),
+      );
       if (response.statusCode != 200) {
         throw LlmException(
           'OpenAI-compatible ${response.statusCode}: ${response.body}',
@@ -127,11 +133,7 @@ class OpenAiCompatibleProvider extends LlmProvider {
           );
         }
       }
-      return LlmResponse(
-        message['content'] as String? ?? '',
-        toolCall: call,
-      );
-  
+      return LlmResponse(message['content'] as String? ?? '', toolCall: call);
     });
   }
 
@@ -141,7 +143,10 @@ class OpenAiCompatibleProvider extends LlmProvider {
     if (apiKey != null && apiKey!.isNotEmpty) {
       headers['Authorization'] = 'Bearer $apiKey';
     }
-    final request = http.Request('POST', Uri.parse('$baseUrl/chat/completions'));
+    final request = http.Request(
+      'POST',
+      Uri.parse('$baseUrl/chat/completions'),
+    );
     request.headers.addAll(headers);
     request.body = jsonEncode({
       'model': model,

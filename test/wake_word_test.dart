@@ -21,18 +21,16 @@ void main() {
 
   test('dormant without a spotter engine', () async {
     final service = WakeWordService(spotter: null);
-    final file = await File(
-      '${Directory.systemTemp.path}/ww_test.m4a',
-    ).create();
+    final file = await File('${Directory.systemTemp.path}/ww_test.m4a')
+        .create();
     expect(await service.scoreAndMaybeWake(file), isFalse);
   });
 
   test('below threshold never confirms', () async {
     final spotter = _FakeSpotter()..value = 0.2;
     final service = WakeWordService(spotter: spotter);
-    final file = await File(
-      '${Directory.systemTemp.path}/ww_test2.m4a',
-    ).create();
+    final file = await File('${Directory.systemTemp.path}/ww_test2.m4a')
+        .create();
     expect(await service.scoreAndMaybeWake(file), isFalse);
     expect(spotter.calls, 1);
   });
@@ -42,6 +40,4 @@ void main() {
     await WakeWordService.setEnabled(true);
     expect(await WakeWordService.isEnabled(), isTrue);
   });
-
-
 }

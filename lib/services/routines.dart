@@ -46,9 +46,8 @@ class RoutineStore {
   final List<Routine> routines = [];
   bool _loaded = false;
 
-  Future<File> _file() async => File(
-    '${(await getApplicationDocumentsDirectory()).path}/routines.json',
-  );
+  Future<File> _file() async =>
+      File('${(await getApplicationDocumentsDirectory()).path}/routines.json');
 
   Future<void> load() async {
     if (_loaded) return;
@@ -71,6 +70,17 @@ class RoutineStore {
       );
     } catch (e) {
       debugPrint('RoutineStore save failed: $e');
+    }
+  }
+
+  /// Deletes all routines, in memory and on disk (#83).
+  Future<void> clear() async {
+    routines.clear();
+    try {
+      final file = await _file();
+      if (await file.exists()) await file.delete();
+    } catch (e) {
+      debugPrint('RoutineStore clear failed: $e');
     }
   }
 

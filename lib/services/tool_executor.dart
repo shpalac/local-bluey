@@ -17,10 +17,8 @@ class ToolResult {
 /// Executes brain tool calls against the Mac's native layer.
 /// Ported from RealtimeHost.runTool / runAction in the original Swift app.
 class ToolExecutor {
-  ToolExecutor({
-    this._control = const ChannelControl(),
-    ActionLog? actionLog,
-  }) : _actionLog = actionLog ?? ActionLog.instance;
+  ToolExecutor({this._control = const ChannelControl(), ActionLog? actionLog})
+    : _actionLog = actionLog ?? ActionLog.instance;
 
   final NativeControlClient _control;
   final ActionLog _actionLog;
@@ -91,18 +89,15 @@ class ToolExecutor {
       result.text.startsWith('No target');
 
   static String _recoveryFor(String tool) => switch (tool) {
-    'click' || 'point_at' || 'type_text' =>
-      're-look at the screen, then retry with a fresh target',
+    'click' ||
+    'point_at' ||
+    'type_text' => 're-look at the screen, then retry with a fresh target',
     'open_app' => 'check the app name against the allowlist',
     'press_keys' => 'check the shortcut label and try again',
     _ => 're-look at the screen and retry',
   };
 
-  Future<void> _log(
-    ToolCall call,
-    String outcome, {
-    String? recoveryHint,
-  }) =>
+  Future<void> _log(ToolCall call, String outcome, {String? recoveryHint}) =>
       _actionLog.record(
         ActionEntry(
           runId: currentRunId,

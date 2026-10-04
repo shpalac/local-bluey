@@ -22,9 +22,8 @@ void main() {
       return http.Response(jsonEncode({'text': 'hello bluey'}), 200);
     });
     final file = await File('${Directory.systemTemp.path}/t.m4a').create();
-    final text = await TranscriptionService(
-      client: client,
-    ).transcribe(file, settings);
+    final text = await TranscriptionService(client: client)
+        .transcribe(file, settings);
     expect(text, 'hello bluey');
   });
 

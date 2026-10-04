@@ -21,8 +21,8 @@ class PerfMonitor {
   final ValueNotifier<bool> overlayEnabled = ValueNotifier(false);
 
   Future<bool> isOverlayEnabled() async {
-    final v = (await SharedPreferences.getInstance()).getBool(_kOverlay) ??
-        false;
+    final v =
+        (await SharedPreferences.getInstance()).getBool(_kOverlay) ?? false;
     overlayEnabled.value = v;
     return v;
   }
@@ -30,6 +30,19 @@ class PerfMonitor {
   Future<void> setOverlayEnabled(bool value) async {
     overlayEnabled.value = value;
     await (await SharedPreferences.getInstance()).setBool(_kOverlay, value);
+  }
+
+  /// Deletes samples and resets the overlay preference (#83).
+  Future<void> clear() async {
+    _samplesMs.clear();
+    overlayEnabled.value = false;
+    await (await SharedPreferences.getInstance()).remove(_kOverlay);
+    try {
+      final file = await _file();
+      if (await file.exists()) await file.delete();
+    } catch (e) {
+      debugPrint('PerfMonitor clear failed: $e');
+    }
   }
 
   Future<T> measure<T>(String stage, Future<T> Function() work) async {
@@ -45,8 +58,7 @@ class PerfMonitor {
 
   /// Median per stage, the baseline the docs track.
   Map<String, int> medians() => {
-    for (final entry in _samplesMs.entries)
-      entry.key: _median(entry.value),
+    for (final entry in _samplesMs.entries) entry.key: _median(entry.value),
   };
 
   static int _median(List<int> values) {
@@ -54,9 +66,8 @@ class PerfMonitor {
     return sorted[sorted.length ~/ 2];
   }
 
-  Future<File> _file() async => File(
-    '${(await getApplicationDocumentsDirectory()).path}/perf.jsonl',
-  );
+  Future<File> _file() async =>
+      File('${(await getApplicationDocumentsDirectory()).path}/perf.jsonl');
 
   Future<void> _append(String stage, int ms) async {
     try {

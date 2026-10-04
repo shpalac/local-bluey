@@ -24,14 +24,27 @@ class Strings {
 
   static Future<void> setUiLanguage(UiLanguage language) async {
     uiLanguage = language;
-    await (await SharedPreferences.getInstance())
-        .setString(_kUiLanguage, language.name);
+    await (await SharedPreferences.getInstance()).setString(
+      _kUiLanguage,
+      language.name,
+    );
   }
 
   static Future<void> setSpeechLanguage(String language) async {
     speechLanguage = language;
-    await (await SharedPreferences.getInstance())
-        .setString(_kSpeechLanguage, language);
+    await (await SharedPreferences.getInstance()).setString(
+      _kSpeechLanguage,
+      language,
+    );
+  }
+
+  /// Resets both language preferences (#83).
+  static Future<void> clear() async {
+    uiLanguage = UiLanguage.system;
+    speechLanguage = 'auto';
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kUiLanguage);
+    await prefs.remove(_kSpeechLanguage);
   }
 
   /// RTL when the UI language is explicitly Hebrew. 'system' follows the
