@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Unit + widget tests
+        run: flutter test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Build macOS
+        run: flutter build macos
+
+      - name: Build iOS (no codesign)
+        run: flutter build ios --no-codesign
