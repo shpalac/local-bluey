@@ -18,6 +18,7 @@ import 'services/brain_host.dart';
 import 'services/native_control.dart';
 import 'llm/llm_provider.dart' show BlueyStatus;
 import 'services/conversation.dart';
+import 'services/perf_monitor.dart';
 import 'services/safety_gate.dart';
 import 'services/strings.dart';
 import 'services/settings_store.dart';
@@ -242,9 +243,10 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       _status = BlueyStatus.thinking;
     });
     try {
-      final text = await _transcription.transcribe(
-        file,
-        await SettingsStore.load(),
+      final settings = await SettingsStore.load();
+      final text = await PerfMonitor.instance.measure(
+        'listening.transcription',
+        () => _transcription.transcribe(file, settings),
       );
       if (text.isEmpty) {
         setState(() => _bubble = "Didn't catch that.");
@@ -259,14 +261,17 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       }
       const maxToolSteps = 5;
       const stepTimeout = Duration(seconds: 60);
-      var reply = await brain
+      var reply = await PerfMonitor.instance.measure(
+        'thinking.brain',
+        () => brain
           .askStreaming(
             text,
             onToken: (partial) {
               if (mounted) setState(() => _bubble = partial);
             },
           )
-          .timeout(stepTimeout);
+          .timeout(stepTimeout),
+      );
       // Tool loop: let the brain act, then react to what happened.
       var steps = 0;
       while (reply.toolCall != null && steps < maxToolSteps) {
@@ -283,7 +288,10 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           continue;
         }
         setState(() => _status = BlueyStatus.acting);
-        final result = await _tools.execute(call);
+        final result = await PerfMonitor.instance.measure(
+          'acting.tool.${call.name}',
+          () => _tools.execute(call),
+        );
         reply = await brain
             .toolResult(
               call.name,
@@ -304,7 +312,6 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           _face.value = FaceState(mood: Mood.talking);
           _server.sendFace(_face.value);
         });
-        final settings = await SettingsStore.load();
         try {
           final audio = await _speech.synthesize(reply.spoken, settings);
           _server.broadcast(
