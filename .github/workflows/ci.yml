@@ -43,6 +43,30 @@ jobs:
         run: flutter build ios --no-codesign
         timeout-minutes: 12
 
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # gitleaks scans history
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+
+      - name: Dependency audit (high severity fails)
+        run: flutter pub audit --no-fatal-infos --no-fatal-warnings
+
+      - name: Secrets scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_SUMMARY: "true"
+
   # Native-validation lane: exercises the real device bridge. Runs only when
   # a self-hosted Mac runner with a signed environment is available; mocked
   # contract tests stay in the main lane above.
