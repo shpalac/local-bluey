@@ -15,14 +15,24 @@ class Brain {
           ];
 
   /// Conversation never grows past this many messages; the system prompt
-  /// always stays. Older turns are dropped oldest-first.
+  /// always stays. Older turns are folded into a running memory summary
+  /// instead of being dropped (#60).
   static const maxHistory = 40;
+
+  /// Prefix marking the synthesized memory message at history index 1.
+  static const memoryPrefix = 'Conversation memory so far:';
 
   /// Screenshots are huge: only the most recent exchanges keep theirs.
   static const keepImagesInLast = 2;
 
   final LlmProvider provider;
   final List<LlmMessage> _history;
+
+  /// Turns that overflowed the window but were not summarized yet.
+  final List<LlmMessage> _overflow = [];
+
+  /// The running memory. Rebuilt whenever more turns overflow.
+  String? memory;
 
   List<LlmMessage> get history => List.unmodifiable(_history);
 
@@ -36,7 +46,45 @@ class Brain {
       }
     }
     while (_history.length > maxHistory) {
-      _history.removeAt(1); // keep the system prompt at index 0
+      // Keep the system prompt and the memory message; evict the oldest turn.
+      final idx = _history.length > 1 && _isMemoryMessage(_history[1]) ? 2 : 1;
+      _overflow.add(_history.removeAt(idx));
+    }
+  }
+
+  bool _isMemoryMessage(LlmMessage m) =>
+      m.role == 'system' && m.content.startsWith(memoryPrefix);
+
+  /// Folds overflowed turns into the running memory before the next call.
+  /// Failures keep the overflow buffered so nothing is lost silently.
+  Future<void> _consolidateMemory() async {
+    if (_overflow.isEmpty) return;
+    final batch = List<LlmMessage>.from(_overflow);
+    final turns = batch.map((m) => '${m.role}: ${m.content}').join('\n');
+    final prompt = [
+      LlmMessage(
+        'system',
+        'You compress conversation logs into a durable memory. Keep facts, '
+            'names, decisions, preferences and open threads. Drop filler. '
+            'Reply with the updated memory only, in the log\'s language.',
+      ),
+      if (memory != null) LlmMessage('user', 'Existing memory:\n$memory'),
+      LlmMessage('user', 'New turns to fold in:\n$turns'),
+    ];
+    final String updated;
+    try {
+      updated = await provider.chat(prompt);
+    } catch (_) {
+      return; // retry on the next call; overflow stays buffered
+    }
+    if (updated.trim().isEmpty) return;
+    _overflow.removeRange(0, batch.length);
+    memory = updated;
+    final memMessage = LlmMessage('system', '$memoryPrefix\n$updated');
+    if (_history.length > 1 && _isMemoryMessage(_history[1])) {
+      _history[1] = memMessage;
+    } else {
+      _history.insert(1, memMessage);
     }
   }
 
@@ -46,6 +94,7 @@ class Brain {
     List<String> images = const [],
   }) async {
     _boundedAdd(LlmMessage('user', userText, images: images));
+    await _consolidateMemory();
     final response = await provider.chatWithTools(_history);
     _boundedAdd(LlmMessage('assistant', response.text));
     return BrainReply(spoken: response.text, toolCall: response.toolCall);

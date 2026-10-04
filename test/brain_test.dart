@@ -122,4 +122,54 @@ void _streamingTests() {
     expect(reply.spoken, 'Hello there');
     expect(brain.history.last.content, 'Hello there');
   });
+  group('conversation memory (#60)', () {
+    test('overflowed turns are folded into a memory message', () async {
+      final provider = _SummarizingProvider();
+      final brain = Brain(provider: provider);
+      for (var i = 0; i < Brain.maxHistory + 5; i++) {
+        await brain.ask('question $i');
+      }
+      expect(brain.history.length, lessThanOrEqualTo(Brain.maxHistory + 1));
+      expect(provider.summaryCalls, greaterThan(0));
+      expect(brain.memory, isNotNull);
+      final mem = brain.history[1];
+      expect(mem.content, startsWith(Brain.memoryPrefix));
+    });
+
+    test('failed summarization keeps overflow buffered for retry', () async {
+      final provider = _FlakySummarizer();
+      final brain = Brain(provider: provider);
+      for (var i = 0; i < Brain.maxHistory + 5; i++) {
+        await brain.ask('question $i');
+      }
+      expect(brain.memory, isNull); // all summaries failed
+      provider.fail = false;
+      await brain.ask('one more');
+      expect(brain.memory, isNotNull); // retried and succeeded
+    });
+  });
+}
+
+class _FlakySummarizer extends _SummarizingProvider {
+  bool fail = true;
+  @override
+  Future<String> chat(List<LlmMessage> messages) {
+    if (fail && messages.first.content.contains('compress conversation logs')) {
+      throw StateError('offline');
+    }
+    return super.chat(messages);
+  }
+
+}
+
+class _SummarizingProvider extends FakeProvider {
+  int summaryCalls = 0;
+  @override
+  Future<String> chat(List<LlmMessage> messages) {
+    if (messages.first.content.contains('compress conversation logs')) {
+      summaryCalls++;
+      return Future.value('memory v$summaryCalls');
+    }
+    return super.chat(messages);
+  }
 }
