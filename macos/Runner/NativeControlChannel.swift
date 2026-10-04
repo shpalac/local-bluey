@@ -82,6 +82,28 @@ final class NativeControlChannel {
       case "openURL":
         guard let url = args["url"] as? String else { result(FlutterError(code: "args", message: "url required", details: nil)); return }
         result(ComputerControl.openURL(url))
+      case "snapshotRegion":
+        Task {
+          do {
+            let args = call.arguments as? [String: Any]
+            let rect = CGRect(
+              x: args?["x"] as? Double ?? 0,
+              y: args?["y"] as? Double ?? 0,
+              width: args?["width"] as? Double ?? 0,
+              height: args?["height"] as? Double ?? 0
+            )
+            let jpeg = try await ScreenReader.snapshotRegion(rect)
+            result([
+              "jpeg": FlutterStandardTypedData(bytes: jpeg),
+              "targets": "",
+              "width": Double(rect.width),
+              "height": Double(rect.height),
+              "app": lastSnapshot?.app ?? "",
+            ])
+          } catch {
+            result(FlutterError(code: "snapshotRegion", message: error.localizedDescription, details: nil))
+          }
+        }
       case "snapshot":
         Task {
           do {

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:ui' show Offset;
 
+import 'package:flutter/foundation.dart';
+
 import '../llm/tools.dart';
 import 'action_log.dart';
 import 'undo.dart';
@@ -44,6 +46,17 @@ class ToolExecutor {
   /// A target id or grid point is only trusted while the snapshot it came
   /// from is fresh. Past this, the brain must look again.
   static const staleAfter = Duration(seconds: 30);
+
+  /// Upper bound for one wait call (#80); longer waits need another call so
+  /// each one counts against the turn budget.
+  static const maxWaitMs = 5000;
+
+  /// Kill-switch check polled during wait (#80). Wired to SafetyGate.killed
+  /// by the host; tests inject their own.
+  bool Function() isCancelled = () => false;
+
+  @visibleForTesting
+  set debugLastSnapshotAt(DateTime? value) => _lastSnapshotAt = value;
 
   bool get _stale =>
       _lastSnapshotAt == null ||
@@ -126,6 +139,53 @@ class ToolExecutor {
           'Display: ${snap.width.toInt()}x${snap.height.toInt()} points.\n'
           '${PrivacyGuard.redact(snap.targets)}',
           imageBase64: base64Encode(snap.jpeg),
+        );
+
+      case 'zoom_screen':
+        final staleError = _stalenessError(call.arguments);
+        if (staleError != null) return ToolResult(staleError);
+        if (_screenWidth == 0) {
+          return ToolResult(
+            'Screen knowledge is stale - call look_at_screen first.',
+          );
+        }
+        final left =
+            _num(call.arguments['x']).clamp(0, 1000) / 1000 * _screenWidth;
+        final top =
+            _num(call.arguments['y']).clamp(0, 1000) / 1000 * _screenHeight;
+        final w =
+            _num(call.arguments['width'], fallback: 1000).clamp(1, 1000) /
+            1000 *
+            _screenWidth;
+        final h =
+            _num(call.arguments['height'], fallback: 1000).clamp(1, 1000) /
+            1000 *
+            _screenHeight;
+        // Deliberately does not refresh _lastSnapshotAt: the zoom is a
+        // detail view of the current snapshot in the same grid, so old
+        // target ids keep their original staleness (#80).
+        final crop = await _control.snapshotRegion(left, top, w, h);
+        return ToolResult(
+          'Zoomed ${w.toInt()}x${h.toInt()} region at (${left.toInt()},${top.toInt()}) points; coordinates unchanged.',
+          imageBase64: base64Encode(crop.jpeg),
+        );
+
+      case 'wait':
+        final requested = _num(call.arguments['ms']);
+        final ms = requested.clamp(0, maxWaitMs).round();
+        final timer = Stopwatch()..start();
+        while (timer.elapsedMilliseconds < ms) {
+          if (isCancelled()) {
+            return ToolResult(
+              'Wait cancelled by the kill switch after ${timer.elapsedMilliseconds} ms.',
+            );
+          }
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+        return ToolResult(
+          requested > maxWaitMs
+              ? 'Waited $ms ms (capped from ${requested.round()}).'
+              : 'Waited $ms ms.',
         );
 
       case 'point_at':
@@ -284,6 +344,14 @@ class ResolvedTarget {
 /// The slice of NativeControl the executor needs, so tests can fake it.
 abstract class NativeControlClient {
   Future<ScreenSnapshot> snapshot();
+
+  /// A high-resolution crop of the current display, in display points (#80).
+  Future<ScreenSnapshot> snapshotRegion(
+    double x,
+    double y,
+    double width,
+    double height,
+  );
   Future<Offset> mouseLocation();
   Future<ResolvedTarget> resolveTarget(String id);
   Future<void> warp(double x, double y);
@@ -302,6 +370,13 @@ class ChannelControl implements NativeControlClient {
 
   @override
   Future<ScreenSnapshot> snapshot() => NativeControl.snapshot();
+  @override
+  Future<ScreenSnapshot> snapshotRegion(
+    double x,
+    double y,
+    double width,
+    double height,
+  ) => NativeControl.snapshotRegion(x, y, width, height);
   @override
   Future<Offset> mouseLocation() => NativeControl.mouseLocation();
   @override

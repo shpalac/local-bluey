@@ -86,6 +86,29 @@ class NativeControl {
     );
   }
 
+  /// High-resolution crop of the display, in display points (#80).
+  static Future<ScreenSnapshot> snapshotRegion(
+    double x,
+    double y,
+    double width,
+    double height,
+  ) async {
+    final map = await _channel.invokeMapMethod<String, dynamic>(
+      'snapshotRegion',
+      {'x': x, 'y': y, 'width': width, 'height': height},
+    );
+    if (map == null) {
+      throw StateError('snapshotRegion returned no data');
+    }
+    return ScreenSnapshot(
+      jpeg: map['jpeg'] as Uint8List,
+      targets: map['targets'] as String? ?? '',
+      width: (map['width'] as num).toDouble(),
+      height: (map['height'] as num).toDouble(),
+      frontApp: map['app'] as String? ?? '',
+    );
+  }
+
   static Future<ScreenSnapshot> snapshot() async {
     final map = await _channel.invokeMapMethod<String, dynamic>('snapshot');
     if (map == null) {
