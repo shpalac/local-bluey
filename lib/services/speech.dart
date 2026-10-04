@@ -12,10 +12,13 @@ import 'settings_store.dart';
 class SpeechService {
   SpeechService({http.Client? client, AudioPlayer? player})
     : _client = client ?? http.Client(),
-      _player = player ?? AudioPlayer();
+      _player = player;
 
   final http.Client _client;
-  final AudioPlayer _player;
+
+  /// Created lazily so synthesize-only callers (and tests) never touch the
+  /// platform audio channel.
+  AudioPlayer? _player;
 
   /// Requests speech audio for [text]. Returns the raw audio bytes (mp3).
   Future<List<int>> synthesize(String text, BrainSettings settings) async {
@@ -52,7 +55,8 @@ class SpeechService {
       '${DateTime.now().millisecondsSinceEpoch}.mp3',
     );
     await file.writeAsBytes(bytes, flush: true);
-    await _player.play(DeviceFileSource(file.path));
+    final player = _player ??= AudioPlayer();
+    await player.play(DeviceFileSource(file.path));
   }
 }
 
