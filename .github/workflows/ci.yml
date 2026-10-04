@@ -64,7 +64,7 @@ jobs:
       - run: flutter pub get --enforce-lockfile
 
       - name: Dependency audit (high severity fails)
-        run: flutter pub audit --no-fatal-infos --no-fatal-warnings
+        run: flutter pub audit
 
       - name: Secrets scan
         uses: gitleaks/gitleaks-action@v2
