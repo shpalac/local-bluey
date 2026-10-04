@@ -3,6 +3,7 @@ import 'dart:ui' show Offset;
 
 import '../llm/tools.dart';
 import 'native_control.dart';
+import 'privacy_guard.dart';
 
 /// The result handed back to the brain after a tool runs.
 class ToolResult {
@@ -66,7 +67,7 @@ class ToolExecutor {
         _home = await _control.mouseLocation();
         return ToolResult(
           'Display: ${snap.width.toInt()}x${snap.height.toInt()} points.\n'
-          '${snap.targets}',
+          '${PrivacyGuard.redact(snap.targets)}',
           imageBase64: base64Encode(snap.jpeg),
         );
 
@@ -205,7 +206,7 @@ class ToolExecutor {
     _screenHeight = snap.height;
     _lastSnapshotAt = DateTime.now();
     return ToolResult(
-      '$text\n\n${snap.targets}',
+      '$text\n\n${PrivacyGuard.redact(snap.targets)}',
       imageBase64: base64Encode(snap.jpeg),
     );
   }
