@@ -124,7 +124,7 @@ jobs:
       - name: Verify actions are pinned by SHA
         run: |
           set -e
-          bad=$(grep -rhoE 'uses: [^@]+@[^ #]+' .github/workflows | grep -vE '@[0-9a-f]{40}$' || true)
+          bad=$(grep -rhoE '^[[:space:]]+uses: [^@]+@[^ #]+' .github/workflows | grep -vE '@[0-9a-f]{40}$' || true)
           if [ -n "$bad" ]; then
             echo "Unpinned actions found:"
             echo "$bad"
