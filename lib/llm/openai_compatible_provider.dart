@@ -53,7 +53,7 @@ class OpenAiCompatibleProvider extends LlmProvider {
     final response = await _client.post(
       Uri.parse('$baseUrl/chat/completions'),
       headers: headers,
-      body: jsonEncode({'model': model, 'messages': messages.map(_toApi)}),
+      body: jsonEncode({'model': model, 'messages': messages.map(_toApi).toList()}),
     );
     if (response.statusCode != 200) {
       throw LlmException(
@@ -81,7 +81,7 @@ class OpenAiCompatibleProvider extends LlmProvider {
       body: jsonEncode({
         'model': model,
         'tools': kToolsAsFunctions(),
-        'messages': messages.map(_toApi),
+        'messages': messages.map(_toApi).toList(),
       }),
     );
     if (response.statusCode != 200) {
@@ -133,7 +133,7 @@ class OpenAiCompatibleProvider extends LlmProvider {
     request.body = jsonEncode({
       'model': model,
       'stream': true,
-      'messages': messages.map(_toApi),
+      'messages': messages.map(_toApi).toList(),
     });
     final streamed = await _client.send(request);
     if (streamed.statusCode != 200) {
