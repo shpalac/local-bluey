@@ -17,12 +17,18 @@ class BrainSettings {
     required this.baseUrl,
     required this.model,
     this.apiKey,
+    this.transcriptionBaseUrl,
+    this.transcriptionModel = 'whisper-1',
   });
 
   final BrainBackend backend;
   final String baseUrl;
   final String model;
   final String? apiKey;
+
+  /// Optional dedicated /audio/transcriptions endpoint; defaults to baseUrl.
+  final String? transcriptionBaseUrl;
+  final String transcriptionModel;
 
   static const defaults = BrainSettings(
     backend: BrainBackend.ollama,
@@ -35,11 +41,15 @@ class BrainSettings {
     String? baseUrl,
     String? model,
     String? apiKey,
+    String? transcriptionBaseUrl,
+    String? transcriptionModel,
   }) => BrainSettings(
     backend: backend ?? this.backend,
     baseUrl: baseUrl ?? this.baseUrl,
     model: model ?? this.model,
     apiKey: apiKey ?? this.apiKey,
+    transcriptionBaseUrl: transcriptionBaseUrl ?? this.transcriptionBaseUrl,
+    transcriptionModel: transcriptionModel ?? this.transcriptionModel,
   );
 
   LlmProvider buildProvider() => switch (backend) {
@@ -61,6 +71,8 @@ class SettingsStore {
   static const _kBaseUrl = 'brain.baseUrl';
   static const _kModel = 'brain.model';
   static const _kApiKey = 'brain.apiKey';
+  static const _kTranscriptionBaseUrl = 'brain.transcriptionBaseUrl';
+  static const _kTranscriptionModel = 'brain.transcriptionModel';
 
   static const _secure = FlutterSecureStorage();
 
@@ -74,6 +86,9 @@ class SettingsStore {
       baseUrl: prefs.getString(_kBaseUrl) ?? BrainSettings.defaults.baseUrl,
       model: prefs.getString(_kModel) ?? BrainSettings.defaults.model,
       apiKey: apiKey,
+      transcriptionBaseUrl: prefs.getString(_kTranscriptionBaseUrl),
+      transcriptionModel:
+          prefs.getString(_kTranscriptionModel) ?? 'whisper-1',
     );
   }
 
@@ -82,6 +97,13 @@ class SettingsStore {
     await prefs.setString(_kBackend, settings.backend.name);
     await prefs.setString(_kBaseUrl, settings.baseUrl);
     await prefs.setString(_kModel, settings.model);
+    final tUrl = settings.transcriptionBaseUrl;
+    if (tUrl == null || tUrl.isEmpty) {
+      await prefs.remove(_kTranscriptionBaseUrl);
+    } else {
+      await prefs.setString(_kTranscriptionBaseUrl, tUrl);
+    }
+    await prefs.setString(_kTranscriptionModel, settings.transcriptionModel);
     final key = settings.apiKey;
     if (key == null || key.isEmpty) {
       await _secure.delete(key: _kApiKey);
