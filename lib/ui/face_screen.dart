@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../llm/llm_provider.dart';
 import '../link/models.dart';
+import '../services/characters.dart';
 import '../services/conversation.dart';
 
 /// Bluey's face: two eyes that follow the gaze, colored by mood.
@@ -44,15 +45,8 @@ class _FaceScreenState extends State<FaceScreen> {
   @override
   Widget build(BuildContext context) {
     final face = widget.face;
-    final color = switch (face.mood) {
-      Mood.listening => const Color(0xFF5BC8E5),
-      Mood.thinking => const Color(0xFF9B8CE5),
-      Mood.talking => const Color(0xFF5BE49B),
-      Mood.pointing => const Color(0xFFE5A75B),
-      Mood.happy => const Color(0xFF5BE49B),
-      Mood.sleepy => const Color(0xFF6B7280),
-      Mood.resting => const Color(0xFF8B95A5),
-    };
+    final color = CharacterStore.instance.current.value.moodColors[face.mood] ??
+        const Color(0xFF5BC8E5);
 
     return Semantics(
       label: 'Bluey. Double-tap to wake or sleep. '

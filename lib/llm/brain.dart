@@ -4,13 +4,16 @@ import 'tools.dart';
 /// The modular brain: keeps the conversation, injects the tool system prompt,
 /// and splits each reply into what Bluey says and what Bluey does.
 class Brain {
-  Brain({required this.provider, List<LlmMessage>? history})
+  Brain({required this.provider, List<LlmMessage>? history, String? persona})
     : _history =
           history ??
           [
             LlmMessage(
               'system',
-              buildSystemPrompt(nativeTools: provider.supportsNativeTools),
+              buildSystemPrompt(
+                nativeTools: provider.supportsNativeTools,
+                persona: persona,
+              ),
             ),
           ];
 

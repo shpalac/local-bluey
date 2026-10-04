@@ -16,6 +16,7 @@ import 'link/phone_server.dart';
 import 'services/audio_capture.dart';
 import 'services/brain_host.dart';
 import 'llm/llm_provider.dart' show BlueyStatus;
+import 'services/characters.dart';
 import 'services/conversation.dart';
 import 'services/perf_monitor.dart';
 import 'services/routines.dart';
@@ -35,6 +36,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Strings.load();
   await RoutineStore.instance.load();
+  await CharacterStore.instance.load();
   final profile = SupportMatrix.profile();
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
@@ -223,6 +225,11 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     setState(() {
       _awake = awake;
       _face.value = FaceState(mood: awake ? Mood.listening : Mood.sleepy);
+      if (awake) {
+        final line = CharacterStore.instance.current.value
+            .react('wake', DateTime.now().millisecond);
+        if (line.isNotEmpty) _bubble = line;
+      }
     });
     _server.sendFace(_face.value);
     _server.broadcast(Packet(command: awake ? 'wake' : 'sleep'));
@@ -324,7 +331,19 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           _server.sendFace(_face.value);
         });
         try {
-          final audio = await _speech.synthesize(reply.spoken, settings);
+          final character = CharacterStore.instance.current.value;
+          final voiced = BrainSettings(
+            backend: settings.backend,
+            baseUrl: settings.baseUrl,
+            model: settings.model,
+            apiKey: settings.apiKey,
+            transcriptionBaseUrl: settings.transcriptionBaseUrl,
+            transcriptionModel: settings.transcriptionModel,
+            ttsBaseUrl: settings.ttsBaseUrl,
+            ttsModel: settings.ttsModel,
+            ttsVoice: character.voice,
+          );
+          final audio = await _speech.synthesize(reply.spoken, voiced);
           _server.broadcast(
             Packet(command: 'say', text: reply.spoken, audio: base64Encode(audio)),
           );

@@ -168,9 +168,11 @@ List<Map<String, dynamic>> kToolsAsFunctions() => [
     },
 ];
 
-String buildSystemPrompt({bool nativeTools = false}) {
+String buildSystemPrompt({bool nativeTools = false, String? persona}) {
   final buffer = StringBuffer()
-    ..writeln('You are Bluey, a little helper living on the user\'s Mac.')
+    ..writeln(
+      persona ?? 'You are Bluey, a little helper living on the user\'s Mac.',
+    )
     ..writeln(
       'You can see the screen, point at things, and use the computer when asked.',
     );
