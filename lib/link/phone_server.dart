@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:nsd/nsd.dart' as nsd;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'line_connection.dart';
 import 'models.dart';
@@ -13,8 +17,29 @@ const String kServiceType = '_googly._tcp';
 /// that connects, ported from Mac/PhoneServer.swift.
 class PhoneServer {
   final _phones = <LineConnection, String?>{};
+  final _authenticated = <LineConnection>{};
   FaceState? _lastSent;
   DateTime _lastSentAt = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// Commands an unauthenticated phone may send.
+  static const _openCommands = {'auth'};
+
+  /// Commands a paired phone may send at all - remote control is limited to
+  /// waking, sleeping and hold-to-talk. Everything else is dropped.
+  static const allowedRemoteCommands = {
+    'wake',
+    'sleep',
+    'holdStart',
+    'holdEnd',
+    'playing',
+    'done',
+    'testVoice',
+  };
+
+  static const _kLinkKeyHash = 'link.keyHash';
+
+  /// Asks the Mac user whether a new phone may pair. Set by the UI.
+  Future<bool> Function(String deviceName)? onPairRequest;
 
   ServerSocket? _server;
   nsd.Registration? _registration;
@@ -45,15 +70,28 @@ class PhoneServer {
       link.send(Packet(hello: Platform.localHostname));
       if (_lastSent != null) link.send(Packet(face: _lastSent));
       _onPhonesChanged.add(phoneNames);
-      link.packets.listen((packet) {
+      link.packets.listen((packet) async {
         if (packet.hello != null) {
           _phones[link] = packet.hello;
           _onPhonesChanged.add(phoneNames);
+          await _maybePair(link, packet.hello!);
+          return;
         }
-        if (packet.command != null) _requests.add(packet);
+        final command = packet.command;
+        if (command == null) return;
+        if (!_authenticated.contains(link)) {
+          if (_openCommands.contains(command)) {
+            await _checkAuth(link, packet.text ?? '');
+          }
+          // Drop everything else until paired.
+          return;
+        }
+        if (!allowedRemoteCommands.contains(command)) return;
+        _requests.add(packet);
       });
       link.done.listen((_) {
         _phones.remove(link);
+        _authenticated.remove(link);
         _onPhonesChanged.add(phoneNames);
       });
     });
@@ -67,11 +105,55 @@ class PhoneServer {
     );
   }
 
-  /// Sends a packet to every phone (e.g. "wake", "sleep").
+  /// Sends a packet to every paired phone (e.g. "wake", "sleep").
   void broadcast(Packet packet) {
-    for (final link in _phones.keys) {
+    for (final link in _authenticated) {
       link.send(packet);
     }
+  }
+
+  String _hash(String key) => sha256.convert(utf8.encode(key)).toString();
+
+  Future<String?> _storedHash() async =>
+      (await SharedPreferences.getInstance()).getString(_kLinkKeyHash);
+
+  /// First phone to connect gets a pairing prompt on the Mac; on approval the
+  /// Mac generates a shared key and hands it to the phone once. Later connects
+  /// must prove the key with an `auth` packet.
+  Future<void> _maybePair(LineConnection link, String deviceName) async {
+    final stored = await _storedHash();
+    if (stored != null) {
+      link.send(Packet(command: 'authRequired'));
+      return;
+    }
+    final ask = onPairRequest;
+    if (ask == null || !await ask(deviceName)) {
+      link.close();
+      return;
+    }
+    final key = _generateKey();
+    await (await SharedPreferences.getInstance())
+        .setString(_kLinkKeyHash, _hash(key));
+    _authenticated.add(link);
+    link.send(Packet(command: 'paired', text: key));
+  }
+
+  Future<void> _checkAuth(LineConnection link, String key) async {
+    final stored = await _storedHash();
+    if (stored != null && _hash(key) == stored) {
+      _authenticated.add(link);
+      link.send(Packet(command: 'paired'));
+      if (_lastSent != null) link.send(Packet(face: _lastSent));
+    } else {
+      link.send(Packet(command: 'authFailed'));
+      link.close();
+    }
+  }
+
+  static String _generateKey() {
+    final random = Random.secure();
+    return List.generate(16, (_) => random.nextInt(16).toRadixString(16))
+        .join();
   }
 
   /// Sends the face to every phone, skipping updates too small to see.

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:nsd/nsd.dart' as nsd;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'line_connection.dart';
 import 'models.dart';
@@ -24,8 +25,14 @@ class MacLink {
   Stream<bool> get connected => _connected.stream;
   Stream<List<String>> get macs => _macs.stream;
 
+  static const _kLinkKey = 'link.key';
+
   String? macName;
   bool get isConnected => _link != null;
+
+  /// True once the Mac accepted this phone (paired or re-authenticated).
+  final _paired = StreamController<bool>.broadcast();
+  Stream<bool> get paired => _paired.stream;
 
   LineConnection? _link;
   nsd.Discovery? _discovery;
@@ -53,8 +60,28 @@ class MacLink {
       _link = link;
       link.send(Packet(hello: deviceName));
       _connected.add(true);
-      link.packets.listen((packet) {
+      link.packets.listen((packet) async {
         if (packet.hello != null) macName = packet.hello;
+        switch (packet.command) {
+          case 'authRequired':
+            final key = (await SharedPreferences.getInstance())
+                .getString(_kLinkKey);
+            if (key != null) {
+              link.send(Packet(command: 'auth', text: key));
+            }
+            return;
+          case 'paired':
+            if (packet.text != null) {
+              await (await SharedPreferences.getInstance())
+                  .setString(_kLinkKey, packet.text!);
+            }
+            _paired.add(true);
+            return;
+          case 'authFailed':
+            await (await SharedPreferences.getInstance()).remove(_kLinkKey);
+            _paired.add(false);
+            return;
+        }
         if (packet.face != null) _faces.add(packet.face!);
         _packets.add(packet);
       });
