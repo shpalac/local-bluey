@@ -20,13 +20,41 @@ class ToolExecutor {
   final NativeControlClient _control;
 
   /// Screen size from the last look_at_screen, for grid → points conversion.
+  /// Grid coordinates are always 0-1000 on both axes (see kTools docs);
+  /// values outside are clamped, and using them before the first snapshot
+  /// is an error the brain can correct.
   double _screenWidth = 0;
   double _screenHeight = 0;
+  DateTime? _lastSnapshotAt;
   Offset _home = Offset.zero;
   void Function()? onSleep;
 
-  Offset _grid(double x, double y) =>
-      Offset(x / 1000 * _screenWidth, y / 1000 * _screenHeight);
+  /// A target id or grid point is only trusted while the snapshot it came
+  /// from is fresh. Past this, the brain must look again.
+  static const staleAfter = Duration(seconds: 30);
+
+  bool get _stale =>
+      _lastSnapshotAt == null ||
+      DateTime.now().difference(_lastSnapshotAt!) > staleAfter;
+
+  String? _stalenessError(Map<String, dynamic> args) {
+    final usesTarget = (args['target_id'] as String?)?.isNotEmpty == true;
+    final usesGrid = args['x'] != null || args['y'] != null;
+    if (!usesTarget && !usesGrid) return null;
+    if (_stale) {
+      return 'Screen knowledge is stale - call look_at_screen first.';
+    }
+    return null;
+  }
+
+  Offset _grid(double x, double y) {
+    final clampedX = x.clamp(0, 1000).toDouble();
+    final clampedY = y.clamp(0, 1000).toDouble();
+    return Offset(
+      clampedX / 1000 * _screenWidth,
+      clampedY / 1000 * _screenHeight,
+    );
+  }
 
   Future<ToolResult> execute(ToolCall call) async {
     switch (call.name) {
@@ -34,16 +62,25 @@ class ToolExecutor {
         final snap = await _control.snapshot();
         _screenWidth = snap.width;
         _screenHeight = snap.height;
+        _lastSnapshotAt = DateTime.now();
         _home = await _control.mouseLocation();
-        return ToolResult(snap.targets, imageBase64: base64Encode(snap.jpeg));
+        return ToolResult(
+          'Display: ${snap.width.toInt()}x${snap.height.toInt()} points.\n'
+          '${snap.targets}',
+          imageBase64: base64Encode(snap.jpeg),
+        );
 
       case 'point_at':
+        final staleError = _stalenessError(call.arguments);
+        if (staleError != null) return ToolResult(staleError);
         final id = call.arguments['target_id'] as String? ?? '';
         final resolved = await _control.resolveTarget(id);
         await _control.warp(resolved.x, resolved.y);
         return ToolResult('Pointing at "$id" (${resolved.text}).');
 
       case 'point_at_spot':
+        final staleError = _stalenessError(call.arguments);
+        if (staleError != null) return ToolResult(staleError);
         final spot = _grid(
           _num(call.arguments['x']),
           _num(call.arguments['y']),
@@ -60,6 +97,8 @@ class ToolExecutor {
         return ToolResult('Going to sleep.');
 
       case 'click':
+        final staleError = _stalenessError(call.arguments);
+        if (staleError != null) return ToolResult(staleError);
         final point = await _targetPoint(call.arguments, 'target_id');
         await _control.click(
           point.dx,
@@ -84,6 +123,8 @@ class ToolExecutor {
         return _withScreen('Pressed $label.');
 
       case 'scroll':
+        final staleError = _stalenessError(call.arguments);
+        if (staleError != null) return ToolResult(staleError);
         final direction = call.arguments['direction'] as String? ?? 'down';
         final amount = _num(call.arguments['amount'], fallback: 3) * 120;
         final point = await _targetPointOrCenter(call.arguments);
@@ -102,6 +143,8 @@ class ToolExecutor {
         return _withScreen('Scrolled $direction.');
 
       case 'drag':
+        final staleError = _stalenessError(call.arguments);
+        if (staleError != null) return ToolResult(staleError);
         final from = await _targetPoint(
           call.arguments,
           'from_id',
@@ -160,6 +203,7 @@ class ToolExecutor {
     final snap = await _control.snapshot();
     _screenWidth = snap.width;
     _screenHeight = snap.height;
+    _lastSnapshotAt = DateTime.now();
     return ToolResult(
       '$text\n\n${snap.targets}',
       imageBase64: base64Encode(snap.jpeg),

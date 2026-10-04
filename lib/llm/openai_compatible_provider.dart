@@ -24,6 +24,23 @@ class OpenAiCompatibleProvider extends LlmProvider {
   @override
   String get name => 'OpenAI-compatible ($model)';
 
+  /// Screenshots ride along as image_url parts so multimodal models
+  /// (gpt-4o, gemini, llama-vision) actually see the screen.
+  Map<String, dynamic> _toApi(LlmMessage m) {
+    if (m.images.isEmpty) return {'role': m.role, 'content': m.content};
+    return {
+      'role': m.role,
+      'content': [
+        {'type': 'text', 'text': m.content},
+        for (final image in m.images)
+          {
+            'type': 'image_url',
+            'image_url': {'url': 'data:image/jpeg;base64,$image'},
+          },
+      ],
+    };
+  }
+
   @override
   Future<String> chat(List<LlmMessage> messages) async {
     final headers = {'Content-Type': 'application/json'};
@@ -33,12 +50,7 @@ class OpenAiCompatibleProvider extends LlmProvider {
     final response = await _client.post(
       Uri.parse('$baseUrl/chat/completions'),
       headers: headers,
-      body: jsonEncode({
-        'model': model,
-        'messages': messages
-            .map((m) => {'role': m.role, 'content': m.content})
-            .toList(),
-      }),
+      body: jsonEncode({'model': model, 'messages': messages.map(_toApi)}),
     );
     if (response.statusCode != 200) {
       throw LlmException(
