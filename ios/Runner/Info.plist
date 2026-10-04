@@ -45,6 +45,12 @@
 					<string>Main</string>
 					<key>NSMicrophoneUsageDescription</key>
 	<string>Local Bluey listens while you hold to talk.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Local Bluey finds your Mac on the local network.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_googly._tcp</string>
+	</array>
 </dict>
 			</array>
 		</dict>
