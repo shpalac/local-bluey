@@ -12,6 +12,7 @@ import 'link/phone_server.dart';
 import 'services/audio_capture.dart';
 import 'services/brain_host.dart';
 import 'services/native_control.dart';
+import 'services/safety_gate.dart';
 import 'services/settings_store.dart';
 import 'services/speech.dart';
 import 'services/tool_executor.dart';
@@ -64,16 +65,66 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   final _transcription = TranscriptionService();
   final _speech = SpeechService();
   final _tools = ToolExecutor();
+  final _safety = SafetyGate();
 
   @override
   void initState() {
     super.initState();
     trayManager.addListener(this);
     _setupTray();
+    _server.onPairRequest = _askToPair;
     _server.start();
     _server.requests.listen(_onPhoneRequest);
     _checkTrust();
     BrainHost.reload();
+    _safety.onConfirm = _confirmAction;
+    _safety.onKill(() {
+      setState(() => _bubble = 'Stopped.');
+      BrainHost.brain.value?.reset();
+    });
+  }
+
+  Future<bool> _askToPair(String deviceName) async {
+    final approved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pair device?'),
+        content: Text('"$deviceName" wants to connect to this Mac.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Deny'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Pair'),
+          ),
+        ],
+      ),
+    );
+    return approved ?? false;
+  }
+
+  Future<bool> _confirmAction(String description) async {
+    if (!mounted) return false;
+    final approved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Bluey wants to act'),
+        content: Text(description),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Skip'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Allow'),
+          ),
+        ],
+      ),
+    );
+    return approved ?? false;
   }
 
   Future<void> _checkTrust() async {
@@ -88,6 +139,9 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         items: [
           MenuItem(key: 'show', label: 'Show Bluey'),
           MenuItem(key: 'hide', label: 'Hide'),
+          MenuItem.separator(),
+          MenuItem(key: 'stop', label: 'Stop Bluey (kill switch)'),
+          MenuItem(key: 'resume', label: 'Resume Bluey'),
           MenuItem.separator(),
           MenuItem(key: 'quit', label: 'Quit'),
         ],
@@ -109,6 +163,10 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         windowManager.focus();
       case 'hide':
         windowManager.hide();
+      case 'stop':
+        _safety.kill();
+      case 'resume':
+        _safety.reset();
       case 'quit':
         exit(0);
     }
@@ -162,8 +220,19 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       // Tool loop: let the brain act, then react to what happened.
       var steps = 0;
       while (reply.toolCall != null && steps < maxToolSteps) {
+        if (_safety.killed) {
+          setState(() => _bubble = 'Stopped.');
+          return;
+        }
         steps++;
-        final result = await _tools.execute(reply.toolCall!);
+        final call = reply.toolCall!;
+        if (!await _safety.authorize(call.name, call.arguments)) {
+          reply = await brain
+              .toolResult(call.name, 'Denied by the user.')
+              .timeout(stepTimeout);
+          continue;
+        }
+        final result = await _tools.execute(call);
         reply = await brain
             .toolResult(
               reply.toolCall!.name,
