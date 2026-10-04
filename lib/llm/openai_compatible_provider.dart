@@ -4,10 +4,13 @@ import 'package:http/http.dart' as http;
 
 import 'llm_provider.dart';
 import 'ollama_provider.dart' show LlmException;
+import 'tools.dart';
 
 /// Any OpenAI-compatible REST endpoint: OpenRouter, LocalAI, OpenCode, etc.
 /// Uses POST {baseUrl}/chat/completions.
 class OpenAiCompatibleProvider extends LlmProvider {
+  @override
+  bool get supportsNativeTools => true;
   OpenAiCompatibleProvider({
     required this.baseUrl,
     required this.model,
@@ -50,7 +53,7 @@ class OpenAiCompatibleProvider extends LlmProvider {
     final response = await _client.post(
       Uri.parse('$baseUrl/chat/completions'),
       headers: headers,
-      body: jsonEncode({'model': model, 'messages': messages.map(_toApi)}),
+      body: jsonEncode({'model': model, 'messages': messages.map(_toApi).toList()}),
     );
     if (response.statusCode != 200) {
       throw LlmException(
@@ -67,6 +70,59 @@ class OpenAiCompatibleProvider extends LlmProvider {
   }
 
   @override
+  Future<LlmResponse> chatWithTools(List<LlmMessage> messages) async {
+    final headers = {'Content-Type': 'application/json'};
+    if (apiKey != null && apiKey!.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $apiKey';
+    }
+    final response = await _client.post(
+      Uri.parse('$baseUrl/chat/completions'),
+      headers: headers,
+      body: jsonEncode({
+        'model': model,
+        'tools': kToolsAsFunctions(),
+        'messages': messages.map(_toApi).toList(),
+      }),
+    );
+    if (response.statusCode != 200) {
+      throw LlmException(
+        'OpenAI-compatible ${response.statusCode}: ${response.body}',
+      );
+    }
+    final body = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
+    final choices = body['choices'] as List? ?? const [];
+    if (choices.isEmpty) return const LlmResponse('');
+    final message = Map<String, dynamic>.from(
+      (choices.first as Map)['message'] as Map? ?? const {},
+    );
+    final toolCalls = message['tool_calls'] as List? ?? const [];
+    ToolCall? call;
+    if (toolCalls.isNotEmpty) {
+      final fn = Map<String, dynamic>.from(
+        (toolCalls.first as Map)['function'] as Map? ?? const {},
+      );
+      final name = fn['name'] as String?;
+      if (name != null) {
+        final args = fn['arguments'];
+        call = ToolCall(
+          name,
+          args is String
+              ? Map<String, dynamic>.from(
+                  jsonDecode(args.isEmpty ? '{}' : args) as Map,
+                )
+              : args is Map
+              ? Map<String, dynamic>.from(args)
+              : {},
+        );
+      }
+    }
+    return LlmResponse(
+      message['content'] as String? ?? '',
+      toolCall: call,
+    );
+  }
+
+  @override
   Stream<String> chatStream(List<LlmMessage> messages) async* {
     final headers = {'Content-Type': 'application/json'};
     if (apiKey != null && apiKey!.isNotEmpty) {
@@ -77,7 +133,7 @@ class OpenAiCompatibleProvider extends LlmProvider {
     request.body = jsonEncode({
       'model': model,
       'stream': true,
-      'messages': messages.map(_toApi),
+      'messages': messages.map(_toApi).toList(),
     });
     final streamed = await _client.send(request);
     if (streamed.statusCode != 200) {

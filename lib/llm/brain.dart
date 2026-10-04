@@ -5,7 +5,14 @@ import 'tools.dart';
 /// and splits each reply into what Bluey says and what Bluey does.
 class Brain {
   Brain({required this.provider, List<LlmMessage>? history})
-    : _history = history ?? [LlmMessage('system', buildSystemPrompt())];
+    : _history =
+          history ??
+          [
+            LlmMessage(
+              'system',
+              buildSystemPrompt(nativeTools: provider.supportsNativeTools),
+            ),
+          ];
 
   /// Conversation never grows past this many messages; the system prompt
   /// always stays. Older turns are dropped oldest-first.
@@ -39,10 +46,9 @@ class Brain {
     List<String> images = const [],
   }) async {
     _boundedAdd(LlmMessage('user', userText, images: images));
-    final raw = await provider.chat(_history);
-    final parsed = parseAssistantReply(raw);
-    _boundedAdd(LlmMessage('assistant', raw));
-    return BrainReply(spoken: parsed.spoken, toolCall: parsed.toolCall);
+    final response = await provider.chatWithTools(_history);
+    _boundedAdd(LlmMessage('assistant', response.text));
+    return BrainReply(spoken: response.text, toolCall: response.toolCall);
   }
 
   /// Streaming ask: [onToken] gets raw fragments as they arrive; the
@@ -80,16 +86,20 @@ class Brain {
     _boundedAdd(
       LlmMessage('tool', 'Result of $toolName:\n$result', images: images),
     );
-    final raw = await provider.chat(_history);
-    final parsed = parseAssistantReply(raw);
-    _boundedAdd(LlmMessage('assistant', raw));
-    return BrainReply(spoken: parsed.spoken, toolCall: parsed.toolCall);
+    final response = await provider.chatWithTools(_history);
+    _boundedAdd(LlmMessage('assistant', response.text));
+    return BrainReply(spoken: response.text, toolCall: response.toolCall);
   }
 
   void reset() {
     _history
       ..clear()
-      ..add(LlmMessage('system', buildSystemPrompt()));
+      ..add(
+        LlmMessage(
+          'system',
+          buildSystemPrompt(nativeTools: provider.supportsNativeTools),
+        ),
+      );
   }
 }
 
