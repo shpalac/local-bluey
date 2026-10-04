@@ -7,16 +7,18 @@ import 'package:record/record.dart';
 /// any OpenAI-compatible /audio/transcriptions endpoint, or swap in a local
 /// whisper.cpp binding later.
 class AudioCapture {
-  final AudioRecorder _recorder = AudioRecorder();
+  // Lazy so tests can construct AudioCapture without the platform channel.
+  AudioRecorder? _recorder;
+  AudioRecorder get _activeRecorder => _recorder ??= AudioRecorder();
   String? _path;
 
-  Future<bool> hasPermission() => _recorder.hasPermission();
+  Future<bool> hasPermission() => _activeRecorder.hasPermission();
 
   Future<void> start() async {
     final dir = await getTemporaryDirectory();
     _path =
         '${dir.path}/bluey_hold_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    await _recorder.start(
+    await _activeRecorder.start(
       const RecordConfig(encoder: AudioEncoder.aacLc, sampleRate: 16000),
       path: _path!,
     );
@@ -24,10 +26,12 @@ class AudioCapture {
 
   /// Stops and returns the recorded file, or null if nothing was captured.
   Future<File?> stop() async {
-    final path = await _recorder.stop();
+    final path = await _activeRecorder.stop();
     if (path == null) return null;
     return File(path);
   }
 
-  Future<void> dispose() => _recorder.dispose();
+  Future<void> dispose() async {
+    await _recorder?.dispose();
+  }
 }
