@@ -10,16 +10,16 @@ import 'settings_store.dart';
 /// Turns the brain's spoken reply into audio: POST {baseUrl}/audio/speech
 /// (OpenAI-compatible TTS) and plays the result on the Mac.
 class SpeechService {
-  // ignore: prefer_initializing_formals
   SpeechService({http.Client? client, AudioPlayer? player})
     : _client = client ?? http.Client(),
-      _player = player;
+      _injectedPlayer = player;
 
   final http.Client _client;
 
   /// Injected in tests; created lazily otherwise so synthesize-only paths
   /// never touch the platform audio channel.
-  AudioPlayer? _player;
+  final AudioPlayer? _injectedPlayer;
+  AudioPlayer? _lazyPlayer;
 
   /// Requests speech audio for [text]. Returns the raw audio bytes (mp3).
   Future<List<int>> synthesize(String text, BrainSettings settings) async {
@@ -56,7 +56,7 @@ class SpeechService {
       '${DateTime.now().millisecondsSinceEpoch}.mp3',
     );
     await file.writeAsBytes(bytes, flush: true);
-    final player = _player ??= AudioPlayer();
+    final player = _injectedPlayer ?? (_lazyPlayer ??= AudioPlayer());
     await player.play(DeviceFileSource(file.path));
   }
 }
