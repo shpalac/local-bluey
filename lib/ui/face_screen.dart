@@ -18,6 +18,7 @@ class FaceScreen extends StatefulWidget {
     this.onWakeChanged,
     this.onHoldStart,
     this.onHoldEnd,
+    this.perfOverlay,
   });
 
   final FaceState face;
@@ -31,6 +32,9 @@ class FaceScreen extends StatefulWidget {
   final ValueChanged<bool>? onWakeChanged;
   final VoidCallback? onHoldStart;
   final VoidCallback? onHoldEnd;
+
+  /// Optional perf overlay shown under the status chip (#61).
+  final Widget? perfOverlay;
 
   @override
   State<FaceScreen> createState() => _FaceScreenState();
@@ -97,6 +101,13 @@ class _FaceScreenState extends State<FaceScreen> {
               right: 0,
               child: Center(child: _StatusChip(status: widget.status)),
             ),
+            if (widget.perfOverlay != null)
+              Positioned(
+                top: 40,
+                left: 0,
+                right: 0,
+                child: Center(child: widget.perfOverlay!),
+              ),
             const Positioned(
               top: 44,
               left: 24,

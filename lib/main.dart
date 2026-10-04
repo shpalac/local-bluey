@@ -419,6 +419,32 @@ class _MacHomeState extends State<MacHome> with TrayListener {
             }
           },
           onHoldEnd: _onHoldEnd,
+          perfOverlay: ValueListenableBuilder<bool>(
+            valueListenable: PerfMonitor.instance.overlayEnabled,
+            builder: (context, enabled, _) {
+              if (!enabled) return const SizedBox.shrink();
+              final medians = PerfMonitor.instance.medians();
+              if (medians.isEmpty) return const SizedBox.shrink();
+              final text = medians.entries
+                  .map((e) => '${e.key}: ${e.value}ms')
+                  .join('  ·  ');
+              return Container(
+                margin: const EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  text,
+                  style: const TextStyle(color: Colors.white70, fontSize: 11),
+                ),
+              );
+            },
+          ),
         ),
         ),
       ),
