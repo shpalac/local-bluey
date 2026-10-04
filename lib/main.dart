@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'services/audio_capture.dart';
 import 'services/brain_host.dart';
 import 'services/native_control.dart';
 import 'services/settings_store.dart';
+import 'services/speech.dart';
 import 'services/tool_executor.dart';
 import 'services/transcription.dart';
 import 'ui/face_screen.dart';
@@ -60,6 +62,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   String? _bubble;
   final _capture = AudioCapture();
   final _transcription = TranscriptionService();
+  final _speech = SpeechService();
   final _tools = ToolExecutor();
 
   @override
@@ -166,8 +169,22 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         );
       }
       if (reply.spoken.isNotEmpty) {
-        setState(() => _bubble = reply.spoken);
-        _server.broadcast(Packet(command: 'say', text: reply.spoken));
+        setState(() {
+          _bubble = reply.spoken;
+          _face.value = FaceState(mood: Mood.talking);
+          _server.sendFace(_face.value);
+        });
+        final settings = await SettingsStore.load();
+        try {
+          final audio = await _speech.synthesize(reply.spoken, settings);
+          _server.broadcast(
+            Packet(command: 'say', text: reply.spoken, audio: base64Encode(audio)),
+          );
+          unawaited(_speech.speak(reply.spoken, settings));
+        } on SpeechException catch (e) {
+          _server.broadcast(Packet(command: 'say', text: reply.spoken));
+          setState(() => _bubble = '${reply.spoken}\n(TTS failed: $e)');
+        }
       }
     } on TranscriptionException catch (e) {
       setState(() => _bubble = 'Transcription failed: $e');

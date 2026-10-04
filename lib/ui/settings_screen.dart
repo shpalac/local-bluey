@@ -20,6 +20,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _apiKey = TextEditingController();
   final _transcriptionBaseUrl = TextEditingController();
   final _transcriptionModel = TextEditingController();
+  final _ttsBaseUrl = TextEditingController();
+  final _ttsModel = TextEditingController();
+  final _ttsVoice = TextEditingController();
   BrainBackend _backend = BrainSettings.defaults.backend;
   bool _loaded = false;
   bool _testing = false;
@@ -36,6 +39,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _apiKey.text = settings.apiKey ?? '';
         _transcriptionBaseUrl.text = settings.transcriptionBaseUrl ?? '';
         _transcriptionModel.text = settings.transcriptionModel;
+        _ttsBaseUrl.text = settings.ttsBaseUrl ?? '';
+        _ttsModel.text = settings.ttsModel;
+        _ttsVoice.text = settings.ttsVoice;
         _loaded = true;
       });
     });
@@ -48,6 +54,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _apiKey.dispose();
     _transcriptionBaseUrl.dispose();
     _transcriptionModel.dispose();
+    _ttsBaseUrl.dispose();
+    _ttsModel.dispose();
+    _ttsVoice.dispose();
     super.dispose();
   }
 
@@ -62,6 +71,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     transcriptionModel: _transcriptionModel.text.trim().isEmpty
         ? 'whisper-1'
         : _transcriptionModel.text.trim(),
+    ttsBaseUrl: _ttsBaseUrl.text.trim().isEmpty
+        ? null
+        : _ttsBaseUrl.text.trim(),
+    ttsModel: _ttsModel.text.trim().isEmpty ? 'tts-1' : _ttsModel.text.trim(),
+    ttsVoice: _ttsVoice.text.trim().isEmpty ? 'alloy' : _ttsVoice.text.trim(),
   );
 
   Future<void> _save() async {
@@ -165,6 +179,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextFormField(
               controller: _transcriptionModel,
               decoration: const InputDecoration(labelText: 'Transcription model'),
+            ),
+            const SizedBox(height: 24),
+            Text('Speech', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _ttsBaseUrl,
+              decoration: const InputDecoration(
+                labelText: 'TTS base URL (optional)',
+                hintText: 'Defaults to the brain base URL',
+              ),
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _ttsModel,
+              decoration: const InputDecoration(labelText: 'TTS model'),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _ttsVoice,
+              decoration: const InputDecoration(labelText: 'TTS voice'),
             ),
             const SizedBox(height: 24),
             Row(
