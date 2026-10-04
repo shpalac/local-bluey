@@ -8,3 +8,6 @@ xcuserdata/
 Secrets.xcconfig
 *.env
 .env*
+.dart_tool/
+.idea/
+*.iml
