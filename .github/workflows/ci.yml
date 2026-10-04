@@ -9,27 +9,53 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  # Pinned so builds are reproducible; bump deliberately.
+  FLUTTER_VERSION: "3.47.6"
+
 jobs:
   test-and-build:
     runs-on: macos-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
-      - run: flutter pub get
-
-      - name: Unit + widget tests
-        run: flutter test
+      - run: flutter pub get --enforce-lockfile
 
       - name: Analyze
         run: flutter analyze
 
+      - name: Unit + widget tests (mocked contracts)
+        run: flutter test --reporter expanded
+        timeout-minutes: 8
+
       - name: Build macOS
         run: flutter build macos
+        timeout-minutes: 12
 
       - name: Build iOS (no codesign)
         run: flutter build ios --no-codesign
+        timeout-minutes: 12
+
+  # Native-validation lane: exercises the real device bridge. Runs only when
+  # a self-hosted Mac runner with a signed environment is available; mocked
+  # contract tests stay in the main lane above.
+  native-validation:
+    runs-on: [self-hosted, macos]
+    if: ${{ false }} # enable when a self-hosted runner exists
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - name: Integration tests on macOS
+        run: flutter test integration_test -d macos
