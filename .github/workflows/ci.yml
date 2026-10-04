@@ -64,14 +64,10 @@ jobs:
       - run: flutter pub get --enforce-lockfile
 
       - name: Dependency vulnerability scan (OSV)
-        uses: google/osv-scanner-action@v2
-        with:
-          scan-args: |-
-            --lockfile=pubspec.lock
-            --format=sarif
-            --output=results.sarif
-            ./
-        continue-on-error: false
+        run: |
+          curl -sfL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 -o /tmp/osv-scanner
+          chmod +x /tmp/osv-scanner
+          /tmp/osv-scanner scan --lockfile=pubspec.lock
 
       - name: Secrets scan
         uses: gitleaks/gitleaks-action@v2
