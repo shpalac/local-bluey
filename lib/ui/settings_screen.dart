@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../llm/llm_provider.dart';
 import '../llm/ollama_provider.dart' show LlmException;
+import '../services/haptics.dart';
 import '../services/perf_monitor.dart';
 import '../services/privacy_guard.dart';
 import '../services/safety_gate.dart';
@@ -346,4 +347,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+}
+
+/// Phone-remote haptics toggle (#88), persisted via RemoteHaptics.
+class _HapticsTile extends StatefulWidget {
+  const _HapticsTile();
+
+  @override
+  State<_HapticsTile> createState() => _HapticsTileState();
+}
+
+class _HapticsTileState extends State<_HapticsTile> {
+  bool _enabled = RemoteHaptics.instance.enabled;
+
+  @override
+  void initState() {
+    super.initState();
+    RemoteHaptics.instance.load().then((_) {
+      if (mounted) setState(() => _enabled = RemoteHaptics.instance.enabled);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => SwitchListTile(
+    secondary: const Icon(Icons.vibration),
+    title: const Text('Haptics'),
+    subtitle: const Text('Touch feedback on hold, answers, and connect.'),
+    value: _enabled,
+    onChanged: (value) {
+      setState(() => _enabled = value);
+      RemoteHaptics.instance.setEnabled(value);
+    },
+  );
 }
