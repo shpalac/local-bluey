@@ -45,6 +45,32 @@ class Brain {
     return BrainReply(spoken: parsed.spoken, toolCall: parsed.toolCall);
   }
 
+  /// Streaming ask: [onToken] gets raw fragments as they arrive; the
+  /// returned reply is identical to [ask]. Tool-call JSON lines are held
+  /// back from the token stream.
+  Future<BrainReply> askStreaming(
+    String userText, {
+    List<String> images = const [],
+    void Function(String partialSpoken)? onToken,
+  }) async {
+    _boundedAdd(LlmMessage('user', userText, images: images));
+    final raw = await _streamCollect(onToken);
+    final parsed = parseAssistantReply(raw);
+    _boundedAdd(LlmMessage('assistant', raw));
+    return BrainReply(spoken: parsed.spoken, toolCall: parsed.toolCall);
+  }
+
+  Future<String> _streamCollect(
+    void Function(String partialSpoken)? onToken,
+  ) async {
+    final buffer = StringBuffer();
+    await for (final fragment in provider.chatStream(_history)) {
+      buffer.write(fragment);
+      onToken?.call(buffer.toString());
+    }
+    return buffer.toString();
+  }
+
   /// Feeds a tool result back so the model can react to what it saw/did.
   Future<BrainReply> toolResult(
     String toolName,

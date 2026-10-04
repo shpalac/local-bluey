@@ -27,7 +27,16 @@ abstract class LlmProvider {
   /// Sends the conversation and returns the assistant's raw text reply,
   /// which may contain a {"tool": ...} JSON block per the system prompt.
   Future<String> chat(List<LlmMessage> messages);
+
+  /// Streaming variant: yields raw reply fragments as they arrive.
+  /// Default falls back to the whole reply at once.
+  Stream<String> chatStream(List<LlmMessage> messages) async* {
+    yield await chat(messages);
+  }
 }
+
+/// Bluey's visible working states, shown as a status chip.
+enum BlueyStatus { listening, thinking, acting, error, offline }
 
 /// Splits a raw assistant reply into spoken text and at most one tool call.
 ({String spoken, ToolCall? toolCall}) parseAssistantReply(String raw) {
