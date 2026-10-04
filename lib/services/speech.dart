@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -48,9 +49,9 @@ class SpeechService {
     return response.bodyBytes;
   }
 
-  /// Synthesizes and plays the reply out loud.
-  Future<void> speak(String text, BrainSettings settings) async {
-    final bytes = await synthesize(text, settings);
+  /// Plays already-synthesized bytes; pairs with [synthesize] so each answer
+  /// costs exactly one TTS request.
+  Future<void> playBytes(List<int> bytes) async {
     final file = File(
       '${(await getTemporaryDirectory()).path}/bluey_speech_'
       '${DateTime.now().millisecondsSinceEpoch}.mp3',
@@ -58,6 +59,20 @@ class SpeechService {
     await file.writeAsBytes(bytes, flush: true);
     final player = _injectedPlayer ?? (_lazyPlayer ??= AudioPlayer());
     await player.play(DeviceFileSource(file.path));
+    // Best-effort temp cleanup once playback finishes.
+    unawaited(
+      player.onPlayerComplete.first.then((_) async {
+        try {
+          await file.delete();
+        } catch (_) {}
+      }),
+    );
+  }
+
+  /// Releases the audio player. Call when the app shuts down.
+  Future<void> dispose() async {
+    await _injectedPlayer?.dispose();
+    await _lazyPlayer?.dispose();
   }
 }
 

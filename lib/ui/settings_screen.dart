@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../llm/llm_provider.dart';
 import '../llm/ollama_provider.dart' show LlmException;
+import '../services/privacy_guard.dart';
 import '../services/settings_store.dart';
 
 /// Provider picker + connection details for the brain. The API key is stored
@@ -25,12 +26,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _ttsVoice = TextEditingController();
   BrainBackend _backend = BrainSettings.defaults.backend;
   bool _loaded = false;
+  bool _localOnly = false;
   bool _testing = false;
   String? _testResult;
 
   @override
   void initState() {
     super.initState();
+    PrivacyGuard.isLocalOnly().then((v) {
+      if (mounted) setState(() => _localOnly = v);
+    });
     SettingsStore.load().then((settings) {
       setState(() {
         _backend = settings.backend;
@@ -164,6 +169,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 obscureText: true,
               ),
             ],
+            const SizedBox(height: 24),
+            SwitchListTile(
+              title: const Text('Local-only mode'),
+              subtitle: const Text(
+                'Refuse providers that send data off this Mac',
+              ),
+              value: _localOnly,
+              onChanged: (v) async {
+                setState(() => _localOnly = v);
+                await PrivacyGuard.setLocalOnly(v);
+              },
+            ),
             const SizedBox(height: 24),
             Text('Transcription', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),

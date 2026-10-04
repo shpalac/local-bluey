@@ -304,7 +304,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           _server.broadcast(
             Packet(command: 'say', text: reply.spoken, audio: base64Encode(audio)),
           );
-          unawaited(_speech.speak(reply.spoken, settings));
+          unawaited(_speech.playBytes(audio));
         } on SpeechException catch (e) {
           _server.broadcast(Packet(command: 'say', text: reply.spoken));
           setState(() => _bubble = '${reply.spoken}\n(TTS failed: $e)');
@@ -336,6 +336,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     trayManager.removeListener(this);
     _server.stop();
     _capture.dispose();
+    _speech.dispose();
     super.dispose();
   }
 
@@ -408,9 +409,30 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         ),
         ),
       ),
-      bottomNavigationBar: _trusted
-          ? null
-          : MaterialBanner(
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ValueListenableBuilder<String?>(
+            valueListenable: BrainHost.refusedReason,
+            builder: (context, refused, _) {
+              if (refused != null) {
+                return MaterialBanner(
+                  content: Text(refused),
+                  actions: const [SizedBox.shrink()],
+                );
+              }
+              if (BrainHost.remoteActive.value) {
+                return const MaterialBanner(
+                  content:
+                      Text('Cloud provider active - data leaves this Mac.'),
+                  actions: [SizedBox.shrink()],
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+          if (!_trusted)
+            MaterialBanner(
               content: const Text(
                 'Local Bluey needs Accessibility permission to point and click.',
               ),
@@ -424,6 +446,8 @@ class _MacHomeState extends State<MacHome> with TrayListener {
                 ),
               ],
             ),
+        ],
+      ),
     );
   }
 }
