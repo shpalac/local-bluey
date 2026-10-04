@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../llm/llm_provider.dart';
 import '../llm/ollama_provider.dart' show LlmException;
 import '../services/privacy_guard.dart';
+import '../services/strings.dart';
 import '../services/settings_store.dart';
 
 /// Provider picker + connection details for the brain. The API key is stored
@@ -27,6 +28,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   BrainBackend _backend = BrainSettings.defaults.backend;
   bool _loaded = false;
   bool _localOnly = false;
+  UiLanguage _uiLanguage = Strings.uiLanguage;
+  String _speechLanguage = Strings.speechLanguage;
   bool _testing = false;
   String? _testResult;
 
@@ -169,6 +172,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 obscureText: true,
               ),
             ],
+            const SizedBox(height: 24),
+            Text('Language', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<UiLanguage>(
+              initialValue: _uiLanguage,
+              decoration: const InputDecoration(labelText: 'UI language'),
+              items: const [
+                DropdownMenuItem(
+                  value: UiLanguage.system,
+                  child: Text('System'),
+                ),
+                DropdownMenuItem(
+                  value: UiLanguage.english,
+                  child: Text('English'),
+                ),
+                DropdownMenuItem(
+                  value: UiLanguage.hebrew,
+                  child: Text('עברית'),
+                ),
+              ],
+              onChanged: (v) async {
+                if (v == null) return;
+                setState(() => _uiLanguage = v);
+                await Strings.setUiLanguage(v);
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _speechLanguage,
+              decoration: const InputDecoration(
+                labelText: 'Speech language (transcription)',
+              ),
+              items: const [
+                DropdownMenuItem(value: 'auto', child: Text('Auto-detect')),
+                DropdownMenuItem(value: 'he', child: Text('עברית')),
+                DropdownMenuItem(value: 'en', child: Text('English')),
+              ],
+              onChanged: (v) async {
+                if (v == null) return;
+                setState(() => _speechLanguage = v);
+                await Strings.setSpeechLanguage(v);
+              },
+            ),
             const SizedBox(height: 24),
             SwitchListTile(
               title: const Text('Local-only mode'),
