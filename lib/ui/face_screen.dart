@@ -50,7 +50,12 @@ class _FaceScreenState extends State<FaceScreen> {
       Mood.resting => const Color(0xFF8B95A5),
     };
 
-    return GestureDetector(
+    return Semantics(
+      label: 'Bluey. Double-tap to wake or sleep. '
+          'Long-press and hold to talk. '
+          'Keyboard: W toggles wake, hold Space to talk.',
+      button: true,
+      child: GestureDetector(
       onDoubleTap: () => widget.onWakeChanged?.call(!widget.awake),
       onLongPressStart: (_) => widget.onHoldStart?.call(),
       onLongPressEnd: (_) => widget.onHoldEnd?.call(),
@@ -118,6 +123,7 @@ class _FaceScreenState extends State<FaceScreen> {
               ),
           ],
         ),
+      ),
       ),
     );
   }
