@@ -6,6 +6,8 @@ import '../llm/llm_provider.dart';
 import '../llm/ollama_provider.dart';
 import '../llm/openai_compatible_provider.dart';
 
+import 'characters.dart';
+
 enum BrainBackend { ollama, openAiCompatible }
 
 /// The user's LLM connection choices. Non-secret fields live in
@@ -75,7 +77,10 @@ class BrainSettings {
     ),
   };
 
-  Brain buildBrain() => Brain(provider: buildProvider());
+  Brain buildBrain() => Brain(
+    provider: buildProvider(),
+    persona: CharacterStore.instance.current.value.persona,
+  );
 }
 
 class SettingsStore {
