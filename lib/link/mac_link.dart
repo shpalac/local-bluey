@@ -10,6 +10,14 @@ import 'phone_server.dart' show kServiceType;
 
 /// iOS side of the link: discovers the Mac over Bonjour (nsd) and keeps one
 /// LineConnection to it, ported from iOS/MacLink.swift.
+class DiscoveredMac {
+  const DiscoveredMac(this.name, this.host, this.port);
+
+  final String name;
+  final String host;
+  final int port;
+}
+
 class MacLink {
   MacLink({this.deviceName = 'iPhone'});
 
@@ -18,12 +26,15 @@ class MacLink {
   final _faces = StreamController<FaceState>.broadcast();
   final _packets = StreamController<Packet>.broadcast();
   final _connected = StreamController<bool>.broadcast();
-  final _macs = StreamController<List<String>>.broadcast();
+  final _macs = StreamController<List<DiscoveredMac>>.broadcast();
+
+  /// Manually chosen Mac name; when set, only that Mac is connected.
+  String? preferredMac;
 
   Stream<FaceState> get faces => _faces.stream;
   Stream<Packet> get packets => _packets.stream;
   Stream<bool> get connected => _connected.stream;
-  Stream<List<String>> get macs => _macs.stream;
+  Stream<List<DiscoveredMac>> get macs => _macs.stream;
 
   static const _kLinkKey = 'link.key';
 
@@ -40,11 +51,22 @@ class MacLink {
 
   Future<void> start() async {
     _discovery = await nsd.startDiscovery(kServiceType);
+    final found = <String, DiscoveredMac>{};
     _discovery!.addServiceListener((service, status) {
-      if (status != nsd.ServiceStatus.found) return;
-      _macs.add([service.name ?? 'Mac']);
-      if (_link == null && service.host != null && service.port != null) {
-        _connect(service.host!, service.port!);
+      final name = service.name ?? 'Mac';
+      if (status == nsd.ServiceStatus.found) {
+        if (service.host != null && service.port != null) {
+          found[name] = DiscoveredMac(name, service.host!, service.port!);
+        }
+      } else {
+        found.remove(name);
+      }
+      _macs.add(found.values.toList());
+      final candidate = preferredMac == null
+          ? found.values.firstOrNull
+          : found[preferredMac];
+      if (_link == null && candidate != null) {
+        _connect(candidate.host, candidate.port);
       }
     });
   }
@@ -107,6 +129,12 @@ class MacLink {
   }
 
   void send(Packet packet) => _link?.send(packet);
+
+  /// Connects to a specific Mac chosen by the user.
+  void select(DiscoveredMac mac) {
+    preferredMac = mac.name;
+    if (_link == null) _connect(mac.host, mac.port);
+  }
 
   bool _stopped = false;
 
