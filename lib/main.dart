@@ -197,6 +197,10 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           MenuItem(key: 'show', label: 'Show Bluey'),
           MenuItem(key: 'hide', label: 'Hide'),
           MenuItem.separator(),
+          MenuItem(key: 'ask', label: 'Ask Bluey (wake)'),
+          MenuItem(key: 'mute', label: 'Mute replies'),
+          MenuItem(key: 'status', label: 'Status'),
+          MenuItem.separator(),
           MenuItem(key: 'stop', label: 'Stop Bluey (kill switch)'),
           MenuItem(key: 'resume', label: 'Resume Bluey'),
           MenuItem.separator(),
@@ -220,6 +224,22 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         windowManager.focus();
       case 'hide':
         windowManager.hide();
+      case 'ask':
+        // Tray quick action (#91): same wake path as the face gesture.
+        setState(() => _awake = true);
+        _server.broadcast(Packet(command: 'wake'));
+      case 'mute':
+        // Tray quick action (#91): stop any in-flight speech.
+        unawaited(_speech.stop());
+        _server.broadcast(Packet(command: 'stopSpeech'));
+      case 'status':
+        setState(
+          () => _bubble = _safety.killed
+              ? 'Stopped (kill switch).'
+              : _awake
+              ? 'Awake and listening.'
+              : 'Sleeping - wake me from the tray or phone.',
+        );
       case 'stop':
         _safety.kill();
       case 'resume':

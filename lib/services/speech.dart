@@ -71,6 +71,12 @@ class SpeechService {
     );
   }
 
+  /// Stops any in-flight playback (#91 tray mute).
+  Future<void> stop() async {
+    await _injectedPlayer?.stop();
+    await _lazyPlayer?.stop();
+  }
+
   /// Releases the audio player. Call when the app shuts down.
   Future<void> dispose() async {
     await _injectedPlayer?.dispose();
