@@ -27,6 +27,7 @@ import 'services/haptics.dart';
 import 'services/host_control.dart';
 import 'services/support_matrix.dart';
 import 'services/settings_store.dart';
+import 'services/speak_receipts.dart';
 import 'services/speech.dart';
 import 'services/tool_executor.dart';
 import 'services/transcription.dart';
@@ -97,6 +98,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   bool _trusted = false;
   String? _bubble;
   final _capture = AudioCapture();
+  final _receipts = SpeakReceipts();
   final _transcription = TranscriptionService();
   final _speech = SpeechService();
   final _tools = ToolExecutor();
@@ -112,6 +114,9 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     _server.onPairRequest = _askToPair;
     _server.start();
     _server.requests.listen(_onPhoneRequest);
+    _receipts.failures.listen((line) {
+      if (mounted) setState(() => _bubble = '$line (long-press to retry)');
+    });
     _checkTrust();
     BrainHost.reload();
     ConversationStore.instance.load();
@@ -215,6 +220,12 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   }
 
   void _onPhoneRequest(Packet packet) {
+    // Spoken-reply receipts from the phone (#87).
+    if ((packet.command == 'playing' || packet.command == 'done') &&
+        packet.speech != null) {
+      _receipts.ack(packet.speech);
+      return;
+    }
     if (packet.command == 'wake' || packet.command == 'sleep') {
       setState(() => _awake = packet.command == 'wake');
     }
@@ -356,16 +367,18 @@ class _MacHomeState extends State<MacHome> with TrayListener {
             ttsVoice: character.voice,
           );
           final audio = await _speech.synthesize(reply.spoken, voiced);
-          _server.broadcast(
-            Packet(
-              command: 'say',
-              text: reply.spoken,
-              audio: base64Encode(audio),
-            ),
+          final sayPacket = Packet(
+            command: 'say',
+            text: reply.spoken,
+            audio: base64Encode(audio),
           );
+          _receipts.track(sayPacket, reply.spoken); // receipt required (#87)
+          _server.broadcast(sayPacket);
           unawaited(_speech.playBytes(audio));
         } on SpeechException catch (e) {
-          _server.broadcast(Packet(command: 'say', text: reply.spoken));
+          final sayPacket = Packet(command: 'say', text: reply.spoken);
+          _receipts.track(sayPacket, reply.spoken); // receipt required (#87)
+          _server.broadcast(sayPacket);
           setState(() => _bubble = '${reply.spoken}\n(TTS failed: $e)');
         }
       }
@@ -588,7 +601,14 @@ class _IosHomeState extends State<IosHome> {
             '${DateTime.now().millisecondsSinceEpoch}.mp3',
           );
           await file.writeAsBytes(bytes, flush: true);
+          // Receipts: playback start + completion (#87).
+          _link.send(Packet(command: 'playing', speech: packet.speech));
           await _player.play(DeviceFileSource(file.path));
+          await _player.onPlayerComplete.first;
+          _link.send(Packet(command: 'done', speech: packet.speech));
+        } else {
+          // Text-only reply: display is the receipt (#87).
+          _link.send(Packet(command: 'done', speech: packet.speech));
         }
       }
     });
