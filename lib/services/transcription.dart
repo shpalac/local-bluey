@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+
+import 'egress_monitor.dart';
 
 import 'settings_store.dart';
 import 'strings.dart';
@@ -34,6 +37,9 @@ class TranscriptionService {
       request.headers['Authorization'] = 'Bearer ${settings.apiKey}';
     }
     request.files.add(await http.MultipartFile.fromPath('file', audio.path));
+    unawaited(
+      EgressMonitor.instance.record(base, 'transcription', await audio.length()),
+    );
     final streamed = await _client.send(request);
     final response = await http.Response.fromStream(streamed);
     if (response.statusCode != 200) {

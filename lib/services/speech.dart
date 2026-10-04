@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:http/http.dart' as http;
+
+import 'egress_monitor.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'settings_store.dart';
@@ -31,6 +33,9 @@ class SpeechService {
     if (settings.apiKey?.isNotEmpty == true) {
       headers['Authorization'] = 'Bearer ${settings.apiKey}';
     }
+    unawaited(
+      EgressMonitor.instance.record(base, 'tts', text.length),
+    );
     final response = await _client.post(
       Uri.parse('$base/audio/speech'),
       headers: headers,

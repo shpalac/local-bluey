@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 import 'llm_provider.dart';
 import 'retry.dart';
+import '../services/egress_monitor.dart';
 import 'tools.dart';
 
 /// Local Ollama backend: POST {baseUrl}/api/chat with streaming disabled.
@@ -26,15 +28,17 @@ class OllamaProvider extends LlmProvider {
   @override
   Future<String> chat(List<LlmMessage> messages) async {
     return withRetry(() async {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/api/chat'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final payload = jsonEncode({
           'model': model,
           'stream': false,
           'messages': messages.map((m) => m.toJson()).toList(),
-        }),
+        });
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: payload,
       );
+      unawaited(EgressMonitor.instance.record(baseUrl, 'brain', payload.length));
       if (response.statusCode != 200) {
         throw LlmException('Ollama ${response.statusCode}: ${response.body}');
       }
@@ -50,16 +54,18 @@ class OllamaProvider extends LlmProvider {
   @override
   Future<LlmResponse> chatWithTools(List<LlmMessage> messages) async {
     return withRetry(() async {
-      final response = await _client.post(
-        Uri.parse('$baseUrl/api/chat'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      final payload = jsonEncode({
           'model': model,
           'stream': false,
           'tools': kToolsAsFunctions(),
           'messages': messages.map((m) => m.toJson()).toList(),
-        }),
+        });
+      final response = await _client.post(
+        Uri.parse('$baseUrl/api/chat'),
+        headers: {'Content-Type': 'application/json'},
+        body: payload,
       );
+      unawaited(EgressMonitor.instance.record(baseUrl, 'brain', payload.length));
       if (response.statusCode != 200) {
         throw LlmException('Ollama ${response.statusCode}: ${response.body}');
       }

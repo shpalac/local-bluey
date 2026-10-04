@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 import 'llm_provider.dart';
 import 'retry.dart';
+import '../services/egress_monitor.dart';
 import 'ollama_provider.dart' show LlmException;
 import 'tools.dart';
 
@@ -52,11 +54,13 @@ class OpenAiCompatibleProvider extends LlmProvider {
       if (apiKey != null && apiKey!.isNotEmpty) {
         headers['Authorization'] = 'Bearer $apiKey';
       }
+      final payload = jsonEncode({'model': model, 'messages': messages.map(_toApi).toList()});
       final response = await _client.post(
         Uri.parse('$baseUrl/chat/completions'),
         headers: headers,
-        body: jsonEncode({'model': model, 'messages': messages.map(_toApi).toList()}),
+        body: payload,
       );
+      unawaited(EgressMonitor.instance.record(baseUrl, 'brain', payload.length));
       if (response.statusCode != 200) {
         throw LlmException(
           'OpenAI-compatible ${response.statusCode}: ${response.body}',
@@ -80,15 +84,17 @@ class OpenAiCompatibleProvider extends LlmProvider {
       if (apiKey != null && apiKey!.isNotEmpty) {
         headers['Authorization'] = 'Bearer $apiKey';
       }
-      final response = await _client.post(
-        Uri.parse('$baseUrl/chat/completions'),
-        headers: headers,
-        body: jsonEncode({
+      final payload = jsonEncode({
           'model': model,
           'tools': kToolsAsFunctions(),
           'messages': messages.map(_toApi).toList(),
-        }),
+        });
+      final response = await _client.post(
+        Uri.parse('$baseUrl/chat/completions'),
+        headers: headers,
+        body: payload,
       );
+      unawaited(EgressMonitor.instance.record(baseUrl, 'brain', payload.length));
       if (response.statusCode != 200) {
         throw LlmException(
           'OpenAI-compatible ${response.statusCode}: ${response.body}',
