@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -23,6 +24,7 @@ import 'services/speech.dart';
 import 'services/tool_executor.dart';
 import 'services/transcription.dart';
 import 'ui/face_screen.dart';
+import 'ui/onboarding_screen.dart';
 import 'ui/settings_screen.dart';
 
 void main() async {
@@ -61,6 +63,7 @@ class MacHome extends StatefulWidget {
 }
 
 class _MacHomeState extends State<MacHome> with TrayListener {
+  bool _showOnboarding = false;
   final _server = PhoneServer();
   final _face = ValueNotifier<FaceState>(FaceState(mood: Mood.resting));
   bool _awake = false;
@@ -84,6 +87,9 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     _checkTrust();
     BrainHost.reload();
     ConversationStore.instance.load();
+    OnboardingScreen.isDone().then((done) {
+      if (!done && mounted) setState(() => _showOnboarding = true);
+    });
     _safety.onConfirm = _confirmAction;
     _safety.onKill(() {
       setState(() => _bubble = 'Stopped.');
@@ -335,6 +341,11 @@ class _MacHomeState extends State<MacHome> with TrayListener {
 
   @override
   Widget build(BuildContext context) {
+    if (_showOnboarding) {
+      return OnboardingScreen(
+        onDone: () => setState(() => _showOnboarding = false),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -352,7 +363,29 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         ],
       ),
       extendBodyBehindAppBar: true,
-      body: ValueListenableBuilder<FaceState>(
+      body: KeyboardListener(
+        focusNode: FocusNode(skipTraversal: false, canRequestFocus: true)
+          ..requestFocus(),
+        autofocus: true,
+        onKeyEvent: (event) {
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.keyW) {
+            _setAwake(!_awake);
+          }
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.space) {
+            _face.value = FaceState(mood: Mood.listening);
+            _capture.hasPermission().then((ok) {
+              if (ok) _capture.start();
+            });
+            setState(() => _bubble = 'Listening…');
+          }
+          if (event is KeyUpEvent &&
+              event.logicalKey == LogicalKeyboardKey.space) {
+            _onHoldEnd();
+          }
+        },
+        child: ValueListenableBuilder<FaceState>(
         valueListenable: _face,
         builder: (context, face, _) => FaceScreen(
           face: face,
@@ -372,6 +405,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
             }
           },
           onHoldEnd: _onHoldEnd,
+        ),
         ),
       ),
       bottomNavigationBar: _trusted
