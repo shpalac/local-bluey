@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:ui' show Offset;
 
 import '../llm/tools.dart';
+import 'action_log.dart';
 import 'native_control.dart';
 import 'privacy_guard.dart';
 
@@ -16,9 +17,16 @@ class ToolResult {
 /// Executes brain tool calls against the Mac's native layer.
 /// Ported from RealtimeHost.runTool / runAction in the original Swift app.
 class ToolExecutor {
-  ToolExecutor({this._control = const ChannelControl()});
+  ToolExecutor({
+    this._control = const ChannelControl(),
+    ActionLog? actionLog,
+  }) : _actionLog = actionLog ?? ActionLog.instance;
 
   final NativeControlClient _control;
+  final ActionLog _actionLog;
+
+  /// Identifies the current brain turn; all its actions share this run id.
+  String currentRunId = 'run-0';
 
   /// Screen size from the last look_at_screen, for grid → points conversion.
   /// Grid coordinates are always 0-1000 on both axes (see kTools docs);
@@ -58,6 +66,54 @@ class ToolExecutor {
   }
 
   Future<ToolResult> execute(ToolCall call) async {
+    final ToolResult result;
+    try {
+      result = await _execute(call);
+    } catch (e) {
+      await _log(call, 'Error: $e', recoveryHint: _recoveryFor(call.name));
+      rethrow;
+    }
+    final failed = _isFailure(result);
+    await _log(
+      call,
+      result.text.split('\n').first,
+      recoveryHint: failed ? _recoveryFor(call.name) : null,
+    );
+    return result;
+  }
+
+  /// Error-text heuristics: results that tell the brain it did something
+  /// wrong start with a known marker.
+  bool _isFailure(ToolResult result) =>
+      result.text.startsWith('Error') ||
+      result.text.startsWith('Screen knowledge is stale') ||
+      result.text.startsWith('Unknown tool') ||
+      result.text.startsWith('No target');
+
+  static String _recoveryFor(String tool) => switch (tool) {
+    'click' || 'point_at' || 'type_text' =>
+      're-look at the screen, then retry with a fresh target',
+    'open_app' => 'check the app name against the allowlist',
+    'press_keys' => 'check the shortcut label and try again',
+    _ => 're-look at the screen and retry',
+  };
+
+  Future<void> _log(
+    ToolCall call,
+    String outcome, {
+    String? recoveryHint,
+  }) =>
+      _actionLog.record(
+        ActionEntry(
+          runId: currentRunId,
+          tool: call.name,
+          arguments: call.arguments,
+          outcome: outcome,
+          recoveryHint: recoveryHint,
+        ),
+      );
+
+  Future<ToolResult> _execute(ToolCall call) async {
     switch (call.name) {
       case 'look_at_screen':
         final snap = await _control.snapshot();
