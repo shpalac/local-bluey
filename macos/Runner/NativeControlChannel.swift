@@ -6,6 +6,10 @@ import FlutterMacOS
 final class NativeControlChannel {
   static let name = "local_bluey/control"
 
+  /// The last captured snapshot, so target ids from look_at_screen stay
+  /// resolvable for point_at / click without another capture.
+  private static var lastSnapshot: ScreenSnapshot?
+
   static func register(with controller: FlutterViewController) {
     let channel = FlutterMethodChannel(name: name, binaryMessenger: controller.engine.binaryMessenger)
     channel.setMethodCallHandler { call, result in
@@ -82,6 +86,7 @@ final class NativeControlChannel {
         Task {
           do {
             let snap = try await ScreenReader.snapshot()
+            lastSnapshot = snap
             result([
               "jpeg": FlutterStandardTypedData(bytes: snap.jpeg),
               "targets": snap.targetList,
@@ -93,6 +98,11 @@ final class NativeControlChannel {
             result(FlutterError(code: "snapshot", message: error.localizedDescription, details: nil))
           }
         }
+      case "resolveTarget":
+        guard let id = args["id"] as? String else { result(FlutterError(code: "args", message: "id required", details: nil)); return }
+        guard let snap = lastSnapshot else { result(FlutterError(code: "state", message: "Call snapshot first.", details: nil)); return }
+        guard let target = snap.target(id) else { result(FlutterError(code: "notFound", message: "No target \(id). Use an id from the last snapshot.", details: nil)); return }
+        result(["x": Double(target.rect.midX), "y": Double(target.rect.midY), "text": target.text])
       default:
         result(FlutterMethodNotImplemented)
       }
