@@ -19,6 +19,7 @@ import 'services/native_control.dart';
 import 'llm/llm_provider.dart' show BlueyStatus;
 import 'services/conversation.dart';
 import 'services/safety_gate.dart';
+import 'services/strings.dart';
 import 'services/settings_store.dart';
 import 'services/speech.dart';
 import 'services/tool_executor.dart';
@@ -29,6 +30,7 @@ import 'ui/settings_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Strings.load();
   if (Platform.isMacOS) {
     await windowManager.ensureInitialized();
     runApp(const LocalBlueyApp(home: MacHome()));
@@ -48,6 +50,10 @@ class LocalBlueyApp extends StatelessWidget {
       title: 'Local Bluey',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true),
+      builder: (context, child) => Directionality(
+        textDirection: Strings.forceRtl ? TextDirection.rtl : TextDirection.ltr,
+        child: child!,
+      ),
       home: home,
     );
   }

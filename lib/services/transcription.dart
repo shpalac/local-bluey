@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import 'settings_store.dart';
+import 'strings.dart';
 
 /// Sends a recorded audio file to an OpenAI-compatible
 /// POST {baseUrl}/audio/transcriptions endpoint and returns the text.
@@ -26,6 +27,9 @@ class TranscriptionService {
       Uri.parse('$base/audio/transcriptions'),
     );
     request.fields['model'] = settings.transcriptionModel;
+    if (Strings.speechLanguage != 'auto') {
+      request.fields['language'] = Strings.speechLanguage;
+    }
     if (settings.apiKey?.isNotEmpty == true) {
       request.headers['Authorization'] = 'Bearer ${settings.apiKey}';
     }
