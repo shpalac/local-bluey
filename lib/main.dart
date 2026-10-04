@@ -94,6 +94,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   final _speech = SpeechService();
   final _tools = ToolExecutor();
   final _safety = SafetyGate();
+
   BlueyStatus _status = BlueyStatus.listening;
 
   @override
@@ -110,6 +111,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     OnboardingScreen.isDone().then((done) {
       if (!done && mounted) setState(() => _showOnboarding = true);
     });
+    _tools.isCancelled = () => _safety.killed;
     _safety.onConfirm = _confirmAction;
     _safety.onKill(() {
       setState(() => _bubble = 'Stopped.');

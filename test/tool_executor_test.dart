@@ -58,6 +58,67 @@ void main() {
     expect(result.imageBase64, isNotEmpty);
     expect(control.snapshots, 2);
   });
+
+  test('zoom_screen maps the grid region to display points (#80)', () async {
+    await executor.execute(ToolCall('look_at_screen', {})); // 2000x1000 fake
+    final result = await executor.execute(
+      ToolCall('zoom_screen', {'x': 500, 'y': 0, 'width': 250, 'height': 500}),
+    );
+    expect(control.lastRegion, (1000.0, 0.0, 500.0, 500.0));
+    expect(result.text, contains('coordinates unchanged'));
+    expect(result.imageBase64, isNotEmpty);
+  });
+
+  test('zoom round-trips on a different display size (#80)', () async {
+    control.screenSize = (3008, 1692);
+    await executor.execute(ToolCall('look_at_screen', {}));
+    await executor.execute(
+      ToolCall('zoom_screen', {
+        'x': 250,
+        'y': 250,
+        'width': 500,
+        'height': 500,
+      }),
+    );
+    expect(control.lastRegion, (752.0, 423.0, 1504.0, 846.0));
+  });
+
+  test('zoom requires a fresh snapshot', () async {
+    final result = await executor.execute(
+      ToolCall('zoom_screen', {'x': 0, 'y': 0, 'width': 100, 'height': 100}),
+    );
+    expect(result.text, contains('look_at_screen'));
+  });
+
+  test('a stale target is still rejected after a zoom (#80)', () async {
+    await executor.execute(ToolCall('look_at_screen', {}));
+    await executor.execute(
+      ToolCall('zoom_screen', {'x': 0, 'y': 0, 'width': 100, 'height': 100}),
+    );
+    executor.debugLastSnapshotAt = DateTime.now().subtract(
+      ToolExecutor.staleAfter + const Duration(seconds: 1),
+    );
+    final result = await executor.execute(
+      ToolCall('click', {'target_id': 'C4'}),
+    );
+    expect(result.text, contains('stale'));
+  });
+
+  test('wait is bounded at the maximum (#80)', () async {
+    final result = await executor.execute(ToolCall('wait', {'ms': 99999}));
+    expect(result.text, contains('capped'));
+    expect(result.text, contains('${ToolExecutor.maxWaitMs}'));
+  });
+
+  test('wait is cancelled by the kill switch (#80)', () async {
+    var killed = false;
+    executor.isCancelled = () => killed;
+    final pending = executor.execute(ToolCall('wait', {'ms': 3000}));
+    await Future.delayed(const Duration(milliseconds: 120));
+    killed = true;
+    final result = await pending;
+    expect(result.text, contains('cancelled'));
+  });
 }
 
 class FakeControl implements NativeControlClient {
@@ -68,20 +129,41 @@ class FakeControl implements NativeControlClient {
 
   static const _jpeg = [1, 2, 3];
 
+  (double, double) screenSize = (2000, 1000);
+
   @override
   Future<ScreenSnapshot> snapshot() async {
     snapshots++;
     return ScreenSnapshot(
       jpeg: Uint8List.fromList(_jpeg),
       targets: 'L1 @500,12 "Hello"',
-      width: 2000,
-      height: 1000,
+      width: screenSize.$1,
+      height: screenSize.$2,
       frontApp: 'Safari',
     );
   }
 
   @override
   Future<Offset> mouseLocation() async => const Offset(42, 42);
+
+  (double, double, double, double)? lastRegion;
+
+  @override
+  Future<ScreenSnapshot> snapshotRegion(
+    double x,
+    double y,
+    double width,
+    double height,
+  ) async {
+    lastRegion = (x, y, width, height);
+    return ScreenSnapshot(
+      jpeg: Uint8List.fromList(_jpeg),
+      targets: '',
+      width: width,
+      height: height,
+      frontApp: 'Safari',
+    );
+  }
 
   @override
   Future<ResolvedTarget> resolveTarget(String id) async =>

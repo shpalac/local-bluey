@@ -46,6 +46,31 @@ const List<ToolSpec> kTools = [
     "Take a fresh look at the user's screen. Returns the frontmost app, its clickable controls (C ids), every piece of text (lines L#, words W#) with positions on a 0-1000 grid, and a screenshot. Call this before pointing or acting, and again whenever the screen may have changed.",
   ),
   ToolSpec(
+    'zoom_screen',
+    "Capture a high-resolution crop of a region of the current screen, for small or dense targets. Coordinates stay on the same 0-1000 grid as the last look_at_screen, so ids and points from it remain valid.",
+    properties: {
+      'x': _gridX,
+      'y': _gridY,
+      'width': {
+        'type': 'number',
+        'description': 'Region width on the 0-1000 grid',
+      },
+      'height': {
+        'type': 'number',
+        'description': 'Region height on the 0-1000 grid',
+      },
+    },
+    required: ['x', 'y', 'width', 'height'],
+  ),
+  ToolSpec(
+    'wait',
+    "Wait for a page or app to finish loading instead of looking again immediately. Milliseconds, capped at 5000; counts against the turn budget.",
+    properties: {
+      'ms': {'type': 'number', 'description': 'Milliseconds to wait, 0-5000'},
+    },
+    required: ['ms'],
+  ),
+  ToolSpec(
     'point_at',
     "Fly your cursor to something on screen and keep pointing there while you talk about it. Use the most specific id (a single word or number over a whole line). Call it right before you mention the thing.",
     properties: {'target_id': _targetId},

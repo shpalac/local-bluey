@@ -56,6 +56,13 @@ class UnsupportedHostControl implements HostControl {
   @override
   Future<ScreenSnapshot> snapshot() => _unsupported();
   @override
+  Future<ScreenSnapshot> snapshotRegion(
+    double x,
+    double y,
+    double width,
+    double height,
+  ) => _unsupported();
+  @override
   Future<Offset> mouseLocation() => _unsupported();
   @override
   Future<ResolvedTarget> resolveTarget(String id) => _unsupported();

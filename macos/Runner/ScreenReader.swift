@@ -75,6 +75,24 @@ enum ScreenReaderError: LocalizedError {
 
 /// Captures the main display (without Googly's own cursor and captions) and reads every word with its exact box.
 enum ScreenReader {
+    /// High-resolution crop of a display region, in display points (#80).
+    static func snapshotRegion(_ rect: CGRect) async throws -> Data {
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        guard let display = content.displays.first(where: { $0.displayID == CGMainDisplayID() }) ?? content.displays.first else {
+            throw ScreenReaderError.noDisplay
+        }
+        let me = content.applications.filter { $0.processID == ProcessInfo.processInfo.processIdentifier }
+        let filter = SCContentFilter(display: display, excludingApplications: me, exceptingWindows: [])
+        let scale = NSScreen.screens.first?.backingScaleFactor ?? 2
+        let config = SCStreamConfiguration()
+        config.width = Int(CGFloat(display.width) * scale)
+        config.height = Int(CGFloat(display.height) * scale)
+        config.sourceRect = rect
+        config.showsCursor = false
+        let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+        return jpeg(image, maxEdge: 1600)
+    }
+
     static func snapshot() async throws -> ScreenSnapshot {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let display = content.displays.first(where: { $0.displayID == CGMainDisplayID() }) ?? content.displays.first else {
