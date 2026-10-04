@@ -63,8 +63,15 @@ jobs:
 
       - run: flutter pub get --enforce-lockfile
 
-      - name: Dependency audit (high severity fails)
-        run: dart pub audit
+      - name: Dependency vulnerability scan (OSV)
+        uses: google/osv-scanner-action@v2
+        with:
+          scan-args: |-
+            --lockfile=pubspec.lock
+            --format=sarif
+            --output=results.sarif
+            ./
+        continue-on-error: false
 
       - name: Secrets scan
         uses: gitleaks/gitleaks-action@v2
