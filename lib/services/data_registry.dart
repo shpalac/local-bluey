@@ -1,0 +1,231 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'action_log.dart';
+import 'characters.dart';
+import 'conversation.dart';
+import 'egress_monitor.dart';
+import 'perf_monitor.dart';
+import 'routines.dart';
+import 'settings_store.dart';
+import 'strings.dart';
+
+/// One persistent store, registered in the single inventory (#83).
+class DataStoreInfo {
+  const DataStoreInfo({
+    required this.id,
+    required this.sourceFile,
+    required this.whatEn,
+    required this.whatHe,
+    required this.where,
+    required this.retentionEn,
+    required this.retentionHe,
+    required this.clear,
+  });
+
+  /// Stable id, e.g. 'action_log'.
+  final String id;
+
+  /// The lib/services (or lib/ui) file that owns this persistence, so the
+  /// coverage test can fail when a new store is added without registering.
+  final String sourceFile;
+
+  final String whatEn;
+  final String whatHe;
+  final String where;
+  final String retentionEn;
+  final String retentionHe;
+
+  final Future<void> Function() clear;
+}
+
+/// The one place that knows everything the app stores locally (#83).
+class DataRegistry {
+  DataRegistry._();
+
+  static const _logRetention = 'Up to 500 entries / 30 days';
+
+  static final List<DataStoreInfo> stores = [
+    DataStoreInfo(
+      id: 'conversation',
+      sourceFile: 'lib/services/conversation.dart',
+      whatEn: 'Conversation history and running summary',
+      whatHe: 'היסטוריית שיחות וסיכום שוטף',
+      where: 'Documents/conversation.json',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () => ConversationStore.instance.clear(),
+    ),
+    DataStoreInfo(
+      id: 'action_log',
+      sourceFile: 'lib/services/action_log.dart',
+      whatEn: 'Action log (what Bluey did, per run)',
+      whatHe: 'יומן פעולות (מה בלוי עשה, לפי ריצה)',
+      where: 'Documents/actions.jsonl',
+      retentionEn: _logRetention,
+      retentionHe: 'עד 500 רשומות / 30 יום',
+      clear: () => ActionLog.instance.clear(),
+    ),
+    DataStoreInfo(
+      id: 'egress',
+      sourceFile: 'lib/services/egress_monitor.dart',
+      whatEn: 'Egress record (what left the Mac, where to)',
+      whatHe: 'רשומת תעבורה יוצאת (מה יצא מהמק, לאן)',
+      where: 'Documents/egress.jsonl',
+      retentionEn: _logRetention,
+      retentionHe: 'עד 300 רשומות / 30 יום',
+      clear: () => EgressMonitor.instance.clear(),
+    ),
+    DataStoreInfo(
+      id: 'routines',
+      sourceFile: 'lib/services/routines.dart',
+      whatEn: 'Routines (saved command shortcuts)',
+      whatHe: 'רוטינות (קיצורי פקודות שמורים)',
+      where: 'Documents/routines.json',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () => RoutineStore.instance.clear(),
+    ),
+    DataStoreInfo(
+      id: 'perf',
+      sourceFile: 'lib/services/perf_monitor.dart',
+      whatEn: 'Performance samples and overlay preference',
+      whatHe: 'דגימות ביצועים והעדפת שכבת מדידה',
+      where: 'Documents/perf.jsonl + SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () => PerfMonitor.instance.clear(),
+    ),
+    DataStoreInfo(
+      id: 'character',
+      sourceFile: 'lib/services/characters.dart',
+      whatEn: 'Selected character',
+      whatHe: 'הדמות הנבחרת',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () => CharacterStore.instance.clear(),
+    ),
+    DataStoreInfo(
+      id: 'settings',
+      sourceFile: 'lib/services/settings_store.dart',
+      whatEn: 'Brain/provider settings and the API key (Keychain)',
+      whatHe: 'הגדרות ספק/מוח ומפתח API (בצרור המפתחות)',
+      where: 'SharedPreferences + secure storage',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: SettingsStore.clearAll,
+    ),
+    DataStoreInfo(
+      id: 'language',
+      sourceFile: 'lib/services/strings.dart',
+      whatEn: 'UI and speech language preferences',
+      whatHe: 'העדפות שפת ממשק ודיבור',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: Strings.clear,
+    ),
+    DataStoreInfo(
+      id: 'onboarding',
+      sourceFile: 'lib/ui/onboarding_screen.dart',
+      whatEn: 'Onboarding completed flag',
+      whatHe: 'דגל סיום הדרכה ראשונית',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('onboarding.done');
+      },
+    ),
+    DataStoreInfo(
+      id: 'privacy',
+      sourceFile: 'lib/services/privacy_guard.dart',
+      whatEn: 'Local-only mode toggle',
+      whatHe: 'מתג מצב מקומי-בלבד',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('privacy.localOnly');
+      },
+    ),
+    DataStoreInfo(
+      id: 'wake_word',
+      sourceFile: 'lib/services/wake_word.dart',
+      whatEn: 'Wake word enabled toggle',
+      whatHe: 'מתג מילת השכמה',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('wake_word.enabled');
+      },
+    ),
+    DataStoreInfo(
+      id: 'pairing',
+      sourceFile: 'lib/link/phone_server.dart',
+      whatEn: 'Pairing key hash (phone-Mac link trust)',
+      whatHe: 'גיבוב מפתח ההתאמה (אמון קשר טלפון-מק)',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('link.keyHash');
+      },
+    ),
+    DataStoreInfo(
+      id: 'link_key',
+      sourceFile: 'lib/link/mac_link.dart',
+      whatEn: 'Link session key (phone-Mac pairing)',
+      whatHe: 'מפתח סשן הקשר (התאמת טלפון-מק)',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('link.key');
+      },
+    ),
+    DataStoreInfo(
+      id: 'safety',
+      sourceFile: 'lib/services/safety_gate.dart',
+      whatEn: 'Safety gate toggle and app allowlist',
+      whatHe: 'מתג שער הבטיחות ורשימת האפליקציות המורשות',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('safety.enabled');
+        await prefs.remove('safety.appAllowlist');
+      },
+    ),
+  ];
+
+  /// Wipes every registered store plus the remaining SharedPreferences keys
+  /// and secure-storage items, returning the app to first-run state (#83).
+  /// Deliberately does not touch the user's remote provider account data.
+  static Future<void> deleteAll() async {
+    for (final store in stores) {
+      try {
+        await store.clear();
+      } catch (e) {
+        debugPrint('DataRegistry: clearing ${store.id} failed: $e');
+      }
+    }
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    try {
+      await const FlutterSecureStorage().deleteAll();
+    } on MissingPluginException {
+      // Tests without a platform channel: prefs clear above already ran.
+    }
+  }
+}

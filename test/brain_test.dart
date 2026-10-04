@@ -159,7 +159,6 @@ class _FlakySummarizer extends _SummarizingProvider {
     }
     return super.chat(messages);
   }
-
 }
 
 class _SummarizingProvider extends FakeProvider {

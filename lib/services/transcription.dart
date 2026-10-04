@@ -38,7 +38,11 @@ class TranscriptionService {
     }
     request.files.add(await http.MultipartFile.fromPath('file', audio.path));
     unawaited(
-      EgressMonitor.instance.record(base, 'transcription', await audio.length()),
+      EgressMonitor.instance.record(
+        base,
+        'transcription',
+        await audio.length(),
+      ),
     );
     final streamed = await _client.send(request);
     final response = await http.Response.fromStream(streamed);

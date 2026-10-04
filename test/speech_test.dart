@@ -24,9 +24,8 @@ void main() {
       expect(request.body, contains('"input":"hello"'));
       return http.Response.bytes([1, 2, 3], 200);
     });
-    final bytes = await SpeechService(
-      client: client,
-    ).synthesize('hello', settings);
+    final bytes = await SpeechService(client: client)
+        .synthesize('hello', settings);
     expect(bytes, [1, 2, 3]);
   });
 

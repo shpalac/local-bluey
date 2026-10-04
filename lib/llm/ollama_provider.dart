@@ -29,16 +29,18 @@ class OllamaProvider extends LlmProvider {
   Future<String> chat(List<LlmMessage> messages) async {
     return withRetry(() async {
       final payload = jsonEncode({
-          'model': model,
-          'stream': false,
-          'messages': messages.map((m) => m.toJson()).toList(),
-        });
+        'model': model,
+        'stream': false,
+        'messages': messages.map((m) => m.toJson()).toList(),
+      });
       final response = await _client.post(
         Uri.parse('$baseUrl/api/chat'),
         headers: {'Content-Type': 'application/json'},
         body: payload,
       );
-      unawaited(EgressMonitor.instance.record(baseUrl, 'brain', payload.length));
+      unawaited(
+        EgressMonitor.instance.record(baseUrl, 'brain', payload.length),
+      );
       if (response.statusCode != 200) {
         throw LlmException('Ollama ${response.statusCode}: ${response.body}');
       }
@@ -47,7 +49,6 @@ class OllamaProvider extends LlmProvider {
         body['message'] as Map? ?? const {},
       );
       return message['content'] as String? ?? '';
-  
     });
   }
 
@@ -55,17 +56,19 @@ class OllamaProvider extends LlmProvider {
   Future<LlmResponse> chatWithTools(List<LlmMessage> messages) async {
     return withRetry(() async {
       final payload = jsonEncode({
-          'model': model,
-          'stream': false,
-          'tools': kToolsAsFunctions(),
-          'messages': messages.map((m) => m.toJson()).toList(),
-        });
+        'model': model,
+        'stream': false,
+        'tools': kToolsAsFunctions(),
+        'messages': messages.map((m) => m.toJson()).toList(),
+      });
       final response = await _client.post(
         Uri.parse('$baseUrl/api/chat'),
         headers: {'Content-Type': 'application/json'},
         body: payload,
       );
-      unawaited(EgressMonitor.instance.record(baseUrl, 'brain', payload.length));
+      unawaited(
+        EgressMonitor.instance.record(baseUrl, 'brain', payload.length),
+      );
       if (response.statusCode != 200) {
         throw LlmException('Ollama ${response.statusCode}: ${response.body}');
       }
@@ -94,11 +97,7 @@ class OllamaProvider extends LlmProvider {
           );
         }
       }
-      return LlmResponse(
-        message['content'] as String? ?? '',
-        toolCall: call,
-      );
-  
+      return LlmResponse(message['content'] as String? ?? '', toolCall: call);
     });
   }
 

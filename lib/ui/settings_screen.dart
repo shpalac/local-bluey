@@ -7,6 +7,7 @@ import '../services/privacy_guard.dart';
 import '../services/safety_gate.dart';
 import '../services/strings.dart';
 import '../services/settings_store.dart';
+import 'data_privacy_section.dart';
 
 /// Provider picker + connection details for the brain. The API key is stored
 /// in the Keychain, never in plain preferences.
@@ -123,9 +124,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _testResult = null;
     });
     try {
-      final reply = await _current().buildProvider().chat(
-        const [LlmMessage('user', 'Say "ok" and nothing else.')],
-      );
+      final reply = await _current().buildProvider().chat(const [
+        LlmMessage('user', 'Say "ok" and nothing else.'),
+      ]);
       setState(() => _testResult = 'Connected: ${reply.trim()}');
     } on LlmException catch (e) {
       setState(() => _testResult = 'Failed: $e');
@@ -173,8 +174,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     : 'http://localhost:1234/v1',
               ),
               keyboardType: TextInputType.url,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Base URL is required' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Base URL is required'
+                  : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -275,7 +277,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (v) => setState(() => _perfOverlay = v),
             ),
             const SizedBox(height: 24),
-            Text('Transcription', style: Theme.of(context).textTheme.titleSmall),
+            Text(
+              'Transcription',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
             const SizedBox(height: 8),
             TextFormField(
               controller: _transcriptionBaseUrl,
@@ -288,7 +293,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 12),
             TextFormField(
               controller: _transcriptionModel,
-              decoration: const InputDecoration(labelText: 'Transcription model'),
+              decoration: const InputDecoration(
+                labelText: 'Transcription model',
+              ),
             ),
             const SizedBox(height: 24),
             Text('Speech', style: Theme.of(context).textTheme.titleSmall),
@@ -311,6 +318,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: _ttsVoice,
               decoration: const InputDecoration(labelText: 'TTS voice'),
             ),
+            const DataPrivacySection(),
             const SizedBox(height: 24),
             Row(
               children: [
@@ -339,4 +347,3 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
-

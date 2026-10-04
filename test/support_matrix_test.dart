@@ -10,15 +10,21 @@ void main() {
   });
 
   test('iOS and Android are phone clients', () {
-    expect(SupportMatrix.resolveRole(operatingSystem: 'ios'),
-        AppRole.phoneClient);
-    expect(SupportMatrix.resolveRole(operatingSystem: 'android'),
-        AppRole.phoneClient);
+    expect(
+      SupportMatrix.resolveRole(operatingSystem: 'ios'),
+      AppRole.phoneClient,
+    );
+    expect(
+      SupportMatrix.resolveRole(operatingSystem: 'android'),
+      AppRole.phoneClient,
+    );
   });
 
   test('unknown platforms are unsupported, never silently hosts', () {
-    expect(SupportMatrix.resolveRole(operatingSystem: 'fuchsia'),
-        AppRole.unsupported);
+    expect(
+      SupportMatrix.resolveRole(operatingSystem: 'fuchsia'),
+      AppRole.unsupported,
+    );
   });
 
   test('device names match the pair-facing labels', () {

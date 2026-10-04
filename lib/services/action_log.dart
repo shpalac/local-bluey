@@ -43,9 +43,7 @@ class ActionEntry {
   factory ActionEntry.fromJson(Map<String, dynamic> json) => ActionEntry(
     runId: json['runId'] as String? ?? '',
     tool: json['tool'] as String? ?? '',
-    arguments: Map<String, dynamic>.from(
-      json['arguments'] as Map? ?? const {},
-    ),
+    arguments: Map<String, dynamic>.from(json['arguments'] as Map? ?? const {}),
     outcome: json['outcome'] as String? ?? '',
     recoveryHint: json['recoveryHint'] as String?,
     at: DateTime.tryParse(json['at'] as String? ?? '') ?? DateTime.now(),
@@ -59,14 +57,19 @@ class ActionLog {
 
   static const keepEntries = 500;
 
+  /// Entries older than this are pruned on every write (#83).
+  static int retentionDays = 30;
+
   final List<ActionEntry> entries = [];
 
-  Future<File> _file() async => File(
-    '${(await getApplicationDocumentsDirectory()).path}/actions.jsonl',
-  );
+  Future<File> _file() async =>
+      File('${(await getApplicationDocumentsDirectory()).path}/actions.jsonl');
 
   Future<void> record(ActionEntry entry) async {
     entries.add(entry);
+    entries.removeWhere(
+      (e) => DateTime.now().difference(e.at).inDays > retentionDays,
+    );
     while (entries.length > keepEntries) {
       entries.removeAt(0);
     }
@@ -79,6 +82,17 @@ class ActionLog {
     }
   }
 
+  /// Deletes the log, in memory and on disk (#83).
+  Future<void> clear() async {
+    entries.clear();
+    try {
+      final file = await _file();
+      if (await file.exists()) await file.delete();
+    } catch (e) {
+      debugPrint('ActionLog clear failed: $e');
+    }
+  }
+
   /// Per-run summary: "3 actions, 1 failed (click: re-look at the screen)".
   String summarizeRun(String runId) {
     final run = entries.where((e) => e.runId == runId).toList();
@@ -87,9 +101,7 @@ class ActionLog {
     final buffer = StringBuffer('${run.length} actions');
     if (failed.isEmpty) return '$buffer, all succeeded.';
     buffer.write(', ${failed.length} failed: ');
-    buffer.write(
-      failed.map((e) => '${e.tool} (${e.recoveryHint})').join('; '),
-    );
+    buffer.write(failed.map((e) => '${e.tool} (${e.recoveryHint})').join('; '));
     return buffer.toString();
   }
 }

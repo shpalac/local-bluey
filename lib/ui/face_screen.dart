@@ -45,90 +45,95 @@ class _FaceScreenState extends State<FaceScreen> {
   @override
   Widget build(BuildContext context) {
     final face = widget.face;
-    final color = CharacterStore.instance.current.value.moodColors[face.mood] ??
+    final color =
+        CharacterStore.instance.current.value.moodColors[face.mood] ??
         const Color(0xFF5BC8E5);
 
     return Semantics(
-      label: 'Bluey. Double-tap to wake or sleep. '
+      label:
+          'Bluey. Double-tap to wake or sleep. '
           'Long-press and hold to talk. '
           'Keyboard: W toggles wake, hold Space to talk.',
       button: true,
       child: GestureDetector(
-      onDoubleTap: () => widget.onWakeChanged?.call(!widget.awake),
-      onLongPressStart: (_) => widget.onHoldStart?.call(),
-      onLongPressEnd: (_) => widget.onHoldEnd?.call(),
-      child: Container(
-        color: Colors.black,
-        child: Stack(
-          children: [
-            Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                width: 220,
-                height: 160,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: widget.awake ? 0.25 : 0.08),
-                  borderRadius: BorderRadius.circular(80),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _Eye(
-                      gazeX: face.gazeX,
-                      gazeY: face.gazeY,
-                      color: color,
-                      dim: !widget.awake,
-                    ),
-                    _Eye(
-                      gazeX: face.gazeX,
-                      gazeY: face.gazeY,
-                      color: color,
-                      dim: !widget.awake,
-                    ),
-                  ],
+        onDoubleTap: () => widget.onWakeChanged?.call(!widget.awake),
+        onLongPressStart: (_) => widget.onHoldStart?.call(),
+        onLongPressEnd: (_) => widget.onHoldEnd?.call(),
+        child: Container(
+          color: Colors.black,
+          child: Stack(
+            children: [
+              Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  width: 220,
+                  height: 160,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: widget.awake ? 0.25 : 0.08),
+                    borderRadius: BorderRadius.circular(80),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _Eye(
+                        gazeX: face.gazeX,
+                        gazeY: face.gazeY,
+                        color: color,
+                        dim: !widget.awake,
+                      ),
+                      _Eye(
+                        gazeX: face.gazeX,
+                        gazeY: face.gazeY,
+                        color: color,
+                        dim: !widget.awake,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              top: 12,
-              left: 0,
-              right: 0,
-              child: Center(child: _StatusChip(status: widget.status)),
-            ),
-            if (widget.perfOverlay != null)
               Positioned(
-                top: 40,
+                top: 12,
                 left: 0,
                 right: 0,
-                child: Center(child: widget.perfOverlay!),
+                child: Center(child: _StatusChip(status: widget.status)),
               ),
-            const Positioned(
-              top: 44,
-              left: 24,
-              right: 24,
-              height: 140,
-              child: _AnswerLog(),
-            ),
-            if (widget.bubble != null)
-              Positioned(
+              if (widget.perfOverlay != null)
+                Positioned(
+                  top: 40,
+                  left: 0,
+                  right: 0,
+                  child: Center(child: widget.perfOverlay!),
+                ),
+              const Positioned(
+                top: 44,
                 left: 24,
                 right: 24,
-                bottom: 60,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    widget.bubble!,
-                    style: const TextStyle(color: Colors.black87, fontSize: 16),
+                height: 140,
+                child: _AnswerLog(),
+              ),
+              if (widget.bubble != null)
+                Positioned(
+                  left: 24,
+                  right: 24,
+                  bottom: 60,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.92),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      widget.bubble!,
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

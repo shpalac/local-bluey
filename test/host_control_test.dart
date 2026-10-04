@@ -3,7 +3,10 @@ import 'package:local_bluey/services/host_control.dart';
 
 void main() {
   test('macOS gets the live host control', () {
-    expect(HostControl.forPlatform(operatingSystem: 'macos'), isA<MacHostControl>());
+    expect(
+      HostControl.forPlatform(operatingSystem: 'macos'),
+      isA<MacHostControl>(),
+    );
   });
 
   test('other platforms get a loud placeholder', () {
