@@ -43,6 +43,10 @@ jobs:
         run: flutter build ios --no-codesign
         timeout-minutes: 12
 
+      - name: Build Android (debug APK)
+        run: flutter build apk --debug
+        timeout-minutes: 12
+
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 10
