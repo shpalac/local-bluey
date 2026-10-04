@@ -31,6 +31,7 @@ class PhoneServer {
     'sleep',
     'holdStart',
     'holdEnd',
+    'holdAudio',
     'playing',
     'done',
     'testVoice',

@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'link/mac_link.dart';
+import 'package:path_provider/path_provider.dart';
+
+import 'link/mac_link.dart' show DiscoveredMac, MacLink;
 import 'link/models.dart';
 import 'link/phone_server.dart';
 import 'services/audio_capture.dart';
@@ -180,6 +183,21 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     if (packet.command == 'wake' || packet.command == 'sleep') {
       setState(() => _awake = packet.command == 'wake');
     }
+    if (packet.command == 'holdAudio' && packet.audio != null) {
+      _onPhoneAudio(base64Decode(packet.audio!));
+    }
+  }
+
+  /// Phone-side hold-to-talk audio rides the link; same pipeline as the
+  /// Mac's own mic.
+  Future<void> _onPhoneAudio(List<int> bytes) async {
+    final file = File(
+      '${(await getTemporaryDirectory()).path}/bluey_phone_'
+      '${DateTime.now().millisecondsSinceEpoch}.m4a',
+    );
+    await file.writeAsBytes(bytes, flush: true);
+    setState(() => _face.value = FaceState(mood: Mood.thinking));
+    await _processUtterance(file);
   }
 
   void _setAwake(bool awake) {
@@ -202,6 +220,11 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       });
       return;
     }
+    await _processUtterance(file);
+  }
+
+  /// Transcribe -> ask the brain -> run tools -> speak, with status + log.
+  Future<void> _processUtterance(File file) async {
     setState(() {
       _face.value = FaceState(mood: Mood.thinking);
       _status = BlueyStatus.thinking;
@@ -251,7 +274,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         final result = await _tools.execute(call);
         reply = await brain
             .toolResult(
-              reply.toolCall!.name,
+              call.name,
               result.text,
               images: [
                 if (result.imageBase64 != null) result.imageBase64!,
@@ -382,6 +405,8 @@ class IosHome extends StatefulWidget {
 
 class _IosHomeState extends State<IosHome> {
   late final MacLink _link;
+  final _capture = AudioCapture();
+  final _player = AudioPlayer();
   FaceState _face = FaceState(mood: Mood.sleepy);
   bool _connected = false;
   bool _awake = false;
@@ -397,13 +422,51 @@ class _IosHomeState extends State<IosHome> {
     _link.connected.listen((connected) {
       if (mounted) setState(() => _connected = connected);
     });
+    _link.packets.listen((packet) async {
+      if (packet.command == 'say' && packet.text != null) {
+        setState(() => _bubble = packet.text);
+        if (packet.audio != null) {
+          final bytes = base64Decode(packet.audio!);
+          final file = File(
+            '${(await getTemporaryDirectory()).path}/bluey_say_'
+            '${DateTime.now().millisecondsSinceEpoch}.mp3',
+          );
+          await file.writeAsBytes(bytes, flush: true);
+          await _player.play(DeviceFileSource(file.path));
+        }
+      }
+    });
     _link.start();
   }
 
   @override
   void dispose() {
     _link.stop();
+    _capture.dispose();
+    _player.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickMac() async {
+    final macs = await _link.macs.firstWhere((list) => list.isNotEmpty);
+    if (!mounted) return;
+    final picked = await showModalBottomSheet<DiscoveredMac>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final mac in macs)
+              ListTile(
+                leading: const Icon(Icons.computer),
+                title: Text(mac.name),
+                onTap: () => Navigator.pop(context, mac),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (picked != null) _link.select(picked);
   }
 
   @override
@@ -413,17 +476,27 @@ class _IosHomeState extends State<IosHome> {
         face: _face,
         awake: _awake,
         bubble: _bubble,
+        status:
+            _connected ? BlueyStatus.listening : BlueyStatus.offline,
         onWakeChanged: (awake) {
           setState(() => _awake = awake);
           _link.send(Packet(command: awake ? 'wake' : 'sleep'));
         },
-        onHoldStart: () {
+        onHoldStart: () async {
           setState(() => _bubble = 'Listening…');
           _link.send(Packet(command: 'holdStart'));
+          if (await _capture.hasPermission()) await _capture.start();
         },
-        onHoldEnd: () {
+        onHoldEnd: () async {
           setState(() => _bubble = null);
           _link.send(Packet(command: 'holdEnd'));
+          final file = await _capture.stop();
+          if (file != null) {
+            final bytes = await file.readAsBytes();
+            _link.send(
+              Packet(command: 'holdAudio', audio: base64Encode(bytes)),
+            );
+          }
         },
       ),
       bottomNavigationBar: _connected
@@ -434,7 +507,9 @@ class _IosHomeState extends State<IosHome> {
                     ? 'Looking for your Mac on the local network…'
                     : 'Connecting to ${_link.macName}…',
               ),
-              actions: const [SizedBox.shrink()],
+              actions: [
+                TextButton(onPressed: _pickMac, child: const Text('Choose Mac')),
+              ],
             ),
     );
   }
