@@ -4,6 +4,7 @@ import '../llm/llm_provider.dart';
 import '../llm/ollama_provider.dart' show LlmException;
 import '../services/biometric_lock.dart';
 import 'theme.dart';
+import 'troubleshooting_screen.dart';
 import '../services/haptics.dart';
 import '../services/perf_monitor.dart';
 import '../services/privacy_guard.dart';
@@ -282,6 +283,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const _AppearanceTile(),
             const _AppLockTile(),
             const _HapticsTile(),
+            ListTile(
+              leading: const Icon(Icons.build_outlined),
+              title: const Text('Troubleshooting'),
+              subtitle: const Text('Live checks and copyable diagnostics.'),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const TroubleshootingScreen(),
+                ),
+              ),
+            ),
             const ListTile(
               leading: Icon(Icons.privacy_tip_outlined),
               title: Text('Permissions in use'),
