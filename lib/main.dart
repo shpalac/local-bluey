@@ -34,6 +34,7 @@ import 'services/transcription.dart';
 import 'ui/face_screen.dart';
 import 'ui/lock_gate.dart';
 import 'ui/onboarding_screen.dart';
+import 'ui/theme.dart';
 import 'ui/settings_screen.dart';
 import 'ui/unsupported_screen.dart';
 
@@ -43,6 +44,7 @@ void main() async {
   await RoutineStore.instance.load();
   await CharacterStore.instance.load();
   await BiometricLock.instance.load();
+  await ThemeController.instance.load();
   final profile = SupportMatrix.profile();
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
@@ -68,15 +70,23 @@ class LocalBlueyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Local Bluey',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(useMaterial3: true),
-      builder: (context, child) => Directionality(
-        textDirection: Strings.forceRtl ? TextDirection.rtl : TextDirection.ltr,
-        child: child!,
+    return ListenableBuilder(
+      listenable: ThemeController.instance,
+      builder: (context, _) => MaterialApp(
+        title: 'Local Bluey',
+        debugShowCheckedModeBanner: false,
+        // Light + dark from one token set, following the system (#87).
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeController.instance.mode,
+        builder: (context, child) => Directionality(
+          textDirection: Strings.forceRtl
+              ? TextDirection.rtl
+              : TextDirection.ltr,
+          child: child!,
+        ),
+        home: home,
       ),
-      home: home,
     );
   }
 }

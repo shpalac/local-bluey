@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../llm/llm_provider.dart';
 import '../llm/ollama_provider.dart' show LlmException;
 import '../services/biometric_lock.dart';
+import 'theme.dart';
 import '../services/haptics.dart';
 import '../services/perf_monitor.dart';
 import '../services/privacy_guard.dart';
@@ -278,6 +279,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: _perfOverlay,
               onChanged: (v) => setState(() => _perfOverlay = v),
             ),
+            const _AppearanceTile(),
+            const _AppLockTile(),
+            const _HapticsTile(),
+            const ListTile(
+              leading: Icon(Icons.privacy_tip_outlined),
+              title: Text('Permissions in use'),
+              subtitle: Text(
+                'Microphone - hold-to-talk on the phone remote. '
+                'Local network - finding your Mac. '
+                'Each is requested only when its feature is first used; '
+                'revoke any of them in system Settings.',
+              ),
+            ),
             const SizedBox(height: 24),
             Text(
               'Transcription',
@@ -348,6 +362,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+}
+
+/// Light/dark/system override (#87), persisted via ThemeController.
+class _AppearanceTile extends StatelessWidget {
+  const _AppearanceTile();
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: ThemeController.instance,
+    builder: (context, _) => ListTile(
+      leading: const Icon(Icons.brightness_6_outlined),
+      title: const Text('Appearance'),
+      trailing: DropdownButton<ThemeMode>(
+        value: ThemeController.instance.mode,
+        onChanged: (mode) {
+          if (mode != null) ThemeController.instance.setMode(mode);
+        },
+        items: const [
+          DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
+          DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
+          DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+        ],
+      ),
+    ),
+  );
 }
 
 /// Optional biometric/passcode app lock (#92), persisted via BiometricLock.
