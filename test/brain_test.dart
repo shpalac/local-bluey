@@ -118,8 +118,8 @@ void _streamingTests() {
       'hi',
       onToken: (p) => partials.add(p),
     );
-    expect(partials, ['Hel', 'Hel lo ', 'Hel lo there']);
-    expect(reply.spoken, 'Hel lo there');
-    expect(brain.history.last.content, 'Hel lo there');
+    expect(partials, ['Hel', 'Hello ', 'Hello there']);
+    expect(reply.spoken, 'Hello there');
+    expect(brain.history.last.content, 'Hello there');
   });
 }
