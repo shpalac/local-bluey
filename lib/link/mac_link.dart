@@ -81,7 +81,12 @@ class MacLink {
 
   void send(Packet packet) => _link?.send(packet);
 
+  bool _stopped = false;
+
+  /// Idempotent shutdown.
   Future<void> stop() async {
+    if (_stopped) return;
+    _stopped = true;
     _retry?.cancel();
     if (_discovery != null) await nsd.stopDiscovery(_discovery!);
     await _link?.close();

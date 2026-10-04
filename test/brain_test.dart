@@ -52,6 +52,8 @@ void main() {
     expect(brain.history.first.role, 'system');
     expect(brain.history.first.content, buildSystemPrompt());
   });
+
+  _boundedHistoryTests();
 }
 
 class FakeProvider extends LlmProvider {
@@ -68,4 +70,31 @@ class FakeProvider extends LlmProvider {
     }
     return 'I can see a window saying Hello.';
   }
+}
+
+class _EchoProvider extends LlmProvider {
+  @override
+  String get name => 'echo';
+  @override
+  Future<String> chat(List<LlmMessage> messages) async => 'ok';
+}
+
+void _boundedHistoryTests() {
+  test('history is bounded and keeps the system prompt', () async {
+    final brain = Brain(provider: _EchoProvider());
+    for (var i = 0; i < 60; i++) {
+      await brain.ask('message $i');
+    }
+    expect(brain.history.length, lessThanOrEqualTo(Brain.maxHistory));
+    expect(brain.history.first.role, 'system');
+  });
+
+  test('older images are pruned, recent ones kept', () async {
+    final brain = Brain(provider: _EchoProvider());
+    await brain.ask('one', images: const ['img1']);
+    await brain.ask('two', images: const ['img2']);
+    await brain.ask('three', images: const ['img3']);
+    final withImages = brain.history.where((m) => m.images.isNotEmpty);
+    expect(withImages.length, lessThanOrEqualTo(Brain.keepImagesInLast + 1));
+  });
 }

@@ -9,11 +9,16 @@ import 'models.dart';
 class LineConnection {
   LineConnection(this._socket);
 
+  /// Largest single frame accepted; anything bigger kills the connection
+  /// instead of growing memory without bound.
+  static const maxFrameBytes = 16 * 1024 * 1024;
+
   final Socket _socket;
   final _onPacket = StreamController<Packet>.broadcast();
   final _onDone = StreamController<void>.broadcast();
   String _buffer = '';
   bool _started = false;
+  bool _closed = false;
 
   Stream<Packet> get packets => _onPacket.stream;
   Stream<void> get done => _onDone.stream;
@@ -27,6 +32,11 @@ class LineConnection {
         .listen(
           (chunk) {
             _buffer += chunk;
+            if (_buffer.length > maxFrameBytes) {
+              // A runaway peer: drop the connection rather than buffer forever.
+              close();
+              return;
+            }
             int newline;
             while ((newline = _buffer.indexOf('\n')) >= 0) {
               final line = _buffer.substring(0, newline);
@@ -55,12 +65,22 @@ class LineConnection {
   }
 
   void send(Packet packet) {
-    _socket.write('${jsonEncode(packet.toJson())}\n');
+    if (_closed) return;
+    try {
+      _socket.write('${jsonEncode(packet.toJson())}\n');
+    } catch (_) {
+      close();
+    }
   }
 
+  /// Idempotent: repeated calls (done + error + explicit stop) are no-ops.
   Future<void> close() async {
-    await _socket.close();
-    await _onPacket.close();
-    await _onDone.close();
+    if (_closed) return;
+    _closed = true;
+    try {
+      await _socket.close();
+    } catch (_) {}
+    if (!_onPacket.isClosed) await _onPacket.close();
+    if (!_onDone.isClosed) await _onDone.close();
   }
 }

@@ -156,17 +156,26 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         setState(() => _bubble = 'Set up the brain in settings first.');
         return;
       }
-      var reply = await brain.ask(text);
+      const maxToolSteps = 5;
+      const stepTimeout = Duration(seconds: 60);
+      var reply = await brain.ask(text).timeout(stepTimeout);
       // Tool loop: let the brain act, then react to what happened.
-      for (var i = 0; i < 5 && reply.toolCall != null; i++) {
+      var steps = 0;
+      while (reply.toolCall != null && steps < maxToolSteps) {
+        steps++;
         final result = await _tools.execute(reply.toolCall!);
-        reply = await brain.toolResult(
-          reply.toolCall!.name,
-          result.text,
-          images: [
-            if (result.imageBase64 != null) result.imageBase64!,
-          ],
-        );
+        reply = await brain
+            .toolResult(
+              reply.toolCall!.name,
+              result.text,
+              images: [
+                if (result.imageBase64 != null) result.imageBase64!,
+              ],
+            )
+            .timeout(stepTimeout);
+      }
+      if (reply.toolCall != null) {
+        setState(() => _bubble = 'Too many steps - stopping here.');
       }
       if (reply.spoken.isNotEmpty) {
         setState(() {
