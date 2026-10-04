@@ -15,12 +15,12 @@ import 'link/models.dart';
 import 'link/phone_server.dart';
 import 'services/audio_capture.dart';
 import 'services/brain_host.dart';
-import 'services/native_control.dart';
 import 'llm/llm_provider.dart' show BlueyStatus;
 import 'services/conversation.dart';
 import 'services/perf_monitor.dart';
 import 'services/safety_gate.dart';
 import 'services/strings.dart';
+import 'services/host_control.dart';
 import 'services/settings_store.dart';
 import 'services/speech.dart';
 import 'services/tool_executor.dart';
@@ -148,7 +148,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   }
 
   Future<void> _checkTrust() async {
-    final trusted = await NativeControl.isTrusted();
+    final trusted = await HostControl.forPlatform().isTrusted();
     if (mounted) setState(() => _trusted = trusted);
   }
 
@@ -452,8 +452,9 @@ class _MacHomeState extends State<MacHome> with TrayListener {
               actions: [
                 TextButton(
                   onPressed: () async {
-                    await NativeControl.askPermission();
-                    await NativeControl.openAccessibilitySettings();
+                    final host = HostControl.forPlatform();
+                    await host.askPermission();
+                    await host.openAccessibilitySettings();
                   },
                   child: const Text('Open settings'),
                 ),
