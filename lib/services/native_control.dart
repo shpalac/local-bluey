@@ -73,6 +73,19 @@ class NativeControl {
   static Future<String?> openURL(String url) =>
       _channel.invokeMethod<String>('openURL', {'url': url});
 
+  /// Resolves a target id from the last snapshot to screen coordinates.
+  static Future<(double, double, String)> resolveTarget(String id) async {
+    final map = await _channel.invokeMapMethod<String, dynamic>(
+      'resolveTarget',
+      {'id': id},
+    );
+    return (
+      (map?['x'] as num?)?.toDouble() ?? 0,
+      (map?['y'] as num?)?.toDouble() ?? 0,
+      map?['text'] as String? ?? '',
+    );
+  }
+
   static Future<ScreenSnapshot> snapshot() async {
     final map = await _channel.invokeMapMethod<String, dynamic>('snapshot');
     if (map == null) {
