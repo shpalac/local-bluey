@@ -63,12 +63,16 @@ jobs:
 
       - run: flutter pub get --enforce-lockfile
 
-      - name: Dependency audit (high severity fails)
-        run: flutter pub audit --no-fatal-infos --no-fatal-warnings
+      - name: Dependency vulnerability scan (OSV)
+        run: |
+          curl -sfL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 -o /tmp/osv-scanner
+          chmod +x /tmp/osv-scanner
+          /tmp/osv-scanner scan --lockfile=pubspec.lock
 
       - name: Secrets scan
         uses: gitleaks/gitleaks-action@v2
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_SUMMARY: "true"
 
   # Native-validation lane: exercises the real device bridge. Runs only when
