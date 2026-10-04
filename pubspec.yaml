@@ -37,6 +37,9 @@ dependencies:
   nsd: ^5.0.1
   tray_manager: ^0.2.3
   window_manager: ^0.5.2
+  http: ^1.6.0
+  record: ^7.1.1
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:
