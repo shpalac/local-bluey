@@ -21,6 +21,7 @@ import 'services/perf_monitor.dart';
 import 'services/safety_gate.dart';
 import 'services/strings.dart';
 import 'services/host_control.dart';
+import 'services/support_matrix.dart';
 import 'services/settings_store.dart';
 import 'services/speech.dart';
 import 'services/tool_executor.dart';
@@ -32,12 +33,15 @@ import 'ui/settings_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Strings.load();
-  if (Platform.isMacOS) {
+  final profile = SupportMatrix.profile();
+  if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
-    runApp(const LocalBlueyApp(home: MacHome()));
-  } else {
-    runApp(const LocalBlueyApp(home: IosHome()));
   }
+  runApp(
+    LocalBlueyApp(
+      home: profile.role == AppRole.host ? const MacHome() : const IosHome(),
+    ),
+  );
 }
 
 class LocalBlueyApp extends StatelessWidget {
@@ -513,7 +517,7 @@ class _IosHomeState extends State<IosHome> {
   @override
   void initState() {
     super.initState();
-    _link = MacLink(deviceName: Platform.isIOS ? 'iPhone' : 'Device');
+    _link = MacLink(deviceName: SupportMatrix.deviceName());
     _link.faces.listen((face) {
       if (mounted) setState(() => _face = face);
     });
