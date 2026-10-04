@@ -10,14 +10,15 @@ import 'settings_store.dart';
 /// Turns the brain's spoken reply into audio: POST {baseUrl}/audio/speech
 /// (OpenAI-compatible TTS) and plays the result on the Mac.
 class SpeechService {
+  // ignore: prefer_initializing_formals
   SpeechService({http.Client? client, AudioPlayer? player})
     : _client = client ?? http.Client(),
       _player = player;
 
   final http.Client _client;
 
-  /// Created lazily so synthesize-only callers (and tests) never touch the
-  /// platform audio channel.
+  /// Injected in tests; created lazily otherwise so synthesize-only paths
+  /// never touch the platform audio channel.
   AudioPlayer? _player;
 
   /// Requests speech audio for [text]. Returns the raw audio bytes (mp3).
