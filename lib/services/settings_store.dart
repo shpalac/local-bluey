@@ -19,6 +19,9 @@ class BrainSettings {
     this.apiKey,
     this.transcriptionBaseUrl,
     this.transcriptionModel = 'whisper-1',
+    this.ttsBaseUrl,
+    this.ttsModel = 'tts-1',
+    this.ttsVoice = 'alloy',
   });
 
   final BrainBackend backend;
@@ -29,6 +32,11 @@ class BrainSettings {
   /// Optional dedicated /audio/transcriptions endpoint; defaults to baseUrl.
   final String? transcriptionBaseUrl;
   final String transcriptionModel;
+
+  /// Optional dedicated /audio/speech endpoint; defaults to baseUrl.
+  final String? ttsBaseUrl;
+  final String ttsModel;
+  final String ttsVoice;
 
   static const defaults = BrainSettings(
     backend: BrainBackend.ollama,
@@ -43,6 +51,9 @@ class BrainSettings {
     String? apiKey,
     String? transcriptionBaseUrl,
     String? transcriptionModel,
+    String? ttsBaseUrl,
+    String? ttsModel,
+    String? ttsVoice,
   }) => BrainSettings(
     backend: backend ?? this.backend,
     baseUrl: baseUrl ?? this.baseUrl,
@@ -50,6 +61,9 @@ class BrainSettings {
     apiKey: apiKey ?? this.apiKey,
     transcriptionBaseUrl: transcriptionBaseUrl ?? this.transcriptionBaseUrl,
     transcriptionModel: transcriptionModel ?? this.transcriptionModel,
+    ttsBaseUrl: ttsBaseUrl ?? this.ttsBaseUrl,
+    ttsModel: ttsModel ?? this.ttsModel,
+    ttsVoice: ttsVoice ?? this.ttsVoice,
   );
 
   LlmProvider buildProvider() => switch (backend) {
@@ -73,6 +87,9 @@ class SettingsStore {
   static const _kApiKey = 'brain.apiKey';
   static const _kTranscriptionBaseUrl = 'brain.transcriptionBaseUrl';
   static const _kTranscriptionModel = 'brain.transcriptionModel';
+  static const _kTtsBaseUrl = 'brain.ttsBaseUrl';
+  static const _kTtsModel = 'brain.ttsModel';
+  static const _kTtsVoice = 'brain.ttsVoice';
 
   static const _secure = FlutterSecureStorage();
 
@@ -89,6 +106,9 @@ class SettingsStore {
       transcriptionBaseUrl: prefs.getString(_kTranscriptionBaseUrl),
       transcriptionModel:
           prefs.getString(_kTranscriptionModel) ?? 'whisper-1',
+      ttsBaseUrl: prefs.getString(_kTtsBaseUrl),
+      ttsModel: prefs.getString(_kTtsModel) ?? 'tts-1',
+      ttsVoice: prefs.getString(_kTtsVoice) ?? 'alloy',
     );
   }
 
@@ -104,6 +124,14 @@ class SettingsStore {
       await prefs.setString(_kTranscriptionBaseUrl, tUrl);
     }
     await prefs.setString(_kTranscriptionModel, settings.transcriptionModel);
+    final ttsUrl = settings.ttsBaseUrl;
+    if (ttsUrl == null || ttsUrl.isEmpty) {
+      await prefs.remove(_kTtsBaseUrl);
+    } else {
+      await prefs.setString(_kTtsBaseUrl, ttsUrl);
+    }
+    await prefs.setString(_kTtsModel, settings.ttsModel);
+    await prefs.setString(_kTtsVoice, settings.ttsVoice);
     final key = settings.apiKey;
     if (key == null || key.isEmpty) {
       await _secure.delete(key: _kApiKey);
