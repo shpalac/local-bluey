@@ -31,6 +31,7 @@ import 'services/transcription.dart';
 import 'ui/face_screen.dart';
 import 'ui/onboarding_screen.dart';
 import 'ui/settings_screen.dart';
+import 'ui/unsupported_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,12 +42,16 @@ void main() async {
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
   }
-  runApp(
-    LocalBlueyApp(
-      home: profile.role == AppRole.host ? const MacHome() : const IosHome(),
-    ),
-  );
+  runApp(LocalBlueyApp(home: homeForProfile(profile)));
 }
+
+/// Picks the home screen from the support matrix (#84): unsupported
+/// platforms get an explanatory screen, never the client UI.
+Widget homeForProfile(PlatformProfile profile) => switch (profile.role) {
+  AppRole.host => const MacHome(),
+  AppRole.phoneClient => const IosHome(),
+  AppRole.unsupported => UnsupportedScreen(profile: profile),
+};
 
 class LocalBlueyApp extends StatelessWidget {
   const LocalBlueyApp({super.key, required this.home});
