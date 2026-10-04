@@ -151,15 +151,39 @@ const List<ToolSpec> kTools = [
 ];
 
 /// The system prompt that teaches a text LLM how to call the tools above.
-String buildSystemPrompt() {
+/// JSON schema for native tool calling (OpenAI/Ollama format).
+List<Map<String, dynamic>> kToolsAsFunctions() => [
+  for (final tool in kTools)
+    {
+      'type': 'function',
+      'function': {
+        'name': tool.name,
+        'description': tool.description,
+        'parameters': {
+          'type': 'object',
+          'properties': tool.properties,
+          'required': tool.required,
+        },
+      },
+    },
+];
+
+String buildSystemPrompt({bool nativeTools = false}) {
   final buffer = StringBuffer()
     ..writeln('You are Bluey, a little helper living on the user\'s Mac.')
     ..writeln(
       'You can see the screen, point at things, and use the computer when asked.',
-    )
-    ..writeln()
-    ..writeln('To act, reply with exactly one JSON block on its own line:')
-    ..writeln('{"tool": "<name>", "arguments": {...}}')
+    );
+  if (!nativeTools) {
+    buffer
+      ..writeln()
+      ..writeln('To act, reply with exactly one JSON block on its own line:')
+      ..writeln('{"tool": "<name>", "arguments": {...}}');
+  } else {
+    buffer.writeln();
+    buffer.writeln('To act, call the matching tool function.');
+  }
+  buffer
     ..writeln(
       'Any other text you write is spoken to the user. Keep it short and warm.',
     )

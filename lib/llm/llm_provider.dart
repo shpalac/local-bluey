@@ -2,6 +2,14 @@ import 'dart:convert';
 
 import 'tools.dart';
 
+/// One model turn: spoken text plus an optional structured tool call.
+class LlmResponse {
+  const LlmResponse(this.text, {this.toolCall});
+
+  final String text;
+  final ToolCall? toolCall;
+}
+
 class LlmMessage {
   const LlmMessage(this.role, this.content, {this.images = const []});
 
@@ -33,6 +41,17 @@ abstract class LlmProvider {
   Stream<String> chatStream(List<LlmMessage> messages) async* {
     yield await chat(messages);
   }
+
+  /// Native function calling. Providers that support it override this;
+  /// the default parses a JSON block out of the text reply.
+  Future<LlmResponse> chatWithTools(List<LlmMessage> messages) async {
+    final raw = await chat(messages);
+    final parsed = parseAssistantReply(raw);
+    return LlmResponse(parsed.spoken, toolCall: parsed.toolCall);
+  }
+
+  /// Whether the system prompt should skip the JSON-block instructions.
+  bool get supportsNativeTools => false;
 }
 
 /// Bluey's visible working states, shown as a status chip.
