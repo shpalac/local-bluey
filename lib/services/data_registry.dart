@@ -195,6 +195,19 @@ class DataRegistry {
       },
     ),
     DataStoreInfo(
+      id: 'tutorial',
+      sourceFile: 'lib/services/tutorial.dart',
+      whatEn: 'First-steps tutorial completion flag',
+      whatHe: 'דגל סיום ההדרכה הראשונה',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('tutorial.done');
+      },
+    ),
+    DataStoreInfo(
       id: 'permission_watchdog',
       sourceFile: 'lib/services/permission_watchdog.dart',
       whatEn: 'Baseline of granted permissions for revocation recovery',

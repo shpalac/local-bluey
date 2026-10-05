@@ -9,6 +9,7 @@ import '../services/haptics.dart';
 import '../services/perf_monitor.dart';
 import '../services/native_control.dart';
 import '../services/privacy_guard.dart';
+import '../services/tutorial.dart';
 import '../services/safety_gate.dart';
 import '../services/strings.dart';
 import '../services/action_log.dart';
@@ -471,6 +472,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onTap: () => NativeControl.openURL(
                 'https://github.com/shpalac/local-bluey/blob/main/docs/USER_GUIDE.md',
               ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.school_outlined),
+              title: const Text('Replay first-steps tutorial'),
+              subtitle: const Text('Wake, ask, point - the guided demo.'),
+              onTap: () {
+                TutorialController.instance.reset();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Tutorial will show on the main screen.'),
+                  ),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.build_outlined),

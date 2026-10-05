@@ -20,6 +20,7 @@ import 'services/characters.dart';
 import 'services/conversation.dart';
 import 'services/perf_monitor.dart';
 import 'services/permission_watchdog.dart';
+import 'services/tutorial.dart';
 import 'services/routines.dart';
 import 'services/safety_gate.dart';
 import 'services/strings.dart';
@@ -35,6 +36,7 @@ import 'services/tool_executor.dart';
 import 'services/transcription.dart';
 import 'ui/face_screen.dart';
 import 'ui/permission_recovery_card.dart';
+import 'ui/tutorial_card.dart';
 import 'ui/lock_gate.dart';
 import 'ui/onboarding_screen.dart';
 import 'ui/theme.dart';
@@ -108,6 +110,7 @@ class _MacHomeState extends State<MacHome>
   bool _showOnboarding = false;
   final _watchdog = PermissionWatchdog(checker: const LivePermissionChecker());
   List<OnboardingPermission> _revoked = [];
+  final _tutorial = TutorialController.instance;
   final _server = PhoneServer();
   final _face = ValueNotifier<FaceState>(FaceState(mood: Mood.resting));
   bool _awake = false;
@@ -141,6 +144,11 @@ class _MacHomeState extends State<MacHome>
       if (!done && mounted) setState(() => _showOnboarding = true);
     });
     _recheckPermissions();
+    TutorialController.isDone().then((done) {
+      if (done) _tutorial.dismiss();
+    });
+    _tutorial.addListener(_onTutorialChanged);
+    _tools.onPointed = _tutorial.notifyPointed;
     _tools.isCancelled = () => _safety.killed;
     _safety.frontAppProvider = () => _tools.lastFrontApp;
     _safety.onConfirm = _confirmAction;
@@ -297,6 +305,7 @@ class _MacHomeState extends State<MacHome>
   }
 
   void _setAwake(bool awake) {
+    if (awake) _tutorial.notifyAwake();
     setState(() {
       _awake = awake;
       _face.value = FaceState(mood: awake ? Mood.listening : Mood.sleepy);
@@ -349,8 +358,13 @@ class _MacHomeState extends State<MacHome>
     if (mounted) setState(() => _face.value = face);
   }
 
+  void _onTutorialChanged() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void dispose() {
+    _tutorial.removeListener(_onTutorialChanged);
     WidgetsBinding.instance.removeObserver(this);
     trayManager.removeListener(this);
     _server.stop();
@@ -415,6 +429,10 @@ class _MacHomeState extends State<MacHome>
         },
         child: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 48, 16, 0),
+              child: TutorialCard(controller: _tutorial),
+            ),
             if (_revoked.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 48, 16, 0),
@@ -681,6 +699,7 @@ class _RunnerHooks extends RequestHooks {
 
   @override
   void bubble(String? text) {
+    if (text != null) _home._tutorial.notifyAnswer();
     _home._applyBubble(text);
   }
 

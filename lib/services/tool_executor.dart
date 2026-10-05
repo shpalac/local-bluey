@@ -50,6 +50,10 @@ class ToolExecutor implements ExecutorLike {
   Offset _home = Offset.zero;
   void Function()? onSleep;
 
+  /// Fired after a point_at / point_at_spot actually warped the cursor -
+  /// the first-success tutorial listens for it (#176).
+  void Function()? onPointed;
+
   /// The most recent action the host can reverse (#89), exposed so the UI
   /// can offer undo. Null when the last action was final.
   UndoSpec? lastUndoable;
@@ -213,6 +217,7 @@ class ToolExecutor implements ExecutorLike {
         final id = _str(call.arguments['target_id']);
         final resolved = await _control.resolveTarget(id);
         await _control.warp(resolved.x, resolved.y);
+        onPointed?.call();
         return ToolResult('Pointing at "$id" (${resolved.text}).');
 
       case 'point_at_spot':
@@ -223,6 +228,7 @@ class ToolExecutor implements ExecutorLike {
           _num(call.arguments['y']),
         );
         await _control.warp(spot.dx, spot.dy);
+        onPointed?.call();
         return ToolResult('Pointing at spot.');
 
       case 'stop_pointing':
