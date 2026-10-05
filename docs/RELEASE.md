@@ -14,3 +14,15 @@ Artifacts: signed + notarized macOS app, signed iOS build (TestFlight).
       (secrets: certificates + notary credentials in GitHub secrets)
 - [ ] Versioning: bump pubspec version + build number per release
 - [ ] docs/VALIDATION.md pass on both devices before every tag
+
+## Tag-driven pipeline (#155)
+
+Pushing `vX.Y.Z` runs `.github/workflows/release.yml`: the tag must equal
+the pubspec version or the workflow fails; tests run first, then macOS /
+iOS / Android build in the protected `release` environment, artifacts
+get SHA256 sidecars, a CycloneDX SBOM is generated from pubspec.lock by
+`tool/sbom.dart` (no external binary), provenance is attested with the
+SHA-pinned attest action (`gh attestation verify`), and the release is
+created with generated notes. Signing/notarization secrets go in the
+`release` environment when #39 lands - the pipeline shape does not
+change. Build numbers come from pubspec's `+N`; bump with the version.
