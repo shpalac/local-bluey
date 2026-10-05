@@ -9,10 +9,10 @@ on:
   push:
     tags: ['v*.*.*']
 
+# Least privilege by default; jobs escalate only the grants they need
+# (#160, zizmor excessive-permissions).
 permissions:
-  contents: write
-  attestations: write
-  id-token: write
+  contents: read
 
 env:
   FLUTTER_VERSION: "3.47.6"
@@ -21,6 +21,7 @@ jobs:
   version-check:
     runs-on: ubuntu-latest
     timeout-minutes: 3
+    permissions: {}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Tag must match pubspec version
@@ -53,6 +54,10 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 30
     environment: release
+    permissions:
+      contents: read
+      id-token: write # attest-build-provenance
+      attestations: write
     strategy:
       matrix:
         target: [macos, ios, android]
@@ -104,6 +109,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: release
+    permissions:
+      contents: write # gh release create
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5

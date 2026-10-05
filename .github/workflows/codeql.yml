@@ -1,0 +1,78 @@
+name: CodeQL
+
+# Static analysis for the native layers (#160): Kotlin (android/) and
+# Swift (macos/). Dart stays with OSV + the pattern scan in the security
+# job. Runs on native-code changes and weekly, so new advisories against
+# unchanged code are still noticed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'macos/**'
+      - 'ios/**'
+      - 'lib/**'
+      - 'pubspec.*'
+      - '.github/workflows/codeql.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'macos/**'
+      - 'ios/**'
+      - 'lib/**'
+      - 'pubspec.*'
+      - '.github/workflows/codeql.yml'
+  schedule:
+    - cron: '23 4 * * 1'
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  # Kotlin compiles fine without a build here: build-mode none analyzes
+  # sources directly and needs no Gradle/AGP setup.
+  kotlin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # upload findings to the Security tab
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
+        with:
+          languages: java-kotlin
+          build-mode: none
+      - uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
+
+  # Swift is a compiled CodeQL language: it needs a real build, so this
+  # leg builds the macOS host. The iOS Swift runner is not analyzed (an
+  # iOS build needs signing setup); macos/ carries the host control code.
+  swift:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      security-events: write # upload findings to the Security tab
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
+        with:
+          languages: swift
+          build-mode: manual
+      - name: Build macOS for analysis
+        run: flutter build macos --debug
+      - uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
