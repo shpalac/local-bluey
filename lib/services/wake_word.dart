@@ -29,7 +29,9 @@ class WakeWordService {
     TranscriberLike? transcription,
     this.wakePhrase = 'hey bluey',
   }) : _capture = capture ?? AudioCapture(),
-       _transcription = transcription ?? HttpSttProvider();
+       // Private field, public named parameter: no initializing formal.
+       // ignore: prefer_initializing_formals
+       _transcription = transcription;
 
   static const _kEnabled = 'wake_word.enabled';
   static const windowDuration = Duration(seconds: 2);
@@ -37,7 +39,10 @@ class WakeWordService {
 
   final WakeWordSpotter? spotter;
   final AudioCapture _capture;
-  final TranscriberLike _transcription;
+
+  /// Injected transcriber (tests); when null the provider is resolved from
+  /// the saved STT settings per window, like the request runner (#196).
+  final TranscriberLike? _transcription;
   final String wakePhrase;
 
   final ValueNotifier<bool> listening = ValueNotifier(false);
@@ -96,7 +101,10 @@ class WakeWordService {
         return false; // confirmation would leave the Mac
       }
     }
-    final text = await _transcription.transcribe(file, stt);
+    final text = await (_transcription ?? SttProviders.create(stt)).transcribe(
+      file,
+      stt,
+    );
     if (!text.toLowerCase().contains(wakePhrase)) return false;
     onWake?.call();
     return true;

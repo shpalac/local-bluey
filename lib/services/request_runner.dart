@@ -58,7 +58,7 @@ class RequestRunner {
     this.stepTimeout = const Duration(seconds: 60),
     this.jobTimeout = const Duration(minutes: 3),
     this.maxToolSteps = 5,
-  }) : transcriber = transcriber ?? HttpSttProvider(),
+  }) : _injectedTranscriber = transcriber,
        safety = safety ?? SafetyGate(),
        tools = tools ?? ToolExecutor(),
        speech = speech ?? SpeechService(),
@@ -69,7 +69,16 @@ class RequestRunner {
        currentVoice =
            currentVoice ?? (() => CharacterStore.instance.current.value.voice);
 
-  final TranscriberLike transcriber;
+  /// Set when the caller injected a transcriber (tests, or a host that owns
+  /// its own provider). Left null in the app, where the provider is resolved
+  /// per request from the saved STT settings so switching provider in
+  /// Settings actually takes effect (#196).
+  final TranscriberLike? _injectedTranscriber;
+
+  /// The provider for [sttSettings]: the injected one when present,
+  /// otherwise the concrete provider its kind names.
+  TranscriberLike transcriberFor(SttSettings sttSettings) =>
+      _injectedTranscriber ?? SttProviders.create(sttSettings);
 
   /// Where STT configuration comes from (#196); tests inject a fake.
   final Future<SttSettings> Function() sttLoader;
@@ -115,7 +124,7 @@ class RequestRunner {
       final sttSettings = await sttLoader();
       final text = await PerfMonitor.instance.measure(
         'listening.transcription',
-        () => transcriber
+        () => transcriberFor(sttSettings)
             .transcribe(file, sttSettings)
             .timeout(
               remaining(),
