@@ -31,20 +31,25 @@ class FakeDriver implements RecorderDriver {
 }
 
 void main() {
-  test('stop during an in-flight start still stops the recorder (#117)',
-      () async {
-    final driver = FakeDriver()..startGate = Completer<void>();
-    final dir = await Directory.systemTemp.createTemp('cap');
-    final capture = AudioCapture(driver: driver, tempDirProvider: () async => dir);
-    final startFuture = capture.start();
-    // Release the hold before start() finished: stop must wait, then stop.
-    final stopFuture = capture.stop();
-    driver.startGate!.complete();
-    await startFuture;
-    final file = await stopFuture;
-    expect(file, isNotNull);
-    expect(driver.recording, isFalse);
-  });
+  test(
+    'stop during an in-flight start still stops the recorder (#117)',
+    () async {
+      final driver = FakeDriver()..startGate = Completer<void>();
+      final dir = await Directory.systemTemp.createTemp('cap');
+      final capture = AudioCapture(
+        driver: driver,
+        tempDirProvider: () async => dir,
+      );
+      final startFuture = capture.start();
+      // Release the hold before start() finished: stop must wait, then stop.
+      final stopFuture = capture.stop();
+      driver.startGate!.complete();
+      await startFuture;
+      final file = await stopFuture;
+      expect(file, isNotNull);
+      expect(driver.recording, isFalse);
+    },
+  );
 
   test('max duration auto-stops and preserves the file (#117)', () async {
     final driver = FakeDriver();
@@ -66,7 +71,10 @@ void main() {
   test('start is idempotent while recording (#117)', () async {
     final driver = FakeDriver();
     final dir = await Directory.systemTemp.createTemp('cap');
-    final capture = AudioCapture(driver: driver, tempDirProvider: () async => dir);
+    final capture = AudioCapture(
+      driver: driver,
+      tempDirProvider: () async => dir,
+    );
     await capture.start();
     await capture.start();
     expect(driver.startCalls, 1);

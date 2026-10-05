@@ -79,14 +79,17 @@ void main() {
     );
   });
 
-  test('200 without a text field raises TranscriptionException (#118)', () async {
-    final client = MockClient(
-      (_) async => http.Response(jsonEncode({'result': 'x'}), 200),
-    );
-    final file = await File('${Directory.systemTemp.path}/t6.m4a').create();
-    expect(
-      () => TranscriptionService(client: client).transcribe(file, settings),
-      throwsA(isA<TranscriptionException>()),
-    );
-  });
+  test(
+    '200 without a text field raises TranscriptionException (#118)',
+    () async {
+      final client = MockClient(
+        (_) async => http.Response(jsonEncode({'result': 'x'}), 200),
+      );
+      final file = await File('${Directory.systemTemp.path}/t6.m4a').create();
+      expect(
+        () => TranscriptionService(client: client).transcribe(file, settings),
+        throwsA(isA<TranscriptionException>()),
+      );
+    },
+  );
 }
