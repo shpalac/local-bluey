@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/host_control.dart';
+import 'package:local_bluey/services/linux_portal_host_control.dart';
 import 'package:local_bluey/services/linux_x11_host_control.dart';
 
 class FakeRunner {
@@ -41,40 +42,34 @@ void main() {
       expect(host, isA<LinuxX11HostControl>());
     });
 
-    test('wayland-only sessions stay unsupported with a pointer to #151', () {
+    test('wayland sessions get the portal backend (#151)', () {
       final host = HostControl.forPlatform(
         operatingSystem: 'linux',
         environment: {'XDG_SESSION_TYPE': 'wayland'},
       );
-      expect(host, isA<UnsupportedHostControl>());
-      expect(
-        () => host.isTrusted(),
-        throwsA(
-          isA<UnsupportedError>().having(
-            (e) => e.message,
-            'message',
-            contains('wayland'),
-          ),
-        ),
-      );
+      expect(host, isA<LinuxPortalHostControl>());
     });
 
-    test('no DISPLAY is an actionable unsupported message', () {
+    test('no DISPLAY and no wayland session stays unsupported', () {
       final host = HostControl.forPlatform(
         operatingSystem: 'linux',
         environment: const {},
       );
       expect(host, isA<UnsupportedHostControl>());
+    });
+
+    test('linuxHostMode names the active mode for the UI (#151)', () {
       expect(
-        () => host.isTrusted(),
-        throwsA(
-          isA<UnsupportedError>().having(
-            (e) => e.message,
-            'message',
-            contains('DISPLAY'),
-          ),
-        ),
+        HostControl.linuxHostMode(environment: {'XDG_SESSION_TYPE': 'wayland'}),
+        'portal',
       );
+      expect(
+        HostControl.linuxHostMode(
+          environment: {'XDG_SESSION_TYPE': 'x11', 'DISPLAY': ':0'},
+        ),
+        'x11',
+      );
+      expect(HostControl.linuxHostMode(environment: const {}), 'unsupported');
     });
   });
 

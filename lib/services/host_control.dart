@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'dart:ui' show Offset;
 
+import 'linux_portal_host_control.dart';
 import 'linux_x11_host_control.dart';
 import 'native_control.dart';
 import 'tool_executor.dart';
@@ -16,6 +17,17 @@ abstract class HostControl implements NativeControlClient {
 
   /// The host for the current platform. Pass [operatingSystem] and
   /// [environment] in tests.
+  /// Which Linux host mode is active, for onboarding and the
+  /// troubleshooting screen (#151): 'x11', 'portal', or 'unsupported'.
+  /// Null on non-Linux platforms.
+  static String? linuxHostMode({Map<String, String>? environment}) {
+    final env = environment ?? Platform.environment;
+    if ((env['XDG_SESSION_TYPE'] ?? '').toLowerCase() == 'wayland') {
+      return 'portal';
+    }
+    return (env['DISPLAY'] ?? '').isEmpty ? 'unsupported' : 'x11';
+  }
+
   static HostControl forPlatform({
     String? operatingSystem,
     Map<String, String>? environment,
@@ -26,14 +38,14 @@ abstract class HostControl implements NativeControlClient {
       final env = environment ?? Platform.environment;
       final display = env['DISPLAY'] ?? '';
       final session = (env['XDG_SESSION_TYPE'] ?? '').toLowerCase();
-      if (session == 'wayland' && display.isEmpty) {
-        return const UnsupportedHostControl(
-          'linux-wayland (#151: Wayland needs xdg-desktop-portal)',
-        );
+      if (session == 'wayland') {
+        // Portal consent path (#151): screenshot via the Screenshot
+        // portal, input via opt-in ydotool.
+        return LinuxPortalHostControl();
       }
       if (display.isEmpty) {
         return const UnsupportedHostControl(
-          'linux (no X11 display: DISPLAY is not set)',
+          'linux (no X11 display and XDG_SESSION_TYPE is not wayland)',
         );
       }
       return LinuxX11HostControl();
