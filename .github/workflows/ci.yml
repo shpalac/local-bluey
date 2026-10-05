@@ -28,11 +28,11 @@ permissions:
   contents: read
 
 jobs:
-  # Fast lane on Linux: format, static analysis and unit/widget tests.
-  test:
+  # Fast lane on Linux: format and static analysis only (#153).
+  static:
     if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -54,6 +54,27 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+  # Test lane (#153): unit/widget tests with coverage (thresholds + lcov
+  # artifact) and machine-readable results uploaded on every run (#159).
+  test:
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # Single source of truth: .flutter-version at the repo root (#157).
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+
       - name: Unit + widget tests (mocked contracts)
         run: flutter test --coverage --reporter expanded 2>&1 | tee test-output.log
         timeout-minutes: 8
@@ -68,8 +89,8 @@ jobs:
           path: coverage/lcov.info
           retention-days: 14
 
-      - name: Upload test logs on failure
-        if: failure()
+      - name: Upload test logs
+        if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-logs
@@ -77,10 +98,10 @@ jobs:
           retention-days: 7
 
   # Builds stay on macOS: iOS/macOS outputs need Xcode. Skip the 25-minute
-  # lane when the fast lane already failed or the change is docs-only (#144).
+  # lane when the fast lanes already failed or the change is docs-only (#144).
   build:
     if: ${{ github.event_name != 'schedule' }}
-    needs: test
+    needs: [static, test]
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -106,16 +127,52 @@ jobs:
         run: flutter build ios --no-codesign 2>&1 | tee build-ios.log
         timeout-minutes: 12
 
-      - name: Build Android (debug APK)
-        run: flutter build apk --debug 2>&1 | tee build-android.log
-        timeout-minutes: 12
-
       - name: Upload build logs on failure
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: build-logs
           path: build-*.log
+          retention-days: 3
+
+  # Android debug APK on ubuntu - no Xcode needed (#153).
+  android:
+    if: ${{ github.event_name != 'schedule' }}
+    needs: [static, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # Single source of truth: .flutter-version at the repo root (#157).
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+
+      - name: Build Android (debug APK)
+        run: flutter build apk --debug 2>&1 | tee build-android.log
+        timeout-minutes: 12
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-build-logs
+          path: build-android.log
           retention-days: 3
 
   # Linux client build + tests on the generated linux/ runner (#149).
