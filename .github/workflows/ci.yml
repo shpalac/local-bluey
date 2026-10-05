@@ -135,6 +135,53 @@ jobs:
           path: build-*.log
           retention-days: 3
 
+  # iOS simulator smoke (#125): boots a simulator, installs the debug
+  # build, launches the app and checks the process survives. Covers the
+  # automatable slice of the real-device checklist; hardware-only items
+  # (permissions, pairing, kill switch) stay manual.
+  simulator:
+    if: ${{ github.event_name != 'schedule' }}
+    needs: [static, test]
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+
+      - name: Build iOS for the simulator
+        run: flutter build ios --simulator --debug --no-codesign 2>&1 | tee build-simulator.log
+        timeout-minutes: 15
+
+      - name: Boot, install, launch, verify
+        run: tool/simulator_smoke.sh
+        timeout-minutes: 6
+
+      - name: Upload launch screenshot
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: simulator-launch
+          path: build/simulator/
+          retention-days: 14
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: simulator-build-log
+          path: build-simulator.log
+          retention-days: 3
+
   # Android debug APK on ubuntu - no Xcode needed (#153).
   android:
     if: ${{ github.event_name != 'schedule' }}
