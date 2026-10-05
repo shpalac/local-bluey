@@ -92,10 +92,12 @@ class FakeSpeech implements SpeechLike {
 class FakeTranscriber implements TranscriberLike {
   String result = 'hello there';
   bool fail = false;
+  Future<void> Function()? onTranscribe;
 
   @override
   Future<String> transcribe(File audio, SttSettings settings) async {
     if (fail) throw SttException(SttErrorKind.httpError, 'nope');
+    await onTranscribe?.call();
     return result;
   }
 }
@@ -135,7 +137,7 @@ const _settings = BrainSettings(
   SpyHooks,
   List<List<String>>,
 )
-_rig({bool withBrain = true}) {
+_rig({bool withBrain = true, Duration? jobTimeout}) {
   final b = FakeBrain();
   final gate = FakeGate();
   final exec = FakeExecutor();
@@ -155,6 +157,7 @@ _rig({bool withBrain = true}) {
     addToConversation: (role, text) => conversation.add([role, text]),
     currentVoice: () => 'alloy',
     hooks: hooks,
+    jobTimeout: jobTimeout ?? const Duration(minutes: 3),
   );
   return (runner, b, gate, exec, speech, transcriber, hooks, conversation);
 }
@@ -310,6 +313,35 @@ void main() {
     expect(exec.calls, 1);
     expect(brain.toolResults, isEmpty);
     expect(hooks.bubbles, contains('Stopped.'));
+  });
+
+  test(
+    'Stop during transcription discards the late transcript (#199)',
+    () async {
+      final (runner, brain, gate, _, _, transcriber, hooks, _) = _rig();
+      transcriber.onTranscribe = () async => gate.killed = true;
+      await runner.process(file);
+      expect(brain.lastAsked, isNull);
+      expect(hooks.bubbles, contains('Stopped.'));
+      expect(hooks.statuses, isNot(contains(BlueyStatus.error)));
+    },
+  );
+
+  test('job deadline bounds the transcription (#199)', () async {
+    final (runner, brain, _, _, _, transcriber, hooks, _) = _rig(
+      jobTimeout: const Duration(milliseconds: 50),
+    );
+    transcriber.onTranscribe = () =>
+        Future<void>.delayed(const Duration(seconds: 5));
+    await runner.process(file);
+    expect(brain.lastAsked, isNull);
+    expect(hooks.statuses, contains(BlueyStatus.error));
+    expect(
+      hooks.bubbles.any(
+        (b) => b != null && b.startsWith('Transcription failed'),
+      ),
+      isTrue,
+    );
   });
 
   test('TTS failure still says the text and notes the failure', () async {

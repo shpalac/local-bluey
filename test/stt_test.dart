@@ -153,6 +153,54 @@ void main() {
     },
   );
 
+  test('redirect in local-only mode is refused, not followed (#199)', () async {
+    PrivacyGuard.debugLocalOnlyOverride = true;
+    // Local base URL passes the initial gate; the redirect tries to escape.
+    const localSettings = SttSettings(baseUrl: 'http://localhost:9/v1');
+    final client = MockClient(
+      (_) async => http.Response(
+        '',
+        302,
+        headers: {'location': 'https://evil.example/v1'},
+      ),
+    );
+    final file = await tempFile('s11.m4a');
+    // ignore: avoid_print
+    print('DBG override=${PrivacyGuard.debugLocalOnlyOverride}');
+    expect(
+      () => HttpSttProvider(client: client).transcribe(file, localSettings),
+      throwsA(
+        isA<SttException>().having(
+          (e) => e.kind,
+          'kind',
+          SttErrorKind.unreachable,
+        ),
+      ),
+    );
+    PrivacyGuard.debugLocalOnlyOverride = null;
+  });
+
+  test('redirects are never followed silently (#199)', () async {
+    final client = MockClient(
+      (_) async => http.Response(
+        '',
+        302,
+        headers: {'location': 'http://stt.local/v1/other'},
+      ),
+    );
+    final file = await tempFile('s12.m4a');
+    expect(
+      () => HttpSttProvider(client: client).transcribe(file, settings),
+      throwsA(
+        isA<SttException>().having(
+          (e) => e.kind,
+          'kind',
+          SttErrorKind.httpError,
+        ),
+      ),
+    );
+  });
+
   test('native whisper stub throws unsupportedPlatform (#196/#197)', () async {
     final file = await tempFile('s10.m4a');
     expect(

@@ -56,6 +56,7 @@ class RequestRunner {
     String Function()? currentVoice,
     this.hooks = const RequestHooks(),
     this.stepTimeout = const Duration(seconds: 60),
+    this.jobTimeout = const Duration(minutes: 3),
     this.maxToolSteps = 5,
   }) : transcriber = transcriber ?? HttpSttProvider(),
        safety = safety ?? SafetyGate(),
@@ -84,6 +85,11 @@ class RequestRunner {
   final Duration stepTimeout;
   final int maxToolSteps;
 
+  /// Wall-clock deadline for the whole transcribe -> brain -> speak job
+  /// (#199): a slow transcriber cannot hold the pipeline open past this,
+  /// whatever the per-step timeouts allow.
+  final Duration jobTimeout;
+
   /// Whether the companion is awake; decides the face reset after a run.
   bool awake = true;
 
@@ -93,14 +99,37 @@ class RequestRunner {
     hooks
       ..face(FaceState(mood: Mood.thinking))
       ..status(BlueyStatus.thinking);
+    // #199: snapshot the generation BEFORE transcription starts and bound
+    // the whole job. A Stop mid-transcription must discard the late
+    // transcript instead of submitting it to the brain.
+    final runGeneration = safety.generation;
+    bool cancelled() => safety.killed || safety.generation != runGeneration;
+    final deadline = DateTime.now().add(jobTimeout);
+    Duration remaining() {
+      final r = deadline.difference(DateTime.now());
+      return r.isNegative ? Duration.zero : r;
+    }
+
     try {
       final settings = await settingsLoader();
       final sttSettings = await sttLoader();
       final text = await PerfMonitor.instance.measure(
         'listening.transcription',
-        () => transcriber.transcribe(file, sttSettings),
+        () => transcriber
+            .transcribe(file, sttSettings)
+            .timeout(
+              remaining(),
+              onTimeout: () => throw SttException(
+                SttErrorKind.timeout,
+                'Transcription exceeded the ${jobTimeout.inSeconds}s job deadline',
+              ),
+            ),
       );
 
+      if (cancelled()) {
+        hooks.bubble('Stopped.');
+        return;
+      }
       if (text.isEmpty) {
         hooks.bubble("Didn't catch that.");
         return;
@@ -124,10 +153,8 @@ class RequestRunner {
             .timeout(stepTimeout),
       );
       // Tool loop: let the brain act, then react to what happened.
-      // #107: a kill (or kill+resume, which bumps the generation) stops this
-      // run at every await boundary, not only at the top of the loop.
-      final runGeneration = safety.generation;
-      bool cancelled() => safety.killed || safety.generation != runGeneration;
+      // #107/#199: a kill (or kill+resume, which bumps the generation) stops
+      // this run at every await boundary, transcription included.
       var steps = 0;
       while (reply.toolCall != null && steps < maxToolSteps) {
         if (cancelled()) {
