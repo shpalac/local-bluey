@@ -18,7 +18,7 @@ A blueberry character who lives on your iPhone under your Mac's screen and point
 
 Nothing is local unless you point it at a local endpoint. The brain, transcription and speech each use the endpoint you configure (the brain's URL by default for transcription and speech). With Ollama on your machine, nothing leaves it. If you configure a remote endpoint, your prompts, recorded audio and screenshot text are sent to that provider.
 
-- **Local-only mode** (setting): refuses a brain endpoint that is not `localhost`, `127.0.0.1`, `::1` or a `.local` host.
+- **Local-only mode** (setting): refuses a brain endpoint that is not `localhost`, `127.0.0.1` or `::1` (`.local` names resolve off-device, so they no longer count as local - #121).
 - **Redaction:** screen text is scrubbed of email addresses, 16-digit card numbers and 9-digit numbers before it reaches the brain. This is pattern matching, so it is not a guarantee.
 - **Egress report:** Settings > Data and privacy shows a verifiable record of what was sent, where and when, plus an offline self-test ([#58](https://github.com/shpalac/local-bluey/issues/58)).
 - **API keys:** stored with `flutter_secure_storage` (Keychain on macOS and iOS), not in plain preferences.
