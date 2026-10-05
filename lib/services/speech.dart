@@ -1,3 +1,5 @@
+import 'request_interfaces.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -15,7 +17,7 @@ import 'settings_store.dart';
 
 /// Turns the brain's spoken reply into audio: POST {baseUrl}/audio/speech
 /// (OpenAI-compatible TTS) and plays the result on the Mac.
-class SpeechService {
+class SpeechService implements SpeechLike {
   SpeechService({http.Client? client, AudioPlayer? player})
     : _client = client ?? http.Client(),
       _injectedPlayer = player;
@@ -33,6 +35,7 @@ class SpeechService {
   File? _lastTempFile;
 
   /// Requests speech audio for [text]. Returns the raw audio bytes (mp3).
+  @override
   Future<List<int>> synthesize(String text, BrainSettings settings) async {
     final base = settings.ttsBaseUrl?.isNotEmpty == true
         ? settings.ttsBaseUrl!
@@ -81,6 +84,7 @@ class SpeechService {
 
   /// Plays already-synthesized bytes; pairs with [synthesize] so each answer
   /// costs exactly one TTS request.
+  @override
   Future<void> playBytes(List<int> bytes) async {
     // Clean up the previous clip: playback can be interrupted by stop() or
     // a new reply before onPlayerComplete fires, leaking the file (#118).

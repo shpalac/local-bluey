@@ -1,3 +1,5 @@
+import 'request_interfaces.dart';
+
 import 'dart:convert';
 import 'dart:ui' show Offset;
 
@@ -19,7 +21,7 @@ class ToolResult {
 
 /// Executes brain tool calls against the Mac's native layer.
 /// Ported from RealtimeHost.runTool / runAction in the original Swift app.
-class ToolExecutor {
+class ToolExecutor implements ExecutorLike {
   ToolExecutor({this._control = const ChannelControl(), ActionLog? actionLog})
     : _actionLog = actionLog ?? ActionLog.instance;
 
@@ -81,6 +83,7 @@ class ToolExecutor {
     );
   }
 
+  @override
   Future<ToolResult> execute(ToolCall call) async {
     final ToolResult result;
     try {
