@@ -43,3 +43,19 @@ libasound2-dev (record/audioplayers). Unit/widget tests run there too and
 the release bundle is uploaded as a CI artifact. HostControl still returns
 UnsupportedHostControl on Linux - the app shows the unsupported-host
 screen; the X11 backend is #150.
+
+## X11 backend (#150)
+
+`LinuxX11HostControl` implements the HostControl contract through helper
+binaries - no custom native plugin: `import`/`convert` (ImageMagick) for
+capture, `tesseract` for OCR targets, `xdotool` for pointer/keyboard,
+`xdg-open`/`gtk-launch` for launching. Arguments always go as argv arrays,
+never shell strings.
+
+**Limits: X11 only.** Wayland sessions report unsupported with a pointer to
+#151 (xdg-desktop-portal). Missing helpers surface as a plain error naming
+the apt packages to install instead of an exception. X11 has no permission
+prompt: `isTrusted` means "display + helpers present".
+
+Real-backend contract test: `test/linux_x11_integration_test.dart` (gated on
+`BLUEY_X11_INTEGRATION=1`, meant for `xvfb-run` in CI).
