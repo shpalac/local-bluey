@@ -71,7 +71,9 @@ class PhoneServer {
     }
   }
 
-  Future<void> start({int port = 0}) async {
+  /// [advertise] registers the Bonjour service; tests pass false to stay
+  /// off the platform channel (#134).
+  Future<void> start({int port = 0, bool advertise = true}) async {
     _server = await ServerSocket.bind(InternetAddress.anyIPv4, port);
     _server!.listen((socket) {
       final link = LineConnection(socket)..start();
@@ -114,14 +116,19 @@ class PhoneServer {
       });
     });
 
-    _registration = await nsd.register(
-      nsd.Service(
-        name: Platform.localHostname,
-        type: kServiceType,
-        port: _server!.port,
-      ),
-    );
+    if (advertise) {
+      _registration = await nsd.register(
+        nsd.Service(
+          name: Platform.localHostname,
+          type: kServiceType,
+          port: _server!.port,
+        ),
+      );
+    }
   }
+
+  /// The port the server is listening on (for tests, #134).
+  int get port => _server?.port ?? 0;
 
   /// Sends a packet to every paired phone (e.g. "wake", "sleep").
   void broadcast(Packet packet) {

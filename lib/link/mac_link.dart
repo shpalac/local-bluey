@@ -76,6 +76,9 @@ class MacLink {
     });
   }
 
+  /// Test seam (#134): connect without Bonjour discovery.
+  Future<void> debugConnectTo(String host, int port) => _connect(host, port);
+
   Future<void> _connect(String host, int port) async {
     // Duplicate sockets to the same Mac broke the auth handshake when a
     // rediscovery fired mid-connect (#114).
