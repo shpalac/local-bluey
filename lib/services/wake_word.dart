@@ -29,6 +29,8 @@ class WakeWordService {
     TranscriberLike? transcription,
     this.wakePhrase = 'hey bluey',
   }) : _capture = capture ?? AudioCapture(),
+       // Private field, public named parameter: no initializing formal.
+       // ignore: prefer_initializing_formals
        _transcription = transcription;
 
   static const _kEnabled = 'wake_word.enabled';
