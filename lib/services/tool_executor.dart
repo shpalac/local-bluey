@@ -134,6 +134,7 @@ class ToolExecutor {
         _screenWidth = snap.width;
         _screenHeight = snap.height;
         _lastSnapshotAt = DateTime.now();
+        lastFrontApp = snap.frontApp ?? '';
         _home = await _control.mouseLocation();
         return ToolResult(
           'Display: ${snap.width.toInt()}x${snap.height.toInt()} points.\n'
@@ -321,11 +322,16 @@ class ToolExecutor {
     return _targetPoint(args, 'target_id');
   }
 
+  /// Front-most app from the last snapshot; the safety gate checks input
+  /// tools against it so the allowlist covers more than open_app (#109).
+  String lastFrontApp = '';
+
   Future<ToolResult> _withScreen(String text) async {
     final snap = await _control.snapshot();
     _screenWidth = snap.width;
     _screenHeight = snap.height;
     _lastSnapshotAt = DateTime.now();
+    lastFrontApp = snap.frontApp ?? '';
     return ToolResult(
       '$text\n\n${PrivacyGuard.redact(snap.targets)}',
       imageBase64: _safeImage(snap),
