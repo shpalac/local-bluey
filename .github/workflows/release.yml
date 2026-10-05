@@ -88,6 +88,7 @@ jobs:
           cp build/app/outputs/flutter-apk/app-release.apk local-bluey-android.apk
       - name: Package artifact
         run: |
+          # shellcheck disable=SC2012
           artifact=$(ls local-bluey-*.{tar.gz,apk} 2>/dev/null | head -1)
           sha256sum "$artifact" > "$artifact.sha256"
           echo "ARTIFACT=$artifact" >> "$GITHUB_ENV"
