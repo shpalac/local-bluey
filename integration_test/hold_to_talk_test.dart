@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:local_bluey/llm/brain.dart';
 import 'package:local_bluey/llm/llm_provider.dart';
+import 'package:local_bluey/llm/tools.dart';
 import 'package:local_bluey/link/models.dart';
 import 'package:local_bluey/services/tool_executor.dart';
 import 'package:local_bluey/ui/face_screen.dart';
@@ -30,6 +31,17 @@ void main() {
               return true;
             case 'mouseLocation':
               return {'x': 42.0, 'y': 42.0};
+            case 'snapshot':
+              // The tool executor gates target/grid tools on a fresh
+              // look_at_screen snapshot (#150); prime it through the same
+              // mock channel.
+              return <String, dynamic>{
+                'jpeg': Uint8List(0),
+                'targets': 'W12: OK button',
+                'width': 1280.0,
+                'height': 1024.0,
+                'app': 'Test',
+              };
             case 'resolveTarget':
               return {'x': 640.0, 'y': 360.0, 'text': 'OK'};
             default:
@@ -66,6 +78,10 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+
+    // point_at is staleness-gated: without a fresh snapshot the executor
+    // answers 'call look_at_screen first' and the warp never fires.
+    await executor.execute(ToolCall('look_at_screen', const {}));
 
     // Simulate the hold-to-talk gesture: press, hold, release.
     final face = find.byType(FaceScreen);

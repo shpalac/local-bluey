@@ -175,6 +175,49 @@ jobs:
           path: build-android.log
           retention-days: 3
 
+  # Android integration tests on a KVM emulator (#78): boots a pinned
+  # emulator and runs integration_test/ against it. The native MethodChannel
+  # is mocked in-Dart, so no macOS host is needed.
+  android-integration:
+    if: ${{ github.event_name != 'schedule' }}
+    needs: [static, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [29, 34]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # Single source of truth: .flutter-version at the repo root (#157).
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+
+      # KVM is required for x86_64 emulators on GitHub-hosted runners.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run integration tests on the emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          script: flutter test integration_test --reporter expanded
+
   # Linux client build + tests on the generated linux/ runner (#149).
   # GTK3 stack + plugin system deps: tray_manager (ayatana-appindicator),
   # flutter_secure_storage (libsecret, libjsoncpp), nsd (Avahi),
