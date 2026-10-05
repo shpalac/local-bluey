@@ -7,6 +7,7 @@ import 'theme.dart';
 import 'troubleshooting_screen.dart';
 import '../services/haptics.dart';
 import '../services/perf_monitor.dart';
+import '../services/native_control.dart';
 import '../services/privacy_guard.dart';
 import '../services/safety_gate.dart';
 import '../services/strings.dart';
@@ -463,6 +464,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const _AppearanceTile(),
             const _AppLockTile(),
             const _HapticsTile(),
+            ListTile(
+              leading: const Icon(Icons.menu_book_outlined),
+              title: const Text('User guide'),
+              subtitle: const Text('Gestures, voice flows, tools, privacy.'),
+              onTap: () => NativeControl.openURL(
+                'https://github.com/shpalac/local-bluey/blob/main/docs/USER_GUIDE.md',
+              ),
+            ),
             ListTile(
               leading: const Icon(Icons.build_outlined),
               title: const Text('Troubleshooting'),
