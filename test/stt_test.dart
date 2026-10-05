@@ -166,7 +166,7 @@ void main() {
     );
     final file = await tempFile('s11.m4a');
     expect(
-      () => HttpSttProvider(client: client).transcribe(file, settings),
+      () => HttpSttProvider(client: client).transcribe(file, localSettings),
       throwsA(
         isA<SttException>().having(
           (e) => e.kind,
