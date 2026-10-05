@@ -26,6 +26,14 @@ class NativeControl {
   static Future<bool> isTrusted() async =>
       await _channel.invokeMethod<bool>('isTrusted') ?? false;
 
+  /// Screen-recording preflight; never prompts (#174).
+  static Future<bool> screenCaptureAccess() async =>
+      await _channel.invokeMethod<bool>('screenCaptureAccess') ?? false;
+
+  /// Microphone authorization status; never prompts (#174).
+  static Future<bool> microphoneAccess() async =>
+      await _channel.invokeMethod<bool>('microphoneAccess') ?? false;
+
   static Future<void> askPermission() => _channel.invokeMethod('askPermission');
 
   static Future<void> openAccessibilitySettings() =>

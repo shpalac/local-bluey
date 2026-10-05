@@ -1,3 +1,4 @@
+import AVFoundation
 import Cocoa
 import FlutterMacOS
 
@@ -23,6 +24,12 @@ final class NativeControlChannel {
       switch call.method {
       case "isTrusted":
         result(ComputerControl.isTrusted)
+      case "screenCaptureAccess":
+        // Preflight only - never prompts (#174): the request itself stays
+        // lazy, fired by the feature that needs it.
+        result(CGPreflightScreenCaptureAccess())
+      case "microphoneAccess":
+        result(AVCaptureDevice.authorizationStatus(for: .audio) == .authorized)
       case "askPermission":
         ComputerControl.askForPermission()
         result(nil)
