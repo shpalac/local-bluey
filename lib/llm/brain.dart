@@ -29,6 +29,7 @@ class Brain implements BrainLike {
   /// Screenshots are huge: only the most recent exchanges keep theirs.
   static const keepImagesInLast = 2;
 
+  /// The backend that answers chat calls (Ollama or OpenAI-compatible).
   final LlmProvider provider;
   final List<LlmMessage> _history;
 
@@ -38,6 +39,7 @@ class Brain implements BrainLike {
   /// The running memory. Rebuilt whenever more turns overflow.
   String? memory;
 
+  /// Read-only view of the conversation as sent to the provider.
   List<LlmMessage> get history => List.unmodifiable(_history);
 
   void _boundedAdd(LlmMessage message) {

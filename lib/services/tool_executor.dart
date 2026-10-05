@@ -376,13 +376,20 @@ class ToolExecutor implements ExecutorLike {
 class ResolvedTarget {
   const ResolvedTarget(this.x, this.y, this.text);
 
+  /// Horizontal position in display points.
   final double x;
+
+  /// Vertical position in display points.
   final double y;
+
+  /// The target's label (OCR text or accessibility title).
   final String text;
 }
 
 /// The slice of NativeControl the executor needs, so tests can fake it.
 abstract class NativeControlClient {
+  /// Captures the whole display. Implementations may downscale the JPEG;
+  /// coordinates in the result are always in display points.
   Future<ScreenSnapshot> snapshot();
 
   /// A high-resolution crop of the current display, in display points (#80).
@@ -392,15 +399,40 @@ abstract class NativeControlClient {
     double width,
     double height,
   );
+
+  /// Current pointer position in display points.
   Future<Offset> mouseLocation();
+
+  /// Resolves a target id to screen coordinates. The id only stays valid
+  /// while the snapshot it came from is fresh ([ToolExecutor.staleAfter]);
+  /// callers must look again before reusing older ids.
   Future<ResolvedTarget> resolveTarget(String id);
+
+  /// Moves the pointer without pressing a button.
   Future<void> warp(double x, double y);
+
+  /// Clicks at ([x], [y]). [right] selects the secondary button, [count]
+  /// the click count (2 = double click).
   Future<void> click(double x, double y, {bool right, int count});
+
+  /// Drags from [from] to [to] in one motion.
   Future<void> drag(Offset from, Offset to);
+
+  /// Scrolls at ([x], [y]) by [dx]/[dy] wheel units.
   Future<void> scroll(double x, double y, {int dx, int dy});
+
+  /// Types [text] as keyboard input. No confirmation happens here; the
+  /// safety gate owns that decision.
   Future<void> type(String text);
+
+  /// Presses a key or shortcut like "cmd+t". Returns its display label
+  /// (e.g. "⌘T"), or null when the combo is unknown.
   Future<String?> press(String combo);
+
+  /// Opens an application by name. Returns a human-readable result.
   Future<String?> openApp(String name);
+
+  /// Opens [url] in the default browser. Returns a human-readable result.
   Future<String?> openURL(String url);
 }
 
