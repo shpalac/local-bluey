@@ -110,7 +110,8 @@ jobs:
             clang cmake ninja-build pkg-config \
             libgtk-3-dev libayatana-appindicator3-dev \
             libsecret-1-dev libjsoncpp-dev \
-            libavahi-client-dev libasound2-dev
+            libavahi-client-dev libasound2-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
       - run: flutter pub get --enforce-lockfile
 
