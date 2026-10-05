@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 import 'egress_monitor.dart';
+import 'endpoint.dart';
 
 import 'settings_store.dart';
 import 'strings.dart';
@@ -19,6 +20,9 @@ class TranscriptionService {
 
   final http.Client _client;
 
+  /// Network cap so a stalled server cannot pin the UI in "thinking" (#118).
+  static const requestTimeout = Duration(seconds: 120);
+
   /// Takes settings explicitly so callers can cache them and tests can
   /// inject them without touching platform storage.
   Future<String> transcribe(File audio, BrainSettings settings) async {
@@ -27,7 +31,7 @@ class TranscriptionService {
         : settings.baseUrl;
     final request = http.MultipartRequest(
       'POST',
-      Uri.parse('$base/audio/transcriptions'),
+      Uri.parse(endpoint(base, '/audio/transcriptions')),
     );
     request.fields['model'] = settings.transcriptionModel;
     if (Strings.speechLanguage != 'auto') {
@@ -44,15 +48,29 @@ class TranscriptionService {
         await audio.length(),
       ),
     );
-    final streamed = await _client.send(request);
+    final streamed = await _client.send(request).timeout(requestTimeout);
     final response = await http.Response.fromStream(streamed);
     if (response.statusCode != 200) {
       throw TranscriptionException(
         'Transcription ${response.statusCode}: ${response.body}',
       );
     }
-    final body = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
-    return (body['text'] as String? ?? '').trim();
+    // Checked parsing: a 200 with a non-JSON or text-less body is a
+    // protocol error, not a raw FormatException (#118).
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(response.body);
+    } on FormatException {
+      throw TranscriptionException(
+        'Transcription returned a non-JSON response',
+      );
+    }
+    if (decoded is! Map || decoded['text'] is! String) {
+      throw TranscriptionException(
+        'Transcription response is missing the "text" field',
+      );
+    }
+    return (decoded['text'] as String).trim();
   }
 }
 

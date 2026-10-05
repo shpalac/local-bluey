@@ -305,6 +305,8 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   }
 
   /// Transcribe -> ask the brain -> run tools -> speak, with status + log.
+  /// Deletes the recording when finished - voice files must not pile up
+  /// in temp storage (#116).
   Future<void> _processUtterance(File file) async {
     setState(() {
       _face.value = FaceState(mood: Mood.thinking);
@@ -316,6 +318,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         'listening.transcription',
         () => _transcription.transcribe(file, settings),
       );
+
       if (text.isEmpty) {
         setState(() => _bubble = "Didn't catch that.");
         return;
@@ -423,6 +426,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
         _status = BlueyStatus.error;
       });
     } finally {
+      await AudioCapture.deleteQuietly(file); // #116
       setState(() {
         _face.value = FaceState(mood: _awake ? Mood.listening : Mood.sleepy);
         _status = BlueyStatus.listening;
@@ -702,10 +706,14 @@ class _IosHomeState extends State<IosHome> {
           _link.send(Packet(command: 'holdEnd'));
           final file = await _capture.stop();
           if (file != null) {
-            final bytes = await file.readAsBytes();
-            _link.send(
-              Packet(command: 'holdAudio', audio: base64Encode(bytes)),
-            );
+            try {
+              final bytes = await file.readAsBytes();
+              _link.send(
+                Packet(command: 'holdAudio', audio: base64Encode(bytes)),
+              );
+            } finally {
+              await AudioCapture.deleteQuietly(file); // #116
+            }
           }
         },
       ),
