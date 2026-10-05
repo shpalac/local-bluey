@@ -130,7 +130,7 @@ void main() {
     () async {
       var sawLanguage = '';
       final client = MockClient((request) async {
-        final body = (request as http.Request).body;
+        final body = request.body;
         final m = RegExp(r'name="language"\r\n\r\n([^\r]+)').firstMatch(body);
         sawLanguage = m?.group(1) ?? '';
         return http.Response(jsonEncode({'text': 'ok'}), 200);
@@ -142,7 +142,7 @@ void main() {
 
       var sawField = false;
       final client2 = MockClient((request) async {
-        sawField = (request as http.Request).body.contains('name="language"');
+        sawField = request.body.contains('name="language"');
         return http.Response(jsonEncode({'text': 'ok'}), 200);
       });
       Strings.speechLanguage = 'auto';
