@@ -38,3 +38,23 @@ The SDK is pinned in `.flutter-version` at the repo root; CI reads it for
 every job (#157). Install the same version locally (e.g. `fvm use $(cat
 .flutter-version)`) and bump the file deliberately - a weekly workflow
 opens an issue when a newer stable Flutter exists.
+
+## Everyday commands
+
+`make check` runs exactly what the CI test lane enforces (format,
+analyze, tests); `make coverage-check` adds the coverage floors, and
+`make build-<platform>` wraps each build (#158). Shell scripts are
+shellcheck-clean and CI enforces it.
+
+## Local configuration and hooks
+
+Copy `.env.example` to `.env` for local-only overrides. An opt-in
+pre-commit hook (format + analyze + gitleaks) lives in
+`.githooks/pre-commit`: `git config core.hooksPath .githooks`.
+
+## Dev container
+
+`.devcontainer/` opens a pinned-Flutter container with the Linux build
+dependencies and xvfb for the Linux/Android lanes (#158). macOS/iOS
+builds still need a Mac. The legacy `scripts/build-mac.sh` builds the
+retired Swift-package app - kept for reference only.

@@ -1,4 +1,8 @@
 #!/bin/zsh
+# LEGACY (#158): builds the old Swift-package "Googly Eyes.app" from
+# Package.swift + Mac/ + Shared/. The shipped app is the Flutter app -
+# use \`make build-macos\` / \`flutter build macos\` instead. This script
+# stays for reference until the Swift package is retired.
 # Builds "Googly Eyes.app" into build/ from the Swift package. Works with just the Command Line Tools.
 set -euo pipefail
 cd "$(dirname "$0")/.."

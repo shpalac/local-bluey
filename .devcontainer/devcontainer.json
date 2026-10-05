@@ -1,0 +1,19 @@
+{
+  "name": "local-bluey (Linux/Android lanes)",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  "features": {
+    "ghcr.io/devcontainers/features/flutter:1": {
+      "version": "3.47.6",
+      "channel": "stable"
+    }
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libayatana-appindicator3-dev libsecret-1-dev libjsoncpp-dev libavahi-client-dev libasound2-dev xvfb shellcheck && flutter pub get",
+  "customizations": {
+    "vscode": {
+      "extensions": ["Dart-Code.flutter"]
+    }
+  },
+  "remoteEnv": {
+    "COMMENT": "Linux + Android lanes only; macOS/iOS builds still need a Mac (#158)"
+  }
+}
