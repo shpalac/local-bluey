@@ -1,9 +1,10 @@
+import '../services/request_interfaces.dart';
 import 'llm_provider.dart';
 import 'tools.dart';
 
 /// The modular brain: keeps the conversation, injects the tool system prompt,
 /// and splits each reply into what Bluey says and what Bluey does.
-class Brain {
+class Brain implements BrainLike {
   Brain({required this.provider, List<LlmMessage>? history, String? persona})
     : _history =
           history ??
@@ -106,6 +107,7 @@ class Brain {
   /// Streaming ask: [onToken] gets raw fragments as they arrive; the
   /// returned reply is identical to [ask]. Tool-call JSON lines are held
   /// back from the token stream.
+  @override
   Future<BrainReply> askStreaming(
     String userText, {
     List<String> images = const [],
@@ -130,6 +132,7 @@ class Brain {
   }
 
   /// Feeds a tool result back so the model can react to what it saw/did.
+  @override
   Future<BrainReply> toolResult(
     String toolName,
     String result, {

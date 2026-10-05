@@ -1,3 +1,5 @@
+import 'request_interfaces.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -15,7 +17,7 @@ import 'strings.dart';
 /// POST {baseUrl}/audio/transcriptions endpoint and returns the text.
 /// Falls back to the brain's base URL when no dedicated transcription URL
 /// is set, so a single LM Studio / OpenRouter-style endpoint covers both.
-class TranscriptionService {
+class TranscriptionService implements TranscriberLike {
   TranscriptionService({http.Client? client})
     : _client = client ?? http.Client();
 
@@ -26,6 +28,7 @@ class TranscriptionService {
 
   /// Takes settings explicitly so callers can cache them and tests can
   /// inject them without touching platform storage.
+  @override
   Future<String> transcribe(File audio, BrainSettings settings) async {
     final base = settings.transcriptionBaseUrl?.isNotEmpty == true
         ? settings.transcriptionBaseUrl!
