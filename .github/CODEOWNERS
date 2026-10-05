@@ -1,2 +1,11 @@
 # Default owner for the whole repo; review requests go here automatically.
 * @shpalac
+
+# Sensitive surfaces (#156): computer-use safety, the phone link, CI and
+# the release process always need owner review, even when contributors
+# join later.
+lib/services/safety_gate.dart @shpalac
+lib/services/tool_executor.dart @shpalac
+lib/link/ @shpalac
+.github/ @shpalac
+docs/RELEASE.md @shpalac
