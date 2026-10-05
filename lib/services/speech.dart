@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 
 import 'egress_monitor.dart';
 import 'endpoint.dart';
+import 'privacy_guard.dart';
 
 import 'package:path_provider/path_provider.dart';
 
@@ -36,6 +37,9 @@ class SpeechService {
     final base = settings.ttsBaseUrl?.isNotEmpty == true
         ? settings.ttsBaseUrl!
         : settings.baseUrl;
+    // Local-only mode gates TTS exactly like the brain (#120).
+    final refusal = await PrivacyGuard.refusalForUrl(base);
+    if (refusal != null) throw SpeechException(refusal);
     final headers = {'Content-Type': 'application/json'};
     if (settings.apiKey?.isNotEmpty == true) {
       headers['Authorization'] = 'Bearer ${settings.apiKey}';

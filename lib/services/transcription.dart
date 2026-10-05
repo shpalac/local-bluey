@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import 'egress_monitor.dart';
 import 'endpoint.dart';
+import 'privacy_guard.dart';
 
 import 'settings_store.dart';
 import 'strings.dart';
@@ -29,6 +30,9 @@ class TranscriptionService {
     final base = settings.transcriptionBaseUrl?.isNotEmpty == true
         ? settings.transcriptionBaseUrl!
         : settings.baseUrl;
+    // Local-only mode gates audio uploads exactly like the brain (#120).
+    final refusal = await PrivacyGuard.refusalForUrl(base);
+    if (refusal != null) throw TranscriptionException(refusal);
     final request = http.MultipartRequest(
       'POST',
       Uri.parse(endpoint(base, '/audio/transcriptions')),

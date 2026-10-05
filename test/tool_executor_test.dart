@@ -41,6 +41,23 @@ void main() {
     expect(control.clicks.single.$1, const Offset(500, 300));
   });
 
+  test('sensitive OCR text withholds the screenshot (#122)', () async {
+    control.snapshotTargets = 'card 4111 1111 1111 1111';
+    final result = await executor.execute(ToolCall('look_at_screen', {}));
+    expect(result.text, contains('[redacted]'));
+    expect(result.text, isNot(contains('4111')));
+    expect(result.imageBase64, isNull);
+  });
+
+  test('zoom crop is withheld after a sensitive snapshot (#122)', () async {
+    control.snapshotTargets = 'user@example.com';
+    await executor.execute(ToolCall('look_at_screen', {}));
+    final zoom = await executor.execute(
+      ToolCall('zoom_screen', {'x': 0, 'y': 0, 'width': 500, 'height': 500}),
+    );
+    expect(zoom.imageBase64, isNull);
+  });
+
   test('go_to_sleep fires the callback', () async {
     var slept = false;
     executor.onSleep = () => slept = true;
@@ -130,13 +147,14 @@ class FakeControl implements NativeControlClient {
   static const _jpeg = [1, 2, 3];
 
   (double, double) screenSize = (2000, 1000);
+  String snapshotTargets = 'L1 @500,12 "Hello"';
 
   @override
   Future<ScreenSnapshot> snapshot() async {
     snapshots++;
     return ScreenSnapshot(
       jpeg: Uint8List.fromList(_jpeg),
-      targets: 'L1 @500,12 "Hello"',
+      targets: snapshotTargets,
       width: screenSize.$1,
       height: screenSize.$2,
       frontApp: 'Safari',

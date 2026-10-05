@@ -1,11 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:local_bluey/services/privacy_guard.dart';
 import 'package:local_bluey/services/settings_store.dart';
 import 'package:local_bluey/services/speech.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences.setMockInitialValues({});
 
   const settings = BrainSettings(
     backend: BrainBackend.openAiCompatible,
@@ -84,5 +87,15 @@ void main() {
         model: 'm',
       ),
     );
+  });
+
+  test('local-only mode refuses a remote TTS endpoint (#120)', () async {
+    PrivacyGuard.debugLocalOnlyOverride = true;
+    final client = MockClient((_) async => throw StateError('must not send'));
+    expect(
+      () => SpeechService(client: client).synthesize('hi', settings),
+      throwsA(isA<SpeechException>()),
+    );
+    PrivacyGuard.debugLocalOnlyOverride = null;
   });
 }
