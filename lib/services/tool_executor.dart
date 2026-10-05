@@ -138,7 +138,7 @@ class ToolExecutor {
         return ToolResult(
           'Display: ${snap.width.toInt()}x${snap.height.toInt()} points.\n'
           '${PrivacyGuard.redact(snap.targets)}',
-          imageBase64: base64Encode(snap.jpeg),
+          imageBase64: _safeImage(snap),
         );
 
       case 'zoom_screen':
@@ -165,9 +165,12 @@ class ToolExecutor {
         // detail view of the current snapshot in the same grid, so old
         // target ids keep their original staleness (#80).
         final crop = await _control.snapshotRegion(left, top, w, h);
+        // A zoom crop is pixels of the same screen: withhold it when the
+        // last snapshot contained sensitive text (#122).
         return ToolResult(
           'Zoomed ${w.toInt()}x${h.toInt()} region at (${left.toInt()},${top.toInt()}) points; coordinates unchanged.',
-          imageBase64: base64Encode(crop.jpeg),
+          imageBase64:
+              PrivacyGuard.hasSensitive(_lastTargets) ? null : base64Encode(crop.jpeg),
         );
 
       case 'wait':
@@ -324,8 +327,20 @@ class ToolExecutor {
     _lastSnapshotAt = DateTime.now();
     return ToolResult(
       '$text\n\n${PrivacyGuard.redact(snap.targets)}',
-      imageBase64: base64Encode(snap.jpeg),
+      imageBase64: _safeImage(snap),
     );
+  }
+
+  /// OCR text of the last snapshot, kept so zoom crops can be withheld
+  /// when the screen showed sensitive text (#122).
+  String _lastTargets = '';
+
+  /// Returns the base64 screenshot, or null when redaction patterns hit the
+  /// OCR text: the pixels would leak the same data the regexes scrub (#122).
+  String? _safeImage(ScreenSnapshot snap) {
+    _lastTargets = snap.targets;
+    if (PrivacyGuard.hasSensitive(snap.targets)) return null;
+    return base64Encode(snap.jpeg);
   }
 
   double _num(Object? value, {double fallback = 0}) =>

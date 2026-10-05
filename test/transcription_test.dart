@@ -4,10 +4,13 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:local_bluey/services/privacy_guard.dart';
 import 'package:local_bluey/services/settings_store.dart';
 import 'package:local_bluey/services/transcription.dart';
 
 void main() {
+  SharedPreferences.setMockInitialValues({});
   const settings = BrainSettings(
     backend: BrainBackend.openAiCompatible,
     baseUrl: 'http://brain.local/v1',
@@ -90,6 +93,20 @@ void main() {
         () => TranscriptionService(client: client).transcribe(file, settings),
         throwsA(isA<TranscriptionException>()),
       );
+    },
+  );
+
+  test(
+    'local-only mode refuses a remote transcription endpoint (#120)',
+    () async {
+      PrivacyGuard.debugLocalOnlyOverride = true;
+      final client = MockClient((_) async => throw StateError('must not send'));
+      final file = await File('${Directory.systemTemp.path}/t7.m4a').create();
+      expect(
+        () => TranscriptionService(client: client).transcribe(file, settings),
+        throwsA(isA<TranscriptionException>()),
+      );
+      PrivacyGuard.debugLocalOnlyOverride = null;
     },
   );
 }
