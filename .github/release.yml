@@ -1,0 +1,13 @@
+# Release-note categories from PR labels (#155).
+changelog:
+  exclude:
+    labels: [dependencies]
+  categories:
+    - title: Features
+      labels: [enhancement, feature]
+    - title: Fixes
+      labels: [bug, fix]
+    - title: CI and tooling
+      labels: [ci]
+    - title: Other changes
+      labels: ["*"]
