@@ -12,6 +12,7 @@ import '../services/safety_gate.dart';
 import '../services/strings.dart';
 import '../services/action_log.dart';
 import '../services/egress_monitor.dart';
+import '../services/endpoint_assistant.dart';
 import '../services/settings_store.dart';
 import 'data_privacy_section.dart';
 
@@ -41,6 +42,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _speechLanguage = Strings.speechLanguage;
   bool _testing = false;
   String? _testResult;
+  bool _detecting = false;
+  String? _detectResult;
   final _allowlist = TextEditingController();
   final _gate = SafetyGate();
   bool _safetyEnabled = true;
@@ -228,6 +231,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  void _applyPreset(EndpointPreset preset) {
+    setState(() {
+      _backend = preset.backend;
+      _baseUrl.text = preset.baseUrl;
+      _model.text = preset.modelHint;
+      if (!preset.requiresKey) _apiKey.text = '';
+    });
+  }
+
+  Future<void> _detectOllama() async {
+    setState(() {
+      _detecting = true;
+      _detectResult = null;
+    });
+    final detection = await EndpointAssistant().detectLocalOllama();
+    if (!mounted) return;
+    setState(() => _detecting = false);
+    if (detection == null) {
+      setState(
+        () => _detectResult =
+            'No Ollama on localhost:11434 - start it, then detect again.',
+      );
+      return;
+    }
+    final model = detection.suggestedModel ?? BrainSettings.defaults.model;
+    setState(() {
+      _backend = BrainBackend.ollama;
+      _baseUrl.text = detection.baseUrl;
+      _model.text = model;
+      _detectResult =
+          'Found Ollama with ${detection.models.length} model(s) - filled in $model.';
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_loaded) {
@@ -255,6 +292,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               selected: {_backend},
               onSelectionChanged: (sel) => setState(() => _backend = sel.first),
             ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (final preset in endpointPresets)
+                  ActionChip(
+                    label: Text(preset.label),
+                    onPressed: () => _applyPreset(preset),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: _detecting ? null : _detectOllama,
+                  icon: _detecting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.radar, size: 18),
+                  label: const Text('Detect local Ollama'),
+                ),
+              ],
+            ),
+            if (_detectResult != null) ...[
+              const SizedBox(height: 8),
+              Text(_detectResult!),
+            ],
             const SizedBox(height: 16),
             TextFormField(
               controller: _baseUrl,

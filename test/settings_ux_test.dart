@@ -41,6 +41,11 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 300));
       });
       await tester.pump();
+      await tester.scrollUntilVisible(
+        find.widgetWithText(SwitchListTile, 'Safety gate'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       final gateSwitch = find.widgetWithText(SwitchListTile, 'Safety gate');
       expect(gateSwitch, findsOneWidget);
       await tester.tap(
@@ -65,6 +70,11 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 300));
       });
       await tester.pump();
+      await tester.scrollUntilVisible(
+        find.widgetWithText(SwitchListTile, 'Safety gate'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.tap(
         find.descendant(
           of: find.widgetWithText(SwitchListTile, 'Safety gate'),
