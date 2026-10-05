@@ -112,7 +112,9 @@ class _FaceScreenState extends State<FaceScreen> {
                 height: 140,
                 child: _AnswerLog(),
               ),
-              // Bubble fades in/out; reduce-motion makes it instant (#88).
+              // #130: ONE bubble widget with a stable key - only show/hide
+              // animates; streamed tokens just update its text. Constrained
+              // so a long answer scrolls instead of covering the face.
               Positioned(
                 left: 24,
                 right: 24,
@@ -121,18 +123,30 @@ class _FaceScreenState extends State<FaceScreen> {
                   duration: motionDuration(context),
                   child: widget.bubble == null
                       ? const SizedBox.shrink()
-                      : Container(
-                          key: ValueKey(widget.bubble),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.92),
-                            borderRadius: BorderRadius.circular(20),
+                      : ConstrainedBox(
+                          key: const ValueKey('speech-bubble'),
+                          constraints: BoxConstraints(
+                            maxHeight:
+                                MediaQuery.of(context).size.height * 0.35,
                           ),
-                          child: Text(
-                            widget.bubble!,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 16,
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHigh,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: SingleChildScrollView(
+                              child: SelectableText(
+                                widget.bubble!,
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface,
+                                  fontSize: 16,
+                                ),
+                              ),
                             ),
                           ),
                         ),
