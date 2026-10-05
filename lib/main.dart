@@ -134,6 +134,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       if (!done && mounted) setState(() => _showOnboarding = true);
     });
     _tools.isCancelled = () => _safety.killed;
+    _safety.frontAppProvider = () => _tools.lastFrontApp;
     _safety.onConfirm = _confirmAction;
     _safety.onKill(() {
       setState(() => _bubble = 'Stopped.');
@@ -349,15 +350,23 @@ class _MacHomeState extends State<MacHome> with TrayListener {
             .timeout(stepTimeout),
       );
       // Tool loop: let the brain act, then react to what happened.
+      // #107: a kill (or kill+resume, which bumps the generation) stops this
+      // run at every await boundary, not only at the top of the loop.
+      final runGeneration = _safety.generation;
+      bool cancelled() => _safety.killed || _safety.generation != runGeneration;
       var steps = 0;
       while (reply.toolCall != null && steps < maxToolSteps) {
-        if (_safety.killed) {
+        if (cancelled()) {
           setState(() => _bubble = 'Stopped.');
           return;
         }
         steps++;
         final call = reply.toolCall!;
         if (!await _safety.authorize(call.name, call.arguments)) {
+          if (cancelled()) {
+            setState(() => _bubble = 'Stopped.');
+            return;
+          }
           reply = await brain
               .toolResult(call.name, 'Denied by the user.')
               .timeout(stepTimeout);
@@ -368,6 +377,10 @@ class _MacHomeState extends State<MacHome> with TrayListener {
           'acting.tool.${call.name}',
           () => _tools.execute(call),
         );
+        if (cancelled()) {
+          setState(() => _bubble = 'Stopped.');
+          return;
+        }
         reply = await brain
             .toolResult(
               call.name,
