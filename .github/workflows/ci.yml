@@ -279,6 +279,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_SUMMARY: "true"
 
+      # Pattern scan over Swift/Kotlin sources (#160): hardcoded secrets,
+      # private keys, tokens. Fails the job on any hit.
+      - name: Swift/Kotlin secrets pattern scan
+        run: .github/scripts/scan-native-secrets.sh macos ios android
+
   # Fails if any third-party action is referenced by a movable tag instead of
   # a full-length commit SHA. The check matches both `- uses:` and bare
   # `uses:` forms (#143) and carries its own negative test.
