@@ -124,7 +124,7 @@ class RequestRunner {
       final sttSettings = await sttLoader();
       final text = await PerfMonitor.instance.measure(
         'listening.transcription',
-() => transcriberFor(sttSettings)
+        () => transcriberFor(sttSettings)
             .transcribe(file, sttSettings)
             .timeout(
               remaining(),

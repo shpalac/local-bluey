@@ -262,8 +262,7 @@ void main() {
   });
 
   group('RequestRunner provider selection', () {
-    test('resolves the provider from the saved settings when not injected',
-        () {
+    test('resolves the provider from the saved settings when not injected', () {
       // No injected transcriber: the kind in settings picks the backend, so
       // choosing native in Settings is not silently ignored (#196).
       final runner = RequestRunner();
