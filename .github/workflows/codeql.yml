@@ -69,10 +69,16 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get --enforce-lockfile
+      - name: Install CocoaPods dependencies
+        run: pod install
+        working-directory: macos
       - uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
         with:
           languages: swift
           build-mode: manual
       - name: Build macOS for analysis
-        run: flutter build macos --debug
+        run: |
+          flutter config --enable-macos-desktop
+          flutter pub get --enforce-lockfile
+          xcodebuild -workspace macos/Runner.xcworkspace -scheme Runner -configuration Debug CODE_SIGNING_ALLOWED=NO clean build
       - uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
