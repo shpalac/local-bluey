@@ -51,6 +51,7 @@ Tools that change your machine (`click`, `type_text`, `press_keys`, `scroll`, `d
 
 ## Docs
 
+- [docs/USER_GUIDE.md](docs/USER_GUIDE.md) - gestures, voice flows, tools, safety and privacy for people using the app
 - [CONTRIBUTING.md](CONTRIBUTING.md) - dev loop, PR conventions, test expectations
 - [docs/architecture.md](docs/architecture.md) - the layers and data flow
 - [docs/dev-setup.md](docs/dev-setup.md) - per-platform setup and device checklist
