@@ -1,0 +1,52 @@
+name: CodeQL
+
+# Static analysis for the native layers (#160): Kotlin (android/). Swift (macos/)
+# is a follow-up: the CodeQL tracer needs a clean xcodebuild of the Flutter
+# macOS project (see #160). Dart stays with OSV + the pattern scan in the security
+# job. Runs on native-code changes and weekly, so new advisories against
+# unchanged code are still noticed.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'macos/**'
+      - 'ios/**'
+      - 'lib/**'
+      - 'pubspec.*'
+      - '.github/workflows/codeql.yml'
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'macos/**'
+      - 'ios/**'
+      - 'lib/**'
+      - 'pubspec.*'
+      - '.github/workflows/codeql.yml'
+  schedule:
+    - cron: '23 4 * * 1'
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+
+jobs:
+  # Kotlin compiles fine without a build here: build-mode none analyzes
+  # sources directly and needs no Gradle/AGP setup.
+  kotlin:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # upload findings to the Security tab
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
+        with:
+          languages: java-kotlin
+          build-mode: none
+      - uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
