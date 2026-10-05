@@ -210,6 +210,24 @@ jobs:
           path: build-simulator.log
           retention-days: 3
 
+  # Aggregate gate named `build`: branch protection requires a check with
+  # this name, and the macOS and iOS builds are now separate jobs. Fails if
+  # either build failed or was cancelled.
+  build:
+    if: ${{ always() && github.event_name != 'schedule' }}
+    needs: [build-macos, build-ios]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require both native builds
+        env:
+          MACOS_RESULT: ${{ needs.build-macos.result }}
+          IOS_RESULT: ${{ needs.build-ios.result }}
+        run: |
+          echo "build-macos: $MACOS_RESULT"
+          echo "build-ios: $IOS_RESULT"
+          [ "$MACOS_RESULT" = "success" ] && [ "$IOS_RESULT" = "success" ]
+
   # Android debug APK on ubuntu - no Xcode needed (#153). Runs in parallel
   # with the fast lanes for the same reason as the macOS builds.
   android:
