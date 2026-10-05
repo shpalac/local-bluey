@@ -37,6 +37,7 @@ class SafetyGate {
 
   static const _kEnabled = 'safety.enabled';
   static const _kAllowlist = 'safety.appAllowlist';
+  static const _kResumeAt = 'safety.resumeAtMs';
 
   /// UI hook: describe the action, get a yes/no. Null = deny risky actions.
   Future<bool> Function(String description)? onConfirm;
@@ -65,11 +66,40 @@ class SafetyGate {
 
   void onKill(void Function() listener) => _killListeners.add(listener);
 
-  Future<bool> isEnabled() async =>
-      (await SharedPreferences.getInstance()).getBool(_kEnabled) ?? true;
+  /// A time-boxed pause (#133): the gate turns itself back on at this time.
+  Future<DateTime?> resumeAt() async {
+    final ms = (await SharedPreferences.getInstance()).getInt(_kResumeAt);
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  }
 
-  Future<void> setEnabled(bool value) async =>
-      (await SharedPreferences.getInstance()).setBool(_kEnabled, value);
+  Future<bool> isEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool(_kEnabled) ?? true;
+    if (enabled) return true;
+    final resumeMs = prefs.getInt(_kResumeAt);
+    if (resumeMs != null && DateTime.now().millisecondsSinceEpoch >= resumeMs) {
+      // The pause expired: re-enable without waiting for the UI (#133).
+      await setEnabled(true);
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> setEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kEnabled, value);
+    if (value) await prefs.remove(_kResumeAt);
+  }
+
+  /// Disables the gate until [duration] has passed (#133).
+  Future<void> pauseFor(Duration duration) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kEnabled, false);
+    await prefs.setInt(
+      _kResumeAt,
+      DateTime.now().add(duration).millisecondsSinceEpoch,
+    );
+  }
 
   /// Empty = every app allowed except [defaultDenyApps] (#109).
   Future<Set<String>> allowlist() async {
