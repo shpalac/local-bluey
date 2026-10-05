@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/diagnostics.dart';
+import '../services/native_control.dart';
 import '../services/strings.dart';
 
 /// Troubleshooting page with live checks and copyable diagnostics (#85).
@@ -38,6 +39,19 @@ class _TroubleshootingState extends State<TroubleshootingScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                ListTile(
+                  leading: const Icon(Icons.menu_book_outlined),
+                  title: Text(
+                    Strings.t('Troubleshooting guide', 'מדריך פתרון בעיות'),
+                  ),
+                  subtitle: Text(
+                    Strings.t('Symptom-by-symptom fixes', 'פתרונות לפי תסמין'),
+                  ),
+                  onTap: () => NativeControl.openURL(
+                    'https://github.com/shpalac/local-bluey/blob/main/docs/TROUBLESHOOTING.md',
+                  ),
+                ),
+                const Divider(),
                 for (final r in results)
                   ListTile(
                     leading: Icon(
