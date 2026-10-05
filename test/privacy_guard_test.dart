@@ -60,7 +60,10 @@ void main() {
 
   test('refusalForUrl gates any endpoint in local-only mode (#120)', () async {
     SharedPreferences.setMockInitialValues({'privacy.localOnly': true});
-    expect(await PrivacyGuard.refusalForUrl('http://api.openai.com/v1'), isNotNull);
+    expect(
+      await PrivacyGuard.refusalForUrl('http://api.openai.com/v1'),
+      isNotNull,
+    );
     expect(await PrivacyGuard.refusalForUrl('http://127.0.0.1:11434'), isNull);
   });
 }

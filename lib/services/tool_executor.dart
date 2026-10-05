@@ -169,8 +169,9 @@ class ToolExecutor {
         // last snapshot contained sensitive text (#122).
         return ToolResult(
           'Zoomed ${w.toInt()}x${h.toInt()} region at (${left.toInt()},${top.toInt()}) points; coordinates unchanged.',
-          imageBase64:
-              PrivacyGuard.hasSensitive(_lastTargets) ? null : base64Encode(crop.jpeg),
+          imageBase64: PrivacyGuard.hasSensitive(_lastTargets)
+              ? null
+              : base64Encode(crop.jpeg),
         );
 
       case 'wait':
