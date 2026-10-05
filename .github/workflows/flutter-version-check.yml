@@ -1,0 +1,37 @@
+name: Flutter version check
+
+# Weekly drift check between .flutter-version and the latest stable Flutter
+# (#157). Opens one issue when they diverge; no-ops when a matching issue
+# is already open.
+
+on:
+  schedule:
+    - cron: '23 4 * * 1'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Compare pinned vs latest stable
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pinned=$(cat .flutter-version)
+          latest=$(gh api repos/flutter/flutter/releases/latest -q .tag_name | sed 's/^v//')
+          echo "pinned=$pinned latest=$latest"
+          [ "$pinned" = "$latest" ] && exit 0
+          title="Flutter $latest is out (pinned: $pinned)"
+          if gh issue list --state open --search "$title in:title" --json title -q '.[].title' | grep -q "$latest"; then
+            echo "an issue is already open"
+            exit 0
+          fi
+          gh issue create \
+            --title "$title" \
+            --label dependencies \
+            --body "Bump \`.flutter-version\` to \`$latest\` after checking the release notes: https://github.com/flutter/flutter/releases/tag/v$latest"$'\n\n'"Opened by the weekly flutter-version-check workflow (#157)."

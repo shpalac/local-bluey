@@ -1,10 +1,48 @@
 version: 2
+# One weekly PR per ecosystem: minor/patch grouped, labels for triage,
+# capped open PRs (#157).
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    groups:
+      actions:
+        update-types: [minor, patch]
+    labels: [dependencies, ci]
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: chore(deps)
+
   - package-ecosystem: pub
     directory: /
     schedule:
       interval: weekly
+    groups:
+      pub:
+        update-types: [minor, patch]
+    labels: [dependencies, dart]
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: chore(deps)
+
+  - package-ecosystem: gradle
+    directory: /android
+    schedule:
+      interval: weekly
+    groups:
+      gradle:
+        update-types: [minor, patch]
+    labels: [dependencies, android]
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: chore(deps)
+
+  - package-ecosystem: cocoapods
+    directory: /macos
+    schedule:
+      interval: weekly
+    labels: [dependencies, macos]
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: chore(deps)
