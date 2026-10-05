@@ -165,6 +165,8 @@ void main() {
       ),
     );
     final file = await tempFile('s11.m4a');
+    // ignore: avoid_print
+    print('DBG override=${PrivacyGuard.debugLocalOnlyOverride}');
     expect(
       () => HttpSttProvider(client: client).transcribe(file, localSettings),
       throwsA(

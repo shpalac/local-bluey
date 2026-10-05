@@ -177,8 +177,15 @@ class HttpSttProvider implements TranscriberLike {
       );
     }
     // Local-only mode gates audio uploads exactly like the brain (#120).
-    final refusal = await PrivacyGuard.refusalForUrl(base);
-    if (refusal != null) throw SttException(SttErrorKind.unreachable, refusal);
+    // Snapshot the local-only decision once for the whole request (#199):
+    // the redirect check below must not re-read mutable global state.
+    final localOnly = await PrivacyGuard.isLocalOnly();
+    if (localOnly && !PrivacyGuard.isLocalUrl(base)) {
+      throw SttException(
+        SttErrorKind.unreachable,
+        'Local-only mode is on - $base is off-device.',
+      );
+    }
     final request = http.MultipartRequest(
       'POST',
       Uri.parse(endpoint(base, '/audio/transcriptions')),
@@ -214,12 +221,17 @@ class HttpSttProvider implements TranscriberLike {
         'Transcription timed out after ${requestTimeout.inSeconds}s',
       );
     }
-    if (response.isRedirect) {
+    // Some clients normalize redirect state away; check the status and
+    // location header directly so a 3xx can never slip through.
+    final isRedirect =
+        response.statusCode >= 300 &&
+        response.statusCode < 400 &&
+        response.headers.containsKey('location');
+    if (isRedirect) {
       // #199: never follow redirects silently - in local-only mode a
       // redirect to a remote host would leak audio off-device.
       final location = response.headers['location'] ?? '';
-      if (await PrivacyGuard.isLocalOnly() &&
-          !PrivacyGuard.isLocalUrl(location)) {
+      if (localOnly && !PrivacyGuard.isLocalUrl(location)) {
         throw SttException(
           SttErrorKind.unreachable,
           'Local-only mode is on - the transcription endpoint redirected '
