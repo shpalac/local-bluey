@@ -82,7 +82,7 @@ void main() {
       'press_return': true,
     });
     expect(withReturn, contains('press Return'));
-    final long = 'a' * 150 + 'TAIL-MARKER' + 'b' * 88;
+    final long = '${'a' * 150}TAIL-MARKER${'b' * 88}';
     final desc = SafetyGate.describe('type_text', {'text': long});
     expect(desc, contains('TAIL-MARKER'));
     expect(desc, contains('249 characters total'));
