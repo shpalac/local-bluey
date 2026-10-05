@@ -36,3 +36,8 @@ varies by compositor):
 | wlroots (Sway etc.) | expected to work | expected with udev rule |
 
 Denied portal consent surfaces as a clean tool error, not a hang.
+
+## Something broken?
+
+Symptom-by-symptom fixes live in [TROUBLESHOOTING.md](TROUBLESHOOTING.md);
+the user-facing feature tour is in [USER_GUIDE.md](USER_GUIDE.md).
