@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:local_bluey/services/privacy_guard.dart';
+import 'package:local_bluey/services/request_interfaces.dart';
+import 'package:local_bluey/services/request_runner.dart';
 import 'package:local_bluey/services/strings.dart';
 import 'package:local_bluey/services/stt.dart';
 
@@ -210,4 +212,39 @@ void main() {
     expect(SttSettings.defaults.baseUrl, isNull);
     expect(SttSettings.defaults.apiKey, isNull);
   });
+
+  group('RequestRunner provider selection', () {
+    test('resolves the provider from the saved settings when not injected',
+        () {
+      // No injected transcriber: the kind in settings picks the backend, so
+      // choosing native in Settings is not silently ignored (#196).
+      final runner = RequestRunner();
+      expect(
+        runner.transcriberFor(const SttSettings()),
+        isA<HttpSttProvider>(),
+      );
+      expect(
+        runner.transcriberFor(
+          const SttSettings(kind: SttProviderKind.nativeWhisper),
+        ),
+        isA<NativeWhisperSttProvider>(),
+      );
+    });
+
+    test('an injected transcriber always wins over the factory (#196)', () {
+      final injected = _RecordingTranscriber();
+      final runner = RequestRunner(transcriber: injected);
+      expect(
+        runner.transcriberFor(
+          const SttSettings(kind: SttProviderKind.nativeWhisper),
+        ),
+        same(injected),
+      );
+    });
+  });
+}
+
+class _RecordingTranscriber implements TranscriberLike {
+  @override
+  Future<String> transcribe(File audio, SttSettings settings) async => '';
 }

@@ -32,7 +32,6 @@ import 'services/request_runner.dart';
 import 'services/speak_receipts.dart';
 import 'services/speech.dart';
 import 'services/tool_executor.dart';
-import 'services/stt.dart';
 import 'ui/face_screen.dart';
 import 'ui/permission_recovery_card.dart';
 import 'ui/lock_gate.dart';
@@ -115,7 +114,6 @@ class _MacHomeState extends State<MacHome>
   String? _bubble;
   final _capture = AudioCapture();
   final _receipts = SpeakReceipts();
-  final _transcription = HttpSttProvider();
   final _speech = SpeechService();
   final _tools = ToolExecutor();
   final _safety = SafetyGate();
@@ -325,7 +323,9 @@ class _MacHomeState extends State<MacHome>
   }
 
   late final RequestRunner _runner = RequestRunner(
-    transcriber: _transcription,
+    // No transcriber: the runner resolves the provider from the saved STT
+    // settings per request, so switching provider in Settings takes effect
+    // without a restart (#196).
     safety: _safety,
     tools: _tools,
     speech: _speech,
