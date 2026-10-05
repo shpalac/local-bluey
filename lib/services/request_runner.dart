@@ -15,7 +15,7 @@ import 'safety_gate.dart';
 import 'settings_store.dart';
 import 'speech.dart';
 import 'tool_executor.dart';
-import 'transcription.dart';
+import 'stt.dart';
 
 /// Side effects of the request loop that belong to the UI/server layer.
 /// MacHome wires these to setState, receipts and the phone server; tests
@@ -45,6 +45,7 @@ class RequestHooks {
 class RequestRunner {
   RequestRunner({
     TranscriberLike? transcriber,
+    this.sttLoader = SttSettings.load,
     GateLike? safety,
     ExecutorLike? tools,
     SpeechLike? speech,
@@ -56,7 +57,7 @@ class RequestRunner {
     this.hooks = const RequestHooks(),
     this.stepTimeout = const Duration(seconds: 60),
     this.maxToolSteps = 5,
-  }) : transcriber = transcriber ?? TranscriptionService(),
+  }) : transcriber = transcriber ?? HttpSttProvider(),
        safety = safety ?? SafetyGate(),
        tools = tools ?? ToolExecutor(),
        speech = speech ?? SpeechService(),
@@ -68,6 +69,9 @@ class RequestRunner {
            currentVoice ?? (() => CharacterStore.instance.current.value.voice);
 
   final TranscriberLike transcriber;
+
+  /// Where STT configuration comes from (#196); tests inject a fake.
+  final Future<SttSettings> Function() sttLoader;
   final GateLike safety;
   final ExecutorLike tools;
   final SpeechLike speech;
@@ -91,9 +95,10 @@ class RequestRunner {
       ..status(BlueyStatus.thinking);
     try {
       final settings = await settingsLoader();
+      final sttSettings = await sttLoader();
       final text = await PerfMonitor.instance.measure(
         'listening.transcription',
-        () => transcriber.transcribe(file, settings),
+        () => transcriber.transcribe(file, sttSettings),
       );
 
       if (text.isEmpty) {
@@ -196,7 +201,7 @@ class RequestRunner {
             ..bubble('${reply.spoken}\n(TTS failed: $e)');
         }
       }
-    } on TranscriptionException catch (e) {
+    } on SttException catch (e) {
       hooks
         ..bubble('Transcription failed: $e')
         ..status(BlueyStatus.error);

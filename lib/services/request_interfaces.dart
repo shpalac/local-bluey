@@ -3,6 +3,7 @@ import 'dart:io';
 import '../llm/brain.dart';
 import '../llm/tools.dart';
 import 'settings_store.dart';
+import 'stt.dart';
 import 'tool_executor.dart';
 
 /// Narrow seams between the request runner (#135) and the concrete
@@ -35,6 +36,9 @@ abstract class SpeechLike {
   Future<void> playBytes(List<int> bytes);
 }
 
+/// Same Future-based final-transcript contract as before; partial results
+/// are reserved for later streaming work (#200). Settings are STT-scoped
+/// since #196, not the brain's.
 abstract class TranscriberLike {
-  Future<String> transcribe(File audio, BrainSettings settings);
+  Future<String> transcribe(File audio, SttSettings settings);
 }

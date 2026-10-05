@@ -11,7 +11,7 @@ import 'package:local_bluey/services/routines.dart';
 import 'package:local_bluey/services/settings_store.dart';
 import 'package:local_bluey/services/speech.dart';
 import 'package:local_bluey/services/tool_executor.dart';
-import 'package:local_bluey/services/transcription.dart';
+import 'package:local_bluey/services/stt.dart';
 
 class FakeBrain implements BrainLike {
   final replies = <BrainReply>[];
@@ -94,8 +94,8 @@ class FakeTranscriber implements TranscriberLike {
   bool fail = false;
 
   @override
-  Future<String> transcribe(File audio, BrainSettings settings) async {
-    if (fail) throw TranscriptionException('nope');
+  Future<String> transcribe(File audio, SttSettings settings) async {
+    if (fail) throw SttException(SttErrorKind.httpError, 'nope');
     return result;
   }
 }
@@ -150,6 +150,7 @@ _rig({bool withBrain = true}) {
     speech: speech,
     brainProvider: withBrain ? () => b : () => null,
     settingsLoader: () async => _settings,
+    sttLoader: () async => const SttSettings(baseUrl: 'http://stt.local/v1'),
     matchRoutine: (_) => null,
     addToConversation: (role, text) => conversation.add([role, text]),
     currentVoice: () => 'alloy',
@@ -227,6 +228,7 @@ void main() {
       speech: FakeSpeech(),
       brainProvider: () => brain,
       settingsLoader: () async => _settings,
+      sttLoader: () async => const SttSettings(baseUrl: 'http://stt.local/v1'),
       matchRoutine: (_) => const Routine(
         name: 'briefing',
         trigger: 'hello',
