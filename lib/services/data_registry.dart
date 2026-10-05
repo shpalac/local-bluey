@@ -10,6 +10,7 @@ import 'egress_monitor.dart';
 import 'perf_monitor.dart';
 import 'routines.dart';
 import 'settings_store.dart';
+import 'stt.dart';
 import 'strings.dart';
 
 /// One persistent store, registered in the single inventory (#83).
@@ -167,6 +168,16 @@ class DataRegistry {
       retentionEn: 'Kept until you delete it',
       retentionHe: 'נשמר עד שמוחקים',
       clear: SettingsStore.clearAll,
+    ),
+    DataStoreInfo(
+      id: 'stt',
+      sourceFile: 'lib/services/stt.dart',
+      whatEn: 'Speech-to-text settings and the STT API key (Keychain)',
+      whatHe: 'הגדרות תמלול ומפתח ה-STT (בצרור המפתחות)',
+      where: 'SharedPreferences + secure storage',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: SttSettings.clearAll,
     ),
     DataStoreInfo(
       id: 'language',

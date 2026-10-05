@@ -6,8 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'audio_capture.dart';
 import 'privacy_guard.dart';
-import 'settings_store.dart';
-import 'transcription.dart';
+import 'request_interfaces.dart';
+import 'stt.dart';
 
 /// Pluggable keyword spotter. A native on-device engine (e.g. Porcupine or a
 /// CoreML keyword model) implements this and scores raw audio windows
@@ -26,10 +26,10 @@ class WakeWordService {
   WakeWordService({
     this.spotter,
     AudioCapture? capture,
-    TranscriptionService? transcription,
+    TranscriberLike? transcription,
     this.wakePhrase = 'hey bluey',
   }) : _capture = capture ?? AudioCapture(),
-       _transcription = transcription ?? TranscriptionService();
+       _transcription = transcription ?? HttpSttProvider();
 
   static const _kEnabled = 'wake_word.enabled';
   static const windowDuration = Duration(seconds: 2);
@@ -37,7 +37,7 @@ class WakeWordService {
 
   final WakeWordSpotter? spotter;
   final AudioCapture _capture;
-  final TranscriptionService _transcription;
+  final TranscriberLike _transcription;
   final String wakePhrase;
 
   final ValueNotifier<bool> listening = ValueNotifier(false);
@@ -89,14 +89,14 @@ class WakeWordService {
     if (engine == null) return false; // no engine bundled; stay dormant
     if (await engine.score(file) < scoreThreshold) return false;
 
-    final settings = await SettingsStore.load();
+    final stt = await SttSettings.load();
     if (await PrivacyGuard.isLocalOnly()) {
-      final endpoint = settings.transcriptionBaseUrl ?? settings.baseUrl;
-      if (!PrivacyGuard.isLocalUrl(endpoint)) {
+      final endpoint = stt.baseUrl;
+      if (endpoint == null || !PrivacyGuard.isLocalUrl(endpoint)) {
         return false; // confirmation would leave the Mac
       }
     }
-    final text = await _transcription.transcribe(file, settings);
+    final text = await _transcription.transcribe(file, stt);
     if (!text.toLowerCase().contains(wakePhrase)) return false;
     onWake?.call();
     return true;
