@@ -275,7 +275,9 @@ class PhoneServer {
     _stopped = true;
     if (_registration != null) await nsd.unregister(_registration!);
     await _server?.close();
-    for (final link in _phones.keys) {
+    // Iterate a snapshot: closing a link awaits, and the disconnect
+    // handler removes its entry from _phones mid-iteration.
+    for (final link in _phones.keys.toList()) {
       await link.close();
     }
     _phones.clear();

@@ -32,3 +32,14 @@ persisted by the desktop portal.
 - [ ] capture works on the target compositor
 - [ ] uinput typing/click works without root
 - [ ] tray icon shows
+
+## Status update: linux/ runner exists (#149)
+
+The `linux/` platform runner is generated and built in CI (`linux` job on
+`ubuntu-latest`): GTK3/clang/cmake/ninja plus plugin system packages
+libayatana-appindicator3-dev (tray_manager), libsecret-1-dev and
+libjsoncpp-dev (flutter_secure_storage), libavahi-client-dev (nsd) and
+libasound2-dev (record/audioplayers). Unit/widget tests run there too and
+the release bundle is uploaded as a CI artifact. HostControl still returns
+UnsupportedHostControl on Linux - the app shows the unsupported-host
+screen; the X11 backend is #150.
