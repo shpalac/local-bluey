@@ -164,7 +164,7 @@ jobs:
 
       - name: Boot, install, launch, verify
         run: tool/simulator_smoke.sh
-        timeout-minutes: 10
+        timeout-minutes: 6
 
       - name: Upload launch screenshot
         if: always()

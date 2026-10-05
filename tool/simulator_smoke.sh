@@ -4,6 +4,7 @@
 # the "fresh install launches" slice of the real-device checklist; the
 # hardware-only items stay manual.
 set -euo pipefail
+set -x
 cd "$(dirname "$0")/.."
 
 APP_PATH="build/ios/iphonesimulator/Runner.app"
