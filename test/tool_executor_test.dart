@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/llm/tools.dart';
 import 'package:local_bluey/services/native_control.dart';
@@ -107,18 +108,19 @@ void main() {
     expect(result.text, contains('look_at_screen'));
   });
 
-  test('a stale target is still rejected after a zoom (#80)', () async {
-    await executor.execute(ToolCall('look_at_screen', {}));
-    await executor.execute(
-      ToolCall('zoom_screen', {'x': 0, 'y': 0, 'width': 100, 'height': 100}),
-    );
-    executor.debugLastSnapshotAt = DateTime.now().subtract(
-      ToolExecutor.staleAfter + const Duration(seconds: 1),
-    );
-    final result = await executor.execute(
-      ToolCall('click', {'target_id': 'C4'}),
-    );
-    expect(result.text, contains('stale'));
+  test('a stale target is still rejected after a zoom (#80)', () {
+    // Fake time: no wall-clock wait for staleness (#136).
+    fakeAsync((async) {
+      executor.execute(ToolCall('look_at_screen', {}));
+      executor.execute(
+        ToolCall('zoom_screen', {'x': 0, 'y': 0, 'width': 100, 'height': 100}),
+      );
+      async.elapse(ToolExecutor.staleAfter + const Duration(seconds: 1));
+      executor
+          .execute(ToolCall('click', {'target_id': 'C4'}))
+          .then((result) => expect(result.text, contains('stale')));
+      async.flushMicrotasks();
+    });
   });
 
   test('wait is bounded at the maximum (#80)', () async {
@@ -127,14 +129,18 @@ void main() {
     expect(result.text, contains('${ToolExecutor.maxWaitMs}'));
   });
 
-  test('wait is cancelled by the kill switch (#80)', () async {
-    var killed = false;
-    executor.isCancelled = () => killed;
-    final pending = executor.execute(ToolCall('wait', {'ms': 3000}));
-    await Future.delayed(const Duration(milliseconds: 120));
-    killed = true;
-    final result = await pending;
-    expect(result.text, contains('cancelled'));
+  test('wait is cancelled by the kill switch (#80)', () {
+    // Fake time: the 3 s wait costs no wall-clock time (#136).
+    fakeAsync((async) {
+      var killed = false;
+      executor.isCancelled = () => killed;
+      final pending = executor.execute(ToolCall('wait', {'ms': 3000}));
+      async.elapse(const Duration(milliseconds: 120));
+      killed = true;
+      async.elapse(const Duration(seconds: 3));
+      pending.then((result) => expect(result.text, contains('cancelled')));
+      async.flushMicrotasks();
+    });
   });
   group('#110: bad arguments become Error results, not aborts', () {
     test('numbers sent as strings are coerced', () async {

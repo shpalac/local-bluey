@@ -40,8 +40,18 @@ jobs:
         run: flutter analyze
 
       - name: Unit + widget tests (mocked contracts)
-        run: flutter test --reporter expanded 2>&1 | tee test-output.log
+        run: flutter test --coverage --reporter expanded 2>&1 | tee test-output.log
         timeout-minutes: 8
+
+      - name: Coverage thresholds (services/, link/) (#136)
+        run: dart run tool/check_coverage.dart
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          retention-days: 14
 
       - name: Upload test logs on failure
         if: failure()

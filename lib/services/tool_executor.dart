@@ -1,7 +1,7 @@
+import 'package:clock/clock.dart';
+
 import 'dart:convert';
 import 'dart:ui' show Offset;
-
-import 'package:flutter/foundation.dart';
 
 import '../llm/tools.dart';
 import 'action_log.dart';
@@ -20,8 +20,17 @@ class ToolResult {
 /// Executes brain tool calls against the Mac's native layer.
 /// Ported from RealtimeHost.runTool / runAction in the original Swift app.
 class ToolExecutor {
-  ToolExecutor({this._control = const ChannelControl(), ActionLog? actionLog})
-    : _actionLog = actionLog ?? ActionLog.instance;
+  ToolExecutor({
+    Clock? clock,
+    this._control = const ChannelControl(),
+    ActionLog? actionLog,
+  }) : _clockOverride = clock,
+       _actionLog = actionLog ?? ActionLog.instance;
+
+  /// Injectable clock for tests (#136); falls back to the zone-aware
+  /// package:clock so fakeAsync controls time in tests.
+  final Clock? _clockOverride;
+  Clock get _clock => _clockOverride ?? clock;
 
   final NativeControlClient _control;
   final ActionLog _actionLog;
@@ -55,12 +64,9 @@ class ToolExecutor {
   /// by the host; tests inject their own.
   bool Function() isCancelled = () => false;
 
-  @visibleForTesting
-  set debugLastSnapshotAt(DateTime? value) => _lastSnapshotAt = value;
-
   bool get _stale =>
       _lastSnapshotAt == null ||
-      DateTime.now().difference(_lastSnapshotAt!) > staleAfter;
+      _clock.now().difference(_lastSnapshotAt!) > staleAfter;
 
   String? _stalenessError(Map<String, dynamic> args) {
     final usesTarget = _str(args['target_id']).isNotEmpty;
@@ -137,7 +143,7 @@ class ToolExecutor {
         final snap = await _control.snapshot();
         _screenWidth = snap.width;
         _screenHeight = snap.height;
-        _lastSnapshotAt = DateTime.now();
+        _lastSnapshotAt = _clock.now();
         lastFrontApp = snap.frontApp ?? '';
         _home = await _control.mouseLocation();
         return ToolResult(
@@ -182,14 +188,15 @@ class ToolExecutor {
       case 'wait':
         final requested = _num(call.arguments['ms']);
         final ms = requested.clamp(0, maxWaitMs).round();
-        final timer = Stopwatch()..start();
-        while (timer.elapsedMilliseconds < ms) {
+        final startedAt = _clock.now();
+        int elapsed() => _clock.now().difference(startedAt).inMilliseconds;
+        while (elapsed() < ms) {
           if (isCancelled()) {
             return ToolResult(
-              'Wait cancelled by the kill switch after ${timer.elapsedMilliseconds} ms.',
+              'Wait cancelled by the kill switch after ${elapsed()} ms.',
             );
           }
-          await Future.delayed(const Duration(milliseconds: 50));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
         }
         return ToolResult(
           requested > maxWaitMs
@@ -328,7 +335,7 @@ class ToolExecutor {
     final snap = await _control.snapshot();
     _screenWidth = snap.width;
     _screenHeight = snap.height;
-    _lastSnapshotAt = DateTime.now();
+    _lastSnapshotAt = _clock.now();
     lastFrontApp = snap.frontApp ?? '';
     return ToolResult(
       '$text\n\n${PrivacyGuard.redact(snap.targets)}',
