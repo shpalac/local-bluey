@@ -31,3 +31,10 @@
 Not supported yet - tracked in issues #51-#54. The architecture keeps
 host control behind an abstraction so these ports stay possible; see
 docs/architecture.md.
+
+## Flutter version
+
+The SDK is pinned in `.flutter-version` at the repo root; CI reads it for
+every job (#157). Install the same version locally (e.g. `fvm use $(cat
+.flutter-version)`) and bump the file deliberately - a weekly workflow
+opens an issue when a newer stable Flutter exists.
