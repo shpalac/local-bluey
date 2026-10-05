@@ -38,7 +38,7 @@ jobs:
             echo
             echo "| Job | Median duration |"
             echo "|---|---:|"
-            for job in test build linux security pinned-actions; do
+            for job in static test build-macos build-ios android android-integration linux security pinned-actions; do
               durations=$(echo "$runs" | cut -f1 | while read -r id; do
                 gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?per_page=100" \
                   -q --jq ".jobs[] | select(.name==\"$job\" and .status==\"completed\") | ((.completed_at | fromdateiso8601) - (.started_at | fromdateiso8601))" 2>/dev/null || true

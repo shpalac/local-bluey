@@ -97,11 +97,12 @@ jobs:
           path: test-output.log
           retention-days: 7
 
-  # Builds stay on macOS: iOS/macOS outputs need Xcode. Skip the 25-minute
-  # lane when the fast lanes already failed or the change is docs-only (#144).
-  build:
+  # Builds stay on macOS: iOS/macOS outputs need Xcode. Runs in parallel
+  # with the static/test fast lanes: the native builds never inspect Dart
+  # test results, so gating on them only added wall-clock (#144, #153).
+  # Docs-only changes skip this 25-minute lane entirely.
+  build-macos:
     if: ${{ github.event_name != 'schedule' }}
-    needs: [static, test]
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -123,6 +124,33 @@ jobs:
         run: flutter build macos 2>&1 | tee build-macos.log
         timeout-minutes: 12
 
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: build-logs-macos
+          path: build-macos.log
+          retention-days: 3
+
+  build-ios:
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: macos-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      # Single source of truth: .flutter-version at the repo root (#157).
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+
       - name: Build iOS (no codesign)
         run: flutter build ios --no-codesign 2>&1 | tee build-ios.log
         timeout-minutes: 12
@@ -131,8 +159,8 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: build-logs
-          path: build-*.log
+          name: build-logs-ios
+          path: build-ios.log
           retention-days: 3
 
   # iOS simulator smoke (#125): boots a simulator, installs the debug
@@ -182,10 +210,10 @@ jobs:
           path: build-simulator.log
           retention-days: 3
 
-  # Android debug APK on ubuntu - no Xcode needed (#153).
+  # Android debug APK on ubuntu - no Xcode needed (#153). Runs in parallel
+  # with the fast lanes for the same reason as the macOS builds.
   android:
     if: ${{ github.event_name != 'schedule' }}
-    needs: [static, test]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -200,6 +228,14 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+
+      # Cached Gradle wrapper/distribution + AGP + dependency jars: a cold
+      # Gradle setup re-downloads all of them on every run (#speed).
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
 
       - run: flutter pub get --enforce-lockfile
 
@@ -227,7 +263,6 @@ jobs:
   # is mocked in-Dart, so no macOS host is needed.
   android-integration:
     if: ${{ github.event_name != 'schedule' }}
-    needs: [static, test]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -246,6 +281,14 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+
+      # Gradle is exercised through `flutter test integration_test`; a warm
+      # Gradle home saves the wrapper + AGP + dependency re-download (#speed).
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
 
       - run: flutter pub get --enforce-lockfile
 
@@ -286,14 +329,25 @@ jobs:
           channel: stable
           cache: true
 
-      - name: System packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            clang cmake ninja-build pkg-config \
-            libgtk-3-dev libayatana-appindicator3-dev \
-            libsecret-1-dev libjsoncpp-dev \
-            libavahi-client-dev libasound2-dev \
+      # GTK3 stack + plugin system deps, cached so the ~1-2 min apt
+      # download/update is skipped on warm runs (#speed):
+      # tray_manager (ayatana-appindicator), flutter_secure_storage
+      # (libsecret, libjsoncpp), nsd (Avahi), record/audioplayers (ALSA),
+      # window_manager (GTK), GStreamer for media plugins.
+      - name: System packages (apt cache)
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
+        with:
+          # Dev packages register headers statically; the runtime libs the
+          # Flutter plugins link against are plain filesets. No pre/postinst
+          # needs here, so install scripts stay off (action caveat: the
+          # caveat path is for packages whose postinst must register
+          # services/users) and no `version` bump is needed when the list
+          # changes - the action hashes the package list into the cache key.
+          packages: |
+            clang cmake ninja-build pkg-config
+            libgtk-3-dev libayatana-appindicator3-dev
+            libsecret-1-dev libjsoncpp-dev
+            libavahi-client-dev libasound2-dev
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
       - run: flutter pub get --enforce-lockfile
@@ -345,16 +399,9 @@ jobs:
         with:
           fetch-depth: 0 # gitleaks scans history
 
-      - name: Read Flutter version
-        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
-
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
-      - run: flutter pub get --enforce-lockfile
+      # No flutter-action here: every scanner below works on source files
+      # and the lockfile, never on the Dart toolchain (#speed). Dropping
+      # the SDK download + pub get trims the job by ~1 minute.
 
       # Pinned version + checksum, verified before execution (#144). Bump
       # deliberately: fetch the release asset and sha256sum it locally.
