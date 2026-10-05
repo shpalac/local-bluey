@@ -27,6 +27,13 @@ Nothing is local unless you point it at a local endpoint. The brain, transcripti
 
 Tools that change your machine (`click`, `type_text`, `press_keys`, `scroll`, `drag`, `open_app`, `open_url`) ask for confirmation first, and `open_app` can be limited to an allowlist. A global kill switch cancels actions in flight. An optional biometric app lock (Touch ID / Face ID / device biometrics) can gate the app. A follow-up hardening pass on the safety gate and pairing channel is tracked in [#107](https://github.com/shpalac/local-bluey/issues/107)-[#118](https://github.com/shpalac/local-bluey/issues/118).
 
+## Docs
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) - dev loop, PR conventions, test expectations
+- [docs/architecture.md](docs/architecture.md) - the layers and data flow
+- [docs/dev-setup.md](docs/dev-setup.md) - per-platform setup and device checklist
+- [Landing page](docs/index.html) (serve the repo with GitHub Pages from /docs)
+
 ## Architecture
 
 | Layer | Tech | What it does |

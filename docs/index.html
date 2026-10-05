@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Bluey - a desktop pet that runs your Mac, privately</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 44rem;
+         margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.6; }
+  h1 { font-size: 2rem; margin-bottom: .25rem; }
+  .pitch { font-size: 1.2rem; opacity: .85; }
+  h2 { margin-top: 2.5rem; font-size: 1.2rem; }
+  code { background: rgba(127,127,127,.15); padding: .1em .3em; border-radius: 4px; }
+  a { color: #4c8dff; }
+  ul { padding-left: 1.2rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Local Bluey</h1>
+  <p class="pitch">A desktop pet that lives on your Mac, talks, and -
+  with your explicit approval - drives your computer. Your voice and
+  screen stay yours.</p>
+</header>
+
+<h2>What it does</h2>
+<ul>
+  <li><strong>Wake and talk.</strong> Say the wake word or hold to talk;
+    Bluey answers with a voice and a face, not a chat window.</li>
+  <li><strong>Safe computer control.</strong> Bluey can click, type and
+    open apps - but every risky action asks you first, and a kill switch
+    stops everything instantly.</li>
+  <li><strong>Phone remote.</strong> Pair an iPhone over your local
+    network to wake the Mac, talk to it, or put it to sleep.</li>
+  <li><strong>Point at things.</strong> Ask about what's on screen;
+    screenshots are withheld entirely in local-only mode.</li>
+</ul>
+
+<h2>Privacy, stated plainly</h2>
+<ul>
+  <li>Local-only mode talks to a model on your own machine (Ollama) and
+    nothing else - verified by a strict loopback check.</li>
+  <li>Every outbound connection is recorded in an on-device egress log
+    you can read: what left, where to, how big.</li>
+  <li>Voice recordings are deleted right after transcription.</li>
+  <li>Known gaps are tracked as open issues, not hidden:
+    <a href="https://github.com/shpalac/local-bluey/issues">issue tracker</a>.</li>
+</ul>
+
+<h2>Platform status</h2>
+<ul>
+  <li>macOS: primary target, works today.</li>
+  <li>iOS: the phone remote, works today.</li>
+  <li>Android and Linux: planned
+    (<a href="https://github.com/shpalac/local-bluey/issues">#51-#54</a>).</li>
+</ul>
+
+<h2>Try it</h2>
+<p>Flutter 3.47.6, then <code>flutter run -d macos</code>. Full setup:
+<a href="https://github.com/shpalac/local-bluey">the repository README</a>.</p>
+</body>
+</html>
