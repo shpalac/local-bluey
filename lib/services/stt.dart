@@ -201,12 +201,34 @@ class HttpSttProvider implements TranscriberLike {
     );
     final http.Response response;
     try {
+      // #199: the deadline covers the body read too, not just send() - a
+      // stalled response stream cannot pin the UI in "thinking".
+      // Redirects are validated below instead of followed blindly.
+      request.followRedirects = false;
       final streamed = await _client.send(request).timeout(requestTimeout);
-      response = await http.Response.fromStream(streamed);
+      response = await http.Response.fromStream(streamed)
+          .timeout(requestTimeout);
     } on TimeoutException {
       throw SttException(
         SttErrorKind.timeout,
         'Transcription timed out after ${requestTimeout.inSeconds}s',
+      );
+    }
+    if (response.isRedirect) {
+      // #199: never follow redirects silently - in local-only mode a
+      // redirect to a remote host would leak audio off-device.
+      final location = response.headers['location'] ?? '';
+      if (await PrivacyGuard.isLocalOnly() &&
+          !PrivacyGuard.isLocalUrl(location)) {
+        throw SttException(
+          SttErrorKind.unreachable,
+          'Local-only mode is on - the transcription endpoint redirected '
+          'off-device ($location).',
+        );
+      }
+      throw SttException(
+        SttErrorKind.httpError,
+        'Transcription endpoint redirects are not followed ($location).',
       );
     }
     if (response.statusCode != 200) {
