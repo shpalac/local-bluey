@@ -57,14 +57,20 @@ class BrainSettings {
     String? ttsBaseUrl,
     String? ttsModel,
     String? ttsVoice,
+    // `?? this.x` cannot express "remove the value" (#123); these flags clear.
+    bool clearApiKey = false,
+    bool clearTranscriptionBaseUrl = false,
+    bool clearTtsBaseUrl = false,
   }) => BrainSettings(
     backend: backend ?? this.backend,
     baseUrl: baseUrl ?? this.baseUrl,
     model: model ?? this.model,
-    apiKey: apiKey ?? this.apiKey,
-    transcriptionBaseUrl: transcriptionBaseUrl ?? this.transcriptionBaseUrl,
+    apiKey: clearApiKey ? null : (apiKey ?? this.apiKey),
+    transcriptionBaseUrl: clearTranscriptionBaseUrl
+        ? null
+        : (transcriptionBaseUrl ?? this.transcriptionBaseUrl),
     transcriptionModel: transcriptionModel ?? this.transcriptionModel,
-    ttsBaseUrl: ttsBaseUrl ?? this.ttsBaseUrl,
+    ttsBaseUrl: clearTtsBaseUrl ? null : (ttsBaseUrl ?? this.ttsBaseUrl),
     ttsModel: ttsModel ?? this.ttsModel,
     ttsVoice: ttsVoice ?? this.ttsVoice,
   );
@@ -97,12 +103,34 @@ class SettingsStore {
   static const _kTtsModel = 'brain.ttsModel';
   static const _kTtsVoice = 'brain.ttsVoice';
 
-  static const _secure = FlutterSecureStorage();
+  static const _kSchemaVersion = 'brain.schemaVersion';
+
+  /// Current settings layout version; bump and migrate on layout changes (#123).
+  static const schemaVersion = 1;
+
+  static FlutterSecureStorage _secure = const FlutterSecureStorage();
+
+  /// Test seam: swap in a throwing or fake secure store (#123).
+  static set debugSecureStorage(FlutterSecureStorage? value) {
+    _secure = value ?? const FlutterSecureStorage();
+  }
+
+  /// Set when the last [load] could not reach secure storage; the UI shows
+  /// a warning instead of losing every setting (#123).
+  static String? lastSecureStorageWarning;
 
   static Future<BrainSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
     final backendName = prefs.getString(_kBackend);
-    final apiKey = await _secure.read(key: _kApiKey);
+    String? apiKey;
+    lastSecureStorageWarning = null;
+    try {
+      apiKey = await _secure.read(key: _kApiKey);
+    } catch (e) {
+      // Locked keychain, missing libsecret, Keystore error, no platform
+      // channel in tests: treat as "no key", never block the rest (#123).
+      lastSecureStorageWarning = 'API key unavailable: $e';
+    }
     return BrainSettings(
       backend:
           BrainBackend.values.asNameMap()[backendName] ??
@@ -140,8 +168,23 @@ class SettingsStore {
     }
   }
 
+  /// All-or-nothing: the most failure-prone write (secure storage) happens
+  /// first, so a failure leaves the previous values untouched (#123).
   static Future<void> save(BrainSettings settings) async {
+    final key = settings.apiKey;
+    try {
+      if (key == null || key.isEmpty) {
+        await _secure.delete(key: _kApiKey);
+      } else {
+        await _secure.write(key: _kApiKey, value: key);
+      }
+    } catch (e) {
+      lastSecureStorageWarning = 'API key not saved: $e';
+      throw StateError('Could not save the API key: $e');
+    }
+    lastSecureStorageWarning = null;
     final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kSchemaVersion, schemaVersion);
     await prefs.setString(_kBackend, settings.backend.name);
     await prefs.setString(_kBaseUrl, settings.baseUrl);
     await prefs.setString(_kModel, settings.model);
@@ -160,11 +203,5 @@ class SettingsStore {
     }
     await prefs.setString(_kTtsModel, settings.ttsModel);
     await prefs.setString(_kTtsVoice, settings.ttsVoice);
-    final key = settings.apiKey;
-    if (key == null || key.isEmpty) {
-      await _secure.delete(key: _kApiKey);
-    } else {
-      await _secure.write(key: _kApiKey, value: key);
-    }
   }
 }
