@@ -37,7 +37,15 @@ class PhoneServer {
     'testVoice',
   };
 
-  static const _kLinkKeyHash = 'link.keyHash';
+  static const _kLinkKey = 'link.key';
+  static const _kLinkKeyHash = 'link.keyHash'; // legacy, migrated on load
+
+  /// Guards against abuse (#112): at most this many phones, per-link auth
+  /// attempts before disconnect, an auth timeout, and one pairing prompt at
+  /// a time so a client cannot spam dialogs.
+  static const maxPhones = 8;
+  static const maxAuthAttempts = 3;
+  static const authTimeout = Duration(seconds: 30);
 
   /// Asks the Mac user whether a new phone may pair. Set by the UI.
   Future<bool> Function(String deviceName)? onPairRequest;
@@ -67,9 +75,17 @@ class PhoneServer {
     _server = await ServerSocket.bind(InternetAddress.anyIPv4, port);
     _server!.listen((socket) {
       final link = LineConnection(socket)..start();
+      if (_phones.length >= maxPhones) {
+        link.close();
+        return;
+      }
       _phones[link] = null;
       link.send(Packet(hello: Platform.localHostname));
-      if (_lastSent != null) link.send(Packet(face: _lastSent));
+      // Unauthenticated links get nothing beyond the hostname (#112) and
+      // are dropped if they do not authenticate in time.
+      _authTimers[link] = Timer(authTimeout, () {
+        if (!_authenticated.contains(link)) link.close();
+      });
       _onPhonesChanged.add(phoneNames);
       link.packets.listen((packet) async {
         if (packet.hello != null) {
@@ -93,6 +109,7 @@ class PhoneServer {
       link.done.listen((_) {
         _phones.remove(link);
         _authenticated.remove(link);
+        _clearAuthState(link);
         _onPhonesChanged.add(phoneNames);
       });
     });
@@ -113,44 +130,109 @@ class PhoneServer {
     }
   }
 
-  String _hash(String key) => sha256.convert(utf8.encode(key)).toString();
+  /// The shared secret itself, migrated from the legacy hash-only store.
+  /// Keeping the key lets the server issue nonce challenges instead of
+  /// asking the phone to send the key in cleartext on every connect (#111).
+  Future<String?> _storedKey() async {
+    final prefs = await SharedPreferences.getInstance();
+    final key = prefs.getString(_kLinkKey);
+    if (key != null) return key;
+    // Legacy installs only kept the hash; they must re-pair once.
+    return null;
+  }
 
-  Future<String?> _storedHash() async =>
-      (await SharedPreferences.getInstance()).getString(_kLinkKeyHash);
+  String _hmac(String key, String nonce) =>
+      Hmac(sha256, utf8.encode(key)).convert(utf8.encode(nonce)).toString();
+
+  final _authNonces = <LineConnection, String>{};
+  final _authAttempts = <LineConnection, int>{};
+  final _authTimers = <LineConnection, Timer>{};
+  bool _pairingInFlight = false;
 
   /// First phone to connect gets a pairing prompt on the Mac; on approval the
-  /// Mac generates a shared key and hands it to the phone once. Later connects
-  /// must prove the key with an `auth` packet.
+  /// Mac generates a shared key and hands it to the phone once. Later
+  /// connects prove the key by answering a nonce challenge (#111).
   Future<void> _maybePair(LineConnection link, String deviceName) async {
-    final stored = await _storedHash();
+    final stored = await _storedKey();
     if (stored != null) {
-      link.send(Packet(command: 'authRequired'));
+      final nonce = _generateKey();
+      _authNonces[link] = nonce;
+      link.send(Packet(command: 'authRequired', text: nonce));
+      return;
+    }
+    // One pairing dialog at a time; extra candidates wait or leave (#112).
+    if (_pairingInFlight) {
+      link.close();
       return;
     }
     final ask = onPairRequest;
-    if (ask == null || !await ask(deviceName)) {
+    if (ask == null) {
       link.close();
       return;
     }
+    _pairingInFlight = true;
+    final bool approved;
+    try {
+      approved = await ask(deviceName);
+    } finally {
+      _pairingInFlight = false;
+    }
+    if (!approved || link.isClosed) {
+      await link.close();
+      return;
+    }
     final key = _generateKey();
-    await (await SharedPreferences.getInstance()).setString(
-      _kLinkKeyHash,
-      _hash(key),
-    );
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kLinkKey, key);
+    await prefs.remove(_kLinkKeyHash);
     _authenticated.add(link);
+    _clearAuthState(link);
     link.send(Packet(command: 'paired', text: key));
   }
 
-  Future<void> _checkAuth(LineConnection link, String key) async {
-    final stored = await _storedHash();
-    if (stored != null && _hash(key) == stored) {
+  /// Verifies an HMAC answer to the nonce challenge (#111). After
+  /// [maxAuthAttempts] wrong answers the connection is dropped (#112).
+  Future<void> _checkAuth(LineConnection link, String answer) async {
+    final stored = await _storedKey();
+    final nonce = _authNonces[link];
+    if (stored != null && nonce != null && _hmac(stored, nonce) == answer) {
       _authenticated.add(link);
+      _clearAuthState(link);
       link.send(Packet(command: 'paired'));
       if (_lastSent != null) link.send(Packet(face: _lastSent));
-    } else {
-      link.send(Packet(command: 'authFailed'));
-      link.close();
+      return;
     }
+    final attempts = (_authAttempts[link] ?? 0) + 1;
+    _authAttempts[link] = attempts;
+    link.send(Packet(command: 'authFailed'));
+    if (attempts >= maxAuthAttempts) {
+      await link.close();
+    } else {
+      // Fresh challenge for the next try.
+      final next = _generateKey();
+      _authNonces[link] = next;
+      link.send(Packet(command: 'authRequired', text: next));
+    }
+  }
+
+  void _clearAuthState(LineConnection link) {
+    _authNonces.remove(link);
+    _authAttempts.remove(link);
+    _authTimers.remove(link)?.cancel();
+  }
+
+  /// Drops every phone and forgets the shared key - the user can re-pair
+  /// from scratch (#112).
+  Future<void> unpair() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kLinkKey);
+    await prefs.remove(_kLinkKeyHash);
+    for (final link in List.of(_phones.keys)) {
+      await link.close();
+    }
+    _phones.clear();
+    _authenticated.clear();
+    _onPhonesChanged.add(phoneNames);
   }
 
   static String _generateKey() {
