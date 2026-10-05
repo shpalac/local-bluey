@@ -3,7 +3,21 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore: ['**.md', 'docs/**']
   pull_request:
+    paths-ignore: ['**.md', 'docs/**']
+  # Weekly dependency/vulnerability scan so new advisories against an
+  # unchanged lockfile are noticed (#144). Only the security and
+  # pinned-actions jobs run on schedule.
+  schedule:
+    - cron: '17 3 * * 1'
+
+# Explicit bash => runs with -eo pipefail, so `flutter ... | tee log`
+# fails the step when flutter fails (#142). Without it GitHub uses
+# `bash -e`, and the step's exit code becomes tee's (always 0).
+defaults:
+  run:
+    shell: bash
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -20,6 +34,7 @@ env:
 jobs:
   # Fast lane on Linux: format, static analysis and unit/widget tests.
   test:
+    if: ${{ github.event_name != 'schedule' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -51,8 +66,11 @@ jobs:
           path: test-output.log
           retention-days: 7
 
-  # Builds stay on macOS: iOS/macOS outputs need Xcode.
+  # Builds stay on macOS: iOS/macOS outputs need Xcode. Skip the 25-minute
+  # lane when the fast lane already failed or the change is docs-only (#144).
   build:
+    if: ${{ github.event_name != 'schedule' }}
+    needs: test
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -102,12 +120,21 @@ jobs:
 
       - run: flutter pub get --enforce-lockfile
 
+      # Pinned version + checksum, verified before execution (#144). Bump
+      # deliberately: fetch the release asset and sha256sum it locally.
       - name: Dependency vulnerability scan (OSV)
+        env:
+          OSV_VERSION: v2.6.0
+          OSV_SHA256: ca69b3d3cd08f889a49dc0a383122f71cc528b83803671df5fd874d97485b108
         run: |
-          curl -sfL https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64 -o /tmp/osv-scanner
+          curl -sfL "https://github.com/google/osv-scanner/releases/download/${OSV_VERSION}/osv-scanner_linux_amd64" -o /tmp/osv-scanner
+          echo "${OSV_SHA256}  /tmp/osv-scanner" | sha256sum --check
           chmod +x /tmp/osv-scanner
           /tmp/osv-scanner scan --lockfile=pubspec.lock
 
+      # gitleaks: free for personal repos; an org repo would need a
+      # GITLEAKS_LICENSE secret (#144). Fork PRs get a read-only token and
+      # the scan reports without blocking on write checks.
       - name: Secrets scan
         uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
@@ -115,30 +142,32 @@ jobs:
           GITLEAKS_ENABLE_SUMMARY: "true"
 
   # Fails if any third-party action is referenced by a movable tag instead of
-  # a full-length commit SHA.
+  # a full-length commit SHA. The check matches both `- uses:` and bare
+  # `uses:` forms (#143) and carries its own negative test.
   pinned-actions:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Verify actions are pinned by SHA
+        run: .github/scripts/check-pinned-actions.sh
+      - name: Negative test for the pinning check (#143)
         run: |
-          set -e
-          bad=$(grep -rhoE '^[[:space:]]+uses: [^@]+@[^ #]+' .github/workflows | grep -vE '@[0-9a-f]{40}$' || true)
-          if [ -n "$bad" ]; then
-            echo "Unpinned actions found:"
-            echo "$bad"
+          fixture=$(mktemp -d)
+          printf 'jobs:\n  x:\n    steps:\n      - uses: actions/checkout@v4\n' > "$fixture/w.yml"
+          if .github/scripts/check-pinned-actions.sh "$fixture"; then
+            echo "check passed on an unpinned - uses: step - the check is broken"
             exit 1
           fi
-          echo "All actions pinned by SHA."
+          echo "Negative test passed."
 
   # Native-validation lane: exercises the real device bridge. Enable by
   # removing `if: false` once a self-hosted Mac runner with a signed
   # environment is registered on the repo; mocked contract tests stay in the
   # main lane above.
   native-validation:
-    runs-on: [self-hosted, macos]
     if: ${{ false }} # enable when a self-hosted runner exists
+    runs-on: [self-hosted, macos]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
