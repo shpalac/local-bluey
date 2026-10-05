@@ -116,7 +116,7 @@ jobs:
         with:
           name: build-logs
           path: build-*.log
-          retention-days: 7
+          retention-days: 3
 
   # Linux client build + tests on the generated linux/ runner (#149).
   # GTK3 stack + plugin system deps: tray_manager (ayatana-appindicator),
