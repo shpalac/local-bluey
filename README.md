@@ -77,7 +77,7 @@ Everything the app stores lives on this device; Settings > Data and privacy list
 
 - `flutter test` - unit + widget tests (tool-call parsing, executor math, protocol round-trips)
 - `flutter test integration_test` - E2E: hold-to-talk → mock LLM → tool call through the MethodChannel
-- CI (GitHub Actions, `macos-latest`): tests, analyze, format check, `flutter build macos`, `flutter build ios --no-codesign`, `flutter build apk --debug`, dependency vulnerability scan and secrets detection. Actions are pinned by SHA with least-privilege permissions, and failing jobs upload artifacts.
+- CI (GitHub Actions, `macos-latest`): tests with coverage floors (`tool/check_coverage.dart`), analyze, format check, `flutter build macos`, `flutter build ios --no-codesign`, `flutter build apk --debug`, dependency vulnerability scan (pinned + checksum-verified OSV binary, also weekly on schedule) and secrets detection. Actions are pinned by SHA (enforced by `.github/scripts/check-pinned-actions.sh` with a negative self-test), permissions are least-privilege, failing jobs upload artifacts, builds wait for the test lane, and docs-only changes skip the macOS lane. The workflow sets `defaults.run.shell: bash` explicitly so piped log steps (`| tee`) fail when the underlying command fails - GitHub's default `bash -e` has no pipefail (#142).
 
 ## OS integration (#91)
 
