@@ -10,6 +10,8 @@ import '../services/perf_monitor.dart';
 import '../services/privacy_guard.dart';
 import '../services/safety_gate.dart';
 import '../services/strings.dart';
+import '../services/action_log.dart';
+import '../services/egress_monitor.dart';
 import '../services/settings_store.dart';
 import 'data_privacy_section.dart';
 
@@ -42,6 +44,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _allowlist = TextEditingController();
   final _gate = SafetyGate();
   bool _safetyEnabled = true;
+  Duration? _gatePause; // time-boxed pause chosen in the warning (#133)
   bool _perfOverlay = false;
 
   @override
@@ -60,6 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) setState(() => _perfOverlay = v);
     });
     SettingsStore.load().then((settings) {
+      if (!mounted) return; // #132
       setState(() {
         _backend = settings.backend;
         _baseUrl.text = settings.baseUrl;
@@ -109,8 +113,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    await SettingsStore.save(_current());
+    try {
+      await SettingsStore.save(_current());
+    } catch (e) {
+      // #132: a failed save (e.g. locked keychain) must not pop silently.
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not save settings: $e')));
+      }
+      return;
+    }
     await _gate.setEnabled(_safetyEnabled);
+    if (!_safetyEnabled && _gatePause != null) {
+      await _gate.pauseFor(_gatePause!);
+    }
     await _gate.setAllowlist(
       _allowlist.text
           .split(',')
@@ -123,21 +140,91 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _test() async {
+    final settings = _current();
+    final url = settings.baseUrl;
+    // #132: a connection test is egress too - honor Local-only and log it.
+    if (_localOnly && !PrivacyGuard.isLocalUrl(url)) {
+      setState(
+        () => _testResult = 'Blocked by Local-only mode: $url is not local.',
+      );
+      return;
+    }
+    try {
+      await EgressMonitor.instance.record(url, 'settings-test', 0);
+    } catch (_) {}
     setState(() {
       _testing = true;
       _testResult = null;
     });
     try {
-      final reply = await _current().buildProvider().chat(const [
+      final reply = await settings.buildProvider().chat(const [
         LlmMessage('user', 'Say "ok" and nothing else.'),
       ]);
-      setState(() => _testResult = 'Connected: ${reply.trim()}');
+      if (mounted) setState(() => _testResult = 'Connected: ${reply.trim()}');
     } on LlmException catch (e) {
-      setState(() => _testResult = 'Failed: $e');
+      if (mounted) setState(() => _testResult = 'Failed: $e');
     } catch (e) {
-      setState(() => _testResult = 'Failed: $e');
+      if (mounted) setState(() => _testResult = 'Failed: $e');
     } finally {
-      setState(() => _testing = false);
+      if (mounted) setState(() => _testing = false);
+    }
+  }
+
+  /// #133: turning the gate off needs an explicit choice - pause for a
+  /// while or really turn off - never a silent single tap.
+  Future<void> _onGateSwitch(bool value) async {
+    if (value) {
+      setState(() {
+        _safetyEnabled = true;
+        _gatePause = null;
+      });
+      return;
+    }
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Turn off action confirmations?'),
+        content: const Text(
+          'While off, click, type, key presses, drags, scrolls and app '
+          'launches run WITHOUT asking you - including actions requested '
+          'from your phone. On-screen text can steer the model, so this '
+          'is the main defense against that.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'cancel'),
+            child: const Text('Keep on'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'pause'),
+            child: const Text('Pause 15 min'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'off'),
+            child: const Text('Turn off'),
+          ),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (choice == 'off' || choice == 'pause') {
+      setState(() {
+        _safetyEnabled = false;
+        _gatePause = choice == 'pause' ? const Duration(minutes: 15) : null;
+      });
+      // Recorded in the action log so the change is auditable (#133).
+      try {
+        await ActionLog.instance.record(
+          ActionEntry(
+            runId: 'settings',
+            tool: 'safety_gate',
+            arguments: const {},
+            outcome: choice == 'pause'
+                ? 'Confirmations paused for 15 minutes'
+                : 'Confirmations turned off',
+          ),
+        );
+      } catch (_) {}
     }
   }
 
@@ -264,8 +351,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Confirm risky actions; kill switch and app allowlist',
               ),
               value: _safetyEnabled,
-              onChanged: (v) => setState(() => _safetyEnabled = v),
+              onChanged: _onGateSwitch, // #133: off needs a real choice
             ),
+            // Persistent indicator while the gate is off (#133).
+            if (!_safetyEnabled)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _gatePause != null
+                            ? 'Action confirmations are PAUSED '
+                                  '(auto-resume in ${_gatePause!.inMinutes} min)'
+                            : 'Action confirmations are OFF. '
+                                  'Risky actions will not ask.',
+                        style: const TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             TextFormField(
               controller: _allowlist,
               decoration: const InputDecoration(
