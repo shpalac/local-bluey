@@ -32,7 +32,7 @@ void main() {
   test('dedicated TTS URL wins over the brain base URL', () async {
     final client = MockClient((request) async {
       expect(request.url.host, 'tts.local');
-      return http.Response.bytes([], 200);
+      return http.Response.bytes([9, 9], 200);
     });
     await SpeechService(client: client).synthesize(
       'hi',
@@ -50,6 +50,39 @@ void main() {
     expect(
       () => SpeechService(client: client).synthesize('hi', settings),
       throwsA(isA<SpeechException>()),
+    );
+  });
+
+  test('200 with empty body raises SpeechException (#118)', () async {
+    final client = MockClient((_) async => http.Response.bytes([], 200));
+    expect(
+      () => SpeechService(client: client).synthesize('hi', settings),
+      throwsA(isA<SpeechException>()),
+    );
+  });
+
+  test('200 with a JSON error body raises SpeechException (#118)', () async {
+    final client = MockClient(
+      (_) async => http.Response('{"error":"bad model"}', 200),
+    );
+    expect(
+      () => SpeechService(client: client).synthesize('hi', settings),
+      throwsA(isA<SpeechException>()),
+    );
+  });
+
+  test('trailing slash in base URL does not produce // (#118)', () async {
+    final client = MockClient((request) async {
+      expect(request.url.path, '/v1/audio/speech');
+      return http.Response.bytes([1], 200);
+    });
+    await SpeechService(client: client).synthesize(
+      'hi',
+      const BrainSettings(
+        backend: BrainBackend.openAiCompatible,
+        baseUrl: 'http://brain.local/v1/',
+        model: 'm',
+      ),
     );
   });
 }
