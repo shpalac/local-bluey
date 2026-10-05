@@ -26,7 +26,7 @@ import 'services/biometric_lock.dart';
 import 'services/haptics.dart';
 import 'services/host_control.dart';
 import 'services/support_matrix.dart';
-import 'services/settings_store.dart';
+import 'services/request_runner.dart';
 import 'services/speak_receipts.dart';
 import 'services/speech.dart';
 import 'services/tool_executor.dart';
@@ -305,147 +305,29 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     await _processUtterance(file);
   }
 
-  /// Transcribe -> ask the brain -> run tools -> speak, with status + log.
-  /// Deletes the recording when finished - voice files must not pile up
-  /// in temp storage (#116).
-  Future<void> _processUtterance(File file) async {
-    setState(() {
-      _face.value = FaceState(mood: Mood.thinking);
-      _status = BlueyStatus.thinking;
-    });
-    try {
-      final settings = await SettingsStore.load();
-      final text = await PerfMonitor.instance.measure(
-        'listening.transcription',
-        () => _transcription.transcribe(file, settings),
-      );
+  late final RequestRunner _runner = RequestRunner(
+    transcriber: _transcription,
+    safety: _safety,
+    tools: _tools,
+    speech: _speech,
+    hooks: _RunnerHooks(this),
+  );
 
-      if (text.isEmpty) {
-        setState(() => _bubble = "Didn't catch that.");
-        return;
-      }
-      setState(() => _bubble = text);
-      ConversationStore.instance.add('user', text);
-      // A routine trigger expands into its standing instructions (#56).
-      final routine = RoutineStore.instance.match(text);
-      final effectiveText = routine == null
-          ? text
-          : '$text\n\n[Routine "${routine.name}"] ${routine.instructions}';
-      final brain = BrainHost.brain.value;
-      if (brain == null) {
-        setState(() => _bubble = 'Set up the brain in settings first.');
-        return;
-      }
-      const maxToolSteps = 5;
-      const stepTimeout = Duration(seconds: 60);
-      var reply = await PerfMonitor.instance.measure(
-        'thinking.brain',
-        () => brain
-            .askStreaming(
-              effectiveText,
-              onToken: (partial) {
-                if (mounted) setState(() => _bubble = partial);
-              },
-            )
-            .timeout(stepTimeout),
-      );
-      // Tool loop: let the brain act, then react to what happened.
-      // #107: a kill (or kill+resume, which bumps the generation) stops this
-      // run at every await boundary, not only at the top of the loop.
-      final runGeneration = _safety.generation;
-      bool cancelled() => _safety.killed || _safety.generation != runGeneration;
-      var steps = 0;
-      while (reply.toolCall != null && steps < maxToolSteps) {
-        if (cancelled()) {
-          setState(() => _bubble = 'Stopped.');
-          return;
-        }
-        steps++;
-        final call = reply.toolCall!;
-        if (!await _safety.authorize(call.name, call.arguments)) {
-          if (cancelled()) {
-            setState(() => _bubble = 'Stopped.');
-            return;
-          }
-          reply = await brain
-              .toolResult(call.name, 'Denied by the user.')
-              .timeout(stepTimeout);
-          continue;
-        }
-        setState(() => _status = BlueyStatus.acting);
-        final result = await PerfMonitor.instance.measure(
-          'acting.tool.${call.name}',
-          () => _tools.execute(call),
-        );
-        if (cancelled()) {
-          setState(() => _bubble = 'Stopped.');
-          return;
-        }
-        reply = await brain
-            .toolResult(
-              call.name,
-              result.text,
-              images: [if (result.imageBase64 != null) result.imageBase64!],
-            )
-            .timeout(stepTimeout);
-      }
-      if (reply.toolCall != null) {
-        setState(() => _bubble = 'Too many steps - stopping here.');
-      }
-      if (reply.spoken.isNotEmpty) {
-        ConversationStore.instance.add('bluey', reply.spoken);
-        setState(() {
-          _bubble = reply.spoken;
-          _face.value = FaceState(mood: Mood.talking);
-          _server.sendFace(_face.value);
-        });
-        try {
-          final character = CharacterStore.instance.current.value;
-          final voiced = BrainSettings(
-            backend: settings.backend,
-            baseUrl: settings.baseUrl,
-            model: settings.model,
-            apiKey: settings.apiKey,
-            transcriptionBaseUrl: settings.transcriptionBaseUrl,
-            transcriptionModel: settings.transcriptionModel,
-            ttsBaseUrl: settings.ttsBaseUrl,
-            ttsModel: settings.ttsModel,
-            ttsVoice: character.voice,
-          );
-          final audio = await _speech.synthesize(reply.spoken, voiced);
-          final sayPacket = Packet(
-            command: 'say',
-            text: reply.spoken,
-            audio: base64Encode(audio),
-          );
-          _receipts.track(sayPacket, reply.spoken); // receipt required (#87)
-          _server.broadcast(sayPacket);
-          unawaited(_speech.playBytes(audio));
-        } on SpeechException catch (e) {
-          final sayPacket = Packet(command: 'say', text: reply.spoken);
-          _receipts.track(sayPacket, reply.spoken); // receipt required (#87)
-          _server.broadcast(sayPacket);
-          setState(() => _bubble = '${reply.spoken}\n(TTS failed: $e)');
-        }
-      }
-    } on TranscriptionException catch (e) {
-      setState(() {
-        _bubble = 'Transcription failed: $e';
-        _status = BlueyStatus.error;
-      });
-    } catch (e) {
-      setState(() {
-        _bubble = 'Error: $e';
-        _status = BlueyStatus.error;
-      });
-    } finally {
-      await AudioCapture.deleteQuietly(file); // #116
-      setState(() {
-        _face.value = FaceState(mood: _awake ? Mood.listening : Mood.sleepy);
-        _status = BlueyStatus.listening;
-        _server.sendFace(_face.value);
-      });
-    }
+  Future<void> _processUtterance(File file) async {
+    _runner.awake = _awake;
+    await _runner.process(file);
+  }
+
+  void _applyBubble(String? text) {
+    if (mounted) setState(() => _bubble = text);
+  }
+
+  void _applyStatus(BlueyStatus status) {
+    if (mounted) setState(() => _status = status);
+  }
+
+  void _applyFace(FaceState face) {
+    if (mounted) setState(() => _face.value = face);
   }
 
   @override
@@ -746,5 +628,35 @@ class _IosHomeState extends State<IosHome> {
               ],
             ),
     );
+  }
+}
+
+class _RunnerHooks extends RequestHooks {
+  _RunnerHooks(this._home);
+
+  final _MacHomeState _home;
+
+  @override
+  void bubble(String? text) {
+    _home._applyBubble(text);
+  }
+
+  @override
+  void status(BlueyStatus status) {
+    _home._applyStatus(status);
+  }
+
+  @override
+  void face(FaceState face) {
+    _home._applyFace(face);
+  }
+
+  @override
+  void sendFace(FaceState face) => _home._server.sendFace(face);
+
+  @override
+  void say(Packet packet, String spoken) {
+    _home._receipts.track(packet, spoken); // receipt required (#87)
+    _home._server.broadcast(packet);
   }
 }

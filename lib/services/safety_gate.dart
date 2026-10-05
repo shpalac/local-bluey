@@ -1,5 +1,7 @@
 import 'package:clock/clock.dart';
 
+import 'request_interfaces.dart';
+
 import 'dart:async';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,7 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Decides whether a tool call may run. Safe tools always run; risky ones
 /// need a human yes through [onConfirm] (wired to a dialog on the Mac).
 /// A global kill switch cancels everything in flight.
-class SafetyGate {
+class SafetyGate implements GateLike {
   SafetyGate({this.onConfirm, Clock? clock}) : _clockOverride = clock;
 
   /// Injectable clock for tests (#136); falls back to the zone-aware
@@ -58,7 +60,9 @@ class SafetyGate {
 
   final _killListeners = <void Function()>[];
 
+  @override
   bool get killed => _killed;
+  @override
   int get generation => _generation;
 
   void kill() {
@@ -126,6 +130,7 @@ class SafetyGate {
       );
 
   /// True when the tool call may execute.
+  @override
   Future<bool> authorize(String tool, Map<String, dynamic> arguments) async {
     if (_killed) return false;
     if (!await isEnabled()) return true;
