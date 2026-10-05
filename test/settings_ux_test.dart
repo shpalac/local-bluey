@@ -78,7 +78,10 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 300));
       });
       await tester.pump();
-      expect(find.textContaining('PAUSED', skipOffstage: false), findsOneWidget);
+      expect(
+        find.textContaining('PAUSED', skipOffstage: false),
+        findsOneWidget,
+      );
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool('safety.enabled'), isNull); // saved only on Save
     });
