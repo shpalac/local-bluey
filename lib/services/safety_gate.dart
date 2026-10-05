@@ -1,3 +1,5 @@
+import 'package:clock/clock.dart';
+
 import 'request_interfaces.dart';
 
 import 'dart:async';
@@ -8,7 +10,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// need a human yes through [onConfirm] (wired to a dialog on the Mac).
 /// A global kill switch cancels everything in flight.
 class SafetyGate implements GateLike {
-  SafetyGate({this.onConfirm});
+  SafetyGate({this.onConfirm, Clock? clock}) : _clockOverride = clock;
+
+  /// Injectable clock for tests (#136); falls back to the zone-aware
+  /// package:clock so fakeAsync controls time in tests.
+  final Clock? _clockOverride;
+  Clock get _clock => _clockOverride ?? clock;
 
   /// Tools that change the user's machine state and therefore ask first.
   static const riskyTools = {
@@ -81,7 +88,7 @@ class SafetyGate implements GateLike {
     final enabled = prefs.getBool(_kEnabled) ?? true;
     if (enabled) return true;
     final resumeMs = prefs.getInt(_kResumeAt);
-    if (resumeMs != null && DateTime.now().millisecondsSinceEpoch >= resumeMs) {
+    if (resumeMs != null && _clock.now().millisecondsSinceEpoch >= resumeMs) {
       // The pause expired: re-enable without waiting for the UI (#133).
       await setEnabled(true);
       return true;
@@ -101,7 +108,7 @@ class SafetyGate implements GateLike {
     await prefs.setBool(_kEnabled, false);
     await prefs.setInt(
       _kResumeAt,
-      DateTime.now().add(duration).millisecondsSinceEpoch,
+      _clock.now().add(duration).millisecondsSinceEpoch,
     );
   }
 
