@@ -11,8 +11,14 @@ import 'tool_executor.dart';
 /// Bluey runs on. Everything platform-specific lives behind this interface
 /// so Linux/Windows hosts can plug in without touching the brain (#52).
 abstract class HostControl implements NativeControlClient {
+  /// Whether the host currently holds the permission host control needs
+  /// (accessibility on macOS).
   Future<bool> isTrusted();
+
+  /// Requests that permission from the user. No-op when already granted.
   Future<void> askPermission();
+
+  /// Opens the system settings pane where the permission can be granted.
   Future<void> openAccessibilitySettings();
 
   /// The host for the current platform. Pass [operatingSystem] and
@@ -28,6 +34,9 @@ abstract class HostControl implements NativeControlClient {
     return (env['DISPLAY'] ?? '').isEmpty ? 'unsupported' : 'x11';
   }
 
+  /// Picks the host for [operatingSystem] (defaults to the current one).
+  /// Unknown platforms get an [UnsupportedHostControl] that fails loudly
+  /// with a plain reason instead of a missing-plugin crash.
   static HostControl forPlatform({
     String? operatingSystem,
     Map<String, String>? environment,

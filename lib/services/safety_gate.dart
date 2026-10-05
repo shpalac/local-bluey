@@ -65,6 +65,8 @@ class SafetyGate implements GateLike {
   @override
   int get generation => _generation;
 
+  /// Engages the kill switch: every [authorize] call denies, and running
+  /// tool loops polling [generation] stop (#107).
   void kill() {
     _killed = true;
     _generation++;
@@ -73,8 +75,10 @@ class SafetyGate implements GateLike {
     }
   }
 
+  /// Lifts the kill switch so new actions can be confirmed again.
   void reset() => _killed = false;
 
+  /// Registers [listener] to run immediately when [kill] fires.
   void onKill(void Function() listener) => _killListeners.add(listener);
 
   /// A time-boxed pause (#133): the gate turns itself back on at this time.
@@ -83,6 +87,8 @@ class SafetyGate implements GateLike {
     return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
   }
 
+  /// Whether the gate currently asks for confirmations. An expired
+  /// time-boxed pause re-enables it on read (#133).
   Future<bool> isEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool(_kEnabled) ?? true;
@@ -96,6 +102,7 @@ class SafetyGate implements GateLike {
     return false;
   }
 
+  /// Turns confirmations on or off; turning on clears any pause deadline.
   Future<void> setEnabled(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kEnabled, value);
@@ -123,6 +130,7 @@ class SafetyGate implements GateLike {
         .toSet();
   }
 
+  /// Replaces the allowlist. Values are lowercased app names.
   Future<void> setAllowlist(Set<String> apps) async =>
       (await SharedPreferences.getInstance()).setString(
         _kAllowlist,
@@ -158,6 +166,8 @@ class SafetyGate implements GateLike {
     return ok;
   }
 
+  /// Human-readable one-liner for a tool call, shown in the confirmation
+  /// dialog (e.g. `click "Save" at (412, 300)`).
   static String describe(
     String tool,
     Map<String, dynamic> arguments,
