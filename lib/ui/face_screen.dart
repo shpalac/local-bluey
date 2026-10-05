@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
 import '../llm/llm_provider.dart';
 import '../link/models.dart';
 import '../services/characters.dart';
 import '../services/conversation.dart';
+import '../services/strings.dart';
 import 'motion.dart';
 
 /// Bluey's face: two eyes that follow the gaze, colored by mood.
@@ -50,12 +52,29 @@ class _FaceScreenState extends State<FaceScreen> {
         CharacterStore.instance.current.value.moodColors[face.mood] ??
         const Color(0xFF5BC8E5);
 
+    // #131: real semantic actions so VoiceOver/TalkBack users can wake
+    // and hold-to-talk without the gestures or a hardware keyboard.
     return Semantics(
-      label:
-          'Bluey. Double-tap to wake or sleep. '
-          'Long-press and hold to talk. '
-          'Keyboard: W toggles wake, hold Space to talk.',
+      label: Strings.t(
+        'Bluey. Activate to wake or sleep. '
+            'Use "start listening" to talk.',
+        'בלוי. הפעל כדי להעיר או להרדים. '
+            'השתמש ב"התחל האזנה" כדי לדבר.',
+      ),
       button: true,
+      onTap: () => widget.onWakeChanged?.call(!widget.awake),
+      customSemanticsActions: {
+        CustomSemanticsAction(
+          label: Strings.t('Start listening', 'התחל האזנה'),
+        ): () {
+          widget.onHoldStart?.call();
+        },
+        CustomSemanticsAction(
+          label: Strings.t('Stop and send', 'עצור ושלח'),
+        ): () {
+          widget.onHoldEnd?.call();
+        },
+      },
       child: GestureDetector(
         onDoubleTap: () => widget.onWakeChanged?.call(!widget.awake),
         onLongPressStart: (_) => widget.onHoldStart?.call(),
@@ -154,20 +173,33 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (status) {
-      BlueyStatus.listening => ('Listening', const Color(0xFF5BC8E5)),
-      BlueyStatus.thinking => ('Thinking', const Color(0xFF9B8CE5)),
-      BlueyStatus.acting => ('Acting', const Color(0xFFE5A75B)),
-      BlueyStatus.error => ('Error', Colors.redAccent),
-      BlueyStatus.offline => ('Offline', Colors.grey),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
+      BlueyStatus.listening => (
+        Strings.t('Listening', 'מאזין'),
+        const Color(0xFF5BC8E5),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 12)),
+      BlueyStatus.thinking => (
+        Strings.t('Thinking', 'חושב'),
+        const Color(0xFF9B8CE5),
+      ),
+      BlueyStatus.acting => (
+        Strings.t('Acting', 'פועל'),
+        const Color(0xFFE5A75B),
+      ),
+      BlueyStatus.error => (Strings.t('Error', 'שגיאה'), Colors.redAccent),
+      BlueyStatus.offline => (Strings.t('Offline', 'לא מחובר'), Colors.grey),
+    };
+    // #131: live region so screen readers announce status changes.
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color),
+        ),
+        child: Text(label, style: TextStyle(color: color, fontSize: 12)),
+      ),
     );
   }
 }
@@ -183,33 +215,40 @@ class _AnswerLog extends StatelessWidget {
       builder: (context, _) {
         final entries = ConversationStore.instance.entries;
         if (entries.isEmpty) return const SizedBox.shrink();
-        return ListView.builder(
-          reverse: true,
-          itemCount: entries.length,
-          itemBuilder: (context, index) {
-            final entry = entries[entries.length - 1 - index];
-            final isUser = entry.role == 'user';
-            return Align(
-              alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 2),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+        // #131: announce new answers to screen readers.
+        return Semantics(
+          liveRegion: true,
+          label: Strings.t('Answers', 'תשובות'),
+          child: ListView.builder(
+            reverse: true,
+            itemCount: entries.length,
+            itemBuilder: (context, index) {
+              final entry = entries[entries.length - 1 - index];
+              final isUser = entry.role == 'user';
+              return Align(
+                alignment: isUser
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isUser
+                        ? Colors.white.withValues(alpha: 0.14)
+                        : Colors.white.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    entry.text,
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
                 ),
-                decoration: BoxDecoration(
-                  color: isUser
-                      ? Colors.white.withValues(alpha: 0.14)
-                      : Colors.white.withValues(alpha: 0.07),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  entry.text,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         );
       },
     );
