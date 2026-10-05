@@ -1,6 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
+
+import 'dart:convert';
+
 import 'package:nsd/nsd.dart' as nsd;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -48,6 +52,7 @@ class MacLink {
   LineConnection? _link;
   nsd.Discovery? _discovery;
   Timer? _retry;
+  bool _connecting = false; // no duplicate sockets (#114)
 
   Future<void> start() async {
     _discovery = await nsd.startDiscovery(kServiceType);
@@ -72,6 +77,10 @@ class MacLink {
   }
 
   Future<void> _connect(String host, int port) async {
+    // Duplicate sockets to the same Mac broke the auth handshake when a
+    // rediscovery fired mid-connect (#114).
+    if (_connecting || _link != null) return;
+    _connecting = true;
     try {
       final socket = await Socket.connect(
         host,
@@ -81,16 +90,25 @@ class MacLink {
       final link = LineConnection(socket)..start();
       _link = link;
       link.send(Packet(hello: deviceName));
-      _connected.add(true);
       link.packets.listen((packet) async {
         if (packet.hello != null) macName = packet.hello;
         switch (packet.command) {
           case 'authRequired':
+            // The server sends a nonce; we answer with HMAC(key, nonce)
+            // so the key itself never travels the wire again (#111).
             final key = (await SharedPreferences.getInstance()).getString(
               _kLinkKey,
             );
-            if (key != null) {
-              link.send(Packet(command: 'auth', text: key));
+            final nonce = packet.text;
+            if (key != null && nonce != null) {
+              final answer = Hmac(
+                sha256,
+                utf8.encode(key),
+              ).convert(utf8.encode(nonce)).toString();
+              link.send(Packet(command: 'auth', text: answer));
+            } else {
+              // Nothing to authenticate with: report unpaired (#114).
+              _paired.add(false);
             }
             return;
           case 'paired':
@@ -101,6 +119,8 @@ class MacLink {
               );
             }
             _paired.add(true);
+            // Only now is the link actually usable (#114).
+            _connected.add(true);
             return;
           case 'authFailed':
             await (await SharedPreferences.getInstance()).remove(_kLinkKey);
@@ -113,6 +133,8 @@ class MacLink {
       link.done.listen((_) => _drop());
     } catch (_) {
       _scheduleRetry();
+    } finally {
+      _connecting = false;
     }
   }
 
@@ -120,6 +142,7 @@ class MacLink {
     _link = null;
     macName = null;
     _connected.add(false);
+    _paired.add(false);
     _scheduleRetry();
   }
 
@@ -133,10 +156,18 @@ class MacLink {
 
   void send(Packet packet) => _link?.send(packet);
 
-  /// Connects to a specific Mac chosen by the user.
-  void select(DiscoveredMac mac) {
+  /// Connects to a specific Mac chosen by the user. Selecting a different
+  /// Mac while connected now actually switches (#114).
+  Future<void> select(DiscoveredMac mac) async {
     preferredMac = mac.name;
-    if (_link == null) _connect(mac.host, mac.port);
+    final current = _link;
+    if (current != null) {
+      if (macName == mac.name) return;
+      _link = null;
+      _retry?.cancel();
+      await current.close();
+    }
+    await _connect(mac.host, mac.port);
   }
 
   bool _stopped = false;
