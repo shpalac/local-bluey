@@ -94,20 +94,25 @@ void main() {
           // xdotool getmouselocation reads a cached position on fresh
           // connections under Xvfb, so watch MotionNotify on a held-open
           // `xev -root` connection instead: the warp must appear there.
+          // stdbuf -oL: xev block-buffers its stdout when piped, so force
+          // line buffering or the MotionNotify lines never reach us.
           final xev = await Process.start(
-            'xev',
-            ['-root', '-event', 'mouse'],
+            'stdbuf',
+            ['-oL', 'xev', '-root', '-event', 'mouse'],
             environment: {'DISPLAY': realDisplay},
           );
           addTearDown(() => xev.kill());
           final xevOut = StringBuffer();
           xev.stdout.transform(SystemEncoding().decoder).listen(xevOut.write);
-          await host.warp(640, 360);
+          // xev needs a beat to connect and select for events; there is no
+          // startup banner to wait on. Re-issue the warp each poll - an
+          // idempotent mousemove - until the held-open connection sees it.
           var seen = '';
-          for (var i = 0; i < 25; i++) {
+          for (var i = 0; i < 15; i++) {
+            await host.warp(640, 360);
+            await Future<void>.delayed(const Duration(milliseconds: 200));
             seen = xevOut.toString();
             if (seen.contains('root:(640,360)')) break;
-            await Future<void>.delayed(const Duration(milliseconds: 100));
           }
           expect(seen, contains('root:(640,360)'));
         }
