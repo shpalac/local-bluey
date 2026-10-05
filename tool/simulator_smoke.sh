@@ -10,17 +10,19 @@ APP_PATH="build/ios/iphonesimulator/Runner.app"
 BUNDLE_ID="com.localbluey.localBluey"
 [ -d "$APP_PATH" ] || { echo "missing $APP_PATH - build first"; exit 1; }
 
-# Newest available iPhone device type + newest iOS runtime on this runner.
-DEVICE_TYPE=$(xcrun simctl list devicetypes -j \
-  | jq -r '[.devicetypes[] | select(.name | startswith("iPhone"))][-1].identifier')
-RUNTIME=$(xcrun simctl list runtimes -j \
-  | jq -r '[.runtimes[] | select(.name | startswith("iOS"))][-1].identifier')
-[ -n "$DEVICE_TYPE" ] && [ "$RUNTIME" != "null" ] || {
-  echo "no iPhone device type or iOS runtime available"; exit 1; }
-
-UDID=$(xcrun simctl create bluey-ci "$DEVICE_TYPE" "$RUNTIME")
+# Use a device the runner image already ships: the newest iOS runtime's
+# newest available iPhone. Creating a fresh device from the newest device
+# type fails with "Incompatible device" when it needs a newer runtime.
+UDID=$(xcrun simctl list devices available -j | jq -r '
+  [.devices | to_entries[] | select(.key | test("iOS")) | select(.value | length > 0)]
+  | sort_by(.key | capture("iOS-(?<v>[0-9-]+)").v | split("-") | map(tonumber))
+  | last | .value | map(select(.name | startswith("iPhone"))) | last | .udid')
+[ -n "$UDID" ] && [ "$UDID" != "null" ] || {
+  echo "no available iPhone simulator on this runner"
+  xcrun simctl list devices available; exit 1; }
+echo "using simulator $UDID"
 cleanup() { xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
-            xcrun simctl delete "$UDID" >/dev/null 2>&1 || true; }
+            true; }
 trap cleanup EXIT
 
 xcrun simctl boot "$UDID"
