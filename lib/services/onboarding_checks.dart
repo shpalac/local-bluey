@@ -17,10 +17,15 @@ class LivePermissionChecker implements PermissionChecker {
 
   // No cheap in-app probe: these are requested lazily when their feature is
   // first used (#86), so onboarding treats them as "not needed yet".
+  // Real preflights (#174): these never prompt - the requests themselves
+  // stay lazy (#86), fired by the feature that needs them.
   @override
-  Future<bool> screenRecording() async => false;
+  Future<bool> screenRecording() => NativeControl.screenCaptureAccess();
   @override
-  Future<bool> microphone() async => false;
+  Future<bool> microphone() => NativeControl.microphoneAccess();
+
+  // No preflight API exists for Local Network on macOS: it is requested
+  // lazily by Bonjour and stays "not needed yet" here.
   @override
   Future<bool> localNetwork() async => false;
 }

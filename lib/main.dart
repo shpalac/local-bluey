@@ -19,12 +19,14 @@ import 'llm/llm_provider.dart' show BlueyStatus;
 import 'services/characters.dart';
 import 'services/conversation.dart';
 import 'services/perf_monitor.dart';
+import 'services/permission_watchdog.dart';
 import 'services/routines.dart';
 import 'services/safety_gate.dart';
 import 'services/strings.dart';
 import 'services/biometric_lock.dart';
 import 'services/haptics.dart';
 import 'services/host_control.dart';
+import 'services/onboarding_checks.dart';
 import 'services/support_matrix.dart';
 import 'services/request_runner.dart';
 import 'services/speak_receipts.dart';
@@ -32,6 +34,7 @@ import 'services/speech.dart';
 import 'services/tool_executor.dart';
 import 'services/transcription.dart';
 import 'ui/face_screen.dart';
+import 'ui/permission_recovery_card.dart';
 import 'ui/lock_gate.dart';
 import 'ui/onboarding_screen.dart';
 import 'ui/theme.dart';
@@ -100,8 +103,11 @@ class MacHome extends StatefulWidget {
   State<MacHome> createState() => _MacHomeState();
 }
 
-class _MacHomeState extends State<MacHome> with TrayListener {
+class _MacHomeState extends State<MacHome>
+    with TrayListener, WidgetsBindingObserver {
   bool _showOnboarding = false;
+  final _watchdog = PermissionWatchdog(checker: const LivePermissionChecker());
+  List<OnboardingPermission> _revoked = [];
   final _server = PhoneServer();
   final _face = ValueNotifier<FaceState>(FaceState(mood: Mood.resting));
   bool _awake = false;
@@ -119,6 +125,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     trayManager.addListener(this);
     _setupTray();
     _server.onPairRequest = _askToPair;
@@ -133,6 +140,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
     OnboardingScreen.isDone().then((done) {
       if (!done && mounted) setState(() => _showOnboarding = true);
     });
+    _recheckPermissions();
     _tools.isCancelled = () => _safety.killed;
     _safety.frontAppProvider = () => _tools.lastFrontApp;
     _safety.onConfirm = _confirmAction;
@@ -140,6 +148,17 @@ class _MacHomeState extends State<MacHome> with TrayListener {
       setState(() => _bubble = 'Stopped.');
       BrainHost.brain.value?.reset();
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Returning from System Settings re-checks for revoked grants (#174).
+    if (state == AppLifecycleState.resumed) _recheckPermissions();
+  }
+
+  Future<void> _recheckPermissions() async {
+    final revoked = await _watchdog.recheckRevoked();
+    if (mounted) setState(() => _revoked = revoked);
   }
 
   Future<bool> _askToPair(String deviceName) async {
@@ -332,6 +351,7 @@ class _MacHomeState extends State<MacHome> with TrayListener {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     trayManager.removeListener(this);
     _server.stop();
     _capture.dispose();
@@ -343,7 +363,10 @@ class _MacHomeState extends State<MacHome> with TrayListener {
   Widget build(BuildContext context) {
     if (_showOnboarding) {
       return OnboardingScreen(
-        onDone: () => setState(() => _showOnboarding = false),
+        onDone: () {
+          _watchdog.recordGranted();
+          setState(() => _showOnboarding = false);
+        },
       );
     }
     return Scaffold(
@@ -390,53 +413,73 @@ class _MacHomeState extends State<MacHome> with TrayListener {
             _onHoldEnd();
           }
         },
-        child: ValueListenableBuilder<FaceState>(
-          valueListenable: _face,
-          builder: (context, face, _) => FaceScreen(
-            face: face,
-            awake: _awake,
-            bubble: _bubble,
-            status: _status,
-            onWakeChanged: _setAwake,
-            onHoldStart: () async {
-              setState(() {
-                _face.value = FaceState(mood: Mood.listening);
-                _bubble = 'Listening…';
-              });
-              if (await _capture.hasPermission()) {
-                await _capture.start();
-              } else {
-                setState(() => _bubble = 'No microphone permission.');
-              }
-            },
-            onHoldEnd: _onHoldEnd,
-            perfOverlay: ValueListenableBuilder<bool>(
-              valueListenable: PerfMonitor.instance.overlayEnabled,
-              builder: (context, enabled, _) {
-                if (!enabled) return const SizedBox.shrink();
-                final medians = PerfMonitor.instance.medians();
-                if (medians.isEmpty) return const SizedBox.shrink();
-                final text = medians.entries
-                    .map((e) => '${e.key}: ${e.value}ms')
-                    .join('  ·  ');
-                return Container(
-                  margin: const EdgeInsets.all(8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
+        child: Column(
+          children: [
+            if (_revoked.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 48, 16, 0),
+                child: PermissionRecoveryCard(
+                  permission: _revoked.first,
+                  onDismiss: () {
+                    _watchdog.clearBaseline(_revoked.first.id);
+                    setState(() => _revoked = _revoked.sublist(1));
+                  },
+                ),
+              ),
+            Expanded(
+              child: ValueListenableBuilder<FaceState>(
+                valueListenable: _face,
+                builder: (context, face, _) => FaceScreen(
+                  face: face,
+                  awake: _awake,
+                  bubble: _bubble,
+                  status: _status,
+                  onWakeChanged: _setAwake,
+                  onHoldStart: () async {
+                    setState(() {
+                      _face.value = FaceState(mood: Mood.listening);
+                      _bubble = 'Listening…';
+                    });
+                    if (await _capture.hasPermission()) {
+                      await _capture.start();
+                    } else {
+                      setState(() => _bubble = 'No microphone permission.');
+                    }
+                  },
+                  onHoldEnd: _onHoldEnd,
+                  perfOverlay: ValueListenableBuilder<bool>(
+                    valueListenable: PerfMonitor.instance.overlayEnabled,
+                    builder: (context, enabled, _) {
+                      if (!enabled) return const SizedBox.shrink();
+                      final medians = PerfMonitor.instance.medians();
+                      if (medians.isEmpty) return const SizedBox.shrink();
+                      final text = medians.entries
+                          .map((e) => '${e.key}: ${e.value}ms')
+                          .join('  ·  ');
+                      return Container(
+                        margin: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          text,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    text,
-                    style: const TextStyle(color: Colors.white70, fontSize: 11),
-                  ),
-                );
-              },
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ),
       bottomNavigationBar: Column(

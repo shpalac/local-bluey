@@ -189,6 +189,24 @@ class DataRegistry {
       clear: () async {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('onboarding.done');
+        for (final key in prefs.getKeys()) {
+          if (key.startsWith('onboarding.step.')) await prefs.remove(key);
+        }
+      },
+    ),
+    DataStoreInfo(
+      id: 'permission_watchdog',
+      sourceFile: 'lib/services/permission_watchdog.dart',
+      whatEn: 'Baseline of granted permissions for revocation recovery',
+      whatHe: 'רשימת ההרשאות שניתנו בעבר לזיהוי ביטול',
+      where: 'SharedPreferences',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        for (final key in prefs.getKeys()) {
+          if (key.startsWith('watchdog.granted.')) await prefs.remove(key);
+        }
       },
     ),
     DataStoreInfo(
