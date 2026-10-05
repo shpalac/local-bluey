@@ -254,6 +254,14 @@ jobs:
       - name: Unit + widget tests
         run: flutter test --reporter expanded
 
+      # Phone <-> Linux host E2E under a real X server (#154): the link
+      # protocol pairs over loopback TCP and the X11 backend drives
+      # xdotool against Xvfb instead of a mocked runner.
+      - name: X11 host E2E under Xvfb (#154)
+        run: |
+          sudo apt-get install -y xvfb xdotool x11-utils
+          xvfb-run -a -s '-screen 0 1280x1024x24' flutter test test/e2e_phone_host_test.dart --reporter expanded
+
       - name: Build Linux (release)
         run: flutter build linux --release
 
