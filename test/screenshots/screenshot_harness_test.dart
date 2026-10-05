@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:local_bluey/link/models.dart';
+import 'package:local_bluey/llm/llm_provider.dart';
+import 'package:local_bluey/services/onboarding_checks.dart';
+import 'package:local_bluey/services/strings.dart';
+import 'package:local_bluey/services/support_matrix.dart';
+import 'package:local_bluey/ui/face_screen.dart';
+import 'package:local_bluey/ui/onboarding_screen.dart';
+import 'package:local_bluey/ui/settings_screen.dart';
+import 'package:local_bluey/ui/theme.dart';
+import 'package:local_bluey/ui/unsupported_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Screenshot harness (#180): renders each screen in a fixed state with
+/// fake data (no network, no keys) and compares against golden files.
+/// Regenerate all images with one command:
+///   tool/regenerate_screenshots.sh
+/// Determinism: pinned surface size + DPR, bundled Roboto (loaded below),
+/// fixed light/dark theme, English UI, no clocks or animations driven by
+/// wall time. Run twice -> identical files.
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    // Real glyphs instead of the Ahem test font: the bundled Roboto is
+    // registered under its own family name in pubspec.yaml.
+    final loader = FontLoader('Roboto')
+      ..addFont(rootBundle.load('assets/fonts/Roboto-Regular.ttf'));
+    await loader.load();
+  });
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    Strings.uiLanguage = UiLanguage.english;
+  });
+
+  Future<void> shot(
+    WidgetTester tester,
+    String name,
+    Widget child, {
+    bool dark = false,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: dark ? AppTheme.dark() : AppTheme.light(),
+        home: child,
+      ),
+    );
+    // Fixed pumps instead of pumpAndSettle: the settings overlay has
+    // perpetual diagnostics animations that never fully settle.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('goldens/$name'),
+    );
+  }
+
+  testWidgets('face listening', (tester) async {
+    await shot(
+      tester,
+      'face-listening-light.png',
+      FaceScreen(face: FaceState(), awake: true),
+    );
+  });
+
+  testWidgets('face thinking', (tester) async {
+    await shot(
+      tester,
+      'face-thinking-light.png',
+      FaceScreen(
+        face: FaceState(mood: Mood.thinking),
+        awake: true,
+        status: BlueyStatus.thinking,
+      ),
+    );
+  });
+
+  testWidgets('face answer bubble short', (tester) async {
+    await shot(
+      tester,
+      'face-answer-short-light.png',
+      FaceScreen(
+        face: FaceState(mood: Mood.talking, talk: 0.6),
+        awake: true,
+        bubble: 'On it.',
+      ),
+    );
+  });
+
+  testWidgets('face answer bubble long', (tester) async {
+    await shot(
+      tester,
+      'face-answer-long-light.png',
+      FaceScreen(
+        face: FaceState(mood: Mood.talking, talk: 0.4),
+        awake: true,
+        bubble:
+            'The renewal is \$48,250, due July 15. The April quote was '
+            'draft-only, so the May thread is the one that counts.',
+      ),
+    );
+  });
+
+  testWidgets('face sleepy', (tester) async {
+    await shot(
+      tester,
+      'face-sleepy-light.png',
+      FaceScreen(face: FaceState(mood: Mood.sleepy)),
+    );
+  });
+
+  testWidgets('face error', (tester) async {
+    await shot(
+      tester,
+      'face-error-light.png',
+      FaceScreen(
+        face: FaceState(),
+        awake: true,
+        status: BlueyStatus.error,
+        bubble: 'Lost the brain endpoint. Check Settings.',
+      ),
+    );
+  });
+
+  testWidgets('face dark theme', (tester) async {
+    await shot(
+      tester,
+      'face-listening-dark.png',
+      FaceScreen(face: FaceState(), awake: true),
+      dark: true,
+    );
+  });
+
+  testWidgets('onboarding first step', (tester) async {
+    await shot(
+      tester,
+      'onboarding-start-light.png',
+      OnboardingScreen(onDone: () {}, checker: const _AllDeniedChecker()),
+    );
+  });
+
+  testWidgets('settings default', (tester) async {
+    await shot(tester, 'settings-default-light.png', const SettingsScreen());
+  });
+
+  testWidgets('settings dark', (tester) async {
+    await shot(
+      tester,
+      'settings-default-dark.png',
+      const SettingsScreen(),
+      dark: true,
+    );
+  });
+
+  testWidgets('unsupported platform', (tester) async {
+    await shot(
+      tester,
+      'unsupported-linux-light.png',
+      SizedBox(
+        width: 800,
+        height: 700,
+        child: UnsupportedScreen(
+          profile: SupportMatrix.profile(operatingSystem: 'linux'),
+        ),
+      ),
+    );
+  });
+}
+
+class _AllDeniedChecker implements PermissionChecker {
+  const _AllDeniedChecker();
+
+  @override
+  Future<bool> accessibility() async => false;
+  @override
+  Future<bool> screenRecording() async => false;
+  @override
+  Future<bool> microphone() async => false;
+  @override
+  Future<bool> localNetwork() async => false;
+}
