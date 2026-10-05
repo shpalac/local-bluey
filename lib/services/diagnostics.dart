@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform, Process;
 
 import 'package:http/http.dart' as http;
 
@@ -83,6 +84,105 @@ class Diagnostics {
     }
   }
 
+  /// Linux runtime dependency check (#152): looks up a binary on PATH and
+  /// reports unknown on non-Linux or lookup failure - never a false pass.
+  static Check _linuxBinary(
+    String id,
+    String binary,
+    String titleEn,
+    String titleHe,
+    String fixEn,
+    String fixHe, {
+    required bool Function() isLinux,
+    required Future<bool> Function(String) which,
+  }) {
+    return () async {
+      if (!isLinux()) {
+        return CheckResult(
+          id: id,
+          titleEn: titleEn,
+          titleHe: titleHe,
+          status: CheckStatus.unknown,
+        );
+      }
+      try {
+        final found = await which(binary);
+        return CheckResult(
+          id: id,
+          titleEn: titleEn,
+          titleHe: titleHe,
+          status: found ? CheckStatus.pass : CheckStatus.fail,
+          fixEn: found ? null : fixEn,
+          fixHe: found ? null : fixHe,
+        );
+      } catch (_) {
+        return CheckResult(
+          id: id,
+          titleEn: titleEn,
+          titleHe: titleHe,
+          status: CheckStatus.unknown,
+        );
+      }
+    };
+  }
+
+  static Future<bool> _which(String binary) async {
+    final result = await Process.run('which', [binary]);
+    return result.exitCode == 0;
+  }
+
+  /// Linux dependency checks (#152). Injectable seams keep tests off the
+  /// real platform: [isLinux] and [which].
+  static Map<String, Check> linuxChecks({
+    bool Function()? isLinux,
+    Future<bool> Function(String)? which,
+  }) {
+    final platform = isLinux ?? () => Platform.isLinux;
+    final lookup = which ?? _which;
+    return {
+      'linux_display': _linuxBinary(
+        'linux_display',
+        'xdg-desktop-portal',
+        'Desktop portal (screen access)',
+        'פורטל שולחן העבודה (גישה למסך)',
+        'Install the desktop portal: sudo apt install xdg-desktop-portal xdg-desktop-portal-gtk (Wayland) or run an X11 session',
+        'התקן את הפורטל: sudo apt install xdg-desktop-portal xdg-desktop-portal-gtk (Wayland) או עבור לסשן X11',
+        isLinux: platform,
+        which: lookup,
+      ),
+      'linux_keyring': _linuxBinary(
+        'linux_keyring',
+        'secret-tool',
+        'Keyring (secret-tool)',
+        'צרור מפתחות (secret-tool)',
+        'Install libsecret tools: sudo apt install libsecret-1-0 libsecret-tools',
+        'התקן את כלי libsecret: sudo apt install libsecret-1-0 libsecret-tools',
+        isLinux: platform,
+        which: lookup,
+      ),
+      'linux_discovery': _linuxBinary(
+        'linux_discovery',
+        'avahi-browse',
+        'Network discovery (Avahi)',
+        'גילוי רשת (Avahi)',
+        'Install Avahi: sudo apt install avahi-daemon avahi-utils',
+        'התקן את Avahi: sudo apt install avahi-daemon avahi-utils',
+        isLinux: platform,
+        which: lookup,
+      ),
+      'linux_audio': _linuxBinary(
+        'linux_audio',
+        'gst-launch-1.0',
+        'Audio pipeline (GStreamer)',
+        'צינור שמע (GStreamer)',
+        'Install GStreamer tools: sudo apt install gstreamer1.0-tools gstreamer1.0-plugins-good',
+        'התקן את כלי GStreamer: sudo apt install gstreamer1.0-tools gstreamer1.0-plugins-good',
+        isLinux: platform,
+        which: lookup,
+      ),
+    };
+  }
+
   static const CheckResult _pairingUnknown = CheckResult(
     id: 'pairing',
     titleEn: 'Phone pairing',
@@ -91,11 +191,19 @@ class Diagnostics {
   );
 
   /// Runs every check; tests inject fakes via [overrides] (#85).
-  static Future<List<CheckResult>> run({Map<String, Check>? overrides}) async {
+  static Future<List<CheckResult>> run({
+    Map<String, Check>? overrides,
+    bool Function()? isLinux,
+    Future<bool> Function(String)? which,
+  }) async {
     final checks = <String, Check>{
       'provider': _providerReachable,
       'pairing': () async => _pairingUnknown,
     };
+    linuxChecks(
+      isLinux: isLinux,
+      which: which,
+    ).forEach((id, check) => checks[id] = check);
     overrides?.forEach((id, check) => checks[id] = check);
     final results = <CheckResult>[];
     for (final check in checks.values) {

@@ -1,3 +1,5 @@
+import 'dart:io' show ProcessException;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/diagnostics.dart';
 
@@ -44,4 +46,59 @@ void main() {
       isNot(contains(RegExp(r'sk-[A-Za-z0-9]'))),
     );
   });
+}
+
+// #152: Linux runtime dependency checks.
+void linuxDepsTests() {
+  test(
+    '#152: on non-Linux the checks report unknown, never a false pass',
+    () async {
+      final results = await Diagnostics.run(isLinux: () => false);
+      final linux = results.where((r) => r.id.startsWith('linux_'));
+      expect(linux.length, 4);
+      expect(linux.every((r) => r.status == CheckStatus.unknown), isTrue);
+    },
+  );
+
+  test(
+    '#152: missing binaries fail with the apt fix, found ones pass',
+    () async {
+      final results = await Diagnostics.run(
+        isLinux: () => true,
+        which: (binary) async => binary == 'secret-tool',
+      );
+      final byId = {for (final r in results) r.id: r};
+      expect(byId['linux_keyring']!.status, CheckStatus.pass);
+      expect(byId['linux_keyring']!.fixEn, isNull);
+      for (final id in ['linux_display', 'linux_discovery', 'linux_audio']) {
+        expect(byId[id]!.status, CheckStatus.fail);
+        expect(byId[id]!.fixEn, contains('apt install'));
+        expect(byId[id]!.fixHe, contains('apt install'));
+      }
+    },
+  );
+
+  test('#152: a lookup error reports unknown, never a false pass', () async {
+    final results = await Diagnostics.run(
+      isLinux: () => true,
+      which: (_) async => throw const ProcessException('which', []),
+    );
+    final linux = results.where((r) => r.id.startsWith('linux_'));
+    expect(linux.every((r) => r.status == CheckStatus.unknown), isTrue);
+  });
+
+  test(
+    '#152: linux checks appear in the redacted diagnostics report',
+    () async {
+      final results = await Diagnostics.run(isLinux: () => false);
+      final report = Diagnostics.buildReport(
+        platform: 'linux',
+        role: 'host',
+        results: results,
+      );
+      expect(report, contains('linux_display: unknown'));
+    },
+  );
+
+  linuxDepsTests();
 }
