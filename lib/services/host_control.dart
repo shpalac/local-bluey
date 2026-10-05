@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'dart:ui' show Offset;
 
+import 'linux_x11_host_control.dart';
 import 'native_control.dart';
 import 'tool_executor.dart';
 
@@ -13,10 +14,30 @@ abstract class HostControl implements NativeControlClient {
   Future<void> askPermission();
   Future<void> openAccessibilitySettings();
 
-  /// The host for the current platform. Pass [platform] in tests.
-  static HostControl forPlatform({String? operatingSystem}) {
+  /// The host for the current platform. Pass [operatingSystem] and
+  /// [environment] in tests.
+  static HostControl forPlatform({
+    String? operatingSystem,
+    Map<String, String>? environment,
+  }) {
     final os = operatingSystem ?? Platform.operatingSystem;
     if (os == 'macos') return const MacHostControl();
+    if (os == 'linux') {
+      final env = environment ?? Platform.environment;
+      final display = env['DISPLAY'] ?? '';
+      final session = (env['XDG_SESSION_TYPE'] ?? '').toLowerCase();
+      if (session == 'wayland' && display.isEmpty) {
+        return const UnsupportedHostControl(
+          'linux-wayland (#151: Wayland needs xdg-desktop-portal)',
+        );
+      }
+      if (display.isEmpty) {
+        return const UnsupportedHostControl(
+          'linux (no X11 display: DISPLAY is not set)',
+        );
+      }
+      return LinuxX11HostControl();
+    }
     return UnsupportedHostControl(os);
   }
 }
