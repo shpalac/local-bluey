@@ -63,7 +63,7 @@ class ToolExecutor {
       DateTime.now().difference(_lastSnapshotAt!) > staleAfter;
 
   String? _stalenessError(Map<String, dynamic> args) {
-    final usesTarget = (args['target_id'] as String?)?.isNotEmpty == true;
+    final usesTarget = _str(args['target_id']).isNotEmpty;
     final usesGrid = args['x'] != null || args['y'] != null;
     if (!usesTarget && !usesGrid) return null;
     if (_stale) {
@@ -86,8 +86,12 @@ class ToolExecutor {
     try {
       result = await _execute(call);
     } catch (e) {
+      // Never leave the brain with an unanswered tool call (#110): a bad
+      // argument type or a native failure becomes an Error result the
+      // model can react to, and the run continues.
       await _log(call, 'Error: $e', recoveryHint: _recoveryFor(call.name));
-      rethrow;
+      lastUndoable = null;
+      return ToolResult('Error: $e');
     }
     final failed = _isFailure(result);
     lastUndoable = failed ? null : undoFor(call.name, call.arguments);
@@ -196,7 +200,7 @@ class ToolExecutor {
       case 'point_at':
         final staleError = _stalenessError(call.arguments);
         if (staleError != null) return ToolResult(staleError);
-        final id = call.arguments['target_id'] as String? ?? '';
+        final id = _str(call.arguments['target_id']);
         final resolved = await _control.resolveTarget(id);
         await _control.warp(resolved.x, resolved.y);
         return ToolResult('Pointing at "$id" (${resolved.text}).');
@@ -232,7 +236,7 @@ class ToolExecutor {
         return _withScreen('Clicked.');
 
       case 'type_text':
-        await _control.type(call.arguments['text'] as String? ?? '');
+        await _control.type(_str(call.arguments['text']));
         if (call.arguments['press_return'] == true) {
           await _control.press('return');
           return _withScreen('Typed and pressed Return.');
@@ -240,15 +244,13 @@ class ToolExecutor {
         return ToolResult('Typed.');
 
       case 'press_keys':
-        final label = await _control.press(
-          call.arguments['keys'] as String? ?? '',
-        );
+        final label = await _control.press(_str(call.arguments['keys']));
         return _withScreen('Pressed $label.');
 
       case 'scroll':
         final staleError = _stalenessError(call.arguments);
         if (staleError != null) return ToolResult(staleError);
-        final direction = call.arguments['direction'] as String? ?? 'down';
+        final direction = _str(call.arguments['direction'], fallback: 'down');
         final amount = _num(call.arguments['amount'], fallback: 3) * 120;
         final point = await _targetPointOrCenter(call.arguments);
         final dx = direction == 'left'
@@ -284,15 +286,11 @@ class ToolExecutor {
         return _withScreen('Dragged.');
 
       case 'open_app':
-        final outcome = await _control.openApp(
-          call.arguments['name'] as String? ?? '',
-        );
+        final outcome = await _control.openApp(_str(call.arguments['name']));
         return _withScreen(outcome ?? '');
 
       case 'open_url':
-        final outcome = await _control.openURL(
-          call.arguments['url'] as String? ?? '',
-        );
+        final outcome = await _control.openURL(_str(call.arguments['url']));
         return _withScreen(outcome ?? '');
 
       default:
@@ -306,7 +304,7 @@ class ToolExecutor {
     String xKey = 'x',
     String yKey = 'y',
   }) async {
-    final id = args[idKey] as String?;
+    final id = args[idKey] is String ? args[idKey] as String : null;
     if (id != null && id.isNotEmpty) {
       final resolved = await _control.resolveTarget(id);
       return Offset(resolved.x, resolved.y);
@@ -315,7 +313,7 @@ class ToolExecutor {
   }
 
   Future<Offset> _targetPointOrCenter(Map<String, dynamic> args) async {
-    final id = args['target_id'] as String?;
+    final id = args['target_id'] is String ? args['target_id'] as String : null;
     if ((id == null || id.isEmpty) && args['x'] == null) {
       return Offset(_screenWidth / 2, _screenHeight / 2);
     }
@@ -350,8 +348,18 @@ class ToolExecutor {
     return base64Encode(snap.jpeg);
   }
 
-  double _num(Object? value, {double fallback = 0}) =>
-      (value as num?)?.toDouble() ?? fallback;
+  /// Models often send numbers as strings (#110). Coerce instead of cast.
+  double _num(Object? value, {double fallback = 0}) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? fallback;
+    return fallback;
+  }
+
+  /// Same for strings: a model sending {"name": 3} must not throw (#110).
+  static String _str(Object? value, {String fallback = ''}) {
+    if (value is String) return value;
+    return value?.toString() ?? fallback;
+  }
 }
 
 /// Where a resolved target id landed on screen.

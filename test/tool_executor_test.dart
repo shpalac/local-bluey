@@ -136,6 +136,32 @@ void main() {
     final result = await pending;
     expect(result.text, contains('cancelled'));
   });
+  group('#110: bad arguments become Error results, not aborts', () {
+    test('numbers sent as strings are coerced', () async {
+      await executor.execute(ToolCall('look_at_screen', {}));
+      final result = await executor.execute(
+        ToolCall('click', {'x': '500', 'y': '300'}),
+      );
+      expect(result.text, isNot(startsWith('Error')));
+      expect(control.clicks.single.$1, const Offset(1000, 300));
+    });
+
+    test('non-string text does not throw and reaches the brain', () async {
+      final result = await executor.execute(
+        ToolCall('type_text', {'text': 42}),
+      );
+      expect(result.text, isNot(startsWith('Error')));
+    });
+
+    test(
+      'native failure returns an Error result instead of rethrowing',
+      () async {
+        control.throwOnSnapshot = true;
+        final result = await executor.execute(ToolCall('look_at_screen', {}));
+        expect(result.text, startsWith('Error'));
+      },
+    );
+  });
 }
 
 class FakeControl implements NativeControlClient {
@@ -145,12 +171,14 @@ class FakeControl implements NativeControlClient {
   final presses = <String>[];
 
   static const _jpeg = [1, 2, 3];
+  bool throwOnSnapshot = false;
 
   (double, double) screenSize = (2000, 1000);
   String snapshotTargets = 'L1 @500,12 "Hello"';
 
   @override
   Future<ScreenSnapshot> snapshot() async {
+    if (throwOnSnapshot) throw StateError('native snapshot failed');
     snapshots++;
     return ScreenSnapshot(
       jpeg: Uint8List.fromList(_jpeg),
