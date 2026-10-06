@@ -175,7 +175,7 @@ void main() {
         }
         return 0.3;
       },
-      onVision: (_, _) async {},
+      onVision: (_, _) async => null,
     );
     await p.tick(); // app switch baseline
     expect(await p.tick(), isNull, reason: 'stopped mid-diff: result dropped');

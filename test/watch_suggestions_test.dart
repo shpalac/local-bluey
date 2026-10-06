@@ -1,6 +1,5 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:local_bluey/services/watch_context.dart';
 import 'package:local_bluey/services/watch_pipeline.dart';
 import 'package:local_bluey/services/watch_suggestions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
