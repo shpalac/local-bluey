@@ -47,7 +47,10 @@ xcrun simctl launch "$UDID" "$BUNDLE_ID"
 sleep 10
 
 # Alive check: the launch prints the pid; a crash would end the process.
-if ! xcrun simctl spawn "$UDID" launchctl list | grep -q "$BUNDLE_ID"; then
+# Capture first: `grep -q` exits early, launchctl then dies with SIGPIPE and
+# pipefail reports a false failure.
+LAUNCHD_LIST=$(xcrun simctl spawn "$UDID" launchctl list)
+if ! grep -q "$BUNDLE_ID" <<<"$LAUNCHD_LIST"; then
   echo "app is not running after launch"
   xcrun simctl spawn "$UDID" log show --last 2m --predicate \
     'process == "Runner"' --style compact | tail -30 || true
