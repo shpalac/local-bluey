@@ -82,7 +82,7 @@ enum AudioDecoder {
         blockBuffer, atOffset: 0, lengthAtOffsetOut: nil,
         totalLengthOut: &length, dataPointerOut: &pointer)
       if status == kCMBlockBufferNoErr, let pointer {
-        pcm.append(pointer, count: length)
+        pcm.append(UnsafeRawPointer(pointer).assumingMemoryBound(to: UInt8.self), count: length)
       }
       if pcm.count > maxOutputBytes {
         reader.cancelReading()
