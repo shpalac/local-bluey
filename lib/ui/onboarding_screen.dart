@@ -22,6 +22,23 @@ class OnboardingScreen extends StatefulWidget {
 
   static const _kDone = 'onboarding.done';
   static const _kStepPrefix = 'onboarding.step.';
+  static const _kDeferredPrefix = 'onboarding.deferred.';
+
+  /// Permission ids the user chose to set up later (#224). Kept apart from
+  /// the step-reviewed flag so navigation progress never reads as a grant.
+  static Future<Set<String>> deferredSteps() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      for (final p in onboardingPermissions)
+        if (prefs.getBool('$_kDeferredPrefix${p.id}') ?? false) p.id,
+    };
+  }
+
+  static Future<void> _setDeferred(String id, bool deferred) async =>
+      (await SharedPreferences.getInstance()).setBool(
+        '$_kDeferredPrefix$id',
+        deferred,
+      );
 
   static Future<bool> isDone() async =>
       (await SharedPreferences.getInstance()).getBool(_kDone) ?? false;
@@ -56,6 +73,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   final _granted = <String, bool?>{};
   final _failed = <String, String>{};
+  Set<String> _deferred = {};
+  bool _summary = false;
   int _step = 0;
   bool _busy = false;
   bool _disposed = false;
@@ -79,6 +98,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         _gen++;
         setState(() => _step = step);
       }
+    });
+    OnboardingScreen.deferredSteps().then((d) {
+      if (mounted) setState(() => _deferred = d);
     });
     _refresh();
   }
@@ -137,13 +159,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     });
   }
 
-  /// Re-checks the current permission alone. A grant marks the step done
-  /// and advances; a deny stays put and says so. Overlapping calls are
-  /// ignored, and a result that arrives after Back/Skip is discarded.
+  /// Re-checks the current permission alone. A grant only updates the
+  /// status; the user moves on with Continue. Overlapping calls are ignored,
+  /// and a result that arrives after Back/Later is discarded.
   Future<void> _verify() async {
     if (_busy) return;
     final id = _current.id;
-    final title = _current.title;
     final gen = ++_gen;
     setState(() => _busy = true);
     bool? granted;
@@ -168,44 +189,48 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         _granted[id] = granted;
       }
     });
-    if (error != null || granted == null) return;
-    if (!granted) {
+    if (error == null && granted == false) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '$title is still off - open Settings, grant it, '
-            'then verify again.',
+            '${_current.title} is still off - open Settings, grant it, '
+            'then check again.',
           ),
         ),
       );
-      return;
     }
-    await OnboardingScreen._markStepDone(id, true);
-    if (_disposed || !mounted || gen != _gen) return;
-    await _advance();
   }
 
-  Future<void> _advance() async {
+  /// Moves past the current step. [deferred] records a "set up later"
+  /// choice; a granted step clears any earlier deferral.
+  Future<void> _next({required bool deferred}) async {
+    if (_busy) return;
+    final id = _current.id;
+    await OnboardingScreen._markStepDone(id, true);
+    await OnboardingScreen._setDeferred(id, deferred);
+    if (_disposed || !mounted) return;
+    setState(() {
+      deferred ? _deferred.add(id) : _deferred.remove(id);
+    });
     if (_last) {
-      await _finish();
+      _gen++;
+      setState(() => _summary = true);
     } else {
       _gen++;
       setState(() => _step++);
     }
   }
 
-  /// Skipping is only for permissions the first answer does not need (#86).
-  Future<void> _skip() async {
-    if (_busy) return;
-    await OnboardingScreen._markStepDone(_current.id, true);
-    if (_disposed || !mounted) return;
-    await _advance();
-  }
-
   void _back() {
     if (_busy) return;
     _gen++;
     setState(() => _step--);
+  }
+
+  void _jumpTo(int step) {
+    if (_busy || step == _step) return;
+    _gen++;
+    setState(() => _step = step);
   }
 
   Future<void> _openSettings() async {
@@ -229,27 +254,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     });
   }
 
-  Future<void> _finish() async {
+  /// Leaving early opens the summary; nothing is marked done until the
+  /// user confirms there with the consequences in view.
+  void _finishLater() {
     if (_busy) return;
-    setState(() => _busy = true);
-    var micOk = true;
-    try {
-      micOk = await requiredGranted(widget.checker);
-    } catch (_) {
-      micOk = false;
-    }
-    if (_disposed || !mounted) return;
-    if (!micOk) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Microphone is still missing or could not be checked - the '
-            'first spoken answer needs it. You can finish anyway and grant '
-            'it later.',
-          ),
-        ),
-      );
-    }
+    _gen++;
+    setState(() => _summary = true);
+  }
+
+  Future<void> _startBluey() async {
+    if (_busy) return;
     await OnboardingScreen.markDone();
     widget.onDone();
   }
@@ -271,29 +285,150 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     };
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final p = _current;
-    final granted = _granted[p.id];
+  /// What stays off when a permission is not granted (#224).
+  static const _consequence = {
+    'accessibility': 'Bluey cannot click or type for you.',
+    'screen_recording': 'Bluey cannot see what is on your screen.',
+    'microphone': 'Bluey cannot hear you, so spoken questions will not work.',
+    'local_network': 'Your iPhone cannot find this Mac until you approve it.',
+  };
+
+  static const _laterLabel = {
+    'accessibility': 'Set up click control later',
+    'screen_recording': 'Set up screen access later',
+    'local_network': 'Set up phone pairing later',
+  };
+
+  /// One display state per step: granted, deferred, unknown or missing.
+  String _stateOf(OnboardingPermission p) {
+    if (_granted[p.id] == true) return 'granted';
+    if (_deferred.contains(p.id)) return 'deferred';
+    if (_notCheckable.contains(p.id)) return 'unknown';
+    return 'missing';
+  }
+
+  Widget _overview(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 4,
+      children: [
+        for (var i = 0; i < onboardingPermissions.length; i++)
+          ChoiceChip(
+            key: Key('step-${onboardingPermissions[i].id}'),
+            selected: i == _step,
+            avatar: Icon(switch (_stateOf(onboardingPermissions[i])) {
+              'granted' => Icons.check_circle,
+              'deferred' => Icons.schedule,
+              'unknown' => Icons.help_outline,
+              _ => Icons.radio_button_unchecked,
+            }, size: 18),
+            label: Text(
+              '${onboardingPermissions[i].title} - '
+              '${switch (_stateOf(onboardingPermissions[i])) {
+                'granted' => 'granted',
+                'deferred' => 'later',
+                'unknown' => 'asked at pairing',
+                _ => 'not granted',
+              }}',
+            ),
+            onSelected: (_) => _jumpTo(i),
+          ),
+      ],
+    );
+  }
+
+  Widget _summaryView(BuildContext context) {
+    final rows = <Widget>[];
+    for (final p in onboardingPermissions) {
+      final state = _stateOf(p);
+      rows.add(
+        ListTile(
+          key: Key('summary-${p.id}'),
+          leading: Icon(
+            state == 'granted' ? Icons.check_circle : Icons.info_outline,
+          ),
+          title: Text(p.title),
+          subtitle: Text(
+            state == 'granted' ? 'Available.' : _consequence[p.id]!,
+          ),
+        ),
+      );
+    }
     return Scaffold(
-      appBar: AppBar(title: const Text('Welcome to Local Bluey')),
+      appBar: AppBar(title: const Text('Setup summary')),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Step ${_step + 1} of ${onboardingPermissions.length}',
-              style: Theme.of(context).textTheme.labelMedium,
+            const Text(
+              'You can change any of these later in System Settings. '
+              'Bluey tells you when a missing permission blocks something.',
             ),
+            const SizedBox(height: 8),
+            Expanded(child: ListView(children: rows)),
+            Wrap(
+              spacing: 12,
+              children: [
+                OutlinedButton(
+                  onPressed: _busy
+                      ? null
+                      : () {
+                          _gen++;
+                          setState(() => _summary = false);
+                        },
+                  child: const Text('Back to setup'),
+                ),
+                FilledButton(
+                  onPressed: _busy ? null : _startBluey,
+                  child: const Text('Start Bluey'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_summary) return _summaryView(context);
+    final p = _current;
+    final granted = _granted[p.id];
+    final failed = _failed.containsKey(p.id);
+    final notCheckable = _notCheckable.contains(p.id);
+    // One primary action per state.
+    final Widget primary;
+    if (granted == true || notCheckable) {
+      primary = FilledButton(
+        onPressed: _busy ? null : () => _next(deferred: notCheckable),
+        child: Text(_last ? 'Continue to summary' : 'Continue'),
+      );
+    } else if (granted == null && !failed) {
+      primary = const FilledButton(onPressed: null, child: Text('Checking...'));
+    } else {
+      primary = FilledButton(
+        onPressed: _openSettings,
+        child: const Text('Open Settings'),
+      );
+    }
+    return Scaffold(
+      appBar: AppBar(title: const Text('Welcome to Local Bluey')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _overview(context),
             const SizedBox(height: 16),
             Card(
               child: ListTile(
                 title: Text(p.title),
                 subtitle: Text(p.why),
-                leading: _failed.containsKey(p.id)
+                leading: failed
                     ? const Icon(Icons.error_outline)
-                    : _notCheckable.contains(p.id)
+                    : notCheckable
                     ? const Icon(Icons.help_outline)
                     : switch (granted) {
                         true => const Icon(
@@ -318,19 +453,18 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               spacing: 12,
               runSpacing: 8,
               children: [
-                FilledButton(
-                  onPressed: _openSettings,
-                  child: const Text('Open Settings'),
-                ),
-                if (!_notCheckable.contains(p.id))
+                primary,
+                if (!notCheckable && granted != true)
                   OutlinedButton(
                     onPressed: _busy ? null : _verify,
-                    child: const Text('Verify'),
+                    child: const Text('Check again'),
                   ),
-                if (!p.requiredForFirstAnswer)
+                if (!p.requiredForFirstAnswer &&
+                    granted != true &&
+                    !notCheckable)
                   TextButton(
-                    onPressed: _busy ? null : _skip,
-                    child: const Text('Skip'),
+                    onPressed: _busy ? null : () => _next(deferred: true),
+                    child: Text(_laterLabel[p.id] ?? 'Set up later'),
                   ),
                 if (_step > 0)
                   TextButton(
@@ -339,12 +473,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
               ],
             ),
-            const Spacer(),
-            const Text('Then hold the face and ask: "what\'s on my screen?"'),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _busy ? null : _finish,
-              child: const Text('Done - start Bluey'),
+            const SizedBox(height: 24),
+            TextButton(
+              onPressed: _busy ? null : _finishLater,
+              child: const Text('Finish setup later'),
             ),
           ],
         ),
