@@ -7,9 +7,16 @@ set -euo pipefail
 set -x
 cd "$(dirname "$0")/.."
 
+# Usage: simulator_smoke.sh [preboot]
+#   preboot  only start booting the simulator and return. First-boot data
+#            migration on a cold runner can take 4+ minutes, so CI runs this
+#            before the iOS build and lets the two overlap.
+MODE="${1:-run}"
 APP_PATH="build/ios/iphonesimulator/Runner.app"
 BUNDLE_ID="com.localbluey.localBluey"
-[ -d "$APP_PATH" ] || { echo "missing $APP_PATH - build first"; exit 1; }
+if [ "$MODE" != "preboot" ]; then
+  [ -d "$APP_PATH" ] || { echo "missing $APP_PATH - build first"; exit 1; }
+fi
 
 # Use a device the runner image already ships: the newest iOS runtime's
 # newest available iPhone. Creating a fresh device from the newest device
@@ -22,12 +29,19 @@ UDID=$(xcrun simctl list devices available -j | jq -r '
   echo "no available iPhone simulator on this runner"
   xcrun simctl list devices available; exit 1; }
 echo "using simulator $UDID"
+if [ "$MODE" = "preboot" ]; then
+  # Idempotent: the run phase boots again and tolerates an already-booted device.
+  xcrun simctl boot "$UDID" || true
+  exit 0
+fi
 cleanup() { xcrun simctl shutdown "$UDID" >/dev/null 2>&1 || true
             true; }
 trap cleanup EXIT
 
-xcrun simctl boot "$UDID"
+phase_start=$SECONDS
+xcrun simctl boot "$UDID" || true   # already booted if preboot ran
 xcrun simctl bootstatus "$UDID" -b
+echo "boot wait: $((SECONDS - phase_start))s"
 xcrun simctl install "$UDID" "$APP_PATH"
 xcrun simctl launch "$UDID" "$BUNDLE_ID"
 sleep 10
