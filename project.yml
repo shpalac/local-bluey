@@ -13,10 +13,12 @@ targets:
     type: application
     platform: iOS
     sources:
+      - path: iOS/Assets.xcassets
       - path: iOS/Sources
       - path: Shared
     settings:
       base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         PRODUCT_BUNDLE_IDENTIFIER: co.visionairy.googly.phone
         PRODUCT_NAME: Googly Eyes
         TARGETED_DEVICE_FAMILY: "1"

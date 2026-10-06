@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Local Bluey
+Comment=Local voice assistant
+Exec="@CMAKE_INSTALL_PREFIX@/@BINARY_NAME@"
+Icon=@CMAKE_INSTALL_PREFIX@/share/icons/hicolor/256x256/apps/@APPLICATION_ID@.png
+StartupWMClass=@APPLICATION_ID@
+Terminal=false
+Categories=Utility;

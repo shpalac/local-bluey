@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B10E1C010000000000000001 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B10E1C010000000000000002 /* Assets.xcassets */; };
 		0E02B38E4A5A909A93BA31C5 /* OFL-IBMPlex.txt in Resources */ = {isa = PBXBuildFile; fileRef = 1249C703A2D40793CA70D00E /* OFL-IBMPlex.txt */; };
 		0F5614BE9A55A8498E40F5F1 /* IBMPlexMono-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1C8AB3F441CA03CDA07FAE72 /* IBMPlexMono-Medium.ttf */; };
 		162BD56C1F6191020071D2A2 /* BlobShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35F3C44C342D6E869E6E3B4E /* BlobShape.swift */; };
@@ -27,6 +28,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		B10E1C010000000000000002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = iOS/Assets.xcassets; sourceTree = "<group>"; };
 		020C853B32D37028CE040148 /* OFL-Fredoka.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-Fredoka.txt"; sourceTree = "<group>"; };
 		0EAD8A3C72D3899AD5CD2AA8 /* IBMPlexMono-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "IBMPlexMono-Regular.ttf"; sourceTree = "<group>"; };
 		1249C703A2D40793CA70D00E /* OFL-IBMPlex.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OFL-IBMPlex.txt"; sourceTree = "<group>"; };
@@ -64,6 +66,7 @@
 		4F61868F579B512B69F537A4 = {
 			isa = PBXGroup;
 			children = (
+				B10E1C010000000000000002 /* Assets.xcassets */,
 				E8E2F33C9E110392983FDDDF /* Shared */,
 				8F41397BC1AEAB53CDE84BB3 /* Sources */,
 				554494C1002555E490E37EB6 /* Products */,
@@ -165,6 +168,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B10E1C010000000000000001 /* Assets.xcassets in Resources */,
 				6C5FF10BDE711139D00DB85A /* Fredoka.ttf in Resources */,
 				0F5614BE9A55A8498E40F5F1 /* IBMPlexMono-Medium.ttf in Resources */,
 				9C57F9AFA362287C2B93142E /* IBMPlexMono-Regular.ttf in Resources */,
