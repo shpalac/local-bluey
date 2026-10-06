@@ -10,6 +10,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     NativeControlChannel.register(with: flutterViewController)
+    AudioDecoderChannel.register(with: flutterViewController)
 
     super.awakeFromNib()
   }

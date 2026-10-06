@@ -16,6 +16,7 @@ void main() {
     'lib/services/linux_host_base.dart',
     'lib/services/endpoint_assistant.dart',
     'lib/services/user_feedback.dart',
+    'lib/services/pcm_decode.dart',
     'lib/services/action_log.dart',
     'lib/services/audio_capture.dart',
     'lib/services/biometric_lock.dart',
