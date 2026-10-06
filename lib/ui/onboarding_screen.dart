@@ -415,70 +415,84 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     }
     return Scaffold(
       appBar: AppBar(title: const Text('Welcome to Local Bluey')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _overview(context),
-            const SizedBox(height: 16),
-            Card(
-              child: ListTile(
-                title: Text(p.title),
-                subtitle: Text(p.why),
-                leading: failed
-                    ? const Icon(Icons.error_outline)
-                    : notCheckable
-                    ? const Icon(Icons.help_outline)
-                    : switch (granted) {
-                        true => const Icon(
-                          Icons.check_circle,
-                          color: Colors.green,
-                        ),
-                        false => const Icon(Icons.radio_button_off),
-                        null => const Icon(Icons.hourglass_top),
-                      },
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(_stateLine(p), key: const Key('onboarding-state')),
-            if (_failed.containsKey('${p.id}.settings'))
-              const Text(
-                'Could not open System Settings. Open it yourself: '
-                'Privacy & Security, then pick this permission.',
-                key: Key('onboarding-settings-error'),
-              ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
+      // One focused panel: centred, width-bounded, scrolls when it cannot
+      // fit (compact windows, large text) instead of overflowing (#223).
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                primary,
-                if (!notCheckable && granted != true)
-                  OutlinedButton(
-                    onPressed: _busy ? null : _verify,
-                    child: const Text('Check again'),
+                Text(
+                  'Set up ${p.title}',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  semanticsLabel: 'Set up ${p.title}',
+                ),
+                const SizedBox(height: 16),
+                _overview(context),
+                const SizedBox(height: 16),
+                Card(
+                  child: ListTile(
+                    title: Text(p.title),
+                    subtitle: Text(p.why),
+                    leading: failed
+                        ? const Icon(Icons.error_outline)
+                        : notCheckable
+                        ? const Icon(Icons.help_outline)
+                        : switch (granted) {
+                            true => const Icon(
+                              Icons.check_circle,
+                              color: Colors.green,
+                            ),
+                            false => const Icon(Icons.radio_button_off),
+                            null => const Icon(Icons.hourglass_top),
+                          },
                   ),
-                if (!p.requiredForFirstAnswer &&
-                    granted != true &&
-                    !notCheckable)
-                  TextButton(
-                    onPressed: _busy ? null : () => _next(deferred: true),
-                    child: Text(_laterLabel[p.id] ?? 'Set up later'),
+                ),
+                const SizedBox(height: 8),
+                Text(_stateLine(p), key: const Key('onboarding-state')),
+                if (_failed.containsKey('${p.id}.settings'))
+                  const Text(
+                    'Could not open System Settings. Open it yourself: '
+                    'Privacy & Security, then pick this permission.',
+                    key: Key('onboarding-settings-error'),
                   ),
-                if (_step > 0)
-                  TextButton(
-                    onPressed: _busy ? null : _back,
-                    child: const Text('Back'),
-                  ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    primary,
+                    if (!notCheckable && granted != true)
+                      OutlinedButton(
+                        onPressed: _busy ? null : _verify,
+                        child: const Text('Check again'),
+                      ),
+                    if (!p.requiredForFirstAnswer &&
+                        granted != true &&
+                        !notCheckable)
+                      TextButton(
+                        onPressed: _busy ? null : () => _next(deferred: true),
+                        child: Text(_laterLabel[p.id] ?? 'Set up later'),
+                      ),
+                    if (_step > 0)
+                      TextButton(
+                        onPressed: _busy ? null : _back,
+                        child: const Text('Back'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                TextButton(
+                  onPressed: _busy ? null : _finishLater,
+                  child: const Text('Finish setup later'),
+                ),
               ],
             ),
-            const SizedBox(height: 24),
-            TextButton(
-              onPressed: _busy ? null : _finishLater,
-              child: const Text('Finish setup later'),
-            ),
-          ],
+          ),
         ),
       ),
     );

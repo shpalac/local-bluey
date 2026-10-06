@@ -41,10 +41,22 @@ void main() {
     String name,
     Widget child, {
     bool dark = false,
+    Size? size,
+    double textScale = 1.0,
   }) async {
+    if (size != null) {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+    }
     await tester.pumpWidget(
       MaterialApp(
         theme: dark ? AppTheme.dark() : AppTheme.light(),
+        builder: (context, app) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: app!,
+        ),
         home: child,
       ),
     );
@@ -143,6 +155,29 @@ void main() {
       OnboardingScreen(onDone: () {}, checker: const _AllDeniedChecker()),
     );
   });
+
+  // Onboarding at the sizes and text scales #223 asks for. A render
+  // overflow fails the test, so these also guard against clipped controls.
+  for (final v in const [
+    ('compact-light', Size(720, 520), false, 1.0),
+    ('compact-dark-200', Size(720, 520), true, 2.0),
+    ('desktop-light', Size(1360, 845), false, 1.0),
+    ('desktop-dark', Size(1360, 845), true, 1.0),
+    ('desktop-light-200', Size(1360, 845), false, 2.0),
+    ('wide-light', Size(1920, 1080), false, 1.0),
+  ]) {
+    testWidgets('onboarding ${v.$1}', (tester) async {
+      await shot(
+        tester,
+        'onboarding-${v.$1}.png',
+        OnboardingScreen(onDone: () {}, checker: const _AllDeniedChecker()),
+        size: v.$2,
+        dark: v.$3,
+        textScale: v.$4,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('settings default', (tester) async {
     await shot(tester, 'settings-default-light.png', const SettingsScreen());
