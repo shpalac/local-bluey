@@ -43,8 +43,9 @@ typedef FrontmostReader = Future<FrontmostInfo> Function();
 /// current frame and the previous one (null on the first frame).
 typedef FrameDiffFn = Future<double?> Function();
 
-/// Injectable vision trigger (#213).
-typedef VisionCall = Future<void> Function(String app, String detail);
+/// Injectable vision trigger (#213). Returns a one-line summary used as
+/// the event's evidence detail (#214); null means no summary.
+typedef VisionCall = Future<String?> Function(String app, String detail);
 
 /// Event-driven observation pipeline (#213). Cheap signals first; a frame
 /// diff only when the app stays put; a vision call only when the diff says
@@ -160,14 +161,14 @@ class WatchPipeline {
         _clock.now().difference(lastVision) >= visionCooldown;
     if (cooledDown && onVision != null) {
       _lastVisionAt = _clock.now();
-      await onVision!(info.app, info.title);
+      final summary = await onVision!(info.app, info.title);
       if (stale()) return null;
       _emit(
         WatchEvent(
           kind: WatchEventKind.visionCall,
           at: _clock.now(),
           app: info.app,
-          detail: info.title,
+          detail: summary ?? info.title,
         ),
       );
     }
