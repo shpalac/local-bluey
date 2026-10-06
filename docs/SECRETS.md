@@ -37,6 +37,13 @@ And under **Settings → Environments → release**: add a **required
 reviewer** so tag-driven releases that use signing secrets need a human
 approval before they run.
 
+## What never goes into CI
+
+No model API keys (Ollama is local) and no phone-pairing keys are ever
+stored in CI secrets or workflow files. Pairing keys live on the devices
+in `flutter_secure_storage`; CI never needs them. If a workflow asks for
+one, the workflow is wrong.
+
 ## If a secret ever lands in history
 
 Rotate it first (the old value is compromised the moment it is pushed),
