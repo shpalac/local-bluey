@@ -221,6 +221,8 @@ class _MacHomeState extends State<MacHome>
 
   /// Mirrors the watch session into the menu bar (#212): red countdown
   /// title while observing, plus a one-tap stop item.
+  bool _trayWatchActive = false;
+
   Future<void> _syncWatchTray() async {
     final watch = ScreenWatch.instance;
     if (watch.isActive) {
@@ -231,7 +233,13 @@ class _MacHomeState extends State<MacHome>
     } else {
       await trayManager.setTitle('');
     }
-    await _setupTray();
+    // The menu only changes when the session starts or stops (the stop item
+    // appears/disappears); rebuilding it on every one-second tick would
+    // churn the native menu for no reason.
+    if (watch.isActive != _trayWatchActive) {
+      _trayWatchActive = watch.isActive;
+      await _setupTray();
+    }
   }
 
   Future<void> _setupTray() async {
