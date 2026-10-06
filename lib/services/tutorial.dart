@@ -20,6 +20,25 @@ class TutorialController extends ChangeNotifier {
   static const _kDone = 'tutorial.done';
 
   TutorialStep _step = TutorialStep.wake;
+  String _askPrompt = "what's this?";
+  bool _pointing = true;
+
+  /// Fits the tutorial to what actually works (#226): the question to ask
+  /// and whether the pointing step is offered at all. Without pointing
+  /// access the tutorial ends after the first answer, with no success
+  /// promised for an action that cannot happen.
+  void configure({String? askPrompt, bool pointing = true}) {
+    if (askPrompt != null) _askPrompt = askPrompt;
+    _pointing = pointing;
+    notifyListeners();
+  }
+
+  /// The steps this run offers.
+  List<TutorialStep> get steps => [
+    TutorialStep.wake,
+    TutorialStep.ask,
+    if (_pointing) TutorialStep.point,
+  ];
 
   /// The current step.
   TutorialStep get step => _step;
@@ -76,13 +95,17 @@ class TutorialController extends ChangeNotifier {
   /// A completed ask: the answer bubble arrived.
   void notifyAnswer() {
     if (_finished || _step != TutorialStep.ask) return;
+    if (!_pointing) {
+      _finish();
+      return;
+    }
     _step = TutorialStep.point;
     notifyListeners();
   }
 
   /// A real point_at / point_at_spot execution (#176's "watch him point").
   void notifyPointed() {
-    if (_finished || _step != TutorialStep.point) return;
+    if (_finished || _step != TutorialStep.point || !_pointing) return;
     _finish();
   }
 
@@ -95,7 +118,7 @@ class TutorialController extends ChangeNotifier {
   /// Instruction for the current step.
   String get instruction => switch (_step) {
     TutorialStep.wake => 'Double-tap Bluey\'s face to wake him.',
-    TutorialStep.ask => 'Press and hold, ask "what\'s this?", then let go.',
+    TutorialStep.ask => 'Press and hold, ask "$_askPrompt", then let go.',
     TutorialStep.point =>
       'Now ask him to point at something - watch the cursor fly.',
   };

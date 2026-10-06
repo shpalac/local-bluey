@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/first_success.dart';
 import '../services/native_control.dart';
 import '../services/onboarding_checks.dart';
 
@@ -15,10 +16,23 @@ class OnboardingScreen extends StatefulWidget {
     super.key,
     required this.onDone,
     this.checker = const LivePermissionChecker(),
+    this.readiness = checkServices,
+    this.onPlan,
+    this.onOpenSettings,
   });
 
   final VoidCallback onDone;
   final PermissionChecker checker;
+
+  /// Verifies the brain endpoint and speech-to-text for the summary (#226).
+  final Future<(ServiceReadiness, ServiceReadiness)> Function() readiness;
+
+  /// Receives the first-success plan right before [onDone], so the tutorial
+  /// can match what is actually ready.
+  final ValueChanged<FirstSuccessPlan>? onPlan;
+
+  /// Opens the app Settings (endpoint assistant) from a readiness fix.
+  final VoidCallback? onOpenSettings;
 
   static const _kDone = 'onboarding.done';
   static const _kStepPrefix = 'onboarding.step.';
@@ -75,6 +89,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   final _failed = <String, String>{};
   Set<String> _deferred = {};
   bool _summary = false;
+  FirstSuccessPlan? _plan;
   int _step = 0;
   bool _busy = false;
   bool _disposed = false;
@@ -213,8 +228,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       deferred ? _deferred.add(id) : _deferred.remove(id);
     });
     if (_last) {
-      _gen++;
-      setState(() => _summary = true);
+      _openSummary();
     } else {
       _gen++;
       setState(() => _step++);
@@ -258,12 +272,42 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   /// user confirms there with the consequences in view.
   void _finishLater() {
     if (_busy) return;
+    _openSummary();
+  }
+
+  /// Shows the summary and verifies what the first request depends on. The
+  /// plan stays null while checking, so nothing claims readiness early.
+  Future<void> _openSummary() async {
     _gen++;
-    setState(() => _summary = true);
+    setState(() {
+      _summary = true;
+      _plan = null;
+    });
+    await _refresh();
+    (ServiceReadiness, ServiceReadiness) services;
+    try {
+      services = await widget.readiness();
+    } catch (_) {
+      services = (ServiceReadiness.unreachable, ServiceReadiness.notConfigured);
+    }
+    if (_disposed || !mounted || !_summary) return;
+    setState(() {
+      _plan = FirstSuccessPlan.from(
+        FirstSuccessInputs(
+          accessibility: _granted['accessibility'] ?? false,
+          screenRecording: _granted['screen_recording'] ?? false,
+          microphone: _granted['microphone'] ?? false,
+          brain: services.$1,
+          stt: services.$2,
+        ),
+      );
+    });
   }
 
   Future<void> _startBluey() async {
-    if (_busy) return;
+    final plan = _plan;
+    if (_busy || plan == null) return;
+    widget.onPlan?.call(plan);
     await OnboardingScreen.markDone();
     widget.onDone();
   }
@@ -337,6 +381,63 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     );
   }
 
+  /// First-success guidance from the verified plan (#226).
+  Widget _firstRequest(BuildContext context) {
+    final plan = _plan;
+    if (plan == null) {
+      return const ListTile(
+        key: Key('first-request'),
+        leading: Icon(Icons.hourglass_top),
+        title: Text('Checking your chat model and speech setup...'),
+      );
+    }
+    if (!plan.voiceReady) {
+      return Column(
+        key: const Key('first-request'),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const ListTile(
+            leading: Icon(Icons.warning_amber),
+            title: Text('Not ready for a spoken question yet'),
+          ),
+          for (final issue in plan.issues)
+            ListTile(
+              key: Key('issue-${issue.id}'),
+              dense: true,
+              title: Text(issue.message),
+              trailing:
+                  issue.id != 'microphone' && widget.onOpenSettings != null
+                  ? TextButton(
+                      onPressed: widget.onOpenSettings,
+                      child: const Text('Open Settings'),
+                    )
+                  : null,
+            ),
+        ],
+      );
+    }
+    return Column(
+      key: const Key('first-request'),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.record_voice_over),
+          title: Text('Try this first: hold the face and ask'),
+          subtitle: Text('"${plan.suggestedRequest}"'),
+        ),
+        if (!plan.pointingAvailable)
+          const ListTile(
+            key: Key('no-pointing'),
+            dense: true,
+            title: Text(
+              'Pointing needs Accessibility and Screen Recording, so the '
+              'tutorial will skip it for now.',
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _summaryView(BuildContext context) {
     final rows = <Widget>[];
     for (final p in onboardingPermissions) {
@@ -366,7 +467,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               'Bluey tells you when a missing permission blocks something.',
             ),
             const SizedBox(height: 8),
-            Expanded(child: ListView(children: rows)),
+            Expanded(
+              child: ListView(children: [...rows, _firstRequest(context)]),
+            ),
             Wrap(
               spacing: 12,
               children: [
@@ -380,8 +483,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   child: const Text('Back to setup'),
                 ),
                 FilledButton(
-                  onPressed: _busy ? null : _startBluey,
-                  child: const Text('Start Bluey'),
+                  onPressed: _busy || _plan == null ? null : _startBluey,
+                  child: Text(_plan == null ? 'Checking...' : 'Start Bluey'),
                 ),
               ],
             ),

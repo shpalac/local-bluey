@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/link/models.dart';
 import 'package:local_bluey/llm/llm_provider.dart';
+import 'package:local_bluey/services/first_success.dart';
 import 'package:local_bluey/services/onboarding_checks.dart';
 import 'package:local_bluey/services/strings.dart';
 import 'package:local_bluey/services/support_matrix.dart';
@@ -20,6 +21,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Determinism: pinned surface size + DPR, bundled Roboto (loaded below),
 /// fixed light/dark theme, English UI, no clocks or animations driven by
 /// wall time. Run twice -> identical files.
+Future<(ServiceReadiness, ServiceReadiness)> _fakeReady() async =>
+    (ServiceReadiness.ready, ServiceReadiness.ready);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -152,7 +156,11 @@ void main() {
     await shot(
       tester,
       'onboarding-start-light.png',
-      OnboardingScreen(onDone: () {}, checker: const _AllDeniedChecker()),
+      OnboardingScreen(
+        readiness: _fakeReady,
+        onDone: () {},
+        checker: const _AllDeniedChecker(),
+      ),
     );
   });
 
@@ -170,7 +178,11 @@ void main() {
       await shot(
         tester,
         'onboarding-${v.$1}.png',
-        OnboardingScreen(onDone: () {}, checker: const _AllDeniedChecker()),
+        OnboardingScreen(
+          readiness: _fakeReady,
+          onDone: () {},
+          checker: const _AllDeniedChecker(),
+        ),
         size: v.$2,
         dark: v.$3,
         textScale: v.$4,

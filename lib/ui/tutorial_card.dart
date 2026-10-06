@@ -15,7 +15,7 @@ class TutorialCard extends StatelessWidget {
       listenable: controller,
       builder: (context, _) {
         if (!controller.visible) return const SizedBox.shrink();
-        final steps = TutorialStep.values;
+        final steps = controller.steps;
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(12),
