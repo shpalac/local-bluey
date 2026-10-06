@@ -8,6 +8,7 @@ import '../link/models.dart';
 class SpeakReceipts {
   SpeakReceipts({this.timeout = const Duration(seconds: 15)});
 
+  /// How long to wait for the phone's receipt before logging a failure.
   final Duration timeout;
 
   int _next = 1;
@@ -23,6 +24,7 @@ class SpeakReceipts {
   /// Fires when a receipt times out, with the log line.
   Stream<String> get failures => _failures.stream;
 
+  /// Whether any spoken reply is still waiting on its receipt.
   bool get hasPending => _pending.isNotEmpty;
 
   /// Assigns a speech id to a spoken reply and starts the receipt timer.
@@ -58,6 +60,7 @@ class SpeakReceipts {
     _failures.add(line);
   }
 
+  /// Cancels all pending timers and closes the failure stream.
   void dispose() {
     for (final timer in _pending.values) {
       timer.cancel();

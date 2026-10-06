@@ -16,13 +16,19 @@ class EgressEntry {
     DateTime? at,
   }) : at = at ?? DateTime.now();
 
+  /// The destination host (no path, no payload).
   final String host;
 
   /// brain | transcription | tts
   final String kind;
+
+  /// Bytes transmitted.
   final int bytes;
+
+  /// When it happened (defaults to now).
   final DateTime at;
 
+  /// Serializes for the on-disk log.
   Map<String, dynamic> toJson() => {
     'host': host,
     'kind': kind,
@@ -42,15 +48,20 @@ class EgressEntry {
 /// when. Checkable against network tools; nothing is sent that is not here.
 class EgressMonitor {
   EgressMonitor._();
+
+  /// The shared monitor.
   static final EgressMonitor instance = EgressMonitor._();
 
+  /// Rolling cap on retained entries.
   static const keepEntries = 300;
 
   /// Entries older than this are pruned on every write (#83).
   static int retentionDays = 30;
 
+  /// The in-memory log, oldest first.
   final List<EgressEntry> entries = [];
 
+  /// Logs one transmission: host + kind + bytes, never the payload.
   Future<void> record(String url, String kind, int bytes) async {
     final host = Uri.tryParse(url)?.host ?? url;
     entries.add(EgressEntry(host: host, kind: kind, bytes: bytes));

@@ -15,7 +15,10 @@ class Character {
     required this.reactions,
   });
 
+  /// Stable identifier, persisted as the user's choice.
   final String id;
+
+  /// Display name.
   final String name;
 
   /// Injected into the brain's system prompt.
@@ -24,11 +27,14 @@ class Character {
   /// TTS voice id.
   final String voice;
 
+  /// Face color per mood.
   final Map<Mood, Color> moodColors;
 
   /// Event -> line shown in the bubble ("wake", "success", "error").
   final Map<String, List<String>> reactions;
 
+  /// Picks a reaction line for [event] deterministically by [seed];
+  /// '' when the event has no lines.
   String react(String event, int seed) {
     final lines = reactions[event];
     if (lines == null || lines.isEmpty) return '';
@@ -36,7 +42,9 @@ class Character {
   }
 }
 
+/// The built-in roster (#55).
 class BlueyCharacters {
+  /// The default character.
   static const bluey = Character(
     id: 'bluey',
     name: 'Bluey',
@@ -58,6 +66,7 @@ class BlueyCharacters {
     },
   );
 
+  /// The alternate character.
   static const captain = Character(
     id: 'captain',
     name: 'Captain',
@@ -79,20 +88,27 @@ class BlueyCharacters {
     },
   );
 
+  /// Every selectable character.
   static const all = [bluey, captain];
 
+  /// Looks up a character by [id]; unknown ids fall back to [bluey].
   static Character byId(String id) =>
       all.firstWhere((c) => c.id == id, orElse: () => bluey);
 }
 
+/// Loads and persists the selected character (#55, cleared by #83).
 class CharacterStore {
   CharacterStore._();
+
+  /// The shared store.
   static final CharacterStore instance = CharacterStore._();
 
   static const _kCharacter = 'character.id';
 
+  /// The active character; the UI listens to this.
   final ValueNotifier<Character> current = ValueNotifier(BlueyCharacters.bluey);
 
+  /// Loads the stored choice (or the default) into [current].
   Future<void> load() async {
     final id =
         (await SharedPreferences.getInstance()).getString(_kCharacter) ??
@@ -106,6 +122,7 @@ class CharacterStore {
     await (await SharedPreferences.getInstance()).remove(_kCharacter);
   }
 
+  /// Selects and persists the character with [id].
   Future<void> select(String id) async {
     current.value = BlueyCharacters.byId(id);
     await (await SharedPreferences.getInstance()).setString(_kCharacter, id);

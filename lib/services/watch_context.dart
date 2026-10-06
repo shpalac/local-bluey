@@ -2,6 +2,7 @@ import 'watch_pipeline.dart';
 
 /// What the user seems to be doing, derived from the watch event stream
 /// (#214). A guess with a confidence - and uncertain means silent.
+/// The layer's best guess at what the user is currently doing (#214).
 class TaskContext {
   const TaskContext({
     required this.app,
@@ -10,6 +11,7 @@ class TaskContext {
     this.detail = '',
   });
 
+  /// The frontmost app this context belongs to.
   final String app;
 
   /// Coarse activity bucket: coding, browsing, writing, terminal, media,
@@ -18,6 +20,8 @@ class TaskContext {
 
   /// 0..1. Below [WatchContext.confidentEnough] the layer stays silent.
   final double confidence;
+
+  /// Optional human-readable detail for the UI.
   final String detail;
 }
 

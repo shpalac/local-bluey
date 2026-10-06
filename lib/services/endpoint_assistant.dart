@@ -21,15 +21,29 @@ class EndpointPreset {
     required this.isLocal,
   });
 
+  /// Stable preset identifier ('ollama', ...).
   final String id;
+
+  /// Display name in the picker.
   final String label;
+
+  /// The brain backend this preset configures.
   final BrainBackend backend;
+
+  /// Pre-filled endpoint URL.
   final String baseUrl;
+
+  /// Suggested model name for the setup flow.
   final String modelHint;
+
+  /// Whether the endpoint needs an API key.
   final bool requiresKey;
+
+  /// True for on-device endpoints (no cloud egress).
   final bool isLocal;
 }
 
+/// The shipped provider presets offered in first-run setup (#175).
 const endpointPresets = [
   EndpointPreset(
     id: 'ollama',
@@ -65,38 +79,55 @@ sealed class EndpointCheckResult {
   const EndpointCheckResult();
 }
 
+/// The endpoint answered a real model-list request.
 class EndpointCheckOk extends EndpointCheckResult {
   const EndpointCheckOk({required this.latency, required this.models});
+
+  /// Round-trip time of the verification request.
   final Duration latency;
 
   /// Model ids the endpoint listed; empty when it listed none.
   final List<String> models;
 }
 
+/// Why a verification request failed.
 enum EndpointCheckFailure { invalidUrl, unreachable, httpError, badResponse }
 
+/// The endpoint could not be verified, with a machine-readable reason.
 class EndpointCheckFailed extends EndpointCheckResult {
   const EndpointCheckFailed(this.reason, {this.detail, this.statusCode});
+
+  /// The failure category.
   final EndpointCheckFailure reason;
+
+  /// Optional lower-level error text for diagnostics.
   final String? detail;
+
+  /// HTTP status when the failure was [EndpointCheckFailure.httpError].
   final int? statusCode;
 }
 
 /// A local Ollama found by probing its default port.
 class OllamaDetection {
   const OllamaDetection({required this.baseUrl, required this.models});
+
+  /// The base URL the local Ollama answered on.
   final String baseUrl;
+
+  /// Model ids it listed; empty when none are pulled yet.
   final List<String> models;
 
   /// The model the assistant pre-selects: the first one Ollama lists.
   String? get suggestedModel => models.isEmpty ? null : models.first;
 }
 
+/// Probes, presets and verification for first-run endpoint setup (#175).
 class EndpointAssistant {
   EndpointAssistant({http.Client? client, Duration? timeout})
     : _client = client ?? http.Client(),
       _timeout = timeout ?? const Duration(seconds: 4);
 
+  /// Ollama's default local endpoint.
   static const ollamaDefaultBaseUrl = 'http://localhost:11434';
 
   final http.Client _client;

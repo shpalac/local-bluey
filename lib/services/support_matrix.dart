@@ -7,6 +7,7 @@ import 'strings.dart';
 /// scattered Platform checks (#51).
 enum AppRole { host, phoneClient, unsupported }
 
+/// One OS's role and capability set (#51).
 class PlatformProfile {
   const PlatformProfile(
     this.os, {
@@ -14,18 +15,35 @@ class PlatformProfile {
     required this.capabilities,
   });
 
+  /// [Platform.operatingSystem] value this profile describes.
   final String os;
+
+  /// What the app is on this OS.
   final AppRole role;
+
+  /// Capability ids (the SupportMatrix constants) this OS has.
   final Set<String> capabilities;
 
+  /// Whether this profile has [capability].
   bool supports(String capability) => capabilities.contains(capability);
 }
 
+/// The single capability map for the whole app (#51): screens and
+/// services ask here instead of sprinkling Platform checks.
 class SupportMatrix {
+  /// Screen capture, input and accessibility control.
   static const hostControl = 'hostControl';
+
+  /// Window positioning/minimize via window_manager.
   static const windowManagement = 'windowManagement';
+
+  /// Push-to-talk mic capture.
   static const holdToTalk = 'holdToTalk';
+
+  /// Acting as the server a phone pairs to.
   static const phoneServer = 'phoneServer';
+
+  /// Acting as the client of a paired Mac.
   static const macLink = 'macLink';
 
   static const _profiles = {
@@ -62,12 +80,15 @@ class SupportMatrix {
     ),
   };
 
+  /// The profile for [operatingSystem] (defaults to this device);
+  /// unknown OSes get an unsupported profile with no capabilities.
   static PlatformProfile profile({String? operatingSystem}) {
     final os = operatingSystem ?? Platform.operatingSystem;
     return _profiles[os] ??
         PlatformProfile(os, role: AppRole.unsupported, capabilities: const {});
   }
 
+  /// Convenience: just the role for [operatingSystem].
   static AppRole resolveRole({String? operatingSystem}) =>
       profile(operatingSystem: operatingSystem).role;
 

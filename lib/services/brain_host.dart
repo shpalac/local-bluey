@@ -10,6 +10,7 @@ import 'settings_store.dart';
 class BrainHost {
   BrainHost._();
 
+  /// The active brain; null until the first [reload] completes.
   static final ValueNotifier<Brain?> brain = ValueNotifier(null);
 
   /// Loads saved settings and (re)builds the brain. Safe to call again after
@@ -21,6 +22,8 @@ class BrainHost {
   /// True when the current provider talks off-device.
   static final ValueNotifier<bool> remoteActive = ValueNotifier(false);
 
+  /// Loads saved settings and (re)builds the brain. Safe to call again
+  /// after the user edits settings.
   static Future<void> reload() async {
     final settings = await SettingsStore.load();
     final refusal = await PrivacyGuard.refusal(settings);

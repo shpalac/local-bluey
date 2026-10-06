@@ -41,6 +41,7 @@ class LinuxPortalHostControl extends LinuxHostControlBase {
       'system-wide input injection to every process running as you - only '
       'opt in if you accept that.';
 
+  /// Whether input injection is available (ydotool installed).
   Future<bool> get hasInput => hasBinary('ydotool');
 
   @override

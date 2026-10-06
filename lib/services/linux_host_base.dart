@@ -38,10 +38,19 @@ abstract class LinuxHostControlBase implements HostControl {
        readBytes = readBytes ?? ((path) => File(path).readAsBytes()),
        makeTempDir = makeTempDir ?? Directory.systemTemp.createTemp;
 
+  /// Process launcher (defaults to [Process.run]).
   final ProcessRunner run;
+
+  /// Environment lookup (defaults to [Platform.environment]).
   final EnvLookup env;
+
+  /// Whether a helper binary exists on PATH.
   final Future<bool> Function(String executable) hasBinary;
+
+  /// File reader for captures.
   final BytesReader readBytes;
+
+  /// Temp-dir factory for intermediate captures.
   final TempDirMaker makeTempDir;
 
   /// Binary -> apt package, for plain-language missing-helper errors.
@@ -50,15 +59,20 @@ abstract class LinuxHostControlBase implements HostControl {
   /// id -> resolved target from the last snapshot, for [resolveTarget].
   final Map<String, ResolvedTarget> lastTargets = {};
 
+  /// Rounds a display-point coordinate to an int (named `num_` to avoid
+  /// shadowing the [num] type).
   static int num_(double v) => v.round();
 
+  /// The X11 DISPLAY, or null when none is set (e.g. pure Wayland).
   String? get display {
     final d = env('DISPLAY');
     return (d == null || d.isEmpty) ? null : d;
   }
 
+  /// Lowercased XDG_SESSION_TYPE ('x11', 'wayland', ...), '' when unset.
   String get sessionType => (env('XDG_SESSION_TYPE') ?? '').toLowerCase();
 
+  /// Helper binaries from [requiredTools] that are not on PATH.
   Future<List<String>> missingTools() async {
     final missing = <String>[];
     for (final tool in requiredTools.keys) {
@@ -67,18 +81,22 @@ abstract class LinuxHostControlBase implements HostControl {
     return missing;
   }
 
+  /// Plain-language install hint for [missing] binaries (apt packages).
   String missingMessage(List<String> missing) {
     final packages = missing.map((t) => requiredTools[t]).toSet().join(' ');
     return 'Linux host control needs: ${missing.join(', ')}. '
         'Install with: sudo apt-get install $packages';
   }
 
+  /// Throws a StateError with the install hint when [tool] is missing.
   Future<void> requireTool(String tool) async {
     if (!await hasBinary(tool)) {
       throw StateError(missingMessage([tool]));
     }
   }
 
+  /// Runs [tool] with [args] and returns stdout. Throws on missing
+  /// binary or non-zero exit (stderr included in the message).
   Future<String> stdoutOf(String tool, List<String> args) async {
     await requireTool(tool);
     final result = await run(tool, args);
@@ -92,6 +110,7 @@ abstract class LinuxHostControlBase implements HostControl {
     return '${result.stdout}';
   }
 
+  /// Like [stdoutOf] when only success/failure matters.
   Future<void> ok(String tool, List<String> args) async {
     await stdoutOf(tool, args);
   }
@@ -193,6 +212,8 @@ abstract class LinuxHostControlBase implements HostControl {
   }
 }
 
+/// Default `hasBinary` for [LinuxHostControlBase]: true when
+/// [executable] resolves on PATH (`which`).
 Future<bool> defaultHasBinary(String executable) async {
   try {
     final result = await Process.run('which', [executable]);

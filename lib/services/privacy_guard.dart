@@ -13,6 +13,7 @@ class PrivacyGuard {
   @visibleForTesting
   static bool? debugLocalOnlyOverride;
 
+  /// Whether the user enabled local-only mode (no cloud calls, #120).
   static Future<bool> isLocalOnly() async {
     final override = debugLocalOnlyOverride;
     if (override != null) return override;
@@ -20,6 +21,7 @@ class PrivacyGuard {
         false;
   }
 
+  /// Persists the local-only setting.
   static Future<void> setLocalOnly(bool value) async =>
       (await SharedPreferences.getInstance()).setBool(_kLocalOnly, value);
 
@@ -72,6 +74,8 @@ class PrivacyGuard {
     RegExp(r'\b\d{9}\b'), // national-id shaped numbers
   ];
 
+  /// Scrubs emails, card-shaped and national-id-shaped numbers from
+  /// [text] before it leaves the device (#86).
   static String redact(String text) {
     var out = text;
     for (final pattern in _patterns) {

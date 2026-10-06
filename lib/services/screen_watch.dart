@@ -32,6 +32,8 @@ class ScreenWatch extends ChangeNotifier {
     Duration(minutes: 10),
     Duration(minutes: 15),
   ];
+
+  /// Session length when the user starts a watch without picking one.
   static const defaultSessionLength = Duration(minutes: 5);
 
   bool _active = false;
@@ -50,7 +52,10 @@ class ScreenWatch extends ChangeNotifier {
   /// excluded moments - app names and titles are never recorded (#212).
   int excludedCount = 0;
 
+  /// Whether a session is currently running.
   bool get isActive => _active;
+
+  /// The stop-generation counter (see `_generation` above).
   int get generation => _generation;
 
   /// Time left in the current session; zero when off.
@@ -114,6 +119,7 @@ class ScreenWatch extends ChangeNotifier {
   /// Fired by [stop]; must be unregistered when the op completes.
   void registerInFlight(void Function() cancel) => _cancelListeners.add(cancel);
 
+  /// Removes a callback registered with [registerInFlight].
   void unregisterInFlight(void Function() cancel) =>
       _cancelListeners.remove(cancel);
 

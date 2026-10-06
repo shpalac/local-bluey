@@ -10,6 +10,7 @@ import 'settings_store.dart';
 /// we cannot verify reports unknown, not pass.
 enum CheckStatus { pass, fail, unknown }
 
+/// Outcome of one troubleshooting check (#85).
 class CheckResult {
   const CheckResult({
     required this.id,
@@ -20,16 +21,26 @@ class CheckResult {
     this.fixHe,
   });
 
+  /// Stable check identifier.
   final String id;
+
+  /// Check title, English.
   final String titleEn;
+
+  /// Check title, Hebrew.
   final String titleHe;
+
+  /// What the check found.
   final CheckStatus status;
 
   /// The exact fix when failing (open system settings, edit URL, re-pair).
   final String? fixEn;
+
+  /// Same, Hebrew.
   final String? fixHe;
 }
 
+/// One troubleshooting check.
 typedef Check = Future<CheckResult> Function();
 
 /// Live troubleshooting checks + redacted diagnostics report (#85).

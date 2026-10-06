@@ -9,6 +9,7 @@ import '../llm/openai_compatible_provider.dart';
 
 import 'characters.dart';
 
+/// Supported brain backends: local Ollama or any OpenAI-compatible API.
 enum BrainBackend { ollama, openAiCompatible }
 
 /// The user's LLM connection choices. Non-secret fields live in
@@ -27,26 +28,41 @@ class BrainSettings {
     this.ttsVoice = 'alloy',
   });
 
+  /// The active backend.
   final BrainBackend backend;
+
+  /// Endpoint base URL.
   final String baseUrl;
+
+  /// Chat model name.
   final String model;
+
+  /// API key for OpenAI-compatible backends, kept in secure storage.
   final String? apiKey;
 
   /// Optional dedicated /audio/transcriptions endpoint; defaults to baseUrl.
   final String? transcriptionBaseUrl;
+
+  /// Model name for transcription requests.
   final String transcriptionModel;
 
   /// Optional dedicated /audio/speech endpoint; defaults to baseUrl.
   final String? ttsBaseUrl;
+
+  /// Model name for speech requests.
   final String ttsModel;
+
+  /// Voice id for speech requests.
   final String ttsVoice;
 
+  /// Out-of-box configuration: local Ollama, no key.
   static const defaults = BrainSettings(
     backend: BrainBackend.ollama,
     baseUrl: 'http://localhost:11434',
     model: 'llama3.2',
   );
 
+  /// Returns a copy with the given fields replaced.
   BrainSettings copyWith({
     BrainBackend? backend,
     String? baseUrl,
@@ -75,6 +91,7 @@ class BrainSettings {
     ttsVoice: ttsVoice ?? this.ttsVoice,
   );
 
+  /// Builds the LLM provider these settings describe.
   LlmProvider buildProvider() => switch (backend) {
     BrainBackend.ollama => OllamaProvider(baseUrl: baseUrl, model: model),
     BrainBackend.openAiCompatible => OpenAiCompatibleProvider(
@@ -84,12 +101,15 @@ class BrainSettings {
     ),
   };
 
+  /// Builds a [Brain] on top of [buildProvider].
   Brain buildBrain() => Brain(
     provider: buildProvider(),
     persona: CharacterStore.instance.current.value.persona,
   );
 }
 
+/// Loads/saves [BrainSettings]; the API key lives in secure storage,
+/// everything else in SharedPreferences (#123).
 class SettingsStore {
   SettingsStore._();
 
@@ -119,6 +139,7 @@ class SettingsStore {
   /// a warning instead of losing every setting (#123).
   static String? lastSecureStorageWarning;
 
+  /// Loads the saved settings (or [BrainSettings.defaults]).
   static Future<BrainSettings> load() async {
     final prefs = await SharedPreferences.getInstance();
     final backendName = prefs.getString(_kBackend);

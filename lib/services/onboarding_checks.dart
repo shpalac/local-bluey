@@ -3,12 +3,20 @@ import 'native_control.dart';
 /// Injectable permission checks for onboarding (#86): live status per
 /// permission, fakes in tests.
 abstract class PermissionChecker {
+  /// macOS accessibility permission (input control).
   Future<bool> accessibility();
+
+  /// macOS screen-recording permission; never prompts (#174).
   Future<bool> screenRecording();
+
+  /// Microphone permission; never prompts (#174).
   Future<bool> microphone();
+
+  /// Local-network permission (phone pairing over Bonjour).
   Future<bool> localNetwork();
 }
 
+/// Production checker: reads the live OS permission state.
 class LivePermissionChecker implements PermissionChecker {
   const LivePermissionChecker();
 
@@ -30,6 +38,7 @@ class LivePermissionChecker implements PermissionChecker {
   Future<bool> localNetwork() async => false;
 }
 
+/// One permission the onboarding/recovery flow explains and links to.
 class OnboardingPermission {
   const OnboardingPermission({
     required this.id,
@@ -39,9 +48,16 @@ class OnboardingPermission {
     required this.requiredForFirstAnswer,
   });
 
+  /// Stable identifier used by the watchdog's baseline.
   final String id;
+
+  /// Short display name.
   final String title;
+
+  /// Plain-language reason the app needs it.
   final String why;
+
+  /// Deep link into the matching System Settings pane.
   final String settingsUrl;
 
   /// Lazy requests keep the minimal path short (#86): only what the first
@@ -49,6 +65,7 @@ class OnboardingPermission {
   final bool requiredForFirstAnswer;
 }
 
+/// Every permission the onboarding flow walks through, in order.
 const onboardingPermissions = [
   OnboardingPermission(
     id: 'accessibility',

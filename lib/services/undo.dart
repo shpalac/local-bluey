@@ -7,7 +7,10 @@ class UndoSpec {
     required this.keys,
   });
 
+  /// Undo affordance label, English.
   final String labelEn;
+
+  /// Undo affordance label, Hebrew.
   final String labelHe;
 
   /// Shortcut passed to press_keys to reverse the action.
