@@ -472,6 +472,21 @@ class _MacHomeState extends State<MacHome>
   Widget build(BuildContext context) {
     if (_showOnboarding) {
       return OnboardingScreen(
+        onPlan: (plan) => _tutorial.configure(
+          askPrompt: plan.suggestedRequest,
+          pointing: plan.pointingAvailable,
+        ),
+        onOpenSettings: () async {
+          final saved = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (_) => const LockGate(
+                reason: 'Unlock Bluey settings',
+                child: SettingsScreen(),
+              ),
+            ),
+          );
+          if (saved ?? false) BrainHost.reload();
+        },
         onDone: () {
           _watchdog.recordGranted();
           setState(() => _showOnboarding = false);

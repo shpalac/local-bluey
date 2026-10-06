@@ -17,6 +17,7 @@ void main() {
     'lib/services/endpoint_assistant.dart',
     'lib/services/user_feedback.dart',
     'lib/services/pcm_decode.dart',
+    'lib/services/first_success.dart',
     'lib/services/action_log.dart',
     'lib/services/audio_capture.dart',
     'lib/services/biometric_lock.dart',

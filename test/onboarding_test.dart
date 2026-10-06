@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:local_bluey/services/first_success.dart';
 import 'package:local_bluey/services/onboarding_checks.dart';
 import 'package:local_bluey/services/permission_watchdog.dart';
 import 'package:local_bluey/ui/onboarding_screen.dart';
@@ -52,6 +53,9 @@ class _StubChecker extends PermissionChecker {
 
 Widget _app(Widget child) => MaterialApp(home: child);
 
+Future<(ServiceReadiness, ServiceReadiness)> _fakeReady() async =>
+    (ServiceReadiness.ready, ServiceReadiness.ready);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -59,7 +63,13 @@ void main() {
   group('OnboardingScreen stepper', () {
     testWidgets('opens on the first permission step', (t) async {
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: _StubChecker({}),
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       expect(find.byKey(const Key('step-accessibility')), findsOneWidget);
@@ -77,7 +87,13 @@ void main() {
         'onboarding.step.screen_recording': true,
       });
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: _StubChecker({}),
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       expect(find.text('Microphone'), findsOneWidget);
@@ -88,7 +104,13 @@ void main() {
     testWidgets('verify advances only after the grant exists', (t) async {
       final checker = _StubChecker({});
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: checker, onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: checker,
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       await t.tap(find.text('Check again'));
@@ -112,7 +134,13 @@ void main() {
 
     testWidgets('deferring is recorded separately from a grant', (t) async {
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: _StubChecker({}),
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       await t.tap(find.text('Set up click control later'));
@@ -135,7 +163,13 @@ void main() {
       });
       final checker = _StubChecker({});
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: checker, onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: checker,
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       expect(find.textContaining('Accessibility - later'), findsOneWidget);
@@ -158,6 +192,7 @@ void main() {
       await t.pumpWidget(
         _app(
           OnboardingScreen(
+            readiness: _fakeReady,
             checker: _StubChecker({}),
             onDone: () => done = true,
           ),
@@ -170,7 +205,7 @@ void main() {
       // Nothing is marked done until the user confirms the summary.
       expect(done, isFalse);
       expect(await OnboardingScreen.isDone(), isFalse);
-      expect(find.textContaining('cannot hear you'), findsOneWidget);
+      expect(find.textContaining('cannot hear you'), findsWidgets);
       expect(
         find.textContaining('cannot see what is on your screen'),
         findsOne,
@@ -183,7 +218,13 @@ void main() {
 
     testWidgets('summary can go back to setup', (t) async {
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: _StubChecker({}),
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       await t.ensureVisible(find.text('Finish setup later'));
@@ -201,7 +242,13 @@ void main() {
     ) async {
       final checker = _SlowChecker();
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: checker, onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: checker,
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       // Resolve the initial refresh check.
@@ -234,7 +281,13 @@ void main() {
     testWidgets('rapid Verify taps start one check', (t) async {
       final checker = _SlowChecker();
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: checker, onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: checker,
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       for (final c in checker.accessibilityCalls) {
@@ -262,7 +315,13 @@ void main() {
     testWidgets('disposal during a pending check does not throw', (t) async {
       final checker = _SlowChecker();
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: checker, onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: checker,
+            onDone: () {},
+          ),
+        ),
       );
       await t.pump();
       await t.pumpWidget(const SizedBox());
@@ -277,7 +336,13 @@ void main() {
       t,
     ) async {
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: _ThrowingChecker(), onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: _ThrowingChecker(),
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       expect(find.textContaining('Could not check'), findsOneWidget);
@@ -302,7 +367,13 @@ void main() {
         'onboarding.step.accessibility': true,
       });
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: _ThrowingChecker(), onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: _ThrowingChecker(),
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       // Step 2 is Screen Recording, which the throwing checker grants.
@@ -319,7 +390,13 @@ void main() {
         'onboarding.step.microphone': true,
       });
       await t.pumpWidget(
-        _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: _StubChecker({}),
+            onDone: () {},
+          ),
+        ),
       );
       await t.pumpAndSettle();
       expect(find.text('Local Network'), findsOneWidget);
@@ -327,6 +404,108 @@ void main() {
       expect(find.textContaining('Not granted'), findsNothing);
       expect(find.textContaining('pair the phone'), findsOneWidget);
       expect(find.text('Continue to summary'), findsOneWidget);
+    });
+  });
+
+  group('First-success summary (#226)', () {
+    Future<void> openSummary(WidgetTester t, OnboardingScreen s) async {
+      await t.pumpWidget(_app(s));
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Finish setup later'));
+      await t.tap(find.text('Finish setup later'));
+      await t.pumpAndSettle();
+    }
+
+    testWidgets('screen deferred: first request does not need the screen', (
+      t,
+    ) async {
+      FirstSuccessPlan? plan;
+      await openSummary(
+        t,
+        OnboardingScreen(
+          readiness: _fakeReady,
+          checker: _StubChecker({'microphone': true}),
+          onDone: () {},
+          onPlan: (p) => plan = p,
+        ),
+      );
+      expect(find.textContaining('Try this first'), findsOneWidget);
+      expect(find.textContaining('what can you do'), findsOneWidget);
+      expect(find.textContaining("on my screen"), findsNothing);
+      expect(find.byKey(const Key('no-pointing')), findsOneWidget);
+      await t.tap(find.text('Start Bluey'));
+      await t.pumpAndSettle();
+      expect(plan!.pointingAvailable, isFalse);
+      expect(plan!.screenQuestionAvailable, isFalse);
+    });
+
+    testWidgets('everything granted: screen question, pointing offered', (
+      t,
+    ) async {
+      FirstSuccessPlan? plan;
+      await openSummary(
+        t,
+        OnboardingScreen(
+          readiness: _fakeReady,
+          checker: _StubChecker({
+            'accessibility': true,
+            'screen_recording': true,
+            'microphone': true,
+          }),
+          onDone: () {},
+          onPlan: (p) => plan = p,
+        ),
+      );
+      expect(find.textContaining("on my screen"), findsOneWidget);
+      expect(find.byKey(const Key('no-pointing')), findsNothing);
+      await t.tap(find.text('Start Bluey'));
+      await t.pumpAndSettle();
+      expect(plan!.pointingAvailable, isTrue);
+    });
+
+    testWidgets('unreachable brain gives a fix, not a ready claim', (t) async {
+      t.view.physicalSize = const Size(800, 1600);
+      t.view.devicePixelRatio = 1.0;
+      addTearDown(t.view.reset);
+      var opened = false;
+      await openSummary(
+        t,
+        OnboardingScreen(
+          readiness: () async =>
+              (ServiceReadiness.unreachable, ServiceReadiness.ready),
+          checker: _StubChecker({'microphone': true}),
+          onDone: () {},
+          onOpenSettings: () => opened = true,
+        ),
+      );
+      expect(find.textContaining('Try this first'), findsNothing);
+      expect(find.byKey(const Key('issue-brain')), findsOneWidget);
+      await t.ensureVisible(find.text('Open Settings'));
+      await t.tap(find.text('Open Settings'));
+      await t.pump();
+      expect(opened, isTrue);
+    });
+
+    testWidgets('start waits for the readiness check', (t) async {
+      final gate = Completer<(ServiceReadiness, ServiceReadiness)>();
+      await t.pumpWidget(
+        _app(
+          OnboardingScreen(
+            readiness: () => gate.future,
+            checker: _StubChecker({'microphone': true}),
+            onDone: () {},
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Finish setup later'));
+      await t.tap(find.text('Finish setup later'));
+      await t.pumpAndSettle();
+      expect(find.text('Checking...'), findsOneWidget);
+      expect(find.text('Start Bluey'), findsNothing);
+      gate.complete((ServiceReadiness.ready, ServiceReadiness.ready));
+      await t.pumpAndSettle();
+      expect(find.text('Start Bluey'), findsOneWidget);
     });
   });
 
