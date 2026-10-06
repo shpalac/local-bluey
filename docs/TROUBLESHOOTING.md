@@ -77,6 +77,16 @@ check the provider in Settings."**
   Local Network for the app. The link is plain TCP on the local network -
   captive portals and guest networks usually block it.
 
+**No local-network prompt appears at all, and no Mac ever shows up.**
+
+- Cause: the app did not declare the permission. iOS only offers the prompt
+  when `NSLocalNetworkUsageDescription` and `NSBonjourServices` are direct
+  children of the root `Info.plist` dict - nest them one level too deep and
+  iOS drops them silently while the file still lints clean. This is what
+  #15 was; `test/privacy_plists_test.dart` now guards it.
+- Fix: `flutter test test/privacy_plists_test.dart`, then reinstall the app
+  (a pending local-network decision is not re-prompted by a rebuild).
+
 **Pairing prompt never appears, or appears for the wrong device.**
 
 - The Mac shows one pairing prompt at a time. Dismiss the current one and
