@@ -221,6 +221,10 @@ jobs:
 
       - run: flutter pub get --enforce-lockfile
 
+      - name: Pre-boot simulator (overlaps first-boot migration with the build)
+        run: tool/simulator_smoke.sh preboot
+        timeout-minutes: 3
+
       - name: Build iOS for the simulator
         run: flutter build ios --simulator --debug --no-codesign 2>&1 | tee build-simulator.log
         timeout-minutes: 15
