@@ -36,6 +36,9 @@ final class NativeControlChannel {
       case "openAccessibilitySettings":
         ComputerControl.openAccessibilitySettings()
         result(nil)
+      case "watchFrontmostInfo":
+        // Cheap watcher signal poll (#213): front app, window title, lock.
+        result(WatchSignals.frontmostInfo())
       case "mouseLocation":
         let p = ComputerControl.mouseLocation
         result(["x": Double(p.x), "y": Double(p.y)])

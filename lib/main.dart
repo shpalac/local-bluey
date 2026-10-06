@@ -43,6 +43,10 @@ import 'ui/settings_screen.dart';
 import 'ui/unsupported_screen.dart';
 import 'services/screen_watch.dart';
 import 'ui/watch_banner.dart';
+import 'services/watch_pipeline.dart';
+import 'services/watch_driver.dart';
+import 'services/frame_differ.dart';
+import 'services/native_control.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -140,6 +144,7 @@ class _MacHomeState extends State<MacHome>
     });
     _checkTrust();
     ScreenWatch.instance.addListener(_syncWatchTray);
+    ScreenWatch.instance.addListener(_syncWatchDriver);
     BrainHost.reload();
     ConversationStore.instance.load();
     OnboardingScreen.isDone().then((done) {
@@ -222,6 +227,42 @@ class _MacHomeState extends State<MacHome>
   /// Mirrors the watch session into the menu bar (#212): red countdown
   /// title while observing, plus a one-tap stop item.
   bool _trayWatchActive = false;
+  WatchDriver? _watchDriver;
+
+  /// Starts/stops the observation pipeline with the session (#213).
+  /// Everything here runs inside the 212 gate; the vision call reuses the
+  /// local-only-gated brain, so nothing can leave the Mac while watching.
+  void _syncWatchDriver() {
+    final watch = ScreenWatch.instance;
+    if (watch.isActive && _watchDriver == null) {
+      final differ = FrameDiffer();
+      final pipeline = WatchPipeline(
+        // The cheap signal read enforces exclusions; heavier work below
+        // runs only when the gate allows it.
+        frontmost: NativeControl.watchFrontmostInfo,
+        frameDiff: () async {
+          // v1: full snapshot per diff tick (pixels only are compared).
+          // Hardware numbers from the 213 bench run decide if a lighter
+          // pixel-only capture path is needed.
+          final snap = await NativeControl.snapshot();
+          return differ.diff(snap.jpeg);
+        },
+        onVision: (app, detail) async {
+          final brain = BrainHost.brain.value;
+          if (brain == null) return;
+          final snap = await NativeControl.snapshot();
+          await brain.ask(
+            'In one short sentence, what changed on screen?',
+            images: [base64Encode(snap.jpeg)],
+          );
+        },
+      );
+      _watchDriver = WatchDriver(pipeline: pipeline, differ: differ)..start();
+    } else if (!watch.isActive && _watchDriver != null) {
+      _watchDriver!.stop();
+      _watchDriver = null;
+    }
+  }
 
   Future<void> _syncWatchTray() async {
     final watch = ScreenWatch.instance;
@@ -399,6 +440,8 @@ class _MacHomeState extends State<MacHome>
     WidgetsBinding.instance.removeObserver(this);
     trayManager.removeListener(this);
     ScreenWatch.instance.removeListener(_syncWatchTray);
+    ScreenWatch.instance.removeListener(_syncWatchDriver);
+    _watchDriver?.stop();
     _server.stop();
     _capture.dispose();
     _speech.dispose();
