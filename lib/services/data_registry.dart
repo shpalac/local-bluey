@@ -247,6 +247,20 @@ class DataRegistry {
       },
     ),
     DataStoreInfo(
+      id: 'watch_policy',
+      sourceFile: 'lib/services/watch_policy.dart',
+      whatEn: 'Screen-watching app allowlist and personal deny list',
+      whatHe: 'רשימת האפליקציות המורשות לצפייה ורשימת חסימה אישית',
+      where: 'SharedPreferences (watch.appAllowlist, watch.appUserDenylist)',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('watch.appAllowlist');
+        await prefs.remove('watch.appUserDenylist');
+      },
+    ),
+    DataStoreInfo(
       id: 'wake_word',
       sourceFile: 'lib/services/wake_word.dart',
       whatEn: 'Wake word enabled toggle',

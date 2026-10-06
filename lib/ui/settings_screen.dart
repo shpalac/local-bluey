@@ -17,6 +17,7 @@ import '../services/egress_monitor.dart';
 import '../services/endpoint_assistant.dart';
 import '../services/settings_store.dart';
 import 'data_privacy_section.dart';
+import 'watch_screen.dart';
 
 /// Provider picker + connection details for the brain. The API key is stored
 /// in the Keychain, never in plain preferences.
@@ -485,6 +486,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 );
               },
+            ),
+            ListTile(
+              leading: const Icon(Icons.visibility_outlined),
+              title: Text(Strings.t('Screen watching', 'צפייה במסך')),
+              subtitle: Text(
+                Strings.t(
+                  'Consent, allowlist and session controls.',
+                  'הסכמה, רשימת אפליקציות ובקרת סשנים.',
+                ),
+              ),
+              onTap: () => Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const WatchScreen())),
             ),
             ListTile(
               leading: const Icon(Icons.build_outlined),

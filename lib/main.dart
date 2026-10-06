@@ -41,6 +41,8 @@ import 'ui/onboarding_screen.dart';
 import 'ui/theme.dart';
 import 'ui/settings_screen.dart';
 import 'ui/unsupported_screen.dart';
+import 'services/screen_watch.dart';
+import 'ui/watch_banner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -87,7 +89,8 @@ class LocalBlueyApp extends StatelessWidget {
           textDirection: Strings.forceRtl
               ? TextDirection.rtl
               : TextDirection.ltr,
-          child: child!,
+          // Always-visible watch indicator on every route (#212).
+          child: WatchBanner(child: child!),
         ),
         home: home,
       ),
@@ -136,6 +139,7 @@ class _MacHomeState extends State<MacHome>
       if (mounted) setState(() => _bubble = '$line (long-press to retry)');
     });
     _checkTrust();
+    ScreenWatch.instance.addListener(_syncWatchTray);
     BrainHost.reload();
     ConversationStore.instance.load();
     OnboardingScreen.isDone().then((done) {
@@ -215,6 +219,29 @@ class _MacHomeState extends State<MacHome>
     if (mounted) setState(() => _trusted = trusted);
   }
 
+  /// Mirrors the watch session into the menu bar (#212): red countdown
+  /// title while observing, plus a one-tap stop item.
+  bool _trayWatchActive = false;
+
+  Future<void> _syncWatchTray() async {
+    final watch = ScreenWatch.instance;
+    if (watch.isActive) {
+      final r = watch.remaining;
+      final mm = r.inMinutes.remainder(60).toString().padLeft(2, '0');
+      final ss = r.inSeconds.remainder(60).toString().padLeft(2, '0');
+      await trayManager.setTitle('● $mm:$ss');
+    } else {
+      await trayManager.setTitle('');
+    }
+    // The menu only changes when the session starts or stops (the stop item
+    // appears/disappears); rebuilding it on every one-second tick would
+    // churn the native menu for no reason.
+    if (watch.isActive != _trayWatchActive) {
+      _trayWatchActive = watch.isActive;
+      await _setupTray();
+    }
+  }
+
   Future<void> _setupTray() async {
     await trayManager.setIcon('assets/tray_icon.png');
     await trayManager.setContextMenu(
@@ -227,6 +254,8 @@ class _MacHomeState extends State<MacHome>
           MenuItem(key: 'mute', label: 'Mute replies'),
           MenuItem(key: 'status', label: 'Status'),
           MenuItem.separator(),
+          if (ScreenWatch.instance.isActive)
+            MenuItem(key: 'stopwatch', label: 'Stop watching (kill switch)'),
           MenuItem(key: 'stop', label: 'Stop Bluey (kill switch)'),
           MenuItem(key: 'resume', label: 'Resume Bluey'),
           MenuItem.separator(),
@@ -266,6 +295,8 @@ class _MacHomeState extends State<MacHome>
               ? 'Awake and listening.'
               : 'Sleeping - wake me from the tray or phone.',
         );
+      case 'stopwatch':
+        ScreenWatch.instance.stop();
       case 'stop':
         _safety.kill();
       case 'resume':
@@ -367,6 +398,7 @@ class _MacHomeState extends State<MacHome>
     _tutorial.removeListener(_onTutorialChanged);
     WidgetsBinding.instance.removeObserver(this);
     trayManager.removeListener(this);
+    ScreenWatch.instance.removeListener(_syncWatchTray);
     _server.stop();
     _capture.dispose();
     _speech.dispose();
