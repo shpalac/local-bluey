@@ -118,6 +118,11 @@ enum ScreenReader {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
+        // Hebrew-first with English fallback (#213): without an explicit
+        // list Vision guesses from the locale and mangles Hebrew text.
+        // Language correction off: it reorders/spaces RTL text wrongly.
+        request.recognitionLanguages = ["he-IL", "en-US"]
+        request.usesLanguageCorrection = false
         try VNImageRequestHandler(cgImage: image).perform([request])
 
         func toScreen(_ box: CGRect) -> CGRect {
@@ -128,8 +133,16 @@ enum ScreenReader {
         var result: [(line: Target, words: [Target])] = []
         var wordCount = 0
         let observations = (request.results ?? []).sorted {
-            // Reading order: top to bottom, then left to right.
-            abs($0.boundingBox.maxY - $1.boundingBox.maxY) > 0.01 ? $0.boundingBox.maxY > $1.boundingBox.maxY : $0.boundingBox.minX < $1.boundingBox.minX
+            // Reading order (#213): top to bottom; within one row, RTL
+            // lines read right to left and LTR lines left to right.
+            if abs($0.boundingBox.maxY - $1.boundingBox.maxY) > 0.01 {
+                return $0.boundingBox.maxY > $1.boundingBox.maxY
+            }
+            let rtl = isMostlyRtl($0.topCandidates(1).first?.string ?? "")
+                || isMostlyRtl($1.topCandidates(1).first?.string ?? "")
+            return rtl
+                ? $0.boundingBox.minX > $1.boundingBox.minX
+                : $0.boundingBox.minX < $1.boundingBox.minX
         }
         for (i, observation) in observations.prefix(400).enumerated() {
             guard let candidate = observation.topCandidates(1).first else { continue }
@@ -146,6 +159,20 @@ enum ScreenReader {
             result.append((line, words))
         }
         return result
+    }
+
+    /// True when the text's strong-direction characters are mostly RTL
+    /// (Hebrew/Arabic), so line ordering follows RTL reading (#213).
+    static func isMostlyRtl(_ text: String) -> Bool {
+        var rtl = 0, ltr = 0
+        for scalar in text.unicodeScalars {
+            switch scalar.value {
+            case 0x0590...0x05FF, 0x0600...0x06FF, 0xFB1D...0xFB4F: rtl += 1
+            case 0x0041...0x005A, 0x0061...0x007A: ltr += 1
+            default: break
+            }
+        }
+        return rtl > ltr
     }
 
     private static func jpeg(_ image: CGImage, maxEdge: CGFloat) -> Data {

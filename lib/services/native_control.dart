@@ -119,6 +119,20 @@ class NativeControl {
     );
   }
 
+  /// Cheap watcher signal read (#213): frontmost app, front window title
+  /// and lock-screen state. No capture - meant for ~1Hz polling.
+  static Future<({String app, String title, bool locked})>
+  watchFrontmostInfo() async {
+    final map = await _channel.invokeMapMethod<String, dynamic>(
+      'watchFrontmostInfo',
+    );
+    return (
+      app: map?['app'] as String? ?? '',
+      title: map?['title'] as String? ?? '',
+      locked: map?['locked'] as bool? ?? false,
+    );
+  }
+
   /// High-resolution crop of the display, in display points (#80).
   static Future<ScreenSnapshot> snapshotRegion(
     double x,

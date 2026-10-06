@@ -1,0 +1,12 @@
+{
+  "fixtures": [
+    {"id": "he_simple", "text": "שלום עולם, זוהי בדיקת קריאות", "lang": "he"},
+    {"id": "he_long", "text": "הילדה שלי נולדה באוגוסט ואנחנו גרים בהרצליה", "lang": "he"},
+    {"id": "mixed_he_en", "text": "המחיר הוא 250 שקלים לחודש", "lang": "mixed"},
+    {"id": "mixed_en_he", "text": "Meeting at 14:30 in הרצליה office", "lang": "mixed"},
+    {"id": "numbers_he", "text": "טלפון 054-2390951, תאריך 06.10.2026", "lang": "mixed"},
+    {"id": "en_simple", "text": "The quick brown fox jumps over 13 lazy dogs", "lang": "en"},
+    {"id": "bidi_line", "text": "OpenAI ו-Google הן חברות טכנולוגיה", "lang": "mixed"},
+    {"id": "he_nikud_edge", "text": "כָּל הַכָּבוֹד עַל הָעֲבוֹדָה", "lang": "he"}
+  ]
+}
