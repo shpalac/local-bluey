@@ -81,7 +81,8 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(find.text('Microphone'), findsOneWidget);
-      expect(find.textContaining('Set up'), findsNothing);
+      expect(find.textContaining('later'), findsOneWidget); // Finish only
+      expect(find.text('Set up Microphone'), findsOneWidget); // heading
     });
 
     testWidgets('verify advances only after the grant exists', (t) async {
@@ -163,6 +164,7 @@ void main() {
         ),
       );
       await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Finish setup later'));
       await t.tap(find.text('Finish setup later'));
       await t.pumpAndSettle();
       // Nothing is marked done until the user confirms the summary.
@@ -184,6 +186,7 @@ void main() {
         _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
       );
       await t.pumpAndSettle();
+      await t.ensureVisible(find.text('Finish setup later'));
       await t.tap(find.text('Finish setup later'));
       await t.pumpAndSettle();
       await t.tap(find.text('Back to setup'));
