@@ -54,6 +54,41 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+  # Docs lane (#179): dartdoc generation stays warning-free for the
+  # public contract files, alongside the in-repo coverage test
+  # (test/dartdoc_contracts_test.dart).
+  docs:
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+
+      # Pinned dartdoc (#144-style version pinning): 9.0.8+ fixes a
+      # RangeError parsing SDK @docImport comments that the
+      # Flutter-bundled 9.0.6 crashes on.
+      - name: Activate dartdoc
+        run: dart pub global activate dartdoc 9.0.9
+
+      - name: Generate API docs, contract files warning-free
+        run: |
+          dart pub global run dartdoc --output build/dartdoc 2>&1 | tee dartdoc.log
+          if grep -E "warning:.*(host_control|native_control|tool_executor|safety_gate|brain)\.dart" dartdoc.log; then
+            echo "::error::dartdoc warnings in the contract files (#179)"
+            exit 1
+          fi
+
   # Test lane (#153): unit/widget tests with coverage (thresholds + lcov
   # artifact) and machine-readable results uploaded on every run (#159).
   test:

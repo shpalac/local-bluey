@@ -21,11 +21,9 @@ abstract class HostControl implements NativeControlClient {
   /// Opens the system settings pane where the permission can be granted.
   Future<void> openAccessibilitySettings();
 
-  /// The host for the current platform. Pass [operatingSystem] and
-  /// [environment] in tests.
   /// Which Linux host mode is active, for onboarding and the
   /// troubleshooting screen (#151): 'x11', 'portal', or 'unsupported'.
-  /// Null on non-Linux platforms.
+  /// Null on non-Linux platforms. Pass [environment] in tests.
   static String? linuxHostMode({Map<String, String>? environment}) {
     final env = environment ?? Platform.environment;
     if ((env['XDG_SESSION_TYPE'] ?? '').toLowerCase() == 'wayland') {
@@ -82,6 +80,7 @@ class MacHostControl extends ChannelControl implements HostControl {
 class UnsupportedHostControl implements HostControl {
   const UnsupportedHostControl(this.operatingSystem);
 
+  /// The platform with no host bridge, used in the error message.
   final String operatingSystem;
 
   Never _unsupported() => throw UnsupportedError(

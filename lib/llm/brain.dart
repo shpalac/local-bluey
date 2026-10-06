@@ -148,6 +148,7 @@ class Brain implements BrainLike {
     return BrainReply(spoken: response.text, toolCall: response.toolCall);
   }
 
+  /// Clears conversation history back to the system prompt.
   void reset() {
     _history
       ..clear()
@@ -160,6 +161,7 @@ class Brain implements BrainLike {
   }
 }
 
+/// One turn of the brain: what Bluey says, plus the tool call to run.
 class BrainReply {
   const BrainReply({required this.spoken, this.toolCall});
 
