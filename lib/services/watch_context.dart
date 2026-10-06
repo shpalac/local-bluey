@@ -31,11 +31,41 @@ class WatchContext {
   static const confidentEnough = 0.6;
 
   static const _categories = {
-    'coding': {'xcode', 'visual studio code', 'vscode', 'android studio', 'intellij idea', 'cursor', 'zed'},
+    'coding': {
+      'xcode',
+      'visual studio code',
+      'vscode',
+      'android studio',
+      'intellij idea',
+      'cursor',
+      'zed',
+    },
     'terminal': {'terminal', 'iterm', 'iterm2', 'warp', 'alacritty'},
-    'browsing': {'safari', 'google chrome', 'firefox', 'arc', 'microsoft edge', 'orion', 'brave browser'},
-    'writing': {'pages', 'microsoft word', 'google docs', 'notion', 'obsidian', 'bear'},
-    'communication': {'messages', 'whatsapp', 'slack', 'telegram', 'microsoft teams', 'zoom'},
+    'browsing': {
+      'safari',
+      'google chrome',
+      'firefox',
+      'arc',
+      'microsoft edge',
+      'orion',
+      'brave browser',
+    },
+    'writing': {
+      'pages',
+      'microsoft word',
+      'google docs',
+      'notion',
+      'obsidian',
+      'bear',
+    },
+    'communication': {
+      'messages',
+      'whatsapp',
+      'slack',
+      'telegram',
+      'microsoft teams',
+      'zoom',
+    },
     'media': {'music', 'spotify', 'quicktime player', 'vlc', 'tv', 'photos'},
   };
 
@@ -60,8 +90,8 @@ class WatchContext {
         .where((e) => e.kind == WatchEventKind.appSwitch)
         .map((e) => e.detail)
         .toList();
-    final stableTitle = titles.isEmpty ||
-        titles.every((t) => t == titles.first);
+    final stableTitle =
+        titles.isEmpty || titles.every((t) => t == titles.first);
     if (category == 'other') return null;
     final confidence = stableTitle ? 0.8 : 0.65;
     return TaskContext(

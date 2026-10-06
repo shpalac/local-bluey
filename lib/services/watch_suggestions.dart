@@ -78,17 +78,17 @@ class WatchSuggestions {
   /// Feeds one event. Returns the suggestion if one was emitted.
   Future<WatchSuggestion?> onEvent(WatchEvent event) async {
     final context = WatchContext.infer([event]);
-    if (context == null ||
-        context.confidence < WatchContext.confidentEnough) {
+    if (context == null || context.confidence < WatchContext.confidentEnough) {
       return null;
     }
-    if (await neverApps().then((apps) => apps.contains(context.app.toLowerCase()))) {
+    if (await neverApps().then(
+      (apps) => apps.contains(context.app.toLowerCase()),
+    )) {
       return null;
     }
     if (_shownThisSession >= maxPerSession) return null;
     final lastShown = _lastShownAt;
-    if (lastShown != null &&
-        _clock.now().difference(lastShown) < minGap) {
+    if (lastShown != null && _clock.now().difference(lastShown) < minGap) {
       return null;
     }
 
@@ -109,7 +109,8 @@ class WatchSuggestions {
     // user exactly because screen text can lie; nothing here acts on it.
     final suggestion = WatchSuggestion(
       reason: 'This keeps showing up on your screen',
-      evidence: '"${event.detail}" in ${event.app} '
+      evidence:
+          '"${event.detail}" in ${event.app} '
           '($count times this session)',
       app: event.app,
       at: _clock.now(),

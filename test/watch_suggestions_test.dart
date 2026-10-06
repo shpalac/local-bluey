@@ -26,20 +26,33 @@ void main() {
 
   test('repeated on-screen text triggers once, with evidence', () async {
     final s = WatchSuggestions();
-    expect(await s.onEvent(vision('Terminal', 'build failed: missing symbol')), isNull);
-    expect(await s.onEvent(vision('Terminal', 'build failed: missing symbol')), isNull);
-    final third = await s.onEvent(vision('Terminal', 'build failed: missing symbol'));
+    expect(
+      await s.onEvent(vision('Terminal', 'build failed: missing symbol')),
+      isNull,
+    );
+    expect(
+      await s.onEvent(vision('Terminal', 'build failed: missing symbol')),
+      isNull,
+    );
+    final third = await s.onEvent(
+      vision('Terminal', 'build failed: missing symbol'),
+    );
     expect(third, isNotNull);
     expect(third!.evidence, contains('build failed: missing symbol'));
     expect(third.evidence, contains('Terminal'));
     // Trigger consumed: a 4th repeat starts counting from zero.
-    expect(await s.onEvent(vision('Terminal', 'build failed: missing symbol')), isNull);
+    expect(
+      await s.onEvent(vision('Terminal', 'build failed: missing symbol')),
+      isNull,
+    );
   });
 
   test('rate limit: gap between suggestions and a session cap', () {
     fakeAsync((async) {
       () async {
-        final s = WatchSuggestions(clock: async.getClock(DateTime(2026, 10, 6)));
+        final s = WatchSuggestions(
+          clock: async.getClock(DateTime(2026, 10, 6)),
+        );
         Future<WatchSuggestion?> fire() async {
           WatchSuggestion? out;
           for (var i = 0; i < 3 && out == null; i++) {
@@ -81,7 +94,10 @@ void main() {
     // against beyond the shape: the text lives only inside display fields.
     expect(out, isNotNull);
     expect(out!.evidence, contains(hostile));
-    expect(out.reason, isNot(contains(hostile)),
-        reason: 'the reason is our own copy, not screen text');
+    expect(
+      out.reason,
+      isNot(contains(hostile)),
+      reason: 'the reason is our own copy, not screen text',
+    );
   });
 }

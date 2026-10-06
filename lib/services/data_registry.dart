@@ -268,8 +268,9 @@ class DataRegistry {
       where: 'SharedPreferences (watch.suggestNeverApps)',
       retentionEn: 'Kept until you delete it',
       retentionHe: 'נשמר עד שמוחקים',
-      clear: () async =>
-          (await SharedPreferences.getInstance()).remove('watch.suggestNeverApps'),
+      clear: () async => (await SharedPreferences.getInstance()).remove(
+        'watch.suggestNeverApps',
+      ),
     ),
     DataStoreInfo(
       id: 'wake_word',
