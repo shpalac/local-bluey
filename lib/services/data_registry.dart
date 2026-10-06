@@ -261,6 +261,17 @@ class DataRegistry {
       },
     ),
     DataStoreInfo(
+      id: 'watch_suggestions',
+      sourceFile: 'lib/services/watch_suggestions.dart',
+      whatEn: 'Apps you muted screen-aware suggestions for (#214)',
+      whatHe: 'אפליקציות שהשתקת עבורן הצעות (#214)',
+      where: 'SharedPreferences (watch.suggestNeverApps)',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async =>
+          (await SharedPreferences.getInstance()).remove('watch.suggestNeverApps'),
+    ),
+    DataStoreInfo(
       id: 'wake_word',
       sourceFile: 'lib/services/wake_word.dart',
       whatEn: 'Wake word enabled toggle',

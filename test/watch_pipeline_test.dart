@@ -41,7 +41,10 @@ void main() {
       },
       onVision: onVision == null
           ? null
-          : (app, detail) async => onVision(app, detail),
+          : (app, detail) async {
+              onVision(app, detail);
+              return null;
+            },
     );
   }
 
@@ -116,7 +119,10 @@ void main() {
           clock: clock,
           frontmost: () async => at('Safari'),
           frameDiff: () async => 0.3,
-          onVision: (_, _) async => visionCalls++,
+          onVision: (_, _) async {
+            visionCalls++;
+            return null;
+          },
         );
         await p.tick(); // app switch
         await p.tick();
