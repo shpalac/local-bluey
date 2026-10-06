@@ -15,18 +15,28 @@ class WatchDriver {
     ScreenWatch? watch,
   }) : _watch = watch ?? ScreenWatch.instance;
 
+  /// The pipeline being ticked.
   final WatchPipeline pipeline;
+
+  /// The frame source whose activity level adapts the tick rate.
   final FrameDiffer differ;
+
   final ScreenWatch _watch;
 
+  /// Fastest tick rate (active use).
   static const minInterval = Duration(seconds: 1);
+
+  /// Slowest tick rate (idle screen).
   static const maxInterval = Duration(seconds: 5);
 
   Timer? _timer;
   bool _ticking = false;
   Duration _interval = minInterval;
 
+  /// Whether the driver is ticking.
   bool get running => _timer != null;
+
+  /// The current adaptive interval.
   Duration get interval => _interval;
 
   /// Starts ticking. Safe to call again on an already-running driver.

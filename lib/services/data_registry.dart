@@ -33,12 +33,22 @@ class DataStoreInfo {
   /// coverage test can fail when a new store is added without registering.
   final String sourceFile;
 
+  /// What data is stored, English.
   final String whatEn;
+
+  /// What data is stored, Hebrew.
   final String whatHe;
+
+  /// Where it lives (SharedPreferences key, file path, ...).
   final String where;
+
+  /// Retention policy, English.
   final String retentionEn;
+
+  /// Retention policy, Hebrew.
   final String retentionHe;
 
+  /// Deletes everything this store holds.
   final Future<void> Function() clear;
 }
 
@@ -48,6 +58,8 @@ class DataRegistry {
 
   static const _logRetention = 'Up to 500 entries / 30 days';
 
+  /// Every local store in the app. The registry-coverage test fails when
+  /// a new store appears in lib/services without an entry here.
   static final List<DataStoreInfo> stores = [
     DataStoreInfo(
       id: 'haptics_pref',

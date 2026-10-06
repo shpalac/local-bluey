@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Contract dartdoc coverage (#179): every public member of the public
-/// service contracts must carry a doc comment, so new backends do not
-/// have to read source to learn the contract.
+/// Contract dartdoc coverage (#179): every public member of lib/services
+/// (and the public brain contract) must carry a doc comment, so nobody
+/// has to read source to learn a contract.
 void main() {
   const contractFiles = [
     'lib/services/host_control.dart',
@@ -12,14 +12,62 @@ void main() {
     'lib/services/tool_executor.dart',
     'lib/services/safety_gate.dart',
     'lib/llm/brain.dart',
+    'lib/services/stt.dart',
+    'lib/services/linux_host_base.dart',
+    'lib/services/endpoint_assistant.dart',
+    'lib/services/user_feedback.dart',
+    'lib/services/action_log.dart',
+    'lib/services/audio_capture.dart',
+    'lib/services/biometric_lock.dart',
+    'lib/services/brain_host.dart',
+    'lib/services/characters.dart',
+    'lib/services/conversation.dart',
+    'lib/services/data_registry.dart',
+    'lib/services/deep_links.dart',
+    'lib/services/degraded.dart',
+    'lib/services/diagnostics.dart',
+    'lib/services/discover.dart',
+    'lib/services/egress_monitor.dart',
+    'lib/services/endpoint.dart',
+    'lib/services/frame_differ.dart',
+    'lib/services/haptics.dart',
+    'lib/services/linux_portal_host_control.dart',
+    'lib/services/linux_x11_host_control.dart',
+    'lib/services/onboarding_checks.dart',
+    'lib/services/perf_monitor.dart',
+    'lib/services/permission_watchdog.dart',
+    'lib/services/privacy_guard.dart',
+    'lib/services/request_interfaces.dart',
+    'lib/services/request_runner.dart',
+    'lib/services/routines.dart',
+    'lib/services/screen_watch.dart',
+    'lib/services/settings_store.dart',
+    'lib/services/speak_receipts.dart',
+    'lib/services/speech.dart',
+    'lib/services/strings.dart',
+    'lib/services/support_matrix.dart',
+    'lib/services/tutorial.dart',
+    'lib/services/undo.dart',
+    'lib/services/wake_word.dart',
+    'lib/services/watch_context.dart',
+    'lib/services/watch_driver.dart',
+    'lib/services/watch_pipeline.dart',
+    'lib/services/watch_policy.dart',
+    'lib/services/watch_suggestions.dart',
   ];
 
   final declStart = RegExp(
     r'^(?:abstract\s+|base\s+|final\s+|sealed\s+)?'
     r'(?:class|enum|mixin|typedef|extension type)\s+[A-Z]'
-    r'|^(?:static\s+)?(?:const\s+|final\s+|late\s+)?'
-    r'(?:[A-Za-z_][A-Za-z0-9_<>?, ]+\s+)?[a-z][A-Za-z0-9_]*\s*'
-    r'(?:\(|=>|;| =|,|$)',
+    // methods / getters (a type or modifier must precede the name)
+    r'|^(?:static\s+)?(?:[A-Za-z_][A-Za-z0-9_<>?, ]+\s+)'
+    r'[a-z][A-Za-z0-9_]*\s*(?:\(|=>)'
+    // fields: const/final/late, or static + type
+    r'|^(?:(?:static\s+)?(?:const|final|late)\s+'
+    r'(?:[A-Za-z_][A-Za-z0-9_<>?, ]+\s+)?|static\s+)'
+    r'[a-z][A-Za-z0-9_]*\s*(?:;| =)'
+    // enum values (whole line is an identifier + comma/semicolon)
+    r'|^[a-z][A-Za-z0-9_]*\s*[,;]\$',
   );
 
   String stripStrings(String line) =>

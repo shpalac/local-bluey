@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// can be skipped, and the whole thing replays from Settings.
 enum TutorialStep { wake, ask, point }
 
+/// Drives the three-step first-success tutorial (#176).
 class TutorialController extends ChangeNotifier {
   TutorialController({this.prefsOverride});
 
@@ -19,6 +20,8 @@ class TutorialController extends ChangeNotifier {
   static const _kDone = 'tutorial.done';
 
   TutorialStep _step = TutorialStep.wake;
+
+  /// The current step.
   TutorialStep get step => _step;
 
   bool _finished = false;
@@ -31,10 +34,12 @@ class TutorialController extends ChangeNotifier {
   }
 
   /// True once the tutorial completed or was skipped, persisted across
+  /// True once the tutorial completed or was skipped, persisted across
   /// restarts. Checked before showing it again.
-  static Future<bool> isDone([SharedPreferences? prefs]) async =>
-      ((prefs ?? await SharedPreferences.getInstance()).getBool(_kDone)) ??
-      false;
+  static Future<bool> isDone([SharedPreferences? prefs]) async {
+    final store = prefs ?? await SharedPreferences.getInstance();
+    return store.getBool(_kDone) ?? false;
+  }
 
   Future<void> _markDone() async {
     final prefs = prefsOverride ?? await SharedPreferences.getInstance();
@@ -58,6 +63,7 @@ class TutorialController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Whether the tutorial card should render.
   bool get visible => !_finished;
 
   /// The real wake event (double tap, tray, deep link).

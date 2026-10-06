@@ -3,13 +3,28 @@ import 'strings.dart';
 /// The known failure surfaces (#89). Every value maps to a pattern; the test
 /// enumerates the enum and fails on an unmapped one.
 enum FailureKind {
+  /// The configured LLM/STT endpoint did not answer.
   providerUnreachable,
+
+  /// A required OS permission (mic, accessibility, ...) is missing.
   permissionMissing,
+
+  /// The paired Mac is unreachable.
   macOffline,
+
+  /// No paired Mac was found at all.
   macNotFound,
+
+  /// No brain/STT provider has been configured yet.
   noProviderConfigured,
+
+  /// The action needs conversation history and there is none.
   noHistory,
+
+  /// The safety gate refused the action.
   actionRefused,
+
+  /// The screen target being acted on went stale mid-flow.
   staleTarget,
 }
 
@@ -30,15 +45,32 @@ class FeedbackSpec {
   /// Empty states are calm and informational; recoverable errors ask for a
   /// retry or a fix.
   final bool isEmptyState;
+
+  /// Title, English.
   final String titleEn;
+
+  /// Title, Hebrew.
   final String titleHe;
+
+  /// Explanation, English.
   final String whyEn;
+
+  /// Explanation, Hebrew.
   final String whyHe;
+
+  /// Primary action label, English.
   final String actionLabelEn;
+
+  /// Primary action label, Hebrew.
   final String actionLabelHe;
 
+  /// Localized title for the active locale.
   String get title => Strings.t(titleEn, titleHe);
+
+  /// Localized explanation for the active locale.
   String get why => Strings.t(whyEn, whyHe);
+
+  /// Localized action label for the active locale.
   String get actionLabel => Strings.t(actionLabelEn, actionLabelHe);
 }
 

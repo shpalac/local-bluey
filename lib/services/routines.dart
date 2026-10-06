@@ -15,6 +15,7 @@ class Routine {
     this.enabled = true,
   });
 
+  /// Display name, also the storage key.
   final String name;
 
   /// Lowercase phrase matched against the user's utterance.
@@ -22,8 +23,11 @@ class Routine {
 
   /// What the brain should do when the trigger fires.
   final String instructions;
+
+  /// Disabled routines are kept but never matched.
   final bool enabled;
 
+  /// Serializes for on-disk storage.
   Map<String, dynamic> toJson() => {
     'name': name,
     'trigger': trigger,
@@ -39,16 +43,21 @@ class Routine {
   );
 }
 
+/// Loads and persists user routines (trigger phrase -> instructions).
 class RoutineStore {
   RoutineStore._();
+
+  /// The shared store.
   static final RoutineStore instance = RoutineStore._();
 
+  /// The in-memory routines.
   final List<Routine> routines = [];
   bool _loaded = false;
 
   Future<File> _file() async =>
       File('${(await getApplicationDocumentsDirectory()).path}/routines.json');
 
+  /// Loads routines from disk.
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
@@ -63,6 +72,7 @@ class RoutineStore {
     }
   }
 
+  /// Persists the current list.
   Future<void> save() async {
     try {
       await (await _file()).writeAsString(
@@ -84,12 +94,14 @@ class RoutineStore {
     }
   }
 
+  /// Adds (or replaces by name) and persists.
   Future<void> add(Routine routine) async {
     routines.removeWhere((r) => r.name == routine.name);
     routines.add(routine);
     await save();
   }
 
+  /// Removes by name and persists.
   Future<void> remove(String name) async {
     routines.removeWhere((r) => r.name == name);
     await save();
@@ -109,6 +121,7 @@ class RoutineStore {
   /// Shareable skill pack: routines as portable JSON.
   String export() => jsonEncode(routines.map((r) => r.toJson()).toList());
 
+  /// Imports routines from a JSON payload; returns how many were added.
   Future<int> importFrom(String json) async {
     final list = List<dynamic>.from(jsonDecode(json) as List);
     var added = 0;

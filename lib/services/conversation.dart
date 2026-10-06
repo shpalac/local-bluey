@@ -4,14 +4,21 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
+/// One stored turn in the on-device conversation log.
 class ConversationEntry {
   ConversationEntry({required this.role, required this.text, DateTime? at})
     : at = at ?? DateTime.now();
 
-  final String role; // 'user' or 'bluey'
+  /// 'user' or 'bluey'.
+  final String role;
+
+  /// The turn's text.
   final String text;
+
+  /// When the turn happened (defaults to now).
   final DateTime at;
 
+  /// Serializes for the on-disk log.
   Map<String, dynamic> toJson() => {
     'role': role,
     'text': text,
@@ -30,10 +37,14 @@ class ConversationEntry {
 /// in the app documents directory.
 class ConversationStore extends ChangeNotifier {
   ConversationStore._();
+
+  /// The shared store.
   static final ConversationStore instance = ConversationStore._();
 
+  /// Rolling cap; oldest entries drop off.
   static const maxEntries = 200;
 
+  /// The in-memory log, oldest first.
   final List<ConversationEntry> entries = [];
   bool _loaded = false;
 
@@ -41,6 +52,7 @@ class ConversationStore extends ChangeNotifier {
     '${(await getApplicationDocumentsDirectory()).path}/conversation.json',
   );
 
+  /// Loads the persisted log from disk.
   Future<void> load() async {
     if (_loaded) return;
     _loaded = true;
@@ -58,6 +70,7 @@ class ConversationStore extends ChangeNotifier {
     }
   }
 
+  /// Appends a turn and persists; trims to [maxEntries].
   Future<void> add(String role, String text) async {
     if (text.trim().isEmpty) return;
     entries.add(ConversationEntry(role: role, text: text));
@@ -74,6 +87,7 @@ class ConversationStore extends ChangeNotifier {
     }
   }
 
+  /// Empties the log in memory and on disk.
   Future<void> clear() async {
     entries.clear();
     notifyListeners();

@@ -14,6 +14,8 @@ enum DegradedMode {
   macOffline,
 }
 
+/// Degraded-mode messaging (#90): what the user sees when a subsystem
+/// is unavailable.
 class Degraded {
   Degraded._();
 

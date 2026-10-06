@@ -1,16 +1,22 @@
 /// localbluey:// deep links (#91): a small validated action set. Every
 /// action goes through the same request path as the face gesture; risky,
 /// confirm-required actions are never triggered silently (#19, #57).
+/// A parsed localbluey:// link (#91).
 class DeepLink {
   const DeepLink(this.action, [this.text]);
 
+  /// One of [DeepLinks.allowedActions].
   final String action;
+
+  /// Optional payload (e.g. the question for 'ask').
   final String? text;
 }
 
+/// Validation + dispatch for localbluey:// links.
 class DeepLinks {
   DeepLinks._();
 
+  /// The URL scheme the app registers.
   static const scheme = 'localbluey';
 
   /// Safe, silent actions only. Anything that could control the computer

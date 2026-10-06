@@ -8,14 +8,24 @@ import 'package:record/record.dart';
 /// Thin wrapper over the platform recorder so the capture state machine is
 /// testable without a microphone (#117).
 abstract class RecorderDriver {
+  /// Whether mic permission is currently granted (never prompts).
   Future<bool> hasPermission();
+
+  /// Starts recording into [path].
   Future<void> start(String path);
+
+  /// Stops and returns the recorded path, or null when nothing recorded.
   Future<String?> stop();
+
+  /// Releases the recorder.
   Future<void> dispose();
 }
 
+/// Production [RecorderDriver] on the record plugin.
 class AudioRecorderDriver implements RecorderDriver {
   AudioRecorderDriver([this.recorder]);
+
+  /// Test seam: inject a fake recorder.
   final AudioRecorder? recorder;
   AudioRecorder? _lazy;
   AudioRecorder get _r => recorder ?? (_lazy ??= AudioRecorder());
@@ -62,10 +72,13 @@ class AudioCapture {
   String? _path;
   File? _pendingFile;
 
+  /// Whether a capture is currently open.
   bool get isRecording => _recording;
 
+  /// Whether mic permission is granted; never prompts (#174).
   Future<bool> hasPermission() => _driver.hasPermission();
 
+  /// Starts a capture into a fresh temp .m4a (AAC-LC 16 kHz).
   Future<void> start() async {
     if (_recording || _startOp != null) return;
     final op = _start();
@@ -146,6 +159,7 @@ class AudioCapture {
     } catch (_) {}
   }
 
+  /// Stops any open capture and releases the driver.
   Future<void> dispose() async {
     _maxTimer?.cancel();
     _maxTimer = null;
@@ -153,5 +167,6 @@ class AudioCapture {
   }
 
   @visibleForTesting
+  /// Test seam: the path of the current/last capture.
   String? get debugPath => _path;
 }

@@ -14,6 +14,8 @@ import 'strings.dart';
 
 /// Speech-to-text provider kinds (#196): explicit HTTP endpoint today,
 /// native whisper.cpp once it is installed and benchmark-qualified (#195).
+/// Which STT backend is active. [http] posts to an explicit endpoint;
+/// [nativeWhisper] is the on-device whisper.cpp worker (#197).
 enum SttProviderKind { http, nativeWhisper }
 
 /// STT configuration, deliberately separate from the LLM settings (#196):
@@ -27,9 +29,17 @@ class SttSettings {
     this.apiKey,
   });
 
+  /// The active backend.
   final SttProviderKind kind;
+
+  /// HTTP endpoint for [SttProviderKind.http]; required there, unused
+  /// for native.
   final String? baseUrl;
+
+  /// Model name sent to the endpoint (e.g. 'whisper-1').
   final String model;
+
+  /// Endpoint credential, kept in secure storage.
   final String? apiKey;
 
   static const _kKind = 'stt.kind';
@@ -50,6 +60,7 @@ class SttSettings {
     _secure = value ?? const FlutterSecureStorage();
   }
 
+  /// The out-of-box configuration (HTTP kind, no endpoint set).
   static const defaults = SttSettings();
 
   /// Loads STT settings, migrating the legacy brain-era keys once (#196):
@@ -101,6 +112,8 @@ class SttSettings {
     await prefs.setBool(_kMigrated, true);
   }
 
+  /// Persists [settings]; the API key goes to secure storage, the rest
+  /// to SharedPreferences.
   static Future<void> save(SttSettings settings) async {
     final prefs = await SharedPreferences.getInstance();
     try {
@@ -123,6 +136,7 @@ class SttSettings {
   }
 
   /// Removes every STT key (#83); legacy brain keys stay for BrainSettings.
+  /// Removes every STT setting including the secure-stored key.
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     for (final key in [_kKind, _kBaseUrl, _kModel, _kMigrated]) {
@@ -134,23 +148,45 @@ class SttSettings {
   }
 }
 
-/// Structured STT failures (#196): the UI can react to the kind, not parse
-/// message text.
+/// Structured STT failures (#196): the UI reacts to the kind, never
+/// parses message text.
 enum SttErrorKind {
+  /// The configured model is not installed / not available server-side.
   modelUnavailable,
+
+  /// The requested language is not supported by the backend.
   unsupportedLanguage,
+
+  /// This backend cannot run on the current platform.
   unsupportedPlatform,
+
+  /// The audio could not be decoded to PCM.
   decoderError,
+
+  /// Another transcription is already running.
   busy,
+
+  /// The request exceeded [HttpSttProvider.requestTimeout].
   timeout,
+
+  /// The user cancelled.
   cancelled,
+
+  /// The endpoint could not be reached at all.
   unreachable,
+
+  /// The endpoint answered with a non-2xx status.
   httpError,
 }
 
+/// An STT failure with a machine-readable [kind] for the UI.
 class SttException implements Exception {
   SttException(this.kind, this.message);
+
+  /// The failure category.
   final SttErrorKind kind;
+
+  /// User-presentable description.
   final String message;
   @override
   String toString() => message;
@@ -159,14 +195,20 @@ class SttException implements Exception {
 /// Explicit OpenAI-compatible HTTP transcription (#196): POST
 /// {baseUrl}/audio/transcriptions with STT's own model and credentials.
 /// Implements the existing TranscriberLike seam, now STT-scoped.
+/// Posts audio to the configured HTTP endpoint as multipart and reads
+/// back JSON `text`. Honors local-only mode by refusing to send (#199).
 class HttpSttProvider implements TranscriberLike {
   HttpSttProvider({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
 
   /// Network cap so a stalled server cannot pin the UI in "thinking" (#118).
+  /// Hard ceiling on one transcription request.
   static const requestTimeout = Duration(seconds: 120);
 
+  @override
+  /// Transcribes [audio]. Throws [SttException] when no endpoint is
+  /// configured, local-only mode blocks egress, or the endpoint fails.
   @override
   Future<String> transcribe(File audio, SttSettings settings) async {
     final base = settings.baseUrl;
@@ -271,6 +313,9 @@ class HttpSttProvider implements TranscriberLike {
 /// Native whisper.cpp placeholder (#196/#197): selected explicitly but not
 /// installed yet, so every call fails with a typed error instead of a
 /// missing-plugin crash. Enabled as a default only after #195 qualifies it.
+/// On-device whisper.cpp worker (#197). Not integrated yet: every call
+/// fails loudly with a "not installed" error instead of falling back to
+/// a cloud route.
 class NativeWhisperSttProvider implements TranscriberLike {
   const NativeWhisperSttProvider();
 
@@ -285,7 +330,9 @@ class NativeWhisperSttProvider implements TranscriberLike {
 }
 
 /// Picks the concrete provider for a settings snapshot (#196).
+/// Factory: builds the [TranscriberLike] for the configured kind.
 class SttProviders {
+  /// Returns the provider for [settings.kind]. [client] is a test seam.
   static TranscriberLike create(SttSettings settings, {http.Client? client}) =>
       switch (settings.kind) {
         SttProviderKind.http => HttpSttProvider(client: client),

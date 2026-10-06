@@ -52,17 +52,21 @@ class Discover {
 /// Notification opt-ins (#93): every type defaults to OFF.
 class NotificationPrefs {
   NotificationPrefs._();
+
+  /// The app-wide instance.
   static final NotificationPrefs instance = NotificationPrefs._();
 
   static const _types = {'routineFinished', 'pairRequest'};
   static const _kPrefix = 'notify.';
 
+  /// Whether [type] notifications are on (default: off, #93).
   Future<bool> enabled(String type) async {
     assert(_types.contains(type));
     return (await SharedPreferences.getInstance()).getBool('$_kPrefix$type') ??
         false; // default off (#93)
   }
 
+  /// Persists an opt-in/out for [type].
   Future<void> setEnabled(String type, bool value) async {
     assert(_types.contains(type));
     await (await SharedPreferences.getInstance()).setBool(

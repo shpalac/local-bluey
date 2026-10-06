@@ -19,7 +19,11 @@ class ActionEntry {
   /// All actions from one brain turn share a run id, so a run can be
   /// summarized or audited as a unit.
   final String runId;
+
+  /// The tool that ran.
   final String tool;
+
+  /// The exact arguments it ran with.
   final Map<String, dynamic> arguments;
 
   /// First line of the tool result, or the error message.
@@ -27,10 +31,14 @@ class ActionEntry {
 
   /// What to try when this action failed, in plain language.
   final String? recoveryHint;
+
+  /// When the action ran (defaults to now).
   final DateTime at;
 
+  /// True when the action failed (a recovery hint is attached).
   bool get failed => recoveryHint != null;
 
+  /// Serializes for the on-disk log.
   Map<String, dynamic> toJson() => {
     'runId': runId,
     'tool': tool,
@@ -53,18 +61,23 @@ class ActionEntry {
 /// Persistent, append-only action log (actions.jsonl in app documents).
 class ActionLog {
   ActionLog._();
+
+  /// The shared log.
   static final ActionLog instance = ActionLog._();
 
+  /// Rolling cap; retention window enforced on top (#83).
   static const keepEntries = 500;
 
   /// Entries older than this are pruned on every write (#83).
   static int retentionDays = 30;
 
+  /// The in-memory log, oldest first.
   final List<ActionEntry> entries = [];
 
   Future<File> _file() async =>
       File('${(await getApplicationDocumentsDirectory()).path}/actions.jsonl');
 
+  /// Appends one entry and persists, pruning past retention (#83).
   Future<void> record(ActionEntry entry) async {
     entries.add(entry);
     entries.removeWhere(

@@ -8,6 +8,7 @@ import 'onboarding_checks.dart';
 class PermissionWatchdog {
   PermissionWatchdog({required this.checker, this.prefsOverride});
 
+  /// Supplies the current grant state per permission.
   final PermissionChecker checker;
 
   /// Test seam: an injected store wins over the platform default.
@@ -16,6 +17,7 @@ class PermissionWatchdog {
 
   static const _kPrefix = 'watchdog.granted.';
 
+  /// The grant-history store (test seam: [prefsOverride] wins).
   Future<SharedPreferences> get _store async =>
       _prefs ??= prefsOverride ?? await SharedPreferences.getInstance();
 

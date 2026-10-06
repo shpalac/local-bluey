@@ -82,16 +82,38 @@ class RequestRunner {
 
   /// Where STT configuration comes from (#196); tests inject a fake.
   final Future<SttSettings> Function() sttLoader;
+
+  /// The safety gate consulted before every tool run.
   final GateLike safety;
+
+  /// Executes the tool calls the brain returns.
   final ExecutorLike tools;
+
+  /// Speaks the replies.
   final SpeechLike speech;
+
+  /// Lazily supplies the current brain (null = not configured).
   final BrainLike? Function() brainProvider;
+
+  /// Loads current brain settings per request.
   final Future<BrainSettings> Function() settingsLoader;
+
+  /// Matches an utterance against stored routines before the brain sees it.
   final Routine? Function(String utterance) matchRoutine;
+
+  /// Appends a turn to the conversation log.
   final void Function(String role, String text) addToConversation;
+
+  /// The currently selected TTS voice id.
   final String Function() currentVoice;
+
+  /// Lifecycle callbacks (listening, thinking, speaking, ...).
   final RequestHooks hooks;
+
+  /// Per-step ceiling (one transcribe/brain/speak call).
   final Duration stepTimeout;
+
+  /// Tool-call loop ceiling for one request.
   final int maxToolSteps;
 
   /// Wall-clock deadline for the whole transcribe -> brain -> speak job

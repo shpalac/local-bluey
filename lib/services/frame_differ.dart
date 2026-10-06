@@ -7,7 +7,10 @@ import 'dart:ui' as ui;
 /// difference (0..1) against the previous frame. No frame is kept after
 /// the comparison - only the grid survives a tick, and only in memory.
 class FrameDiffer {
+  /// Downsample grid width (cells).
   static const gridW = 32;
+
+  /// Downsample grid height (cells).
   static const gridH = 18;
 
   List<double>? _previous;

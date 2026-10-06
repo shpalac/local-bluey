@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// an English UI or the other way around.
 enum UiLanguage { system, english, hebrew }
 
+/// Locale state and lookup for UI and speech languages (#36).
 class Strings {
   Strings._();
 
@@ -14,6 +15,7 @@ class Strings {
   static UiLanguage uiLanguage = UiLanguage.system;
   static String speechLanguage = 'auto';
 
+  /// Loads the persisted language choices.
   static Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
     uiLanguage =
@@ -22,6 +24,7 @@ class Strings {
     speechLanguage = prefs.getString(_kSpeechLanguage) ?? 'auto';
   }
 
+  /// Sets and persists the UI language.
   static Future<void> setUiLanguage(UiLanguage language) async {
     uiLanguage = language;
     await (await SharedPreferences.getInstance()).setString(
@@ -30,6 +33,7 @@ class Strings {
     );
   }
 
+  /// Sets and persists the speech (transcription/TTS) language.
   static Future<void> setSpeechLanguage(String language) async {
     speechLanguage = language;
     await (await SharedPreferences.getInstance()).setString(
@@ -51,6 +55,8 @@ class Strings {
   /// device locale (handled by MaterialApp localizations delegates).
   static bool get forceRtl => uiLanguage == UiLanguage.hebrew;
 
+  /// Picks [en] or [he] for the active UI language ('system' resolves
+  /// via the platform locale).
   static String t(String en, String he) =>
       uiLanguage == UiLanguage.hebrew ? he : en;
 }

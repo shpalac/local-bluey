@@ -92,6 +92,7 @@ class WatchPolicy {
       (await SharedPreferences.getInstance()).getStringList(_kAllowlist) ??
       const [];
 
+  /// Adds [app] to the user allowlist (no-op if already there).
   static Future<void> addToAllowlist(String app) async {
     final prefs = await SharedPreferences.getInstance();
     final list = [...?prefs.getStringList(_kAllowlist)];
@@ -101,6 +102,7 @@ class WatchPolicy {
     await prefs.setStringList(_kAllowlist, list);
   }
 
+  /// Removes [app] from the user allowlist.
   static Future<void> removeFromAllowlist(String app) async {
     final prefs = await SharedPreferences.getInstance();
     final list = [...?prefs.getStringList(_kAllowlist)]..remove(_norm(app));
@@ -112,6 +114,7 @@ class WatchPolicy {
       (await SharedPreferences.getInstance()).getStringList(_kUserDenylist) ??
       const [];
 
+  /// Adds [app] to the user's extra deny list (no-op if already there).
   static Future<void> addToUserDenylist(String app) async {
     final prefs = await SharedPreferences.getInstance();
     final list = [...?prefs.getStringList(_kUserDenylist)];

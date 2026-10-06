@@ -11,6 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Samples persist to perf.jsonl for baseline tracking over time.
 class PerfMonitor {
   PerfMonitor._();
+
+  /// The app-wide instance.
   static final PerfMonitor instance = PerfMonitor._();
 
   final Map<String, List<int>> _samplesMs = {};
@@ -20,6 +22,7 @@ class PerfMonitor {
   /// Live flag the face screen listens to for the perf overlay (#61).
   final ValueNotifier<bool> overlayEnabled = ValueNotifier(false);
 
+  /// Whether the perf overlay is enabled; refreshes the live flag.
   Future<bool> isOverlayEnabled() async {
     final v =
         (await SharedPreferences.getInstance()).getBool(_kOverlay) ?? false;
@@ -27,6 +30,7 @@ class PerfMonitor {
     return v;
   }
 
+  /// Persists the overlay setting and updates the live flag.
   Future<void> setOverlayEnabled(bool value) async {
     overlayEnabled.value = value;
     await (await SharedPreferences.getInstance()).setBool(_kOverlay, value);

@@ -34,17 +34,26 @@ class WakeWordService {
        _transcription = transcription;
 
   static const _kEnabled = 'wake_word.enabled';
+
+  /// Length of one audio window the spotter scores.
   static const windowDuration = Duration(seconds: 2);
+
+  /// Minimum spotter score that counts as a wake (#79).
   static const scoreThreshold = 0.6;
 
+  /// The on-device spotter; null while #79 is unshipped (service stays
+  /// dormant).
   final WakeWordSpotter? spotter;
   final AudioCapture _capture;
 
   /// Injected transcriber (tests); when null the provider is resolved from
   /// the saved STT settings per window, like the request runner (#196).
   final TranscriberLike? _transcription;
+
+  /// The phrase that wakes Bluey.
   final String wakePhrase;
 
+  /// Whether the service is currently listening; the UI binds to this.
   final ValueNotifier<bool> listening = ValueNotifier(false);
   bool _running = false;
 
@@ -52,12 +61,15 @@ class WakeWordService {
   /// path as hold-to-talk.
   void Function()? onWake;
 
+  /// The persisted on/off preference.
   static Future<bool> isEnabled() async =>
       (await SharedPreferences.getInstance()).getBool(_kEnabled) ?? false;
 
+  /// Persists the on/off preference.
   static Future<void> setEnabled(bool value) async =>
       (await SharedPreferences.getInstance()).setBool(_kEnabled, value);
 
+  /// Starts listening; a no-op without a spotter (#79) or permission.
   Future<void> start() async {
     if (_running) return;
     if (!await isEnabled()) return;
@@ -67,6 +79,7 @@ class WakeWordService {
     unawaited(_loop());
   }
 
+  /// Stops listening and releases the capture.
   Future<void> stop() async {
     _running = false;
     listening.value = false;
@@ -87,6 +100,7 @@ class WakeWordService {
   }
 
   @visibleForTesting
+  /// Scores one recorded window; true when it triggered a wake.
   Future<bool> scoreAndMaybeWake(File file) => _scoreAndMaybeWake(file);
 
   Future<bool> _scoreAndMaybeWake(File file) async {

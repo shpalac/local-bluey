@@ -22,7 +22,11 @@ class WatchSuggestion {
 
   /// What the watcher saw, quoted as data - never parsed, never followed.
   final String evidence;
+
+  /// The allowlisted app that triggered it.
   final String app;
+
+  /// When it fired.
   final DateTime at;
 }
 
@@ -40,12 +44,18 @@ class WatchSuggestions {
 
   /// Hard caps (#214: quiet by default).
   static const maxPerSession = 3;
+
+  /// Minimum time between two suggestions.
   static const minGap = Duration(minutes: 3);
+
+  /// How many times the same trigger must repeat before it fires.
   static const repeatTriggerCount = 3;
 
   static const _kNeverApps = 'watch.suggestNeverApps';
 
   final _controller = StreamController<WatchSuggestion>.broadcast();
+
+  /// Suggestion stream for the UI.
   Stream<WatchSuggestion> get stream => _controller.stream;
 
   int _shownThisSession = 0;
@@ -59,6 +69,7 @@ class WatchSuggestions {
           .map((a) => a.toLowerCase())
           .toSet();
 
+  /// Persists a per-app "never suggest" choice.
   static Future<void> neverForApp(String app) async {
     final prefs = await SharedPreferences.getInstance();
     final list = [...?prefs.getStringList(_kNeverApps)];
@@ -119,5 +130,6 @@ class WatchSuggestions {
     return suggestion;
   }
 
+  /// Closes the suggestion stream.
   Future<void> dispose() => _controller.close();
 }

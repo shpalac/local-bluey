@@ -131,8 +131,11 @@ class SpeechService implements SpeechLike {
   }
 }
 
+/// A speech-pipeline failure (transcription or TTS).
 class SpeechException implements Exception {
   SpeechException(this.message);
+
+  /// Human-readable failure detail.
   final String message;
   @override
   String toString() => message;

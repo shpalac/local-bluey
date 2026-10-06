@@ -16,6 +16,8 @@ enum WatchEventKind {
   visionCall,
 }
 
+/// One recorded pipeline moment (#213): what happened, when, for which
+/// allowlisted app.
 class WatchEvent {
   const WatchEvent({
     required this.kind,
@@ -24,12 +26,17 @@ class WatchEvent {
     this.detail = '',
   });
 
+  /// What happened (app change, frame changed, vision call, ...).
   final WatchEventKind kind;
+
+  /// When it happened.
   final DateTime at;
 
   /// The allowlisted app this event is about (never an excluded one -
   /// excluded moments leave no trace beyond the session counter, #212).
   final String app;
+
+  /// Optional extra info (e.g. the vision answer).
   final String detail;
 }
 
@@ -67,8 +74,13 @@ class WatchPipeline {
   }) : _watch = watch ?? ScreenWatch.instance,
        _clockOverride = clock;
 
+  /// Supplies the frontmost app (test seams in via the constructor).
   final FrontmostReader frontmost;
+
+  /// Supplies frame-diff results between consecutive frames.
   final FrameDiffFn frameDiff;
+
+  /// Optional vision-model call; when null, frames are only diffed.
   final VisionCall? onVision;
   final ScreenWatch _watch;
   final Clock? _clockOverride;
@@ -87,6 +99,7 @@ class WatchPipeline {
   /// Rolling buffer cap; oldest events drop off (#213).
   static const bufferCap = 200;
 
+  /// Rolling event buffer for the session trace UI (#213).
   final List<WatchEvent> events = [];
   final _eventsController = StreamController<WatchEvent>.broadcast();
 
@@ -185,5 +198,6 @@ class WatchPipeline {
   /// Session trace ends here; wired to session stop (#212/#213).
   void clear() => events.clear();
 
+  /// Closes the event stream.
   Future<void> dispose() => _eventsController.close();
 }
