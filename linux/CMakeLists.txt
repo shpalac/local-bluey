@@ -126,3 +126,14 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Launcher metadata uses the GTK application ID so desktop shells can associate
+# the running app with its icon. These paths work for a relocatable build bundle
+# as long as its generated desktop file is used at that configured location.
+configure_file(local-bluey.desktop.in local-bluey.desktop @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/local-bluey.desktop"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/share/applications"
+  RENAME "${APPLICATION_ID}.desktop" COMPONENT Runtime)
+install(DIRECTORY icons/
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/share/icons/hicolor"
+  COMPONENT Runtime FILES_MATCHING PATTERN "*.png")
