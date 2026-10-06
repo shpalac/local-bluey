@@ -15,7 +15,10 @@ import 'privacy_guard.dart';
 class ToolResult {
   const ToolResult(this.text, {this.imageBase64});
 
+  /// The text the brain reads as the tool's answer.
   final String text;
+
+  /// Optional screenshot payload (base64 JPEG) for the brain to look at.
   final String? imageBase64;
 }
 
