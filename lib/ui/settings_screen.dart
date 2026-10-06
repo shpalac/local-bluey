@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../llm/llm_provider.dart';
-import '../llm/ollama_provider.dart' show LlmException;
 import '../services/biometric_lock.dart';
 import 'theme.dart';
 import 'troubleshooting_screen.dart';
@@ -13,6 +12,7 @@ import '../services/tutorial.dart';
 import '../services/safety_gate.dart';
 import '../services/strings.dart';
 import '../services/action_log.dart';
+import '../services/connection_error.dart';
 import '../services/egress_monitor.dart';
 import '../services/endpoint_assistant.dart';
 import '../services/settings_store.dart';
@@ -23,6 +23,11 @@ import 'watch_screen.dart';
 /// in the Keychain, never in plain preferences.
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  /// Test seam: replaces the real chat call behind "Test connection" so
+  /// widget tests can simulate failures without a network (#239).
+  @visibleForTesting
+  static Future<String> Function(BrainSettings settings)? debugTestChat;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -45,6 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _speechLanguage = Strings.speechLanguage;
   bool _testing = false;
   String? _testResult;
+  ConnectionFailure? _testFailure;
   bool _detecting = false;
   String? _detectResult;
   final _allowlist = TextEditingController();
@@ -161,16 +167,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _testing = true;
       _testResult = null;
+      _testFailure = null;
     });
     try {
-      final reply = await settings.buildProvider().chat(const [
-        LlmMessage('user', 'Say "ok" and nothing else.'),
-      ]);
+      final override = SettingsScreen.debugTestChat;
+      final reply = override != null
+          ? await override(settings)
+          : await settings.buildProvider().chat(const [
+              LlmMessage('user', 'Say "ok" and nothing else.'),
+            ]);
       if (mounted) setState(() => _testResult = 'Connected: ${reply.trim()}');
-    } on LlmException catch (e) {
-      if (mounted) setState(() => _testResult = 'Failed: $e');
     } catch (e) {
-      if (mounted) setState(() => _testResult = 'Failed: $e');
+      // #239: plain message with the real host:port; raw text under Details.
+      final failure = describeConnectionFailure(e, url);
+      if (mounted) {
+        setState(() {
+          _testFailure = failure;
+          _testResult = failure.summary;
+        });
+      }
     } finally {
       if (mounted) setState(() => _testing = false);
     }
@@ -575,14 +590,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             if (_testResult != null) ...[
               const SizedBox(height: 16),
-              Text(
-                _testResult!,
-                style: TextStyle(
-                  color: _testResult!.startsWith('Connected')
-                      ? Colors.greenAccent
-                      : Colors.redAccent,
+              Semantics(
+                liveRegion: true,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      _testFailure == null
+                          ? Icons.check_circle_outline
+                          : Icons.error_outline,
+                      size: 18,
+                      color: _testFailure == null
+                          ? Colors.greenAccent
+                          : Colors.redAccent,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _testFailure == null
+                            ? _testResult!
+                            : 'Failed: ${_testResult!}',
+                        style: TextStyle(
+                          color: _testFailure == null
+                              ? Colors.greenAccent
+                              : Colors.redAccent,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              if (_testFailure != null) ...[
+                if (_testFailure!.suggestsLocalServer)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Wrap(
+                      spacing: 8,
+                      children: [
+                        OutlinedButton(
+                          onPressed: _detecting ? null : _detectOllama,
+                          child: const Text('Detect local Ollama'),
+                        ),
+                        OutlinedButton(
+                          onPressed: () => _applyPreset(
+                            endpointPresets.firstWhere(
+                              (p) => p.id == 'ollama',
+                              orElse: () => endpointPresets.first,
+                            ),
+                          ),
+                          child: const Text('Use Ollama preset (:11434)'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ExpansionTile(
+                  tilePadding: EdgeInsets.zero,
+                  title: const Text('Details'),
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: SelectableText(_testFailure!.details),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ],
         ),
