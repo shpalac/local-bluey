@@ -25,6 +25,7 @@
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
 		C0DE00000000000000000001 /* ComputerControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000002 /* ComputerControl.swift */; };
+		C0DE00000000000000000009 /* WatchSignals.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE0000000000000000000A /* WatchSignals.swift */; };
 		C0DE00000000000000000003 /* ScreenReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000004 /* ScreenReader.swift */; };
 		C0DE00000000000000000005 /* ControlsReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000006 /* ControlsReader.swift */; };
 		C0DE00000000000000000007 /* NativeControlChannel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0DE00000000000000000008 /* NativeControlChannel.swift */; };
@@ -72,6 +73,7 @@
 		33CC10ED2044A3C60003C045 /* local_bluey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "local_bluey.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		33CC10F02044A3C60003C045 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C0DE00000000000000000002 /* ComputerControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComputerControl.swift; sourceTree = "<group>"; };
+		C0DE0000000000000000000A /* WatchSignals.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSignals.swift; sourceTree = "<group>"; };
 		C0DE00000000000000000004 /* ScreenReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenReader.swift; sourceTree = "<group>"; };
 		C0DE00000000000000000006 /* ControlsReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlsReader.swift; sourceTree = "<group>"; };
 		C0DE00000000000000000008 /* NativeControlChannel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeControlChannel.swift; sourceTree = "<group>"; };
@@ -177,6 +179,7 @@
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				C0DE00000000000000000002 /* ComputerControl.swift */,
 				C0DE00000000000000000004 /* ScreenReader.swift */,
+				C0DE0000000000000000000A /* WatchSignals.swift */,
 				C0DE00000000000000000006 /* ControlsReader.swift */,
 				C0DE00000000000000000008 /* NativeControlChannel.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
@@ -369,6 +372,7 @@
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				C0DE00000000000000000001 /* ComputerControl.swift in Sources */,
 				C0DE00000000000000000003 /* ScreenReader.swift in Sources */,
+				C0DE00000000000000000009 /* WatchSignals.swift in Sources */,
 				C0DE00000000000000000005 /* ControlsReader.swift in Sources */,
 				C0DE00000000000000000007 /* NativeControlChannel.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,

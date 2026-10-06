@@ -116,7 +116,7 @@ void main() {
           clock: clock,
           frontmost: () async => at('Safari'),
           frameDiff: () async => 0.3,
-          onVision: (_, __) async => visionCalls++,
+          onVision: (_, _) async => visionCalls++,
         );
         await p.tick(); // app switch
         await p.tick();
@@ -169,7 +169,7 @@ void main() {
         }
         return 0.3;
       },
-      onVision: (_, __) async {},
+      onVision: (_, _) async {},
     );
     await p.tick(); // app switch baseline
     expect(await p.tick(), isNull, reason: 'stopped mid-diff: result dropped');
