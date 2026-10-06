@@ -117,7 +117,6 @@ enum ScreenReader {
     static func recognize(_ image: CGImage, in size: CGSize) throws -> [(line: Target, words: [Target])] {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
-        request.usesLanguageCorrection = true
         // Hebrew-first with English fallback (#213): without an explicit
         // list Vision guesses from the locale and mangles Hebrew text.
         // Language correction off: it reorders/spaces RTL text wrongly.

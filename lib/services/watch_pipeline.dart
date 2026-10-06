@@ -111,6 +111,12 @@ class WatchPipeline {
   }
 
   Future<WatchEvent?> _process(FrontmostInfo info) async {
+    // A stop (kill switch) bumps the generation and clears the buffer. Any
+    // await below can straddle it, so each emit re-checks and drops its
+    // event instead of repopulating a buffer that stop just erased (#212).
+    final gen = _watch.generation;
+    bool stale() => gen != _watch.generation;
+
     final switched = info.app != _lastApp || info.title != _lastTitle;
     _lastApp = info.app;
     _lastTitle = info.title;
@@ -130,6 +136,7 @@ class WatchPipeline {
     // Signals quiet: check the frame itself. Typing/scrolling shows up as
     // small diffs below the threshold and never reaches a vision call.
     final diff = await frameDiff();
+    if (stale()) return null;
     if (diff == null || diff < diffThreshold) {
       _changeStreak = 0;
       return null;
@@ -154,6 +161,7 @@ class WatchPipeline {
     if (cooledDown && onVision != null) {
       _lastVisionAt = _clock.now();
       await onVision!(info.app, info.title);
+      if (stale()) return null;
       _emit(
         WatchEvent(
           kind: WatchEventKind.visionCall,

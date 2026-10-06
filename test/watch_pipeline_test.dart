@@ -154,6 +154,28 @@ void main() {
     expect(p.events, isEmpty);
   });
 
+  test('stop during an in-flight tick leaves no events behind', () async {
+    final watch = await liveWatch();
+    late WatchPipeline p;
+    var reads = 0;
+    p = WatchPipeline(
+      watch: watch,
+      frontmost: () async => at('Safari'),
+      frameDiff: () async {
+        // Kill switch lands while the diff is running.
+        if (reads++ == 0) {
+          watch.stop();
+          p.clear();
+        }
+        return 0.3;
+      },
+      onVision: (_, __) async {},
+    );
+    await p.tick(); // app switch baseline
+    expect(await p.tick(), isNull, reason: 'stopped mid-diff: result dropped');
+    expect(p.events, isEmpty, reason: 'nothing repopulates the cleared buffer');
+  });
+
   test('buffer is capped and clear wipes the session trace', () async {
     final watch = await liveWatch();
     final p = pipe(watch, [], []);
