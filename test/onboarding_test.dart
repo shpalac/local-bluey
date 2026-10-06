@@ -62,11 +62,12 @@ void main() {
         _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
       );
       await t.pumpAndSettle();
-      expect(find.text('Step 1 of ${onboardingPermissions.length}'), findsOne);
+      expect(find.byKey(const Key('step-accessibility')), findsOneWidget);
       expect(find.text('Accessibility'), findsOneWidget);
       expect(find.text('Open Settings'), findsOneWidget);
-      expect(find.text('Verify'), findsOneWidget);
-      expect(find.text('Skip'), findsOneWidget);
+      expect(find.text('Check again'), findsOneWidget);
+      expect(find.text('Set up click control later'), findsOneWidget);
+      expect(find.text('Done - start Bluey'), findsNothing);
     });
 
     testWidgets('required permission has no Skip button', (t) async {
@@ -80,7 +81,7 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(find.text('Microphone'), findsOneWidget);
-      expect(find.text('Skip'), findsNothing);
+      expect(find.textContaining('Set up'), findsNothing);
     });
 
     testWidgets('verify advances only after the grant exists', (t) async {
@@ -89,32 +90,67 @@ void main() {
         _app(OnboardingScreen(checker: checker, onDone: () {})),
       );
       await t.pumpAndSettle();
-      await t.tap(find.text('Verify'));
+      await t.tap(find.text('Check again'));
       await t.pumpAndSettle();
       // Denied: still on step 1, warning shown.
       expect(find.text('Accessibility'), findsOneWidget);
       expect(find.textContaining('still off'), findsOneWidget);
       checker.grants['accessibility'] = true;
-      await t.tap(find.text('Verify'));
+      await t.tap(find.text('Check again'));
       await t.pumpAndSettle();
-      expect(find.text('Step 2 of ${onboardingPermissions.length}'), findsOne);
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getBool('onboarding.step.accessibility'), isTrue);
-    });
-
-    testWidgets('skip persists the step and advances', (t) async {
-      await t.pumpWidget(
-        _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
-      );
-      await t.pumpAndSettle();
-      await t.tap(find.text('Skip'));
+      // Granted: one primary action, Continue. No auto-advance.
+      expect(find.text('Granted.'), findsOneWidget);
+      expect(find.text('Open Settings'), findsNothing);
+      await t.tap(find.text('Continue'));
       await t.pumpAndSettle();
       expect(find.text('Screen Recording'), findsOneWidget);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool('onboarding.step.accessibility'), isTrue);
+      expect(prefs.getBool('onboarding.deferred.accessibility'), isFalse);
     });
 
-    testWidgets('finish marks onboarding done even with mic missing', (
+    testWidgets('deferring is recorded separately from a grant', (t) async {
+      await t.pumpWidget(
+        _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
+      );
+      await t.pumpAndSettle();
+      await t.tap(find.text('Set up click control later'));
+      await t.pumpAndSettle();
+      expect(find.text('Screen Recording'), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('onboarding.step.accessibility'), isTrue);
+      expect(prefs.getBool('onboarding.deferred.accessibility'), isTrue);
+      // The overview shows deferred, not granted.
+      expect(find.textContaining('Accessibility - later'), findsOneWidget);
+      expect(find.textContaining('Accessibility - granted'), findsNothing);
+    });
+
+    testWidgets('a deferred step survives relaunch and can be revisited', (
+      t,
+    ) async {
+      SharedPreferences.setMockInitialValues({
+        'onboarding.step.accessibility': true,
+        'onboarding.deferred.accessibility': true,
+      });
+      final checker = _StubChecker({});
+      await t.pumpWidget(
+        _app(OnboardingScreen(checker: checker, onDone: () {})),
+      );
+      await t.pumpAndSettle();
+      expect(find.textContaining('Accessibility - later'), findsOneWidget);
+      await t.tap(find.byKey(const Key('step-accessibility')));
+      await t.pumpAndSettle();
+      checker.grants['accessibility'] = true;
+      await t.tap(find.text('Check again'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Continue'));
+      await t.pumpAndSettle();
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('onboarding.deferred.accessibility'), isFalse);
+      expect(find.textContaining('Accessibility - granted'), findsOneWidget);
+    });
+
+    testWidgets('finish later shows what is off, then Start Bluey exits', (
       t,
     ) async {
       var done = false;
@@ -127,15 +163,37 @@ void main() {
         ),
       );
       await t.pumpAndSettle();
-      await t.tap(find.text('Done - start Bluey'));
+      await t.tap(find.text('Finish setup later'));
+      await t.pumpAndSettle();
+      // Nothing is marked done until the user confirms the summary.
+      expect(done, isFalse);
+      expect(await OnboardingScreen.isDone(), isFalse);
+      expect(find.textContaining('cannot hear you'), findsOneWidget);
+      expect(
+        find.textContaining('cannot see what is on your screen'),
+        findsOne,
+      );
+      await t.tap(find.text('Start Bluey'));
       await t.pumpAndSettle();
       expect(done, isTrue);
       expect(await OnboardingScreen.isDone(), isTrue);
     });
+
+    testWidgets('summary can go back to setup', (t) async {
+      await t.pumpWidget(
+        _app(OnboardingScreen(checker: _StubChecker({}), onDone: () {})),
+      );
+      await t.pumpAndSettle();
+      await t.tap(find.text('Finish setup later'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Back to setup'));
+      await t.pumpAndSettle();
+      expect(find.text('Open Settings'), findsOneWidget);
+    });
   });
 
   group('OnboardingScreen reliability (#225)', () {
-    testWidgets('late verify result after Skip never advances or persists', (
+    testWidgets('late verify result never advances or persists on its own', (
       t,
     ) async {
       final checker = _SlowChecker();
@@ -149,18 +207,25 @@ void main() {
       }
       await t.pumpAndSettle();
       final before = checker.accessibilityCalls.length;
-      await t.tap(find.text('Verify'));
+      await t.tap(find.text('Check again'));
       await t.pump();
       expect(checker.accessibilityCalls.length, before + 1);
-      // Skip is disabled while verifying, so use the stale path via Back.
+      // Later is disabled while verifying.
       expect(
-        t.widget<TextButton>(find.widgetWithText(TextButton, 'Skip')).onPressed,
+        t
+            .widget<TextButton>(
+              find.widgetWithText(TextButton, 'Set up click control later'),
+            )
+            .onPressed,
         isNull,
       );
       checker.accessibilityCalls.last.complete(true);
       await t.pumpAndSettle();
-      // The grant was real for this step, so it advances exactly once.
-      expect(find.text('Step 2 of ${onboardingPermissions.length}'), findsOne);
+      // The grant shows as Continue; it never advances or persists alone.
+      expect(find.text('Continue'), findsOneWidget);
+      expect(find.text('Accessibility'), findsOneWidget);
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool('onboarding.step.accessibility'), isNull);
     });
 
     testWidgets('rapid Verify taps start one check', (t) async {
@@ -174,15 +239,19 @@ void main() {
       }
       await t.pumpAndSettle();
       final before = checker.accessibilityCalls.length;
-      await t.tap(find.text('Verify'));
+      await t.tap(find.text('Check again'));
       await t.pump();
-      await t.tap(find.text('Verify'), warnIfMissed: false);
+      await t.tap(find.text('Check again'), warnIfMissed: false);
       await t.pump();
       expect(checker.accessibilityCalls.length, before + 1);
       checker.accessibilityCalls.last.complete(false);
       await t.pumpAndSettle();
       expect(
-        t.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed,
+        t
+            .widget<OutlinedButton>(
+              find.widgetWithText(OutlinedButton, 'Check again'),
+            )
+            .onPressed,
         isNotNull,
       );
     });
@@ -209,14 +278,18 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(find.textContaining('Could not check'), findsOneWidget);
-      await t.tap(find.text('Verify'));
+      await t.tap(find.text('Check again'));
       await t.pumpAndSettle();
       expect(find.textContaining('Could not check'), findsOneWidget);
-      expect(find.text('Step 1 of ${onboardingPermissions.length}'), findsOne);
+      expect(find.text('Accessibility'), findsOneWidget);
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getBool('onboarding.step.accessibility'), isNull);
       expect(
-        t.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed,
+        t
+            .widget<OutlinedButton>(
+              find.widgetWithText(OutlinedButton, 'Check again'),
+            )
+            .onPressed,
         isNotNull,
       );
     });
@@ -247,10 +320,10 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(find.text('Local Network'), findsOneWidget);
-      expect(find.text('Verify'), findsNothing);
+      expect(find.text('Check again'), findsNothing);
       expect(find.textContaining('Not granted'), findsNothing);
       expect(find.textContaining('pair the phone'), findsOneWidget);
-      expect(find.text('Skip'), findsOneWidget);
+      expect(find.text('Continue to summary'), findsOneWidget);
     });
   });
 
