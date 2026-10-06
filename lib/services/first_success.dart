@@ -1,5 +1,6 @@
 import 'endpoint_assistant.dart';
 import 'settings_store.dart';
+import 'strings.dart';
 import 'stt.dart';
 
 /// How ready a backing service is for the first request (#226).
@@ -13,6 +14,8 @@ enum ServiceReadiness {
   /// No usable configuration yet.
   notConfigured,
 }
+
+bool get _hebrewSpeech => Strings.speechLanguage.startsWith('he');
 
 /// Which permissions and services are actually available right now.
 class FirstSuccessInputs {
@@ -66,34 +69,52 @@ class FirstSuccessPlan {
   factory FirstSuccessPlan.from(FirstSuccessInputs inputs) {
     final issues = <ReadinessIssue>[
       if (!inputs.microphone)
-        const ReadinessIssue(
+        ReadinessIssue(
           'microphone',
-          'Microphone access is off, so Bluey cannot hear you. Turn it on '
-              'in System Settings > Privacy & Security > Microphone.',
+          Strings.t(
+            'Microphone access is off, so Bluey cannot hear you. Turn it on '
+                'in System Settings > Privacy & Security > Microphone.',
+            'הגישה למיקרופון כבויה, ולכן בלואי לא יכול לשמוע אותך. הפעל '
+                'אותה בהגדרות המערכת > פרטיות ואבטחה > מיקרופון.',
+          ),
         ),
       if (inputs.brain == ServiceReadiness.notConfigured)
-        const ReadinessIssue(
+        ReadinessIssue(
           'brain',
-          'No chat model is set up. Open Settings and run the endpoint '
-              'assistant.',
+          Strings.t(
+            'No chat model is set up. Open Settings and run the endpoint '
+                'assistant.',
+            'לא הוגדר מודל צ\'אט. פתח הגדרות והפעל את עוזר החיבור.',
+          ),
         ),
       if (inputs.brain == ServiceReadiness.unreachable)
-        const ReadinessIssue(
+        ReadinessIssue(
           'brain',
-          'The chat model did not answer. Check that it is running, or '
-              'open Settings to change the endpoint.',
+          Strings.t(
+            'The chat model did not answer. Check that it is running, or '
+                'open Settings to change the endpoint.',
+            'מודל הצ\'אט לא ענה. בדוק שהוא פועל, או פתח הגדרות כדי לשנות '
+                'את הכתובת.',
+          ),
         ),
       if (inputs.stt == ServiceReadiness.notConfigured)
-        const ReadinessIssue(
+        ReadinessIssue(
           'stt',
-          'Speech-to-text is not set up, so spoken questions would fail. '
-              'Open Settings to choose a provider.',
+          Strings.t(
+            'Speech-to-text is not set up, so spoken questions would fail. '
+                'Open Settings to choose a provider.',
+            'זיהוי הדיבור לא הוגדר, ולכן שאלות בקול ייכשלו. פתח הגדרות '
+                'ובחר ספק.',
+          ),
         ),
       if (inputs.stt == ServiceReadiness.unreachable)
-        const ReadinessIssue(
+        ReadinessIssue(
           'stt',
-          'The speech-to-text service did not answer. Open Settings to '
-              'check it.',
+          Strings.t(
+            'The speech-to-text service did not answer. Open Settings to '
+                'check it.',
+            'שירות זיהוי הדיבור לא ענה. פתח הגדרות כדי לבדוק אותו.',
+          ),
         ),
     ];
     final voiceReady = issues.isEmpty;
@@ -103,8 +124,10 @@ class FirstSuccessPlan {
       suggestedRequest: !voiceReady
           ? null
           : screen
-          ? "what's on my screen?"
-          : 'hello, what can you do?',
+          ? (_hebrewSpeech ? 'מה יש על המסך שלי?' : "what's on my screen?")
+          : (_hebrewSpeech
+                ? 'שלום, מה אתה יכול לעשות?'
+                : 'hello, what can you do?'),
       screenQuestionAvailable: screen,
       pointingAvailable:
           voiceReady && inputs.screenRecording && inputs.accessibility,

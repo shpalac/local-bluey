@@ -1,4 +1,5 @@
 import 'native_control.dart';
+import 'strings.dart';
 
 /// Injectable permission checks for onboarding (#86): live status per
 /// permission, fakes in tests.
@@ -46,6 +47,8 @@ class OnboardingPermission {
     required this.why,
     required this.settingsUrl,
     required this.requiredForFirstAnswer,
+    required this.titleHe,
+    required this.whyHe,
   });
 
   /// Stable identifier used by the watchdog's baseline.
@@ -53,6 +56,18 @@ class OnboardingPermission {
 
   /// Short display name.
   final String title;
+
+  /// Hebrew [title] for the Hebrew UI (#227).
+  final String titleHe;
+
+  /// Hebrew [why] for the Hebrew UI (#227).
+  final String whyHe;
+
+  /// [title] in the active UI language.
+  String get localTitle => Strings.t(title, titleHe);
+
+  /// [why] in the active UI language.
+  String get localWhy => Strings.t(why, whyHe);
 
   /// Plain-language reason the app needs it.
   final String why;
@@ -71,6 +86,8 @@ const onboardingPermissions = [
     id: 'accessibility',
     title: 'Accessibility',
     why: 'Lets Bluey point and click for you.',
+    titleHe: 'נגישות',
+    whyHe: 'מאפשר לבלואי להצביע וללחוץ בשבילך.',
     settingsUrl: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility',
     requiredForFirstAnswer: false,
   ),
@@ -78,6 +95,8 @@ const onboardingPermissions = [
     id: 'screen_recording',
     title: 'Screen Recording',
     why: 'Lets Bluey see what is on your screen.',
+    titleHe: 'הקלטת מסך',
+    whyHe: 'מאפשר לבלואי לראות מה על המסך שלך.',
     settingsUrl: 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
     requiredForFirstAnswer: false,
   ),
@@ -85,6 +104,8 @@ const onboardingPermissions = [
     id: 'microphone',
     title: 'Microphone',
     why: 'Lets Bluey hear you while you hold to talk.',
+    titleHe: 'מיקרופון',
+    whyHe: 'מאפשר לבלואי לשמוע אותך בזמן שאתה לוחץ ומחזיק כדי לדבר.',
     settingsUrl: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone',
     requiredForFirstAnswer: true,
   ),
@@ -92,6 +113,8 @@ const onboardingPermissions = [
     id: 'local_network',
     title: 'Local Network',
     why: 'Lets your iPhone find this Mac.',
+    titleHe: 'רשת מקומית',
+    whyHe: 'מאפשר ל-iPhone שלך למצוא את ה-Mac הזה.',
     settingsUrl: 'x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork',
     requiredForFirstAnswer: false,
   ),

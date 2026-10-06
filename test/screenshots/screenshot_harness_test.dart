@@ -47,6 +47,7 @@ void main() {
     bool dark = false,
     Size? size,
     double textScale = 1.0,
+    bool rtl = false,
   }) async {
     if (size != null) {
       tester.view.physicalSize = size;
@@ -59,7 +60,10 @@ void main() {
         builder: (context, app) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(textScale)),
-          child: app!,
+          child: Directionality(
+            textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+            child: app!,
+          ),
         ),
         home: child,
       ),
@@ -186,6 +190,31 @@ void main() {
         size: v.$2,
         dark: v.$3,
         textScale: v.$4,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  // Hebrew / RTL onboarding (#227): first step, 200% text, dark.
+  for (final v in const [
+    ('he-light', Size(1360, 845), false, 1.0),
+    ('he-dark-200', Size(720, 520), true, 2.0),
+  ]) {
+    testWidgets('onboarding ${v.$1}', (tester) async {
+      Strings.uiLanguage = UiLanguage.hebrew;
+      addTearDown(() => Strings.uiLanguage = UiLanguage.english);
+      await shot(
+        tester,
+        'onboarding-${v.$1}.png',
+        OnboardingScreen(
+          readiness: _fakeReady,
+          onDone: () {},
+          checker: const _AllDeniedChecker(),
+        ),
+        size: v.$2,
+        dark: v.$3,
+        textScale: v.$4,
+        rtl: true,
       );
       expect(tester.takeException(), isNull);
     });

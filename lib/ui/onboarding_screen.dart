@@ -4,6 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/first_success.dart';
 import '../services/native_control.dart';
 import '../services/onboarding_checks.dart';
+import '../services/strings.dart';
+
+String _t(String en, String he) => Strings.t(en, he);
 
 /// First-run permission walkthrough, one permission per step (#174):
 /// plain-language why, a verify button that re-checks the real grant, and
@@ -208,8 +211,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            '${_current.title} is still off - open Settings, grant it, '
-            'then check again.',
+            _t(
+              '${_current.localTitle} is still off - open Settings, grant it, '
+                  'then check again.',
+              '${_current.localTitle} עדיין כבוי - פתח הגדרות, אשר, '
+                  'ואז בדוק שוב.',
+            ),
           ),
         ),
       );
@@ -312,35 +319,77 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     widget.onDone();
   }
 
-  String _stateLine(OnboardingPermission p) {
+  /// The visible status word for [p]; never colour or an icon alone (#227).
+  String _statusWord(OnboardingPermission p) {
     if (_failed.containsKey(p.id)) {
-      return 'Could not check this permission. Try Verify again, or open '
-          'System Settings > Privacy & Security and look for ${p.title}.';
+      return _t('Unable to check', 'לא ניתן לבדוק');
     }
     if (_notCheckable.contains(p.id)) {
-      return 'macOS only asks for this when your iPhone first looks for '
-          'this Mac, so it cannot be checked here. Skip it now and approve '
-          'the prompt when you pair the phone.';
+      return _t('Asked at pairing', 'תתבקש בחיבור');
     }
     return switch (_granted[p.id]) {
-      true => 'Granted.',
-      false => 'Not granted yet.',
-      null => 'Checking...',
+      true => _t('Granted', 'ניתנה'),
+      false => _t('Not enabled', 'לא מופעלת'),
+      null => _t('Checking...', 'בודק...'),
     };
   }
 
+  String _stateLine(OnboardingPermission p) {
+    if (_failed.containsKey(p.id)) {
+      final help = _t(
+        'Could not check this permission. Try again, or open '
+            'System Settings > Privacy & Security and look for ${p.title}.',
+        'לא ניתן לבדוק את ההרשאה הזו. נסה שוב, או פתח את הגדרות המערכת > '
+            'פרטיות ואבטחה וחפש את ${p.localTitle}.',
+      );
+      return '${_statusWord(p)}. $help';
+    }
+    if (_notCheckable.contains(p.id)) {
+      return _t(
+        'macOS only asks for this when your iPhone first looks for '
+            'this Mac, so it cannot be checked here. Skip it now and approve '
+            'the prompt when you pair the phone.',
+        'macOS מבקשת הרשאה זו רק כשה-iPhone שלך מחפש את ה-Mac הזה בפעם '
+            'הראשונה, ולכן אי אפשר לבדוק אותה כאן. דלג עכשיו ואשר את '
+            'ההודעה כשתצמיד את הטלפון.',
+      );
+    }
+    return _statusWord(p);
+  }
+
   /// What stays off when a permission is not granted (#224).
-  static const _consequence = {
-    'accessibility': 'Bluey cannot click or type for you.',
-    'screen_recording': 'Bluey cannot see what is on your screen.',
-    'microphone': 'Bluey cannot hear you, so spoken questions will not work.',
-    'local_network': 'Your iPhone cannot find this Mac until you approve it.',
+  static const _consequence = <String, (String, String)>{
+    'accessibility': (
+      'Bluey cannot click or type for you.',
+      'בלואי לא יכול ללחוץ או להקליד בשבילך.',
+    ),
+    'screen_recording': (
+      'Bluey cannot see what is on your screen.',
+      'בלואי לא יכול לראות מה על המסך שלך.',
+    ),
+    'microphone': (
+      'Bluey cannot hear you, so spoken questions will not work.',
+      'בלואי לא יכול לשמוע אותך, ולכן שאלות בקול לא יעבדו.',
+    ),
+    'local_network': (
+      'Your iPhone cannot find this Mac until you approve it.',
+      'ה-iPhone שלך לא ימצא את ה-Mac הזה עד שתאשר.',
+    ),
   };
 
-  static const _laterLabel = {
-    'accessibility': 'Set up click control later',
-    'screen_recording': 'Set up screen access later',
-    'local_network': 'Set up phone pairing later',
+  static const _laterLabel = <String, (String, String)>{
+    'accessibility': (
+      'Set up click control later',
+      'הגדר שליטה בלחיצות מאוחר יותר',
+    ),
+    'screen_recording': (
+      'Set up screen access later',
+      'הגדר גישה למסך מאוחר יותר',
+    ),
+    'local_network': (
+      'Set up phone pairing later',
+      'הגדר חיבור לטלפון מאוחר יותר',
+    ),
   };
 
   /// One display state per step: granted, deferred, unknown or missing.
@@ -367,12 +416,12 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               _ => Icons.radio_button_unchecked,
             }, size: 18),
             label: Text(
-              '${onboardingPermissions[i].title} - '
+              '${onboardingPermissions[i].localTitle} - '
               '${switch (_stateOf(onboardingPermissions[i])) {
-                'granted' => 'granted',
-                'deferred' => 'later',
-                'unknown' => 'asked at pairing',
-                _ => 'not granted',
+                'granted' => _t('granted', 'ניתנה'),
+                'deferred' => _t('later', 'מאוחר יותר'),
+                'unknown' => _t('asked at pairing', 'תתבקש בחיבור'),
+                _ => _t('not granted', 'לא ניתנה'),
               }}',
             ),
             onSelected: (_) => _jumpTo(i),
@@ -385,10 +434,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Widget _firstRequest(BuildContext context) {
     final plan = _plan;
     if (plan == null) {
-      return const ListTile(
+      return ListTile(
         key: Key('first-request'),
         leading: Icon(Icons.hourglass_top),
-        title: Text('Checking your chat model and speech setup...'),
+        title: Text(
+          _t(
+            'Checking your chat model and speech setup...',
+            'בודק את מודל הצ\'אט ואת הגדרות הדיבור...',
+          ),
+        ),
       );
     }
     if (!plan.voiceReady) {
@@ -396,9 +450,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         key: const Key('first-request'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ListTile(
+          ListTile(
             leading: Icon(Icons.warning_amber),
-            title: Text('Not ready for a spoken question yet'),
+            title: Text(
+              _t(
+                'Not ready for a spoken question yet',
+                'עדיין לא מוכן לשאלה בקול',
+              ),
+            ),
           ),
           for (final issue in plan.issues)
             ListTile(
@@ -409,7 +468,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   issue.id != 'microphone' && widget.onOpenSettings != null
                   ? TextButton(
                       onPressed: widget.onOpenSettings,
-                      child: const Text('Open Settings'),
+                      child: Text(_t('Open Settings', 'פתח הגדרות')),
                     )
                   : null,
             ),
@@ -422,16 +481,25 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       children: [
         ListTile(
           leading: const Icon(Icons.record_voice_over),
-          title: Text('Try this first: hold the face and ask'),
+          title: Text(
+            _t(
+              'Try this first: hold the face and ask',
+              'נסה קודם: החזק את הפנים ושאל',
+            ),
+          ),
           subtitle: Text('"${plan.suggestedRequest}"'),
         ),
         if (!plan.pointingAvailable)
-          const ListTile(
+          ListTile(
             key: Key('no-pointing'),
             dense: true,
             title: Text(
-              'Pointing needs Accessibility and Screen Recording, so the '
-              'tutorial will skip it for now.',
+              _t(
+                'Pointing needs Accessibility and Screen Recording, so the '
+                    'tutorial will skip it for now.',
+                'הצבעה דורשת נגישות והקלטת מסך, ולכן המדריך ידלג עליה '
+                    'בינתיים.',
+              ),
             ),
           ),
       ],
@@ -448,23 +516,29 @@ class _OnboardingScreenState extends State<OnboardingScreen>
           leading: Icon(
             state == 'granted' ? Icons.check_circle : Icons.info_outline,
           ),
-          title: Text(p.title),
+          title: Text(p.localTitle),
           subtitle: Text(
-            state == 'granted' ? 'Available.' : _consequence[p.id]!,
+            state == 'granted'
+                ? _t('Available.', 'זמין.')
+                : _t(_consequence[p.id]!.$1, _consequence[p.id]!.$2),
           ),
         ),
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Setup summary')),
+      appBar: AppBar(title: Text(_t('Setup summary', 'סיכום ההגדרה'))),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'You can change any of these later in System Settings. '
-              'Bluey tells you when a missing permission blocks something.',
+            Text(
+              _t(
+                'You can change any of these later in System Settings. '
+                    'Bluey tells you when a missing permission blocks something.',
+                'אפשר לשנות כל אחת מההרשאות האלה אחר כך בהגדרות המערכת. '
+                    'בלואי יגיד לך כשהרשאה חסרה חוסמת משהו.',
+              ),
             ),
             const SizedBox(height: 8),
             Expanded(
@@ -480,11 +554,15 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           _gen++;
                           setState(() => _summary = false);
                         },
-                  child: const Text('Back to setup'),
+                  child: Text(_t('Back to setup', 'חזרה להגדרה')),
                 ),
                 FilledButton(
                   onPressed: _busy || _plan == null ? null : _startBluey,
-                  child: Text(_plan == null ? 'Checking...' : 'Start Bluey'),
+                  child: Text(
+                    _plan == null
+                        ? _t('Checking...', 'בודק...')
+                        : _t('Start Bluey', 'התחל עם בלואי'),
+                  ),
                 ),
               ],
             ),
@@ -506,18 +584,27 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     if (granted == true || notCheckable) {
       primary = FilledButton(
         onPressed: _busy ? null : () => _next(deferred: notCheckable),
-        child: Text(_last ? 'Continue to summary' : 'Continue'),
+        child: Text(
+          _last
+              ? _t('Continue to summary', 'המשך לסיכום')
+              : _t('Continue', 'המשך'),
+        ),
       );
     } else if (granted == null && !failed) {
-      primary = const FilledButton(onPressed: null, child: Text('Checking...'));
+      primary = FilledButton(
+        onPressed: null,
+        child: Text(_t('Checking...', 'בודק...')),
+      );
     } else {
       primary = FilledButton(
         onPressed: _openSettings,
-        child: const Text('Open Settings'),
+        child: Text(_t('Open Settings', 'פתח הגדרות')),
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Welcome to Local Bluey')),
+      appBar: AppBar(
+        title: Text(_t('Welcome to Local Bluey', 'ברוכים הבאים ל-Local Bluey')),
+      ),
       // One focused panel: centred, width-bounded, scrolls when it cannot
       // fit (compact windows, large text) instead of overflowing (#223).
       body: Center(
@@ -530,17 +617,16 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Set up ${p.title}',
+                  _t('Set up ${p.title}', 'הגדרת ${p.localTitle}'),
                   style: Theme.of(context).textTheme.headlineSmall,
-                  semanticsLabel: 'Set up ${p.title}',
                 ),
                 const SizedBox(height: 16),
                 _overview(context),
                 const SizedBox(height: 16),
                 Card(
                   child: ListTile(
-                    title: Text(p.title),
-                    subtitle: Text(p.why),
+                    title: Text(p.localTitle),
+                    subtitle: Text(p.localWhy),
                     leading: failed
                         ? const Icon(Icons.error_outline)
                         : notCheckable
@@ -556,11 +642,24 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(_stateLine(p), key: const Key('onboarding-state')),
+                Semantics(
+                  liveRegion: true,
+                  label: '${p.localTitle}: ${_statusWord(p)}',
+                  child: ExcludeSemantics(
+                    child: Text(
+                      _stateLine(p),
+                      key: const Key('onboarding-state'),
+                    ),
+                  ),
+                ),
                 if (_failed.containsKey('${p.id}.settings'))
-                  const Text(
-                    'Could not open System Settings. Open it yourself: '
-                    'Privacy & Security, then pick this permission.',
+                  Text(
+                    _t(
+                      'Could not open System Settings. Open it yourself: '
+                          'Privacy & Security, then pick this permission.',
+                      'לא ניתן לפתוח את הגדרות המערכת. פתח אותן בעצמך: '
+                          'פרטיות ואבטחה, ואז בחר את ההרשאה.',
+                    ),
                     key: Key('onboarding-settings-error'),
                   ),
                 const SizedBox(height: 16),
@@ -572,26 +671,35 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                     if (!notCheckable && granted != true)
                       OutlinedButton(
                         onPressed: _busy ? null : _verify,
-                        child: const Text('Check again'),
+                        child: Text(_t('Check again', 'בדוק שוב')),
                       ),
                     if (!p.requiredForFirstAnswer &&
                         granted != true &&
                         !notCheckable)
                       TextButton(
                         onPressed: _busy ? null : () => _next(deferred: true),
-                        child: Text(_laterLabel[p.id] ?? 'Set up later'),
+                        child: Text(
+                          _laterLabel[p.id] == null
+                              ? _t('Set up later', 'הגדר מאוחר יותר')
+                              : _t(
+                                  _laterLabel[p.id]!.$1,
+                                  _laterLabel[p.id]!.$2,
+                                ),
+                        ),
                       ),
                     if (_step > 0)
                       TextButton(
                         onPressed: _busy ? null : _back,
-                        child: const Text('Back'),
+                        child: Text(_t('Back', 'חזרה')),
                       ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 TextButton(
                   onPressed: _busy ? null : _finishLater,
-                  child: const Text('Finish setup later'),
+                  child: Text(
+                    _t('Finish setup later', 'סיים את ההגדרה מאוחר יותר'),
+                  ),
                 ),
               ],
             ),
