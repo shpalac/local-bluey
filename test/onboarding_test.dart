@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:local_bluey/services/first_success.dart';
 import 'package:local_bluey/services/onboarding_checks.dart';
+import 'package:local_bluey/services/strings.dart';
 import 'package:local_bluey/services/permission_watchdog.dart';
 import 'package:local_bluey/ui/onboarding_screen.dart';
 import 'package:local_bluey/ui/permission_recovery_card.dart';
@@ -122,7 +123,7 @@ void main() {
       await t.tap(find.text('Check again'));
       await t.pumpAndSettle();
       // Granted: one primary action, Continue. No auto-advance.
-      expect(find.text('Granted.'), findsOneWidget);
+      expect(find.text('Granted'), findsOneWidget);
       expect(find.text('Open Settings'), findsNothing);
       await t.tap(find.text('Continue'));
       await t.pumpAndSettle();
@@ -378,7 +379,7 @@ void main() {
       await t.pumpAndSettle();
       // Step 2 is Screen Recording, which the throwing checker grants.
       expect(find.text('Screen Recording'), findsOneWidget);
-      expect(find.text('Granted.'), findsOneWidget);
+      expect(find.text('Granted'), findsOneWidget);
     });
 
     testWidgets('Local Network is unknown, not denied, with a next action', (
@@ -506,6 +507,105 @@ void main() {
       gate.complete((ServiceReadiness.ready, ServiceReadiness.ready));
       await t.pumpAndSettle();
       expect(find.text('Start Bluey'), findsOneWidget);
+    });
+  });
+
+  group('Onboarding localization and semantics (#227)', () {
+    final hebrew = RegExp(r'[\u0590-\u05FF]');
+    final english = RegExp(r'[A-Za-z]{4,}');
+
+    tearDown(() => Strings.uiLanguage = UiLanguage.english);
+
+    test('every permission has Hebrew copy', () {
+      for (final p in onboardingPermissions) {
+        expect(hebrew.hasMatch(p.titleHe), isTrue, reason: p.id);
+        expect(hebrew.hasMatch(p.whyHe), isTrue, reason: p.id);
+      }
+    });
+
+    testWidgets('Hebrew UI shows Hebrew text on every step', (t) async {
+      Strings.uiLanguage = UiLanguage.hebrew;
+      t.view.physicalSize = const Size(800, 1200);
+      t.view.devicePixelRatio = 1.0;
+      addTearDown(t.view.reset);
+      await t.pumpWidget(
+        MaterialApp(
+          home: Directionality(
+            textDirection: TextDirection.rtl,
+            child: OnboardingScreen(
+              readiness: _fakeReady,
+              checker: _StubChecker({}),
+              onDone: () {},
+            ),
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      for (var i = 0; i < onboardingPermissions.length; i++) {
+        final p = onboardingPermissions[i];
+        await t.tap(find.byKey(Key('step-${p.id}')));
+        await t.pumpAndSettle();
+        expect(find.text(p.titleHe), findsWidgets, reason: p.id);
+        expect(find.text(p.whyHe), findsOneWidget, reason: p.id);
+        // The status line is Hebrew, not English.
+        final status = t.widget<Text>(
+          find.byKey(const Key('onboarding-state')),
+        );
+        expect(hebrew.hasMatch(status.data!), isTrue, reason: p.id);
+        // Product names (macOS, iPhone) stay Latin inside Hebrew text.
+        final prose = status.data!.replaceAll(RegExp('macOS|iPhone'), '');
+        expect(english.hasMatch(prose), isFalse, reason: p.id);
+      }
+    });
+
+    testWidgets('status is announced as text, not colour or icon alone', (
+      t,
+    ) async {
+      final handle = t.ensureSemantics();
+      await t.pumpWidget(
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: _StubChecker({}),
+            onDone: () {},
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      expect(find.text('Not enabled'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Accessibility: Not enabled'),
+        findsOneWidget,
+      );
+      final node = t.getSemantics(
+        find.bySemanticsLabel('Accessibility: Not enabled'),
+      );
+      expect(node.flagsCollection.isLiveRegion, isTrue);
+      // The heading is a named header and the primary action is enabled.
+      expect(find.bySemanticsLabel('Set up Accessibility'), findsOneWidget);
+      expect(
+        t
+            .widget<FilledButton>(
+              find.widgetWithText(FilledButton, 'Open Settings'),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      handle.dispose();
+    });
+
+    testWidgets('unable to check is a visible, named status', (t) async {
+      await t.pumpWidget(
+        _app(
+          OnboardingScreen(
+            readiness: _fakeReady,
+            checker: _ThrowingChecker(),
+            onDone: () {},
+          ),
+        ),
+      );
+      await t.pumpAndSettle();
+      expect(find.textContaining('Unable to check'), findsWidgets);
     });
   });
 
