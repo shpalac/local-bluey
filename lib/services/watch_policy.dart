@@ -62,6 +62,13 @@ class WatchPolicy {
     'one zero',
     'bit.co.il',
     'paybox',
+    // Hebrew banking terms (#212): Hebrew window titles carry no Latin
+    // 'bank' to match.
+    'בנק',
+    'מזרחי',
+    'דיסקונט',
+    'ישראכרט',
+    'פפר',
   ];
 
   /// Window-title markers of a private browsing window, per browser (#212).

@@ -37,6 +37,21 @@ void main() {
     );
   });
 
+  test('Hebrew banking titles are denied', () async {
+    for (final title in [
+      'בנק הפועלים - כניסה',
+      'בנק לאומי',
+      'דיסקונט',
+      'ישראכרט',
+    ]) {
+      expect(
+        await WatchPolicy.verdict(frontApp: 'Safari', windowTitle: title),
+        WatchVerdict.hardDenied,
+        reason: title,
+      );
+    }
+  });
+
   test('private browser windows denied in every browser language', () async {
     for (final title in [
       'New Incognito Tab',
