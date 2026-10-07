@@ -46,8 +46,12 @@ already correct.
 ## Full run script (#125)
 
 One run on a named Mac and iPhone, recorded once. Nothing below has been run
-yet. The issue numbers were written against an older tree, so check that each
-one is still open before you file a duplicate.
+on real hardware yet.
+
+Every issue referenced here is closed, so these are regression checks rather
+than open bugs: the code is fixed but never confirmed on a device, which is
+what the README means by "nothing has been verified on real hardware". File a
+new issue for any step that fails.
 
 ### Setup (record before you start)
 - Mac model and macOS version
@@ -71,8 +75,9 @@ one is still open before you file a duplicate.
 
 ### iPhone
 6. Fresh install: the phone finds the Mac, the Mac shows a pairing prompt, and
-   the key is stored. The key was sent in cleartext at the time of writing
-   (#111).
+   the key is stored. Since #111 the key is handed over once and later
+   connects prove it with an HMAC nonce challenge, so no key should ever cross
+   the link in cleartext again.
 7. Hold to talk: audio reaches the Mac and the answer shows on the phone.
    Release quickly (a tap) and confirm the mic indicator goes off (#117).
 8. Turn Wi-Fi off for 20 seconds. Expect an offline state, an automatic
