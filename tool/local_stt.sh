@@ -107,12 +107,34 @@ start() {
   echo "stt up: http://127.0.0.1:$SHIM_PORT/audio/transcriptions"
 }
 
+# True only when PID is alive and its command line looks like the managed
+# service, so a stale or reused PID never gets signaled (#266).
+managed_pid() {
+  local pid=$1 marker=$2 cmd
+  case "$pid" in ''|*[!0-9]*) return 1 ;; esac
+  cmd=$(ps -p "$pid" -o command= 2>/dev/null) || return 1
+  case "$cmd" in *"$marker"*) return 0 ;; *) return 1 ;; esac
+}
+
 stop() {
+  local failed=0 n f pid marker
   for n in whisper shim; do
     f="$RUN_DIR/$n.pid"
-    [ -f "$f" ] && kill "$(cat "$f")" 2>/dev/null
+    [ -f "$f" ] || continue
+    pid=$(cat "$f" 2>/dev/null || true)
+    case "$n" in whisper) marker=whisper-server ;; *) marker=stt_shim.py ;; esac
+    if managed_pid "$pid" "$marker"; then
+      if ! kill "$pid" 2>/dev/null && managed_pid "$pid" "$marker"; then
+        echo "could not stop $n (pid $pid)" >&2
+        failed=1
+        continue
+      fi
+    else
+      echo "$n is not running (stale pid file removed)" >&2
+    fi
     rm -f "$f"
   done
+  [ "$failed" -eq 0 ] || exit 1
   echo "stopped"
 }
 
