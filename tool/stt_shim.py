@@ -16,6 +16,7 @@ So: pull the uploaded file out of the multipart body, transcode with ffmpeg,
 forward the WAV, and pass the JSON straight back. Everything stays on loopback,
 which Bluey's local-only mode requires.
 """
+import argparse
 import http.server
 import json
 import os
@@ -26,9 +27,30 @@ import sys
 import tempfile
 import urllib.error
 import urllib.request
+import urllib.parse
 
-UPSTREAM = "http://127.0.0.1:8099/inference"
+DEFAULT_UPSTREAM = "http://127.0.0.1:8099/inference"
 TIMEOUT = 120
+
+
+def validate_upstream(url):
+    """Accept only the literal IPv4 loopback inference route, no credentials."""
+    try:
+        parsed = urllib.parse.urlsplit(url)
+        if (parsed.scheme != 'http' or parsed.hostname != '127.0.0.1'
+                or parsed.username is not None or parsed.password is not None
+                or parsed.path != '/inference' or parsed.query or parsed.fragment
+                or parsed.port is None or not 1 <= parsed.port <= 65535):
+            raise ValueError('upstream must be http://127.0.0.1:<port>/inference')
+    except (ValueError, TypeError) as error:
+        raise argparse.ArgumentTypeError(str(error)) from error
+    return f'http://127.0.0.1:{parsed.port}/inference'
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # A loopback service must not redirect audio to a different destination.
+        return None
 
 
 def extract_upload(body: bytes, content_type: str):
@@ -121,13 +143,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
             f"\r\n--{boundary}--\r\n".encode(),
         ]
         req = urllib.request.Request(
-            UPSTREAM,
+            self.server.upstream,
             data=b"".join(parts),
             headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            with urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect()).open(req, timeout=TIMEOUT) as resp:
                 self._json(resp.status, resp.read())
         except urllib.error.HTTPError as e:
             self._json(e.code, e.read())
@@ -135,11 +157,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._json(502, json.dumps({"error": str(e)}).encode())
 
     def do_GET(self):
-        self._json(200, b"{}")
+        if self.path != '/health':
+            self.send_error(404, 'Not Found')
+            return
+        self._json(200, json.dumps({
+            'service': 'bluey-stt-shim', 'upstream': self.server.upstream,
+        }).encode())
 
 
-if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8098
-    srv = http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"STT shim on http://127.0.0.1:{port} -> {UPSTREAM}", flush=True)
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('port', nargs='?', type=int, default=8098)
+    parser.add_argument('--upstream', type=validate_upstream, default=DEFAULT_UPSTREAM)
+    args = parser.parse_args()
+    if not 1 <= args.port <= 65535:
+        parser.error('shim port must be between 1 and 65535')
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', args.port), Handler)
+    srv.upstream = args.upstream
+    print(f'STT shim on http://127.0.0.1:{args.port} -> {srv.upstream}', flush=True)
     srv.serve_forever()
+
+
+if __name__ == '__main__':
+    main()

@@ -26,6 +26,34 @@ UPSTREAM_PORT="${STT_UPSTREAM_PORT:-8099}"
 SHIM_PORT="${STT_SHIM_PORT:-8098}"
 RUN_DIR="$ROOT/run"
 
+# Reject malformed/off-device ports before launching or accepting audio.
+for port in "$UPSTREAM_PORT" "$SHIM_PORT"; do
+  case "$port" in ''|*[!0-9]*) echo "STT ports must be integers from 1 to 65535" >&2; exit 2 ;; esac
+  [ "${#port}" -le 5 ] && [ "$port" -ge 1 ] && [ "$port" -le 65535 ] || {
+    echo "STT ports must be integers from 1 to 65535" >&2; exit 2;
+  }
+done
+# Normalize leading zeroes so URLs and configuration comparisons agree.
+UPSTREAM_PORT=$((10#$UPSTREAM_PORT))
+SHIM_PORT=$((10#$SHIM_PORT))
+[ "$UPSTREAM_PORT" -ne "$SHIM_PORT" ] || {
+  echo "STT upstream and shim ports must differ" >&2; exit 2;
+}
+UPSTREAM_URL="http://127.0.0.1:$UPSTREAM_PORT/inference"
+
+shim_matches() {
+  local config
+  config=$(curl -fsS -m 2 "http://127.0.0.1:$SHIM_PORT/health") || return 1
+  printf '%s' "$config" | python3 -c '
+import json, sys
+try:
+    config = json.load(sys.stdin)
+    sys.exit(0 if config.get("service") == "bluey-stt-shim" and config.get("upstream") == sys.argv[1] else 1)
+except (ValueError, AttributeError):
+    sys.exit(1)
+' "$UPSTREAM_URL"
+}
+
 setup() {
   mkdir -p "$ROOT"
   if [ ! -d "$WHISPER" ]; then
@@ -59,10 +87,22 @@ start() {
   if ! curl -s -m 2 -o /dev/null "http://127.0.0.1:$UPSTREAM_PORT/"; then
     echo "whisper-server did not come up - see $RUN_DIR/whisper.log" >&2; exit 1
   fi
-  if ! curl -s -m 2 -o /dev/null "http://127.0.0.1:$SHIM_PORT/"; then
-    nohup python3 tool/stt_shim.py "$SHIM_PORT" > "$RUN_DIR/shim.log" 2>&1 &
+  if curl -s -m 2 -o /dev/null "http://127.0.0.1:$SHIM_PORT/health"; then
+    if ! shim_matches; then
+      echo "STT shim conflict on port $SHIM_PORT: expected $UPSTREAM_URL; stop the stale shim or choose another shim port" >&2
+      exit 1
+    fi
+  else
+    nohup python3 tool/stt_shim.py "$SHIM_PORT" --upstream "$UPSTREAM_URL" > "$RUN_DIR/shim.log" 2>&1 &
     echo $! > "$RUN_DIR/shim.pid"
-    sleep 1
+    for _ in $(seq 1 20); do
+      shim_matches 2>/dev/null && break
+      sleep 0.1
+    done
+    if ! shim_matches; then
+      echo "STT shim did not become ready with $UPSTREAM_URL - see $RUN_DIR/shim.log" >&2
+      exit 1
+    fi
   fi
   echo "stt up: http://127.0.0.1:$SHIM_PORT/audio/transcriptions"
 }
