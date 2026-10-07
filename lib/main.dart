@@ -142,7 +142,11 @@ class _MacHomeState extends State<MacHome>
     _server.start();
     _server.requests.listen(_onPhoneRequest);
     _receipts.failures.listen((line) {
-      if (mounted) setState(() => _bubble = '$line (long-press to retry)');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$line (long-press to retry phone delivery)')),
+        );
+      }
     });
     _checkTrust();
     ScreenWatch.instance.addListener(_syncWatchTray);
@@ -840,7 +844,6 @@ class _RunnerHooks extends RequestHooks {
 
   @override
   void say(Packet packet, String spoken) {
-    _home._receipts.track(packet, spoken); // receipt required (#87)
-    _home._server.broadcast(packet);
+    _home._receipts.deliver(packet, spoken, _home._server.broadcast);
   }
 }

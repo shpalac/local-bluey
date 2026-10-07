@@ -38,6 +38,21 @@ class SpeakReceipts {
     return id;
   }
 
+  /// Host reply boundary: track remote delivery only when the broadcast
+  /// actually has authenticated recipients. Local playback is independent.
+  void deliver(
+    Packet packet,
+    String spoken,
+    int Function(Packet, {void Function(int recipients)? beforeSend}) broadcast,
+  ) {
+    broadcast(
+      packet,
+      beforeSend: (recipients) {
+        if (recipients > 0) track(packet, spoken);
+      },
+    );
+  }
+
   /// A 'playing' or 'done' ack from the phone clears the receipt.
   void ack(int? speech) {
     if (speech == null) return;
@@ -54,7 +69,7 @@ class SpeakReceipts {
     _pending.remove(id);
     final text = _spoken[id] ?? '';
     final line =
-        'No receipt from phone for: '
+        'Phone delivery: no receipt for: '
         '${text.length > 40 ? '${text.substring(0, 40)}…' : text}';
     _failureLog.add(line);
     _failures.add(line);
