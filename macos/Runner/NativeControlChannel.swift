@@ -28,6 +28,14 @@ final class NativeControlChannel {
         // Preflight only - never prompts (#174): the request itself stays
         // lazy, fired by the feature that needs it.
         result(CGPreflightScreenCaptureAccess())
+      case "requestScreenCaptureAccess":
+        // macOS only lists an app under Privacy & Security > Screen Recording
+        // once it has actually *asked*; preflight never registers it. Without
+        // this, the recovery card's "Fix" deep-link landed on a pane where
+        // Bluey was absent, so there was nothing for the user to switch on
+        // (#124). Safe to call because it only ever runs from an explicit tap
+        // on that card - the same consent the system prompt asks about.
+        result(CGRequestScreenCaptureAccess())
       case "microphoneAccess":
         result(AVCaptureDevice.authorizationStatus(for: .audio) == .authorized)
       case "askPermission":
