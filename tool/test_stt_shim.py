@@ -127,6 +127,55 @@ class RoutingTest(unittest.TestCase):
             self.assertIn('shim conflict', bad.stderr)
             self.assertNotIn('stt up:', bad.stdout)
 
+    def _stop_env(self, root):
+        run = Path(root) / 'run'
+        run.mkdir(parents=True)
+        env = dict(os.environ, STT_ROOT=root)
+        script = str(Path(__file__).parent / 'local_stt.sh')
+        return run, env, script
+
+    def test_stop_cleans_up_stale_whisper_and_stops_live_shim(self):
+        with tempfile.TemporaryDirectory() as root:
+            run, env, script = self._stop_env(root)
+            dead = subprocess.Popen(['true'])
+            dead.wait()
+            (run / 'whisper.pid').write_text(str(dead.pid))
+            # A stub whose command line carries the managed marker.
+            shim = subprocess.Popen(
+                ['python3', '-c', 'import time; time.sleep(60)', 'stt_shim.py'])
+            (run / 'shim.pid').write_text(str(shim.pid))
+            try:
+                for _ in range(2):
+                    r = subprocess.run([script, 'stop'], env=env,
+                                       capture_output=True, text=True, timeout=20)
+                    self.assertEqual(r.returncode, 0, r.stderr)
+                self.assertFalse((run / 'whisper.pid').exists())
+                self.assertFalse((run / 'shim.pid').exists())
+                self.assertIsNotNone(shim.wait(timeout=10))
+            finally:
+                if shim.poll() is None:
+                    shim.kill()
+
+    def test_stop_never_signals_unrelated_pid_and_tolerates_missing_files(self):
+        with tempfile.TemporaryDirectory() as root:
+            run, env, script = self._stop_env(root)
+            other = subprocess.Popen(['sleep', '60'])
+            (run / 'whisper.pid').write_text(str(other.pid))
+            (run / 'shim.pid').write_text('not-a-pid')
+            try:
+                r = subprocess.run([script, 'stop'], env=env,
+                                   capture_output=True, text=True, timeout=20)
+                self.assertEqual(r.returncode, 0, r.stderr)
+                self.assertIsNone(other.poll(), 'unrelated process was signaled')
+                self.assertFalse((run / 'whisper.pid').exists())
+                self.assertFalse((run / 'shim.pid').exists())
+                r = subprocess.run([script, 'stop'], env=env,
+                                   capture_output=True, text=True, timeout=20)
+                self.assertEqual(r.returncode, 0, r.stderr)
+            finally:
+                other.kill()
+                other.wait()
+
     def test_launcher_passes_selected_upstream_to_fresh_shim(self):
         with serving(Upstream) as upstream, tempfile.TemporaryDirectory() as root:
             # Reserve then release a dynamic loopback port for the child shim.
