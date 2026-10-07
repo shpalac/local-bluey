@@ -7,6 +7,7 @@ CheckResult _r(String id, CheckStatus status) =>
     CheckResult(id: id, titleEn: id, titleHe: id, status: status);
 
 void main() {
+  linuxDepsTests();
   test('#85: injected fakes report pass/fail/unknown', () async {
     final results = await Diagnostics.run(
       overrides: {
@@ -53,7 +54,12 @@ void linuxDepsTests() {
   test(
     '#152: on non-Linux the checks report unknown, never a false pass',
     () async {
-      final results = await Diagnostics.run(isLinux: () => false);
+      final results = await Diagnostics.run(
+        isLinux: () => false,
+        overrides: {
+          'provider': () async => _r('provider', CheckStatus.unknown),
+        },
+      );
       final linux = results.where((r) => r.id.startsWith('linux_'));
       expect(linux.length, 4);
       expect(linux.every((r) => r.status == CheckStatus.unknown), isTrue);
@@ -65,6 +71,9 @@ void linuxDepsTests() {
     () async {
       final results = await Diagnostics.run(
         isLinux: () => true,
+        overrides: {
+          'provider': () async => _r('provider', CheckStatus.unknown),
+        },
         which: (binary) async => binary == 'secret-tool',
       );
       final byId = {for (final r in results) r.id: r};
@@ -81,6 +90,7 @@ void linuxDepsTests() {
   test('#152: a lookup error reports unknown, never a false pass', () async {
     final results = await Diagnostics.run(
       isLinux: () => true,
+      overrides: {'provider': () async => _r('provider', CheckStatus.unknown)},
       which: (_) async => throw const ProcessException('which', []),
     );
     final linux = results.where((r) => r.id.startsWith('linux_'));
@@ -90,7 +100,12 @@ void linuxDepsTests() {
   test(
     '#152: linux checks appear in the redacted diagnostics report',
     () async {
-      final results = await Diagnostics.run(isLinux: () => false);
+      final results = await Diagnostics.run(
+        isLinux: () => false,
+        overrides: {
+          'provider': () async => _r('provider', CheckStatus.unknown),
+        },
+      );
       final report = Diagnostics.buildReport(
         platform: 'linux',
         role: 'host',
@@ -99,6 +114,4 @@ void linuxDepsTests() {
       expect(report, contains('linux_display: unknown'));
     },
   );
-
-  linuxDepsTests();
 }
