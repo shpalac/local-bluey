@@ -18,38 +18,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Metrics fixture tests
+        run: python3 -m unittest discover -s tool -p test_ci_metrics.py
       - name: Compute metrics
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
           since=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
-          runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?created=>=$since&per_page=100" \
-            -q '.workflow_runs[] | [.id, .conclusion] | @tsv')
-          total=$(echo "$runs" | grep -c . || true)
-          failed=$(echo "$runs" | grep -c failure || true)
-          rate=0
-          [ "$total" -gt 0 ] && rate=$((failed * 100 / total))
-          {
-            echo "## CI metrics (last 7 days)"
-            echo
-            echo "- Runs: $total"
-            echo "- Failed: $failed ($rate%)"
-            echo
-            echo "| Job | Median duration |"
-            echo "|---|---:|"
-            for job in static test build build-macos build-ios android android-integration linux security pinned-actions; do
-              durations=$(echo "$runs" | cut -f1 | while read -r id; do
-                gh api "repos/$GITHUB_REPOSITORY/actions/runs/$id/jobs?per_page=100" \
-                  -q --jq ".jobs[] | select(.name==\"$job\" and .status==\"completed\") | ((.completed_at | fromdateiso8601) - (.started_at | fromdateiso8601))" 2>/dev/null || true
-              done | sort -n)
-              n=$(echo "$durations" | grep -c . || true)
-              [ "$n" -eq 0 ] && continue
-              mid=$(( (n + 1) / 2 ))
-              med=$(echo "$durations" | sed -n "${mid}p")
-              echo "| $job | ${med}s ($n runs) |"
-            done
-          } | tee metrics.md >> "$GITHUB_STEP_SUMMARY"
+          status=0
+          python3 tool/ci_metrics.py --repo "$GITHUB_REPOSITORY" --since "$since" \
+            --output metrics.md --counts metrics-counts.txt || status=$?
+          cat metrics.md >> "$GITHUB_STEP_SUMMARY"
+          # Partial/unavailable metrics are visibly marked and fail the job.
+          # Do not open a failure-rate issue from incomplete data.
+          [ "$status" -eq 0 ] || exit "$status"
+          read -r total rate < metrics-counts.txt
           if [ "$total" -ge 5 ] && [ "$rate" -gt 20 ]; then
             title="CI failure rate at $rate% over the last 7 days"
             if ! gh issue list --state open --search "CI failure rate in:title" --json title -q '.[].title' | grep -q "CI failure rate"; then
