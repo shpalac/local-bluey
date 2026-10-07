@@ -105,8 +105,8 @@ class AudioCapture {
     _path =
         '${dir.path}/bluey_hold_${DateTime.now().millisecondsSinceEpoch}.m4a';
     await _driver.start(_path!);
-    if (_disposed || session != _session) return;
     _recording = true;
+    if (_disposed || session != _session) return;
     _maxTimer = Timer(maxDuration, () {
       _beginStop();
     });

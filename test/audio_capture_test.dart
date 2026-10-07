@@ -170,6 +170,22 @@ void main() {
     });
   });
 
+  test('dispose during start waits and closes the microphone (#246)', () async {
+    final driver = FakeDriver()..startGate = Completer<void>();
+    final capture = AudioCapture(
+      driver: driver,
+      tempDirProvider: () async => EmptyTempDirectory(),
+    );
+    final starting = capture.start();
+    final disposing = capture.dispose();
+    driver.startGate!.complete();
+    await starting;
+    await disposing;
+    expect(driver.stopCalls, 1);
+    expect(driver.recording, isFalse);
+    await expectLater(capture.start(), throwsStateError);
+  });
+
   test('start is idempotent while recording (#117)', () async {
     final driver = FakeDriver();
     final dir = await Directory.systemTemp.createTemp('cap');
