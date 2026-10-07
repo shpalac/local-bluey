@@ -108,7 +108,6 @@ void main() {
       isFalse,
     );
     await tester.pumpAndSettle();
-    await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 5));
     await tester.tap(find.widgetWithText(FilledButton, 'Save').hitTestable());
     await tester.pumpAndSettle();
