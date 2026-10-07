@@ -71,6 +71,10 @@ class AudioCapture {
   Timer? _maxTimer;
   String? _path;
   File? _pendingFile;
+  Future<void>? _stopOp;
+  Object? _stopError;
+  int _session = 0;
+  bool _disposed = false;
 
   /// Whether a capture is currently open.
   bool get isRecording => _recording;
@@ -80,6 +84,10 @@ class AudioCapture {
 
   /// Starts a capture into a fresh temp .m4a (AAC-LC 16 kHz).
   Future<void> start() async {
+    if (_disposed) throw StateError('Audio capture is disposed');
+    if (_stopOp != null || _pendingFile != null || _stopError != null) {
+      throw StateError('Release the previous capture before starting another');
+    }
     if (_recording || _startOp != null) return;
     final op = _start();
     _startOp = op;
@@ -91,49 +99,66 @@ class AudioCapture {
   }
 
   Future<void> _start() async {
+    final session = ++_session;
     final dir = await _tempDirProvider();
     await sweepStaleRecordings(tempDir: dir);
     _path =
         '${dir.path}/bluey_hold_${DateTime.now().millisecondsSinceEpoch}.m4a';
     await _driver.start(_path!);
+    if (_disposed || session != _session) return;
     _recording = true;
     _maxTimer = Timer(maxDuration, () {
-      unawaited(_autoStop());
+      _beginStop();
     });
   }
 
-  /// Max-duration cap: stops the recorder but keeps the file so the
-  /// caller's [stop] still delivers the utterance (#117).
-  Future<void> _autoStop() async {
-    if (!_recording) return;
-    _recording = false;
-    final path = await _driver.stop();
-    if (path != null) _pendingFile = File(path);
-  }
-
-  /// Stops and returns the recorded file, or null if nothing was captured.
-  /// Waits for an in-flight [start] first so a fast tap cannot leave the
-  /// microphone recording (#117).
-  Future<File?> stop() async {
+  // Both the cap and release share one native stop. Errors are retained for
+  // the release caller, never thrown from an unawaited timer future.
+  void _beginStop() {
+    if (!_recording || _stopOp != null) return;
     _maxTimer?.cancel();
     _maxTimer = null;
-    final op = _startOp;
-    if (op != null) {
+    _recording = false;
+    final session = _session;
+    _stopOp = _finishStop(session);
+  }
+
+  Future<void> _finishStop(int session) async {
+    try {
+      final path = await _driver.stop();
+      if (!_disposed && session == _session && path != null) {
+        _pendingFile = File(path);
+      }
+    } catch (error) {
+      if (!_disposed && session == _session) _stopError = error;
+    }
+  }
+
+  /// Stops and delivers this session's file exactly once, joining an in-flight
+  /// start or capped stop. A new start is rejected until release consumes the
+  /// previous session, so one hold cannot receive another hold's recording.
+  Future<File?> stop() async {
+    final startOp = _startOp;
+    if (startOp != null) {
       try {
-        await op;
+        await startOp;
       } catch (_) {
         // Start failed; nothing to stop.
       }
     }
-    if (!_recording) {
-      final pending = _pendingFile;
-      _pendingFile = null;
-      return pending;
-    }
-    _recording = false;
-    final path = await _driver.stop();
-    if (path == null) return null;
-    return File(path);
+    _beginStop();
+    final stopOp = _stopOp;
+    if (stopOp != null) await stopOp;
+    // Only the first release owns the completed session. Another release
+    // must not consume state created by a subsequent start.
+    if (!identical(stopOp, _stopOp)) return null;
+    _stopOp = null;
+    final error = _stopError;
+    _stopError = null;
+    if (error != null) throw error;
+    final pending = _pendingFile;
+    _pendingFile = null;
+    return pending;
   }
 
   /// Deletes leftover `bluey_hold_*.m4a` captures from previous sessions
@@ -163,7 +188,16 @@ class AudioCapture {
   Future<void> dispose() async {
     _maxTimer?.cancel();
     _maxTimer = null;
-    await _driver.dispose();
+    if (_disposed) return;
+    _disposed = true;
+    try {
+      await stop();
+    } finally {
+      _session++;
+      _pendingFile = null;
+      _stopError = null;
+      await _driver.dispose();
+    }
   }
 
   @visibleForTesting
