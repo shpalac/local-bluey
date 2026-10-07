@@ -110,6 +110,36 @@ void main() {
     });
   });
 
+  test(
+    'delete-all reports store failures rather than clearing first-run flag',
+    () async {
+      SharedPreferences.setMockInitialValues({'onboarding.done': true});
+      final stores = DataRegistry.stores.toList();
+      DataRegistry.stores.clear();
+      DataRegistry.stores.add(
+        DataStoreInfo(
+          id: 'failed',
+          sourceFile: 'test',
+          whatEn: 'test',
+          whatHe: 'test',
+          where: 'test',
+          retentionEn: 'test',
+          retentionHe: 'test',
+          clear: () async => throw StateError('cannot delete'),
+        ),
+      );
+      addTearDown(() {
+        DataRegistry.stores.clear();
+        DataRegistry.stores.addAll(stores);
+      });
+      await expectLater(DataRegistry.deleteAll(), throwsStateError);
+      expect(
+        (await SharedPreferences.getInstance()).getBool('onboarding.done'),
+        isTrue,
+      );
+    },
+  );
+
   group('delete all (#83)', () {
     test('deleteAll clears every registered store and preferences', () async {
       SharedPreferences.setMockInitialValues({
