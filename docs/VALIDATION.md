@@ -42,3 +42,54 @@ already correct.
 - tray icon in dark menu bar
 - window focus when waking from the tray
 - TTS failure fallback shows text only
+
+## Full run script (#125)
+
+One run on a named Mac and iPhone, recorded once. Nothing below has been run
+on real hardware yet.
+
+The per-step issues referenced below (#83, #107, #108, #111 to #114, #116,
+#117, #120) are closed, so those steps are regression checks rather than open
+bugs: the code is fixed but never confirmed on a device, which is what the
+README means by "nothing has been verified on real hardware". #15 and #125
+stay open until a run is posted. File a new issue for any step that fails.
+
+### Setup (record before you start)
+- Mac model and macOS version
+- iPhone model and iOS version
+- Flutter version and app build or commit
+- LLM provider and model
+- Both devices on the same Wi-Fi network
+
+### Mac
+1. First launch: onboarding shows live permission status. Grant Accessibility,
+   Screen Recording and Microphone.
+2. Hold the face or Space and ask "what's on my screen?". Expect the
+   transcript, the thinking face, an answer and TTS. Check that no recording
+   file is left in the temp directory (#116).
+3. Safety: ask Bluey to click and type. The confirm dialog must show the full
+   text and Return (#108). Press Stop during the dialog and during a request
+   (#107).
+4. Turn local-only on with a remote transcription or TTS URL. Requests must be
+   refused (#120).
+5. Quit and relaunch. Settings persist, and delete-all data works (#83).
+
+### iPhone
+6. Fresh install: the phone finds the Mac, the Mac shows a pairing prompt, and
+   the key is stored. Since #111 the key is handed over once and later
+   connects prove it with an HMAC nonce challenge, so no key should ever cross
+   the link in cleartext again.
+7. Hold to talk: audio reaches the Mac and the answer shows on the phone.
+   Release quickly (a tap) and confirm the mic indicator goes off (#117).
+8. Turn Wi-Fi off for 20 seconds. Expect an offline state, an automatic
+   reconnect and no ghost entries on the Mac (#113, #114).
+9. With two Macs available, choose a different Mac (#114).
+10. Reinstall the iPhone app. Check that it can pair again (#112).
+
+### Capture
+- Pass or fail for each step, with screenshots, device logs and any crash.
+- File a new issue for each failure and link it from #15.
+
+### Done when
+- A completed run is posted on #15 with the setup versions above, and every
+  failing step has an issue.
