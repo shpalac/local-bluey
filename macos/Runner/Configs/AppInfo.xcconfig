@@ -12,3 +12,16 @@ PRODUCT_BUNDLE_IDENTIFIER = com.localbluey.localBluey
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.localbluey. All rights reserved.
+
+// Optional per-machine signing override, gitignored (#124).
+// flutter_secure_storage needs a Keychain, and macOS refuses every Keychain
+// write from an app with no TeamIdentifier (-34018 errSecMissingEntitlement),
+// which made every Settings save throw. Signing therefore stopped being
+// optional. Supply a development identity here to build locally:
+//
+//   DEVELOPMENT_TEAM = L72VA6XJV6
+//   CODE_SIGN_IDENTITY = Apple Development
+//
+// Without this file the target falls back to adhoc signing: it builds, but the
+// API key still cannot be stored.
+#include? "Local.xcconfig"

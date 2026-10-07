@@ -35,7 +35,15 @@ class PermissionRecoveryCard extends StatelessWidget {
           spacing: 8,
           children: [
             TextButton(
-              onPressed: () => NativeControl.openURL(permission.settingsUrl),
+              onPressed: () async {
+                // Registering first is what puts Bluey in the Screen Recording
+                // list; opening the pane alone shows an empty page (#124).
+                // Tapping "Fix" is the consent the system prompt asks about.
+                if (permission.id == 'screen_recording') {
+                  await NativeControl.requestScreenCaptureAccess();
+                }
+                await NativeControl.openURL(permission.settingsUrl);
+              },
               child: const Text('Fix'),
             ),
             TextButton(onPressed: onDismiss, child: const Text('Later')),

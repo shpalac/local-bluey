@@ -11,3 +11,9 @@ Secrets.xcconfig
 .dart_tool/
 .idea/
 *.iml
+
+# Per-machine macOS signing identity (team-specific) - see Runner/Configs/AppInfo.xcconfig
+macos/Runner/Configs/Local.xcconfig
+
+# Python bytecode from tool/*.py helpers
+tool/__pycache__/

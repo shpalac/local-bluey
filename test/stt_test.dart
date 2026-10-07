@@ -23,8 +23,13 @@ void main() {
     apiKey: 'sk-stt',
   );
 
-  Future<File> tempFile(String name) =>
-      File('${Directory.systemTemp.path}/$name').create();
+  /// Real bytes, because transcribe() rejects an empty or missing capture
+  /// before it builds the request (#254).
+  Future<File> tempFile(String name) async {
+    final file = await File('${Directory.systemTemp.path}/$name').create();
+    await file.writeAsBytes(const [0, 1, 2, 3]);
+    return file;
+  }
 
   test('posts the file and returns the transcript text', () async {
     final client = MockClient((request) async {
@@ -412,9 +417,58 @@ void main() {
       );
     });
   });
+
+  _egressGuardTests();
 }
 
 class _RecordingTranscriber implements TranscriberLike {
   @override
   Future<String> transcribe(File audio, SttSettings settings) async => '';
+}
+
+void _egressGuardTests() {
+  // A denied microphone still leaves the recorder reporting its target path, so
+  // the file may never exist. Handing it to the multipart builder threw a raw
+  // PathNotFoundException, which surfaced as a crash instead of a permissions
+  // problem the user can act on (#254).
+  test('a missing capture fails clearly instead of crashing (#254)', () async {
+    final dir = await Directory.systemTemp.createTemp('sttmissing');
+    final missing = File('${dir.path}/never-written.m4a');
+    expect(await missing.exists(), isFalse);
+
+    final client = MockClient((_) async => http.Response('{"text":"hi"}', 200));
+    final stt = HttpSttProvider(client: client);
+
+    await expectLater(
+      stt.transcribe(
+        missing,
+        const SttSettings(baseUrl: 'http://127.0.0.1:9', model: 'whisper-1'),
+      ),
+      throwsA(
+        isA<SttException>().having(
+          (e) => e.message,
+          'message',
+          contains('microphone'),
+        ),
+      ),
+    );
+    await dir.delete(recursive: true);
+  });
+
+  test('an empty capture fails clearly instead of crashing (#254)', () async {
+    final dir = await Directory.systemTemp.createTemp('sttempty');
+    final empty = await File('${dir.path}/silent.m4a').create();
+
+    final client = MockClient((_) async => http.Response('{"text":"hi"}', 200));
+    final stt = HttpSttProvider(client: client);
+
+    await expectLater(
+      stt.transcribe(
+        empty,
+        const SttSettings(baseUrl: 'http://127.0.0.1:9', model: 'whisper-1'),
+      ),
+      throwsA(isA<SttException>()),
+    );
+    await dir.delete(recursive: true);
+  });
 }

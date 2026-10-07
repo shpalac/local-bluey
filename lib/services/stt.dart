@@ -235,6 +235,19 @@ class HttpSttProvider implements TranscriberLike {
         'Local-only mode is on - $base is off-device.',
       );
     }
+    // A recorder that never opened - denied microphone, or a hold too short to
+    // capture - still reports its target path, so the file may not be there.
+    // Uploading it threw a raw PathNotFoundException from inside the multipart
+    // builder, which surfaced as a crash rather than as the permissions problem
+    // it actually is. Checked after the local-only gate so an off-device
+    // endpoint still reports the privacy refusal, the more useful error (#254).
+    if (!await audio.exists() || await audio.length() <= 0) {
+      throw SttException(
+        SttErrorKind.modelUnavailable,
+        'Nothing was recorded - check the microphone permission and hold a '
+        'little longer.',
+      );
+    }
     final request = http.MultipartRequest(
       'POST',
       Uri.parse(endpoint(base, '/audio/transcriptions')),
@@ -252,7 +265,11 @@ class HttpSttProvider implements TranscriberLike {
       EgressMonitor.instance.record(
         base,
         'transcription',
-        await audio.length(),
+        // A recorder that never opened (denied microphone, or a hold too short
+        // to capture) still reports its target path, so the file may not exist.
+        // Reporting 0 bytes beats letting the egress log's length() throw and
+        // lose the whole transcription request (#254).
+        audio.existsSync() ? audio.lengthSync() : 0,
       ),
     );
     final http.Response response;

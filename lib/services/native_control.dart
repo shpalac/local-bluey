@@ -41,6 +41,15 @@ class NativeControl {
   static Future<bool> screenCaptureAccess() async =>
       await _channel.invokeMethod<bool>('screenCaptureAccess') ?? false;
 
+  /// Registers the app for Screen Recording, prompting the user (#124).
+  ///
+  /// Preflight is read-only, so an app that only ever calls
+  /// [screenCaptureAccess] never shows up under Privacy & Security > Screen
+  /// Recording - leaving the recovery card's "Fix" button pointing at an empty
+  /// pane. Only call this from an explicit user action.
+  static Future<bool> requestScreenCaptureAccess() async =>
+      await _channel.invokeMethod<bool>('requestScreenCaptureAccess') ?? false;
+
   /// Microphone authorization status; never prompts (#174).
   static Future<bool> microphoneAccess() async =>
       await _channel.invokeMethod<bool>('microphoneAccess') ?? false;
