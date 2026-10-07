@@ -22,7 +22,10 @@ import 'watch_screen.dart';
 /// Provider picker + connection details for the brain. The API key is stored
 /// in the Keychain, never in plain preferences.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, this.onDeleteAll});
+
+  /// Return the app to onboarding after all local data has been removed.
+  final VoidCallback? onDeleteAll;
 
   /// Test seam: replaces the real chat call behind "Test connection" so
   /// widget tests can simulate failures without a network (#239).
@@ -45,6 +48,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   final _ttsVoice = TextEditingController();
   BrainBackend _backend = BrainSettings.defaults.backend;
   bool _loaded = false;
+  bool _deleting = false;
+  int _loadGeneration = 0;
   bool _localOnly = false;
   UiLanguage _uiLanguage = Strings.uiLanguage;
   String _speechLanguage = Strings.speechLanguage;
@@ -74,21 +79,48 @@ class _SettingsScreenState extends State<SettingsScreen> {
     PerfMonitor.instance.isOverlayEnabled().then((v) {
       if (mounted) setState(() => _perfOverlay = v);
     });
-    SettingsStore.load().then((settings) {
-      if (!mounted) return; // #132
-      setState(() {
-        _backend = settings.backend;
-        _baseUrl.text = settings.baseUrl;
-        _model.text = settings.model;
-        _apiKey.text = settings.apiKey ?? '';
-        _transcriptionBaseUrl.text = settings.transcriptionBaseUrl ?? '';
-        _transcriptionModel.text = settings.transcriptionModel;
-        _ttsBaseUrl.text = settings.ttsBaseUrl ?? '';
-        _ttsModel.text = settings.ttsModel;
-        _ttsVoice.text = settings.ttsVoice;
-        _loaded = true;
-      });
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final generation = ++_loadGeneration;
+    final settings = await SettingsStore.load();
+    if (!mounted || generation != _loadGeneration) return;
+    setState(() {
+      _backend = settings.backend;
+      _baseUrl.text = settings.baseUrl;
+      _model.text = settings.model;
+      _apiKey.text = settings.apiKey ?? '';
+      _transcriptionBaseUrl.text = settings.transcriptionBaseUrl ?? '';
+      _transcriptionModel.text = settings.transcriptionModel;
+      _ttsBaseUrl.text = settings.ttsBaseUrl ?? '';
+      _ttsModel.text = settings.ttsModel;
+      _ttsVoice.text = settings.ttsVoice;
+      _loaded = true;
     });
+  }
+
+  Future<void> _onDataCleared(String? storeId) async {
+    if (storeId != null && storeId != 'settings') return;
+    _loadGeneration++; // Reject any stale initial load before resetting.
+    for (final controller in [
+      _baseUrl,
+      _model,
+      _apiKey,
+      _transcriptionBaseUrl,
+      _transcriptionModel,
+      _ttsBaseUrl,
+      _ttsModel,
+      _ttsVoice,
+    ]) {
+      controller.clear();
+    }
+    if (storeId == null) {
+      widget.onDeleteAll?.call();
+      if (mounted) Navigator.of(context).pop(false);
+      return;
+    }
+    await _loadSettings();
   }
 
   @override
@@ -124,6 +156,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   );
 
   Future<void> _save() async {
+    if (_deleting || !_loaded) return;
     if (!(_formKey.currentState?.validate() ?? false)) return;
     try {
       await SettingsStore.save(_current());
@@ -576,11 +609,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: _ttsVoice,
               decoration: const InputDecoration(labelText: 'TTS voice'),
             ),
-            const DataPrivacySection(),
+            DataPrivacySection(
+              onCleared: _onDataCleared,
+              onBusyChanged: (busy) {
+                if (mounted) setState(() => _deleting = busy);
+              },
+            ),
             const SizedBox(height: 24),
             Row(
               children: [
-                FilledButton(onPressed: _save, child: const Text('Save')),
+                FilledButton(
+                  onPressed: _deleting ? null : _save,
+                  child: const Text('Save'),
+                ),
                 const SizedBox(width: 12),
                 OutlinedButton(
                   onPressed: _testing ? null : _test,
