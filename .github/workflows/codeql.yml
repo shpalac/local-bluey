@@ -1,8 +1,8 @@
 name: CodeQL
 
-# Static analysis for the native layers (#160): Kotlin (android/). Swift (macos/)
-# is a follow-up: the CodeQL tracer needs a clean xcodebuild of the Flutter
-# macOS project (see #160). Dart stays with OSV + the pattern scan in the security
+# Static analysis for the native layers (#160): Kotlin (android/) and Swift
+# (macos/). The Swift job generates the Flutter macOS config first so the
+# CodeQL tracer sees a real xcodebuild. Dart stays with OSV + the pattern scan in the security
 # job. Runs on native-code changes and weekly, so new advisories against
 # unchanged code are still noticed.
 
@@ -50,3 +50,43 @@ jobs:
           languages: java-kotlin
           build-mode: none
       - uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
+
+  # Swift needs a traced build. `flutter build macos --config-only` writes the
+  # ephemeral xcfilelists that a direct xcodebuild otherwise fails on.
+  swift:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      security-events: write # upload findings to the Security tab
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - run: flutter pub get --enforce-lockfile
+
+      - name: Generate macOS build config
+        run: flutter build macos --config-only
+
+      - uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
+        with:
+          languages: swift
+          build-mode: manual
+
+      - name: Build macOS for the CodeQL tracer
+        run: |
+          xcodebuild -workspace macos/Runner.xcworkspace -scheme Runner \
+            -configuration Debug -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO build
+
+      - uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
+        with:
+          category: /language:swift
