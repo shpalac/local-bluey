@@ -9,6 +9,7 @@ import 'package:local_bluey/link/mac_link.dart';
 import 'package:local_bluey/link/models.dart';
 import 'package:local_bluey/link/phone_server.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:local_bluey/services/speak_receipts.dart';
 
 Future<(LineConnection, Socket)> _client(int port) async {
   final socket = await Socket.connect(InternetAddress.loopbackIPv4, port);
@@ -35,6 +36,48 @@ void main() {
   setUp(() {
     SharedPreferences.setMockInitialValues({});
   });
+
+  test(
+    'host replies only track actual authenticated phone delivery (#250)',
+    () async {
+      final server = PhoneServer();
+      final receipts = SpeakReceipts(timeout: const Duration(milliseconds: 20));
+      addTearDown(receipts.dispose);
+      addTearDown(server.stop);
+      final decision = Completer<bool>();
+      server.onPairRequest = (_) => decision.future;
+      await server.start(advertise: false);
+      final local = Packet(command: 'say', text: 'local answer');
+      receipts.deliver(local, 'local answer', server.broadcast);
+      expect(receipts.hasPending, isFalse);
+      expect(local.speech, isNull);
+      final (client, _) = await _client(server.port);
+      addTearDown(client.close);
+      final received = <Packet>[];
+      client.packets.listen(received.add);
+      client.send(Packet(hello: 'UnpairedPhone'));
+      await _until(() => server.phoneNames.contains('UnpairedPhone'));
+      receipts.deliver(
+        Packet(command: 'say', text: 'still local'),
+        'still local',
+        server.broadcast,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(receipts.failureLog, isEmpty);
+      expect(receipts.hasPending, isFalse);
+      expect(received.where((packet) => packet.command == 'say'), isEmpty);
+      decision.complete(true);
+      await _until(() => received.any((packet) => packet.command == 'paired'));
+      final remote = Packet(command: 'say', text: 'remote answer');
+      receipts.deliver(remote, 'remote answer', server.broadcast);
+      expect(remote.speech, isNotNull);
+      await _until(() => received.any((packet) => packet.command == 'say'));
+      await client.close(); // Disconnect before ack still means remote failure.
+      await _until(() => receipts.failureLog.isNotEmpty);
+      expect(receipts.failureLog.single, contains('Phone delivery'));
+      expect(receipts.failureLog.single, contains('remote answer'));
+    },
+  );
 
   group('PhoneServer pairing (#112/#134)', () {
     test(

@@ -130,11 +130,17 @@ class PhoneServer {
   /// The port the server is listening on (for tests, #134).
   int get port => _server?.port ?? 0;
 
-  /// Sends a packet to every paired phone (e.g. "wake", "sleep").
-  void broadcast(Packet packet) {
-    for (final link in _authenticated) {
+  /// Sends a packet to every open, paired phone and returns the recipient
+  /// count. [beforeSend] can attach a speech ID before these exact sends.
+  int broadcast(Packet packet, {void Function(int recipients)? beforeSend}) {
+    final recipients = _authenticated.where((link) => !link.isClosed).toList();
+    // Synchronous preparation binds receipt tracking to this exact recipient
+    // set, not the displayed names (which include unpaired candidates).
+    beforeSend?.call(recipients.length);
+    for (final link in recipients) {
       link.send(packet);
     }
+    return recipients.length;
   }
 
   /// The shared secret itself, migrated from the legacy hash-only store.
