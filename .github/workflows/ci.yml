@@ -4,8 +4,9 @@ on:
   push:
     branches: [main]
     paths-ignore: ['**.md', 'docs/**']
+  # No paths-ignore on pull_request: the required checks must report on
+  # docs-only PRs too, or branch protection leaves them unmergeable.
   pull_request:
-    paths-ignore: ['**.md', 'docs/**']
   # Weekly dependency/vulnerability scan so new advisories against an
   # unchanged lockfile are noticed (#144). Only the security and
   # pinned-actions jobs run on schedule.
