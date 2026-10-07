@@ -18,7 +18,8 @@ it is not killed or silently reused. Stop your old shim or select a different
 `STT_SHIM_PORT`, then start again. A localhost health response is a configuration
 check, not authentication of another process running under the same user.
 
-Offline regression tests need Python 3 and ffmpeg. They generate silent WAV
+Offline routing regression tests need Python 3. The additional codec smoke
+test runs when ffmpeg is installed and otherwise reports a skip. They generate silent WAV
 audio and use loopback fake servers, without a microphone or model download:
 
 ```sh

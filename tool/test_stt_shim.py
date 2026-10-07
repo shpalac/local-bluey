@@ -5,6 +5,7 @@ import http.server
 import io
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -80,7 +81,8 @@ class RoutingTest(unittest.TestCase):
             request = urllib.request.Request(
                 f'http://127.0.0.1:{shim.server_port}/audio/transcriptions',
                 data=buffer.getvalue(), headers={'Content-Type': 'audio/wav'})
-            with patch('stt_shim.urllib.request.Request', wraps=urllib.request.Request) as requests:
+            with patch('stt_shim.transcode', side_effect=lambda data: data), \
+                    patch('stt_shim.urllib.request.Request', wraps=urllib.request.Request) as requests:
                 with urllib.request.urlopen(request, timeout=5) as response:
                     self.assertEqual(json.load(response), {'text': 'fixture'})
                 self.assertEqual(requests.call_args.args[0], shim.upstream)
@@ -89,6 +91,20 @@ class RoutingTest(unittest.TestCase):
             self.assertIn(b'RIFF', Upstream.received[0])
             with urllib.request.urlopen(f'http://127.0.0.1:{shim.server_port}/health') as response:
                 self.assertEqual(json.load(response)['upstream'], shim.upstream)
+
+    @unittest.skipUnless(shutil.which('ffmpeg'), 'codec smoke needs ffmpeg; routing tests do not')
+    def test_real_transcode_generated_wav(self):
+        buffer = io.BytesIO()
+        with wave.open(buffer, 'wb') as fixture:
+            fixture.setnchannels(1)
+            fixture.setsampwidth(2)
+            fixture.setframerate(16000)
+            fixture.writeframes(b'\x00\x00' * 1600)
+        decoded = stt_shim.transcode(buffer.getvalue())
+        with wave.open(io.BytesIO(decoded), 'rb') as result:
+            self.assertEqual(result.getframerate(), 16000)
+            self.assertEqual(result.getnchannels(), 1)
+            self.assertGreater(result.getnframes(), 0)
 
     def test_launcher_reuses_only_matching_shim(self):
         with serving(Upstream) as upstream, serving(stt_shim.Handler) as shim, tempfile.TemporaryDirectory() as root:
