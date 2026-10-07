@@ -1,7 +1,7 @@
 # Real-device validation (#15)
 
-Nothing below has been run on hardware. The scripted walkthrough lives in
-# #125; this page is the short version plus what has been fixed so far.
+Nothing below has been run on hardware. The full walkthrough lives further down
+this page; this section records what has been fixed so far.
 
 ## Fixed without a device
 
