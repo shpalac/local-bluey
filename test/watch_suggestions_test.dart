@@ -49,6 +49,9 @@ void main() {
 
   test('rate limit: gap between suggestions and a session cap', () {
     fakeAsync((async) {
+      var done = false;
+      Object? failure;
+      StackTrace? failureTrace;
       () async {
         final s = WatchSuggestions(
           clock: async.getClock(DateTime(2026, 10, 6)),
@@ -70,7 +73,19 @@ void main() {
         expect(await fire(), isNotNull);
         async.elapse(const Duration(minutes: 3));
         expect(await fire(), isNull, reason: 'session cap is 3');
-      }();
+      }().then(
+        (_) => done = true,
+        onError: (Object e, StackTrace st) {
+          failure = e;
+          failureTrace = st;
+          done = true;
+        },
+      );
+      async.flushMicrotasks();
+      if (failure != null) {
+        Error.throwWithStackTrace(failure!, failureTrace!);
+      }
+      expect(done, isTrue, reason: 'the async test body must finish');
     });
   });
 

@@ -111,6 +111,9 @@ void main() {
   test('vision calls respect the cooldown', () {
     fakeAsync((async) {
       final clock = async.getClock(DateTime(2026, 10, 6));
+      var done = false;
+      Object? failure;
+      StackTrace? failureTrace;
       () async {
         final watch = await liveWatch();
         var visionCalls = 0;
@@ -136,7 +139,19 @@ void main() {
         await p.tick();
         await p.tick(); // meaningful again, cooldown over
         expect(visionCalls, 2);
-      }();
+      }().then(
+        (_) => done = true,
+        onError: (Object e, StackTrace st) {
+          failure = e;
+          failureTrace = st;
+          done = true;
+        },
+      );
+      async.flushMicrotasks();
+      if (failure != null) {
+        Error.throwWithStackTrace(failure!, failureTrace!);
+      }
+      expect(done, isTrue, reason: 'the async test body must finish');
     });
   });
 
