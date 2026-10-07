@@ -389,8 +389,14 @@ class _MacHomeState extends State<MacHome>
   /// Phone-side hold-to-talk audio rides the link; same pipeline as the
   /// Mac's own mic.
   Future<void> _onPhoneAudio(List<int> bytes) async {
+    final dir = await getTemporaryDirectory();
+    // getTemporaryDirectory() only *names* the directory; it does not create
+    // it, and on macOS nothing else does either. Writing straight into it threw
+    // PathNotFoundException and dropped the utterance, so hold-to-talk from
+    // the phone never reached the transcriber (#254).
+    await dir.create(recursive: true);
     final file = File(
-      '${(await getTemporaryDirectory()).path}/bluey_phone_'
+      '${dir.path}/bluey_phone_'
       '${DateTime.now().millisecondsSinceEpoch}.m4a',
     );
     await file.writeAsBytes(bytes, flush: true);
@@ -418,8 +424,23 @@ class _MacHomeState extends State<MacHome>
   Future<void> _onHoldEnd() async {
     final file = await _capture.stop();
     if (file == null) {
+      // Nothing was recorded. Say why: a denied microphone and a silent room
+      // look identical otherwise, and silence reads as "Bluey ignored me"
+      // rather than as a permission the user can actually fix (#254).
+      final denied = !await _capture.hasPermission();
       setState(() {
-        _bubble = null;
+        _bubble = denied
+            ? Strings.t(
+                'I need microphone access to hear you. Allow it for Local '
+                    'Bluey in System Settings, Privacy & Security, '
+                    'Microphone.',
+                'אני צריך גישה למיקרופון כדי לשמוע אותך. אפשר לזה בהגדרות '
+                    'מערכת, פרטיות ואבטחה, מיקרופון.',
+              )
+            : Strings.t(
+                "I didn't catch that - hold and speak a little longer.",
+                'לא הצלחתי לשמוע - החזיקו ודברו מעט יותר.',
+              );
         _face.value = FaceState(mood: _awake ? Mood.listening : Mood.sleepy);
       });
       return;
