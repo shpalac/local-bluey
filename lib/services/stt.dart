@@ -135,16 +135,23 @@ class SttSettings {
     await prefs.setBool(_kMigrated, true);
   }
 
-  /// Removes every STT key (#83); legacy brain keys stay for BrainSettings.
-  /// Removes every STT setting including the secure-stored key.
+  /// Clears STT configuration and credentials without reviving legacy brain
+  /// values on the next load (#249). The migration tombstone contains no
+  /// user data; delete-all removes it after also clearing legacy settings.
+  /// Throws if the secure credential could not be deleted.
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
-    for (final key in [_kKind, _kBaseUrl, _kModel, _kMigrated]) {
-      await prefs.remove(key);
-    }
+    // Mark the reset before removing values so a later load cannot migrate
+    // old credentials back, including when secure deletion needs a retry.
+    await prefs.setBool(_kMigrated, true);
     try {
       await _secure.delete(key: _kApiKey);
-    } catch (_) {}
+    } catch (e) {
+      throw StateError('Could not delete the STT API key: $e');
+    }
+    for (final key in [_kKind, _kBaseUrl, _kModel]) {
+      await prefs.remove(key);
+    }
   }
 }
 
