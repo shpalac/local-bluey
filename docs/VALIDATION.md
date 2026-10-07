@@ -48,10 +48,11 @@ already correct.
 One run on a named Mac and iPhone, recorded once. Nothing below has been run
 on real hardware yet.
 
-Every issue referenced here is closed, so these are regression checks rather
-than open bugs: the code is fixed but never confirmed on a device, which is
-what the README means by "nothing has been verified on real hardware". File a
-new issue for any step that fails.
+The per-step issues referenced below (#83, #107, #108, #111 to #114, #116,
+#117, #120) are closed, so those steps are regression checks rather than open
+bugs: the code is fixed but never confirmed on a device, which is what the
+README means by "nothing has been verified on real hardware". #15 and #125
+stay open until a run is posted. File a new issue for any step that fails.
 
 ### Setup (record before you start)
 - Mac model and macOS version
