@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/services.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/action_log.dart';
 import 'package:local_bluey/services/data_registry.dart';
@@ -8,6 +10,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (call) async => null,
+        );
+  });
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          null,
+        );
+  });
 
   group('store coverage (#83)', () {
     test('every persistence source file is registered', () {
@@ -93,6 +109,36 @@ void main() {
       expect(monitor.entries.single.bytes, 10);
     });
   });
+
+  test(
+    'delete-all reports store failures rather than clearing first-run flag',
+    () async {
+      SharedPreferences.setMockInitialValues({'onboarding.done': true});
+      final stores = DataRegistry.stores.toList();
+      DataRegistry.stores.clear();
+      DataRegistry.stores.add(
+        DataStoreInfo(
+          id: 'failed',
+          sourceFile: 'test',
+          whatEn: 'test',
+          whatHe: 'test',
+          where: 'test',
+          retentionEn: 'test',
+          retentionHe: 'test',
+          clear: () async => throw StateError('cannot delete'),
+        ),
+      );
+      addTearDown(() {
+        DataRegistry.stores.clear();
+        DataRegistry.stores.addAll(stores);
+      });
+      await expectLater(DataRegistry.deleteAll(), throwsStateError);
+      expect(
+        (await SharedPreferences.getInstance()).getBool('onboarding.done'),
+        isTrue,
+      );
+    },
+  );
 
   group('delete all (#83)', () {
     test('deleteAll clears every registered store and preferences', () async {

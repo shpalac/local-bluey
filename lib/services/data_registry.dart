@@ -343,12 +343,17 @@ class DataRegistry {
   /// and secure-storage items, returning the app to first-run state (#83).
   /// Deliberately does not touch the user's remote provider account data.
   static Future<void> deleteAll() async {
+    final failures = <String>[];
     for (final store in stores) {
       try {
         await store.clear();
       } catch (e) {
         debugPrint('DataRegistry: clearing ${store.id} failed: $e');
+        failures.add(store.id);
       }
+    }
+    if (failures.isNotEmpty) {
+      throw StateError('Could not clear stores: ${failures.join(', ')}');
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();

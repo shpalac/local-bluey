@@ -483,9 +483,14 @@ class _MacHomeState extends State<MacHome>
         onOpenSettings: () async {
           final saved = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
-              builder: (_) => const LockGate(
+              builder: (_) => LockGate(
                 reason: 'Unlock Bluey settings',
-                child: SettingsScreen(),
+                child: SettingsScreen(
+                  onDeleteAll: () {
+                    BrainHost.reload();
+                    if (mounted) setState(() => _showOnboarding = true);
+                  },
+                ),
               ),
             ),
           );
@@ -507,9 +512,14 @@ class _MacHomeState extends State<MacHome>
             onPressed: () async {
               final saved = await Navigator.of(context).push<bool>(
                 MaterialPageRoute(
-                  builder: (_) => const LockGate(
+                  builder: (_) => LockGate(
                     reason: 'Unlock Bluey settings',
-                    child: SettingsScreen(),
+                    child: SettingsScreen(
+                      onDeleteAll: () {
+                        BrainHost.reload();
+                        if (mounted) setState(() => _showOnboarding = true);
+                      },
+                    ),
                   ),
                 ),
               );

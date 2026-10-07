@@ -7,7 +7,13 @@ import '../services/strings.dart';
 /// retention and a clear button, plus a guarded delete-all that returns the
 /// app to first-run state.
 class DataPrivacySection extends StatefulWidget {
-  const DataPrivacySection({super.key});
+  const DataPrivacySection({super.key, this.onCleared, this.onBusyChanged});
+
+  /// Notify the owning form after successful deletion, never on failure.
+  final Future<void> Function(String? storeId)? onCleared;
+
+  /// Prevent saves while deletion or its form reset is in progress.
+  final void Function(bool busy)? onBusyChanged;
 
   @override
   State<DataPrivacySection> createState() => _DataPrivacySectionState();
@@ -18,8 +24,10 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
 
   Future<void> _clearStore(DataStoreInfo store) async {
     setState(() => _busy = true);
+    widget.onBusyChanged?.call(true);
     try {
       await store.clear();
+      await widget.onCleared?.call(store.id);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -27,7 +35,14 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
           ),
         );
       }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not delete local data: $error')),
+        );
+      }
     } finally {
+      widget.onBusyChanged?.call(false);
       if (mounted) setState(() => _busy = false);
     }
   }
@@ -60,8 +75,10 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
     );
     if (confirmed != true || !mounted) return;
     setState(() => _busy = true);
+    widget.onBusyChanged?.call(true);
     try {
       await DataRegistry.deleteAll();
+      await widget.onCleared?.call(null);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -71,7 +88,14 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
           ),
         );
       }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not delete local data: $error')),
+        );
+      }
     } finally {
+      widget.onBusyChanged?.call(false);
       if (mounted) setState(() => _busy = false);
     }
   }
