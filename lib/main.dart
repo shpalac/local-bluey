@@ -30,6 +30,7 @@ import 'services/host_control.dart';
 import 'services/onboarding_checks.dart';
 import 'services/support_matrix.dart';
 import 'services/request_runner.dart';
+import 'services/hold_key_controller.dart';
 import 'services/speak_receipts.dart';
 import 'services/speech.dart';
 import 'services/tool_executor.dart';
@@ -129,6 +130,13 @@ class _MacHomeState extends State<MacHome>
   final _speech = SpeechService();
   final _tools = ToolExecutor();
   final _safety = SafetyGate();
+  late final HoldKeyController _holdKey = HoldKeyController(
+    settings: HoldKeySettings.instance,
+    supported: Platform.isMacOS,
+    onStart: _onKeyHoldStart,
+    onSend: _onHoldEnd,
+    onCancel: _onKeyHoldCancel,
+  );
 
   BlueyStatus _status = BlueyStatus.listening;
 
@@ -149,6 +157,8 @@ class _MacHomeState extends State<MacHome>
       }
     });
     _checkTrust();
+    HoldKeySettings.instance.addListener(_syncHoldKey);
+    HoldKeySettings.instance.load().then((_) => _syncHoldKey());
     ScreenWatch.instance.addListener(_syncWatchTray);
     ScreenWatch.instance.addListener(_syncWatchDriver);
     BrainHost.reload();
@@ -364,6 +374,7 @@ class _MacHomeState extends State<MacHome>
         ScreenWatch.instance.stop();
       case 'stop':
         _safety.kill();
+        _holdKey.reset();
       case 'resume':
         _safety.reset();
       case 'quit':
@@ -419,6 +430,35 @@ class _MacHomeState extends State<MacHome>
     });
     _server.sendFace(_face.value);
     _server.broadcast(Packet(command: awake ? 'wake' : 'sleep'));
+  }
+
+  void _syncHoldKey() => unawaited(_holdKey.sync());
+
+  /// The global hold-to-talk key was held long enough (#228). Same flow as
+  /// the face gesture; wakes first when asleep and respects the kill switch.
+  Future<void> _onKeyHoldStart() async {
+    if (_safety.killed) return;
+    if (!_awake) _setAwake(true);
+    setState(() {
+      _face.value = FaceState(mood: Mood.listening);
+      _bubble = 'Listening…';
+    });
+    if (await _capture.hasPermission()) {
+      await _capture.start();
+    } else {
+      setState(() => _bubble = 'No microphone permission.');
+    }
+  }
+
+  /// Esc, another key, or a reset ended the key hold: drop the audio.
+  Future<void> _onKeyHoldCancel() async {
+    final file = await _capture.stop();
+    if (file != null && await file.exists()) await file.delete();
+    if (!mounted) return;
+    setState(() {
+      _bubble = null;
+      _face.value = FaceState(mood: _awake ? Mood.listening : Mood.sleepy);
+    });
   }
 
   Future<void> _onHoldEnd() async {
@@ -487,6 +527,8 @@ class _MacHomeState extends State<MacHome>
     ScreenWatch.instance.removeListener(_syncWatchTray);
     ScreenWatch.instance.removeListener(_syncWatchDriver);
     _watchDriver?.stop();
+    HoldKeySettings.instance.removeListener(_syncHoldKey);
+    unawaited(_holdKey.dispose());
     _server.stop();
     _receipts.dispose();
     _capture.dispose();

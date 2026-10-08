@@ -116,5 +116,7 @@ Deep links never run computer-control or other confirm-required actions silently
 
 The macOS tray offers quick actions: Ask Bluey (wake), Mute replies, Status, plus Show/Hide/Stop/Resume/Quit.
 
-Platform limits: the global push-to-talk hotkey, iOS App Intents/Shortcuts, and widgets need native platform registration and are tracked as follow-up work.
+Mac hold-to-talk key (#228): in Settings, switch on "Hold a key to talk" to hold a key alone from any app (default Right Command, 400 ms; Left Command, Right Option and Fn/Globe also offered), release to send, Esc to cancel. Off by default. It needs the macOS Input Monitoring permission; without it the switch stays on but the shortcut does nothing and Settings says why. Any other key during the hold cancels it, so Cmd+C and Cmd+Tab are untouched. Works on the Mac alone, no phone needed. System-wide capture and the sandbox entitlements are not yet verified on a real Mac.
+
+Platform limits: iOS App Intents/Shortcuts and widgets need native platform registration and are tracked as follow-up work.
 

@@ -1,6 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'hold_key_controller.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'action_log.dart';
@@ -61,6 +64,26 @@ class DataRegistry {
   /// Every local store in the app. The registry-coverage test fails when
   /// a new store appears in lib/services without an entry here.
   static final List<DataStoreInfo> stores = [
+    DataStoreInfo(
+      id: 'hold_key_pref',
+      sourceFile: 'lib/services/hold_key_controller.dart',
+      whatEn: 'Hold-to-talk key on/off, key and hold length',
+      whatHe: 'העדפות מקש הדיבור: מופעל, מקש ומשך החזקה',
+      where: 'SharedPreferences (holdkey.*)',
+      retentionEn: 'Kept until you delete it',
+      retentionHe: 'נשמר עד שמוחקים',
+      clear: () async {
+        final prefs = await SharedPreferences.getInstance();
+        for (final key in [
+          'holdkey.enabled',
+          'holdkey.key',
+          'holdkey.thresholdMs',
+        ]) {
+          await prefs.remove(key);
+        }
+        await HoldKeySettings.instance.load();
+      },
+    ),
     DataStoreInfo(
       id: 'haptics_pref',
       sourceFile: 'lib/services/haptics.dart',
