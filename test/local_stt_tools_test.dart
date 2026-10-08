@@ -20,4 +20,22 @@ void main() {
     skip: Platform.isWindows,
     timeout: const Timeout(Duration(seconds: 30)),
   );
+
+  test(
+    'phone audio harness loopback fixtures (#268)',
+    () async {
+      final result = await Process.run('python3', [
+        '-m',
+        'unittest',
+        'discover',
+        '-s',
+        'tool',
+        '-p',
+        'test_phone_audio.py',
+      ]);
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+    },
+    skip: Platform.isWindows,
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 }
