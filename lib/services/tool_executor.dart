@@ -186,13 +186,18 @@ class ToolExecutor implements ExecutorLike {
         // detail view of the current snapshot in the same grid, so old
         // target ids keep their original staleness (#80).
         final crop = await _control.snapshotRegion(left, top, w, h);
-        // A zoom crop is pixels of the same screen: withhold it when the
-        // last snapshot contained sensitive text (#122).
+        // The crop is freshly captured, so the preceding snapshot's OCR
+        // says nothing about it (#245). The native side reads the crop's
+        // own text into crop.targets; withhold when that text, or the last
+        // snapshot (#122), is sensitive. A failed crop read throws and so
+        // returns no image at all. OCR is best effort and does not
+        // guarantee detection of every secret.
+        final withhold =
+            PrivacyGuard.hasSensitive(_lastTargets) ||
+            PrivacyGuard.hasSensitive(crop.targets);
         return ToolResult(
           'Zoomed ${w.toInt()}x${h.toInt()} region at (${left.toInt()},${top.toInt()}) points; coordinates unchanged.',
-          imageBase64: PrivacyGuard.hasSensitive(_lastTargets)
-              ? null
-              : base64Encode(crop.jpeg),
+          imageBase64: withhold ? null : base64Encode(crop.jpeg),
         );
 
       case 'wait':
