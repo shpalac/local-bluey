@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 
 import '../llm/llm_provider.dart';
@@ -17,6 +19,7 @@ import '../services/egress_monitor.dart';
 import '../services/endpoint_assistant.dart';
 import '../services/settings_store.dart';
 import 'data_privacy_section.dart';
+import 'hold_key_section.dart';
 import 'watch_screen.dart';
 
 /// Provider picker + connection details for the brain. The API key is stored
@@ -514,6 +517,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const _AppearanceTile(),
             const _AppLockTile(),
             const _HapticsTile(),
+            if (defaultTargetPlatform == TargetPlatform.macOS)
+              const HoldKeySection(),
             ListTile(
               leading: const Icon(Icons.menu_book_outlined),
               title: const Text('User guide'),
