@@ -2,7 +2,7 @@
 # Run every enabled model over the fixtures and time each pass (#195).
 # Usage: run_bench.sh [--fixtures DIR] [--with-ollama]
 set -eu
-ROOT="$HOME/stt_bench"
+ROOT="${STT_ROOT:-$HOME/stt_bench}"
 WHISPER="$ROOT/whisper.cpp"
 MODELS="$ROOT/models"
 FIXTURES="tools/stt_bench/fixtures"
@@ -26,15 +26,19 @@ run_model() {
     [ -e "$clip" ] || continue
     base="$(basename "$clip")"
     t0=$(python3 -c 'import time; print(int(time.time()*1000))')
-    /usr/bin/time -l "$CLI" -m "$model" -l "$lang" -nt -otxt \
-      -of "$OUT/$name--$base" -f "$clip" 2> "$OUT/$name--$base.time" || true
+    # Record the real exit status instead of hiding it: the scorer must be
+    # able to tell a failed attempt from a successful one (#270).
+    rc=0
+    # STT_TIME lets tests run where /usr/bin/time has no -l (non-macOS).
+    ${STT_TIME:-/usr/bin/time -l} "$CLI" -m "$model" -l "$lang" -nt -otxt \
+      -of "$OUT/$name--$base" -f "$clip" 2> "$OUT/$name--$base.time" || rc=$?
     t1=$(python3 -c 'import time; print(int(time.time()*1000))')
     peak=$(awk '/maximum resident set size/ {print $1}' "$OUT/$name--$base.time")
-    echo "$name,$base,$((t1-t0)),$peak" >> "$OUT/timings.csv"
+    echo "$name,$base,$((t1-t0)),$peak,$rc" >> "$OUT/timings.csv"
   done
 }
 
-echo "backend,clip,latency_ms,peak_rss_bytes" > "$OUT/timings.csv"
+echo "backend,clip,latency_ms,peak_rss_bytes,exit_status" > "$OUT/timings.csv"
 [ -f "$MODELS/ggml-large-v3-turbo.bin" ] && \
   run_model whispercpp-turbo "$MODELS/ggml-large-v3-turbo.bin" he
 [ -f "$MODELS/ggml-ivrit-turbo.bin" ] && \

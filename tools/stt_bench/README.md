@@ -27,6 +27,15 @@ how to add your own consented recordings under `~/stt_bench_private/`.
 Record via the app's own AAC/m4a capture path for at least a few clips so
 the benchmark tests the real input format (#197 will decode exactly this).
 
+## Reading the report
+`wer.py` reconciles every attempt in `timings.csv` (which now records each
+run's exit status) with its reference and transcript. A backend that failed
+any clip is marked `INCOMPLETE - not comparable`: its WER/CER cover only the
+clips it finished, its p50/p95 use successful attempts only, and failed
+attempts are listed with their exit status. Rank only backends marked
+`complete`. Old runs without an exit status are never treated as successes.
+Offline tests: `python3 -m unittest discover -s tools/stt_bench -p test_wer.py`.
+
 ## What is measured
 - Normalized Hebrew WER and CER (nfkc + nikud/punctuation strip)
 - Command/slot correctness: app names, numbers, Hebrew/English switching

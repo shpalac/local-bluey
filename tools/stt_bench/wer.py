@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Score benchmark runs: normalized Hebrew WER/CER + latency stats (#195).
+"""Score benchmark runs: normalized Hebrew WER/CER + latency stats (#195, #270).
 
 Usage: wer.py RESULTS_DIR [refs.csv]
 refs.csv rows: filename,transcript  (filename without directory)
 Requires: pip install jiwer
+
+Every attempt in timings.csv is reconciled against its reference and its
+transcript. A backend that failed some clips is reported as INCOMPLETE and is
+not comparable with a backend that finished the same set.
 """
 import csv, glob, os, re, sys, unicodedata
 
@@ -14,6 +18,112 @@ def normalize(s: str) -> str:
     s = re.sub(r"[^\w\s]", " ", s, flags=re.UNICODE)
     return " ".join(s.split())
 
+def jiwer_metrics(ref, hyp):
+    try:
+        import jiwer
+    except ImportError:
+        sys.exit("pip install jiwer")
+    return jiwer.wer(ref, hyp), jiwer.cer(ref, hyp)
+
+def load_refs(path):
+    if not os.path.exists(path):
+        sys.exit(f"refs.csv not found at {path}")
+    refs = {}
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.reader(f):
+            if row and not row[0].startswith("#") and len(row) > 1:
+                refs[row[0].strip()] = row[1].strip()
+    if not refs:
+        sys.exit(f"no reference transcripts in {path}")
+    return refs
+
+def load_attempts(out):
+    """One dict per attempted (backend, clip), from timings.csv."""
+    tfile = os.path.join(out, "timings.csv")
+    if not os.path.exists(tfile):
+        sys.exit(f"no timings.csv in {out}: nothing was attempted")
+    attempts = []
+    with open(tfile, newline="") as f:
+        for r in csv.DictReader(f):
+            status = (r.get("exit_status") or "").strip()
+            attempts.append({
+                "backend": r["backend"], "clip": r["clip"],
+                "latency": int(r["latency_ms"] or 0),
+                "rss": int(r["peak_rss_bytes"] or 0),
+                # Older runs have no exit_status column: unknown, not success.
+                "exit": int(status) if status.lstrip("-").isdigit() else None,
+            })
+    if not attempts:
+        sys.exit(f"timings.csv in {out} has no attempts: empty evaluation set")
+    return attempts
+
+def pct(sorted_vals, q):
+    return sorted_vals[min(len(sorted_vals) - 1, int(len(sorted_vals) * q))] if sorted_vals else None
+
+def score(out, refs, metrics=jiwer_metrics):
+    attempts = load_attempts(out)
+    by_backend = {}
+    for a in attempts:
+        a["hyp_path"] = os.path.join(out, f"{a['backend']}--{a['clip']}.txt")
+        by_backend.setdefault(a["backend"], []).append(a)
+    results, problems = [], []
+    for backend, items in sorted(by_backend.items()):
+        ok, failed, pairs = [], [], []
+        for a in items:
+            has_out = os.path.exists(a["hyp_path"])
+            if a["exit"] == 0 and has_out:
+                ok.append(a)
+            else:
+                why = ("exit status unknown (no exit_status column)" if a["exit"] is None
+                       else f"exit {a['exit']}" if a["exit"] != 0 else "no transcript written")
+                if a["exit"] not in (None, 0) and has_out:
+                    why += ", partial output ignored"
+                failed.append(a)
+                problems.append(f"{backend} / {a['clip']}: {why}")
+        for a in ok:
+            if a["clip"] not in refs:
+                problems.append(f"{backend} / {a['clip']}: no reference, not scored")
+                continue
+            with open(a["hyp_path"], encoding="utf-8") as f:
+                pairs.append((refs[a["clip"]], f.read()))
+        wer = cer = None
+        if pairs:
+            wer, cer = metrics([normalize(r) for r, _ in pairs],
+                               [normalize(h) for _, h in pairs])
+        lat_ok = sorted(a["latency"] for a in ok)
+        lat_bad = sorted(a["latency"] for a in failed)
+        complete = not failed and len(pairs) == len(items)
+        results.append({
+            "backend": backend, "attempted": len(items), "succeeded": len(ok),
+            "failed": len(failed), "scored": len(pairs), "wer": wer, "cer": cer,
+            "p50": pct(lat_ok, 0.5), "p95": pct(lat_ok, 0.95),
+            "fail_p50": pct(lat_bad, 0.5),
+            "rss": max((a["rss"] for a in items), default=0),
+            "complete": complete,
+        })
+    return results, problems
+
+def render(results, problems):
+    fmt = lambda v, p=3: "n/a" if v is None else (f"{v:.{p}f}" if isinstance(v, float) else str(v))
+    lines = ["| Backend | Attempted | Succeeded | Failed | Scored | WER | CER | "
+             "p50 ok ms | p95 ok ms | p50 failed ms | Peak RSS MB | Result |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for r in results:
+        status = "complete" if r["complete"] else "INCOMPLETE - not comparable"
+        lines.append(
+            f"| {r['backend']} | {r['attempted']} | {r['succeeded']} | {r['failed']} | "
+            f"{r['scored']} | {fmt(r['wer'])} | {fmt(r['cer'])} | {fmt(r['p50'])} | "
+            f"{fmt(r['p95'])} | {fmt(r['fail_p50'])} | {r['rss'] // 1048576} | {status} |")
+    if any(not r["complete"] for r in results):
+        lines += ["", "**Caveat:** at least one backend did not finish the full evaluation set. "
+                  "WER/CER cover only its successful clips and must not be ranked against "
+                  "a complete backend. Latency columns use successful attempts only."]
+    if len({r["attempted"] for r in results}) > 1:
+        lines += ["", "**Caveat:** backends attempted different numbers of clips."]
+    if problems:
+        lines += ["", "Problems:"] + [f"- {p}" for p in problems]
+    return "\n".join(lines) + "\n"
+
 def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -21,53 +131,10 @@ def main() -> None:
     if refs_path is None:
         cand = sorted(glob.glob(os.path.join(os.path.dirname(out), "*", "refs.csv")))
         refs_path = cand[-1] if cand else "refs.csv"
-    refs = {}
-    if os.path.exists(refs_path):
-        with open(refs_path, newline="", encoding="utf-8") as f:
-            for row in csv.reader(f):
-                if row and not row[0].startswith("#"):
-                    refs[row[0].strip()] = row[1].strip()
-    else:
-        sys.exit(f"refs.csv not found at {refs_path}")
-    try:
-        import jiwer
-    except ImportError:
-        sys.exit("pip install jiwer")
-    rows, timings = [], {}
-    tfile = os.path.join(out, "timings.csv")
-    if os.path.exists(tfile):
-        with open(tfile, newline="") as f:
-            for r in csv.DictReader(f):
-                timings.setdefault(r["backend"], []).append(
-                    (int(r["latency_ms"]), int(r["peak_rss_bytes"])))
-    hyps = glob.glob(os.path.join(out, "*--*.txt"))
-    by_backend = {}
-    for h in hyps:
-        name = os.path.basename(h)[:-4]
-        backend, clip = name.split("--", 1)
-        if clip not in refs:
-            continue
-        with open(h, encoding="utf-8") as f:
-            hyp = f.read()
-        by_backend.setdefault(backend, []).append((refs[clip], hyp))
-    for backend, pairs in sorted(by_backend.items()):
-        ref = [normalize(r) for r, _ in pairs]
-        hyp = [normalize(h) for _, h in pairs]
-        wer = jiwer.wer(ref, hyp)
-        cer = jiwer.cer(ref, hyp)
-        ts = timings.get(backend, [])
-        lats = sorted(t for t, _ in ts)
-        p50 = lats[len(lats) // 2] if lats else 0
-        p95 = lats[int(len(lats) * 0.95)] if lats else 0
-        peak = max((m for _, m in ts), default=0)
-        rows.append((backend, len(pairs), wer, cer, p50, p95, peak // 1048576))
-    lines = ["| Backend | Clips | WER | CER | p50 ms | p95 ms | Peak RSS MB |",
-             "|---|---|---|---|---|---|---|"]
-    for b, n, w, c, p50, p95, peak in rows:
-        lines.append(f"| {b} | {n} | {w:.3f} | {c:.3f} | {p50} | {p95} | {peak} |")
+    report = render(*score(out, load_refs(refs_path)))
     with open(os.path.join(out, "report.md"), "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
-    print("\n".join(lines))
+        f.write(report)
+    print(report, end="")
 
 if __name__ == "__main__":
     main()
