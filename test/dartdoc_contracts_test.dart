@@ -9,6 +9,7 @@ void main() {
   const contractFiles = [
     'lib/services/host_control.dart',
     'lib/services/hold_key.dart',
+    'lib/services/hold_key_bridge.dart',
     'lib/services/native_control.dart',
     'lib/services/tool_executor.dart',
     'lib/services/safety_gate.dart',
