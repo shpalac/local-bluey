@@ -38,4 +38,22 @@ void main() {
     skip: Platform.isWindows,
     timeout: const Timeout(Duration(seconds: 30)),
   );
+
+  test(
+    'STT benchmark failure accounting fixtures (#270)',
+    () async {
+      final result = await Process.run('python3', [
+        '-m',
+        'unittest',
+        'discover',
+        '-s',
+        'tools/stt_bench',
+        '-p',
+        'test_wer.py',
+      ]);
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+    },
+    skip: Platform.isWindows,
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 }
