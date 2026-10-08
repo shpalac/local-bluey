@@ -76,7 +76,10 @@ enum ScreenReaderError: LocalizedError {
 /// Captures the main display (without Googly's own cursor and captions) and reads every word with its exact box.
 enum ScreenReader {
     /// High-resolution crop of a display region, in display points (#80).
-    static func snapshotRegion(_ rect: CGRect) async throws -> Data {
+    /// Also reads the crop's own text, so the privacy check judges the exact
+    /// pixels being returned and not an earlier snapshot (#245). Throws if
+    /// the crop cannot be read; callers must then return no image.
+    static func snapshotRegion(_ rect: CGRect) async throws -> (jpeg: Data, text: String) {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         guard let display = content.displays.first(where: { $0.displayID == CGMainDisplayID() }) ?? content.displays.first else {
             throw ScreenReaderError.noDisplay
@@ -90,7 +93,20 @@ enum ScreenReader {
         config.sourceRect = rect
         config.showsCursor = false
         let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
-        return jpeg(image, maxEdge: 1600)
+        let text = try recognizeText(image)
+        return (jpeg(image, maxEdge: 1600), text)
+    }
+
+    /// Plain text of every recognized line in an image, newline separated.
+    static func recognizeText(_ image: CGImage) throws -> String {
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.recognitionLanguages = ["he-IL", "en-US"]
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(cgImage: image).perform([request])
+        return (request.results ?? [])
+            .compactMap { $0.topCandidates(1).first?.string }
+            .joined(separator: "\n")
     }
 
     static func snapshot() async throws -> ScreenSnapshot {

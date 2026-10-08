@@ -59,6 +59,44 @@ void main() {
     expect(zoom.imageBase64, isNull);
   });
 
+  test(
+    'zoom withholds sensitive text that appeared after the snapshot (#245)',
+    () async {
+      control.snapshotTargets = 'L1 @500,12 "Hello"';
+      await executor.execute(ToolCall('look_at_screen', {}));
+      // A window switch or in-place update after the clean snapshot.
+      control.regionTargets = 'inbox user@example.com';
+      final zoom = await executor.execute(
+        ToolCall('zoom_screen', {'x': 0, 'y': 0, 'width': 500, 'height': 500}),
+      );
+      expect(zoom.imageBase64, isNull);
+      expect(zoom.text, isNot(contains('user@example.com')));
+      control.regionTargets = 'card 4111 1111 1111 1111';
+      final again = await executor.execute(
+        ToolCall('zoom_screen', {'x': 0, 'y': 0, 'width': 500, 'height': 500}),
+      );
+      expect(again.imageBase64, isNull);
+    },
+  );
+
+  test('zoom returns no image when the crop cannot be read (#245)', () async {
+    await executor.execute(ToolCall('look_at_screen', {}));
+    control.throwOnRegion = true;
+    final zoom = await executor.execute(
+      ToolCall('zoom_screen', {'x': 0, 'y': 0, 'width': 500, 'height': 500}),
+    );
+    expect(zoom.imageBase64, isNull);
+  });
+
+  test('a verified clean crop still returns its image (#245)', () async {
+    await executor.execute(ToolCall('look_at_screen', {}));
+    control.regionTargets = 'Hello world';
+    final zoom = await executor.execute(
+      ToolCall('zoom_screen', {'x': 0, 'y': 0, 'width': 500, 'height': 500}),
+    );
+    expect(zoom.imageBase64, isNotNull);
+  });
+
   test('go_to_sleep fires the callback', () async {
     var slept = false;
     executor.onSleep = () => slept = true;
@@ -200,6 +238,10 @@ class FakeControl implements NativeControlClient {
 
   (double, double, double, double)? lastRegion;
 
+  /// OCR text the fake reports for the zoom crop itself (#245).
+  String regionTargets = '';
+  bool throwOnRegion = false;
+
   @override
   Future<ScreenSnapshot> snapshotRegion(
     double x,
@@ -208,9 +250,10 @@ class FakeControl implements NativeControlClient {
     double height,
   ) async {
     lastRegion = (x, y, width, height);
+    if (throwOnRegion) throw StateError('crop OCR failed');
     return ScreenSnapshot(
       jpeg: Uint8List.fromList(_jpeg),
-      targets: '',
+      targets: regionTargets,
       width: width,
       height: height,
       frontApp: 'Safari',

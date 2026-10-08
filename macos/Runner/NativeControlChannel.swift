@@ -110,10 +110,11 @@ final class NativeControlChannel {
               width: args?["width"] as? Double ?? 0,
               height: args?["height"] as? Double ?? 0
             )
-            let jpeg = try await ScreenReader.snapshotRegion(rect)
+            let crop = try await ScreenReader.snapshotRegion(rect)
             result([
-              "jpeg": FlutterStandardTypedData(bytes: jpeg),
-              "targets": "",
+              "jpeg": FlutterStandardTypedData(bytes: crop.jpeg),
+              // OCR text of this crop, checked by the privacy guard (#245).
+              "targets": crop.text,
               "width": Double(rect.width),
               "height": Double(rect.height),
               "app": lastSnapshot?.app ?? "",
