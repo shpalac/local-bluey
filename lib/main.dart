@@ -488,6 +488,7 @@ class _MacHomeState extends State<MacHome>
     ScreenWatch.instance.removeListener(_syncWatchDriver);
     _watchDriver?.stop();
     _server.stop();
+    _receipts.dispose();
     _capture.dispose();
     _speech.dispose();
     super.dispose();
