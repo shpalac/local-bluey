@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   const contractFiles = [
     'lib/services/host_control.dart',
+    'lib/services/hold_key.dart',
     'lib/services/native_control.dart',
     'lib/services/tool_executor.dart',
     'lib/services/safety_gate.dart',
