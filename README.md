@@ -172,3 +172,11 @@ The runner needs a Hebrew-capable font at
 inspect those pixels for wrapping, clipping, readability and RTL before calling
 the UI ready. These injected fixtures do not establish native biometric or
 real-device acceptance.
+
+Request lifecycle fixtures (#305): settings/STT loading, transcription, brain,
+confirmation, tools and synthesis share one whole-job deadline and generation
+checks. Stop/kill+resume discards late stream/reply/confirmation/audio results
+before future actions or publication. Timeouts do not abort underlying native
+or network computation, and already-published text/actions are not undone.
+Recordings are cleaned when the runner settles. Parent #199 retains native,
+provider/readiness and real-device acceptance gates.
