@@ -25,9 +25,10 @@ class Discover {
 
   /// Recent user requests, newest first - a mirror of the local
   /// conversation log, so clearing data (#83) clears these too (#93).
-  static List<String> recentRequests({int limit = 10}) => ConversationStore
-      .instance
-      .entries
+  static List<String> recentRequests({
+    int limit = 10,
+    ConversationStore? store,
+  }) => (store ?? ConversationStore.instance).entries
       .where((e) => e.role == 'user')
       .map((e) => e.text)
       .toList()
@@ -36,11 +37,11 @@ class Discover {
       .toList();
 
   /// Offline search over locally stored answers and routines only (#93).
-  static List<String> search(String query) {
+  static List<String> search(String query, {ConversationStore? store}) {
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return const [];
     final hits = <String>[
-      for (final e in ConversationStore.instance.entries)
+      for (final e in (store ?? ConversationStore.instance).entries)
         if (e.text.toLowerCase().contains(q)) e.text,
       for (final r in RoutineStore.instance.routines)
         if (r.name.toLowerCase().contains(q)) r.name,

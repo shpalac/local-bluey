@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/action_log.dart';
+import 'package:local_bluey/services/conversation.dart';
 import 'package:local_bluey/services/data_registry.dart';
 import 'package:local_bluey/services/egress_monitor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,6 +93,25 @@ void main() {
         await log.load();
         expect(log.entries, isEmpty);
         expect(await File('${documents.path}/actions.jsonl').exists(), isFalse);
+      },
+    );
+
+    test(
+      'conversation registry deletion orders older adds and removes disk',
+      () async {
+        final store = ConversationStore.instance;
+        await store.clear();
+        final adding = store.add('user', 'older');
+        final clearing = DataRegistry.stores
+            .singleWhere((s) => s.id == 'conversation')
+            .clear();
+        await Future.wait([adding, clearing]);
+        await store.load();
+        expect(store.entries, isEmpty);
+        expect(
+          await File('${documents.path}/conversation.json').exists(),
+          isFalse,
+        );
       },
     );
 
