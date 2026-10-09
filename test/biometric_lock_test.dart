@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
+import 'package:local_auth/local_auth.dart';
 import 'package:local_bluey/services/biometric_lock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -54,4 +56,43 @@ void main() {
     expect(BiometricLock.instance.enabled, isTrue);
     await BiometricLock.instance.setEnabled(false);
   });
+  for (final result in [
+    AuthResult.failed,
+    AuthResult.unavailable,
+    AuthResult.error,
+  ]) {
+    test('enable ${result.name} never persists an enabled lock', () async {
+      final lock = BiometricLock.forTesting(authenticator: _FakeAuth(result));
+      expect(await lock.setEnabled(true), result);
+      expect(lock.enabled, isFalse);
+      expect(
+        (await SharedPreferences.getInstance()).getBool('lock.enabled'),
+        isNot(true),
+      );
+    });
+  }
+
+  test(
+    'platform exceptions distinguish missing credentials from errors',
+    () async {
+      final auth = _PlatformAuth();
+      final adapter = LocalAuthAuthenticator(auth: auth);
+      for (final code in ['PasscodeNotSet', 'NotEnrolled', 'NotAvailable']) {
+        auth.code = code;
+        expect(
+          await adapter.authenticate(reason: 'fixture'),
+          AuthResult.unavailable,
+        );
+      }
+      auth.code = 'OtherTransientError';
+      expect(await adapter.authenticate(reason: 'fixture'), AuthResult.error);
+    },
+  );
+}
+
+class _PlatformAuth extends LocalAuthentication {
+  String code = 'PasscodeNotSet';
+
+  @override
+  Future<bool> isDeviceSupported() async => throw PlatformException(code: code);
 }

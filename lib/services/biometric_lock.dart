@@ -1,9 +1,10 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Outcome of one authentication attempt.
-enum AuthResult { success, failed, unavailable }
+enum AuthResult { success, failed, unavailable, error }
 
 /// Injectable authenticator so tests drive success, failure, and
 /// unavailable cases (#92).
@@ -30,8 +31,16 @@ class LocalAuthAuthenticator implements Authenticator {
         options: const AuthenticationOptions(biometricOnly: false),
       );
       return ok ? AuthResult.success : AuthResult.failed;
+    } on PlatformException catch (error) {
+      // Missing device credentials require setup, not an app-lock bypass.
+      if (error.code == 'PasscodeNotSet' ||
+          error.code == 'NotEnrolled' ||
+          error.code == 'NotAvailable') {
+        return AuthResult.unavailable;
+      }
+      return AuthResult.error;
     } catch (_) {
-      return AuthResult.unavailable;
+      return AuthResult.error;
     }
   }
 }
@@ -41,6 +50,14 @@ class LocalAuthAuthenticator implements Authenticator {
 /// device passcode.
 class BiometricLock {
   BiometricLock._();
+
+  /// Isolated lock for injected authentication and widget fixtures.
+  @visibleForTesting
+  BiometricLock.forTesting({
+    required Authenticator authenticator,
+    bool enabled = false,
+  }) : _authenticator = authenticator,
+       _enabled = enabled;
 
   /// The shared lock.
   static final BiometricLock instance = BiometricLock._();
@@ -63,16 +80,41 @@ class BiometricLock {
         (await SharedPreferences.getInstance()).getBool(_kEnabled) ?? false;
   }
 
-  /// Toggles the lock and persists the choice.
-  Future<void> setEnabled(bool value) async {
-    _enabled = value;
-    await (await SharedPreferences.getInstance()).setBool(_kEnabled, value);
+  /// Enabling first proves authentication works, then persists the choice.
+  /// Failure never enables the lock. Disabling is available only in gated UI.
+  Future<AuthResult> setEnabled(
+    bool value, {
+    String reason = 'Enable Bluey app lock',
+  }) async {
+    if (value && !_enabled) {
+      final result = await _authenticate(reason);
+      if (result != AuthResult.success) return result;
+    }
+    try {
+      final saved = await (await SharedPreferences.getInstance()).setBool(
+        _kEnabled,
+        value,
+      );
+      if (!saved) return AuthResult.error;
+      _enabled = value;
+      return AuthResult.success;
+    } catch (_) {
+      return AuthResult.error;
+    }
+  }
+
+  Future<AuthResult> _authenticate(String reason) async {
+    try {
+      return await _authenticator.authenticate(reason: reason);
+    } catch (_) {
+      return AuthResult.error;
+    }
   }
 
   /// True when the gate may open. Passes straight through when the lock is
   /// off; otherwise asks the device for biometrics/passcode (#92).
   Future<AuthResult> requireAuth({required String reason}) async {
     if (!_enabled) return AuthResult.success;
-    return _authenticator.authenticate(reason: reason);
+    return _authenticate(reason);
   }
 }

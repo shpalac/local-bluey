@@ -73,9 +73,9 @@ void main() async {
 /// platforms get an explanatory screen, never the client UI.
 Widget homeForProfile(PlatformProfile profile) => switch (profile.role) {
   AppRole.host => const MacHome(),
-  AppRole.phoneClient => const LockGate(
-    reason: 'Unlock the Bluey remote',
-    child: IosHome(),
+  AppRole.phoneClient => LockGate(
+    reason: Strings.t('Unlock the Bluey remote', 'ביטול נעילת השלט של Bluey'),
+    child: const IosHome(),
   ),
   AppRole.unsupported => UnsupportedScreen(profile: profile),
 };
@@ -552,7 +552,10 @@ class _MacHomeState extends State<MacHome>
           final saved = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
               builder: (_) => LockGate(
-                reason: 'Unlock Bluey settings',
+                reason: Strings.t(
+                  'Unlock Bluey settings',
+                  'ביטול נעילת הגדרות Bluey',
+                ),
                 child: SettingsScreen(
                   onDeleteAll: () {
                     BrainHost.reload();
@@ -581,7 +584,10 @@ class _MacHomeState extends State<MacHome>
               final saved = await Navigator.of(context).push<bool>(
                 MaterialPageRoute(
                   builder: (_) => LockGate(
-                    reason: 'Unlock Bluey settings',
+                    reason: Strings.t(
+                      'Unlock Bluey settings',
+                      'ביטול נעילת הגדרות Bluey',
+                    ),
                     child: SettingsScreen(
                       onDeleteAll: () {
                         BrainHost.reload();
