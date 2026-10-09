@@ -129,7 +129,7 @@ approved host run; no hardware observation is claimed here.
 
 ## OS integration (#91)
 
-Deep links use the `localbluey://` scheme. Supported actions (validated in `lib/services/deep_links.dart`):
+Deep links use only the canonical lowercase `localbluey://action` form (no trailing slash, extra path, userinfo, port or fragment). Non-ask actions take no query. Ask accepts exactly one literal `text` key and no other fields; percent-encode UTF-8 text (`+` means space). Malformed encoding and ambiguous/alternate path forms are rejected without dispatch. Encoded links are capped at 8192 ASCII characters and decoded ask text at 2048 UTF-8 bytes; whitespace-only asks are rejected and valid text is preserved unchanged. Supported actions (validated in `lib/services/deep_links.dart`):
 
 - `localbluey://wake` / `localbluey://sleep` - same wake/sleep path as the face gesture
 - `localbluey://ask?text=<question>` - asks Bluey (text required)
