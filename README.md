@@ -96,6 +96,31 @@ Everything the app stores lives on this device; Settings > Data and privacy list
 | Settings (API key in Keychain) | SharedPreferences + secure storage | Until deleted |
 | Character, language, onboarding, safety, privacy, wake-word, app lock, haptics, notifications, theme, pairing/link keys | SharedPreferences | Until deleted |
 
+### Spoken-reply retry cache (#255)
+
+The host keeps retry packets only in memory: at most 20 replies, 8 MiB of
+UTF-8-encoded base64 audio plus packet text and spoken text, and 2 minutes
+from first delivery. All three limits apply, including to a single reply.
+At the age boundary the payload is released even if no new reply arrives.
+Acknowledgement cancels the receipt timer but does not extend retry eligibility.
+An oversized reply is still delivered once with its speech id, but is not
+cached for retry. The cache holds detached read-only packet snapshots and
+returns fresh retry packets, so mutating a sent or retry packet cannot enlarge
+the retained payload after its bytes are counted. Expired/evicted ids cannot restart receipt timers; eviction
+cancels any associated timer. Missed-receipt history keeps at most 20 short
+lines, without retaining audio just for diagnostics. Host disposal releases
+packets, text, history and timers.
+
+Encoded payload bytes are a deterministic cache budget, not process-memory
+measurements: Dart string/object overhead and playback buffers are separate.
+Named-host repeated-turn memory evidence for #255 is still pending. To record
+it, name the host, OS and app revision; use a paired phone and repeat a fixed
+number of audio turns with immediate acknowledgements. Record turn count,
+cache count/bytes and process memory before, during, and after the 2-minute
+idle expiry, plus the observation method. Do not infer measured process-memory
+stability from deterministic tests alone. This check needs a separately
+approved host run; no hardware observation is claimed here.
+
 ## Development
 
 - `flutter test` - unit + widget tests (tool-call parsing, executor math, protocol round-trips)
