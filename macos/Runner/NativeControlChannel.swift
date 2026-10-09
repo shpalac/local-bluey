@@ -115,6 +115,9 @@ final class NativeControlChannel {
               "jpeg": FlutterStandardTypedData(bytes: crop.jpeg),
               // OCR text of this crop, checked by the privacy guard (#245).
               "targets": crop.text,
+              // Set only after OCR completed for the exact captured image.
+              // A successful empty string is valid evidence of a blank crop.
+              "cropTextVerified": true,
               "width": Double(rect.width),
               "height": Double(rect.height),
               "app": lastSnapshot?.app ?? "",

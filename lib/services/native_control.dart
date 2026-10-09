@@ -9,6 +9,7 @@ class ScreenSnapshot {
     required this.width,
     required this.height,
     this.frontApp,
+    this.cropTextVerified = false,
   });
 
   /// Downscaled JPEG of the captured region.
@@ -17,6 +18,12 @@ class ScreenSnapshot {
   /// The OCR/accessibility target list the LLM picks from (id, label,
   /// position), in the snapshot's coordinate space.
   final String targets;
+
+  /// True only when OCR completed for this exact crop and [targets] is the
+  /// resulting text. Empty text can be verified (a blank crop); missing or
+  /// failed evidence must leave this false. This is not a guarantee that OCR
+  /// detects every secret, nor a statement that the text is non-sensitive.
+  final bool cropTextVerified;
 
   /// Width in display points.
   final double width;
@@ -158,7 +165,9 @@ class NativeControl {
     }
     return ScreenSnapshot(
       jpeg: map['jpeg'] as Uint8List,
-      targets: map['targets'] as String? ?? '',
+      targets: map['targets'] is String ? map['targets'] as String : '',
+      cropTextVerified:
+          map['cropTextVerified'] == true && map['targets'] is String,
       width: (map['width'] as num).toDouble(),
       height: (map['height'] as num).toDouble(),
       frontApp: map['app'] as String? ?? '',
