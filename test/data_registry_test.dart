@@ -72,6 +72,29 @@ void main() {
       );
     });
 
+    test(
+      'action registry deletion orders older records and removes disk history',
+      () async {
+        final log = ActionLog.instance;
+        await log.clear();
+        final recording = log.record(
+          ActionEntry(
+            runId: 'registry-race',
+            tool: 'click',
+            arguments: {},
+            outcome: 'ok',
+          ),
+        );
+        final clearing = DataRegistry.stores
+            .singleWhere((s) => s.id == 'action_log')
+            .clear();
+        await Future.wait([recording, clearing]);
+        await log.load();
+        expect(log.entries, isEmpty);
+        expect(await File('${documents.path}/actions.jsonl').exists(), isFalse);
+      },
+    );
+
     test('registered source files exist', () {
       for (final store in DataRegistry.stores) {
         expect(
@@ -86,7 +109,7 @@ void main() {
   group('retention (#83)', () {
     test('action log prunes entries older than the retention window', () async {
       final log = ActionLog.instance;
-      log.entries.clear();
+      await log.clear();
       final old = ActionEntry(
         runId: 'r',
         tool: 'click',

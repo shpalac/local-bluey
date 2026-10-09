@@ -54,8 +54,9 @@ result -> brain -> reply -> TTS (lib/services/tts via provider)
   every endpoint (strict loopback check, `.local` names no longer count,
   #121); everything that leaves the device is recorded in the egress
   log; the data registry lists what lives where on disk.
-- **Action log** (`lib/services/action_log.dart`): append-only record of
-  executed actions, one run id per brain turn (#57).
+- **Action log** (`lib/services/action_log.dart`): bounded retained record of
+  executed actions, one run id per brain turn (#57). Startup recovery and
+  record/load/delete are ordered; unknown/corrupt disk history is not overwritten.
 
 ## Known gaps
 
