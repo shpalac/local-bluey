@@ -110,7 +110,7 @@ class EgressMonitor {
   /// necessarily after every older operation, so none can resurrect history.
   Future<void> _ordered(Future<void> Function() operation) {
     final next = _tail.then((_) => operation());
-    _tail = next.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    _tail = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
     return next;
   }
 
