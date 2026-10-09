@@ -12,6 +12,7 @@ import unittest
 from pathlib import Path
 
 import wer
+from validate_inputs import validate
 
 HERE = Path(__file__).parent
 
@@ -129,7 +130,122 @@ class ScoreTest(unittest.TestCase):
                 wer.load_refs(os.path.join(out, "refs.csv"))
 
 
+    def test_equal_count_different_populations_are_not_comparable(self):
+        res, problems = self.score(
+            [["a", "a.wav", 1, 0, 0], ["b", "b.wav", 1, 0, 0]],
+            {"a--a.wav.txt": "one two", "b--b.wav.txt": "three four"})
+        self.assertTrue(all(not r["complete"] for r in res))
+        self.assertIn("different clip identities", wer.render(res, problems))
+
+    def test_manifest_reports_backend_with_no_attempts(self):
+        import json
+        with tempfile.TemporaryDirectory() as out:
+            write_run(out, [["a", "a.wav", 1, 0, 0]], {"a--a.wav.txt": "one two"})
+            Path(out, "expected.json").write_text(json.dumps(
+                {"backends": ["a", "missing"], "clips": ["a.wav", "b.wav"]}))
+            res, _ = wer.score(out, REFS, metrics=fake_metrics)
+        self.assertEqual(len(res), 2)
+        self.assertTrue(all(not r["complete"] for r in res))
+        self.assertEqual(res[1]["attempted"], 0)
+
+    def test_manifest_rejects_unselected_backend_population(self):
+        import json
+        with tempfile.TemporaryDirectory() as out:
+            write_run(out, [["unexpected", "a.wav", 1, 0, 0]],
+                      {"unexpected--a.wav.txt": "one two"})
+            Path(out, "expected.json").write_text(json.dumps(
+                {"backends": ["expected"], "clips": ["a.wav"]}))
+            res, _ = wer.score(out, REFS, metrics=fake_metrics)
+        self.assertTrue(all(not r["complete"] for r in res))
+
+    def test_cli_rejects_missing_reference_before_metrics(self):
+        with tempfile.TemporaryDirectory() as out:
+            write_run(out, [["a", "missing.wav", 1, 0, 0]],
+                      {"a--missing.wav.txt": "one two"})
+            ref = Path(out, "refs.csv")
+            ref.write_text("a.wav,one two\n")
+            r = subprocess.run(["python3", str(HERE / "wer.py"), out, str(ref)],
+                               capture_output=True, text=True, timeout=10)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("missing reference", r.stderr)
+            self.assertFalse(Path(out, "report.md").exists())
+
+    def test_duplicate_attempts_do_not_establish_completeness(self):
+        res, _ = self.score(
+            [["a", "a.wav", 1, 0, 0], ["a", "a.wav", 2, 0, 0]],
+            {"a--a.wav.txt": "one two"})
+        self.assertFalse(res[0]["complete"])
+
+
+class InputTest(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.fx = self.root / "fx"
+        self.fx.mkdir()
+        self.out = self.root / "out"
+        (self.root / "models").mkdir()
+        (self.root / "models/ggml-large-v3-turbo.bin").write_text("stub")
+        (self.fx / "a.wav").write_text("stub audio")
+        (self.fx / "refs.csv").write_text("a.wav,one two\n")
+
+    def test_selection_records_exact_inputs(self):
+        import json
+        validate(self.root, self.fx, self.out, "whispercpp-turbo", "a.wav")
+        manifest = json.loads((self.out / "expected.json").read_text())
+        self.assertEqual(manifest["clips"], ["a.wav"])
+        self.assertEqual(manifest["backends"], ["whispercpp-turbo"])
+
+    def test_missing_selected_model(self):
+        with self.assertRaisesRegex(SystemExit, "missing selected model"):
+            validate(self.root, self.fx, self.out, "whispercpp-ivrit")
+
+    def test_no_models(self):
+        (self.root / "models/ggml-large-v3-turbo.bin").unlink()
+        with self.assertRaisesRegex(SystemExit, "no selected models"):
+            validate(self.root, self.fx, self.out)
+
+    def test_no_audio(self):
+        (self.fx / "a.wav").unlink()
+        with self.assertRaisesRegex(SystemExit, "no selected audio"):
+            validate(self.root, self.fx, self.out)
+
+    def test_missing_selected_audio(self):
+        with self.assertRaisesRegex(SystemExit, "missing selected audio"):
+            validate(self.root, self.fx, self.out, clip_selection="missing.wav")
+
+    def test_missing_reference(self):
+        (self.fx / "refs.csv").write_text("other.wav,not selected\n")
+        with self.assertRaisesRegex(SystemExit, "missing selected reference"):
+            validate(self.root, self.fx, self.out)
+
+    def test_duplicate_selection(self):
+        with self.assertRaisesRegex(SystemExit, "duplicate selected backend"):
+            validate(self.root, self.fx, self.out, "whispercpp-turbo whispercpp-turbo")
+
+
 class RunnerTest(unittest.TestCase):
+    def test_runner_rejects_absent_inputs_without_normal_wrote_output(self):
+        for case in ("model", "audio", "reference"):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as root:
+                root = Path(root)
+                (root / "models").mkdir()
+                fx = root / "fx"
+                fx.mkdir()
+                if case != "model":
+                    (root / "models/ggml-large-v3-turbo.bin").write_text("stub")
+                if case != "audio":
+                    (fx / "a.wav").write_text("stub")
+                if case != "reference":
+                    (fx / "refs.csv").write_text("a.wav,hello\n")
+                r = subprocess.run(["sh", str(HERE / "run_bench.sh"), "--fixtures", str(fx)],
+                                   env=dict(os.environ, STT_ROOT=str(root)),
+                                   capture_output=True, text=True, timeout=10)
+                self.assertNotEqual(r.returncode, 0)
+                self.assertNotIn("Wrote", r.stdout)
+                self.assertTrue(r.stderr)
+
     def test_runner_records_real_exit_status_with_a_stub_cli(self):
         with tempfile.TemporaryDirectory() as root:
             root = Path(root)
@@ -152,6 +268,7 @@ class RunnerTest(unittest.TestCase):
             fx.mkdir()
             for n in ("good.wav", "bad.wav", "part.wav"):
                 (fx / n).write_text("x")
+            (fx / "refs.csv").write_text("good.wav,ok\nbad.wav,x\npart.wav,y\n")
             env = dict(os.environ, STT_ROOT=str(root), STT_TIME="env")
             r = subprocess.run(
                 ["sh", str(HERE / "run_bench.sh"), "--fixtures", str(fx)],

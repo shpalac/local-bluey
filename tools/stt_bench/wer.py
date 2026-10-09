@@ -9,7 +9,7 @@ Every attempt in timings.csv is reconciled against its reference and its
 transcript. A backend that failed some clips is reported as INCOMPLETE and is
 not comparable with a backend that finished the same set.
 """
-import csv, glob, os, re, sys, unicodedata
+import csv, json, os, re, sys, unicodedata
 
 def normalize(s: str) -> str:
     s = unicodedata.normalize("NFKC", s).lower()
@@ -66,6 +66,20 @@ def score(out, refs, metrics=jiwer_metrics):
     for a in attempts:
         a["hyp_path"] = os.path.join(out, f"{a['backend']}--{a['clip']}.txt")
         by_backend.setdefault(a["backend"], []).append(a)
+    manifest_path = os.path.join(out, "expected.json")
+    if os.path.exists(manifest_path):
+        with open(manifest_path, encoding="utf-8") as f:
+            expected = json.load(f)
+        expected_clips = set(expected["clips"])
+        expected_backends = set(expected["backends"])
+        if not expected_clips or not expected_backends:
+            sys.exit("empty expected backend/clip set")
+        for backend in expected_backends:
+            by_backend.setdefault(backend, [])
+    else:
+        # Historical runs have no manifest: compare identities, never counts.
+        expected_clips = {a["clip"] for a in attempts}
+        expected_backends = set(by_backend)
     results, problems = [], []
     for backend, items in sorted(by_backend.items()):
         ok, failed, pairs = [], [], []
@@ -92,14 +106,23 @@ def score(out, refs, metrics=jiwer_metrics):
                                [normalize(h) for _, h in pairs])
         lat_ok = sorted(a["latency"] for a in ok)
         lat_bad = sorted(a["latency"] for a in failed)
-        complete = not failed and len(pairs) == len(items)
+        actual_clips = {a["clip"] for a in items}
+        population_matches = (actual_clips == expected_clips and
+                              len(items) == len(actual_clips) and
+                              backend in expected_backends)
+        if not population_matches:
+            problems.append(f"{backend}: evaluation population mismatch; "
+                            f"missing clips {sorted(expected_clips - actual_clips)}, "
+                            f"unexpected clips {sorted(actual_clips - expected_clips)}; "
+                            "duplicate attempts or unselected backend also invalidate comparison")
+        complete = population_matches and not failed and len(pairs) == len(items)
         results.append({
             "backend": backend, "attempted": len(items), "succeeded": len(ok),
             "failed": len(failed), "scored": len(pairs), "wer": wer, "cer": cer,
             "p50": pct(lat_ok, 0.5), "p95": pct(lat_ok, 0.95),
             "fail_p50": pct(lat_bad, 0.5),
             "rss": max((a["rss"] for a in items), default=0),
-            "complete": complete,
+            "complete": complete, "clips": sorted(actual_clips),
         })
     return results, problems
 
@@ -118,8 +141,8 @@ def render(results, problems):
         lines += ["", "**Caveat:** at least one backend did not finish the full evaluation set. "
                   "WER/CER cover only its successful clips and must not be ranked against "
                   "a complete backend. Latency columns use successful attempts only."]
-    if len({r["attempted"] for r in results}) > 1:
-        lines += ["", "**Caveat:** backends attempted different numbers of clips."]
+    if len({tuple(r["clips"]) for r in results}) > 1:
+        lines += ["", "**Caveat:** backends attempted different clip identities; equal counts do not establish comparable populations."]
     if problems:
         lines += ["", "Problems:"] + [f"- {p}" for p in problems]
     return "\n".join(lines) + "\n"
@@ -129,9 +152,21 @@ def main() -> None:
         sys.exit(__doc__)
     out, refs_path = sys.argv[1], (sys.argv[2] if len(sys.argv) > 2 else None)
     if refs_path is None:
-        cand = sorted(glob.glob(os.path.join(os.path.dirname(out), "*", "refs.csv")))
-        refs_path = cand[-1] if cand else "refs.csv"
-    report = render(*score(out, load_refs(refs_path)))
+        manifest_path = os.path.join(out, "expected.json")
+        if os.path.exists(manifest_path):
+            with open(manifest_path, encoding="utf-8") as f:
+                refs_path = json.load(f).get("refs_path")
+        if refs_path is None:
+            sys.exit("reference path required for legacy runs: wer.py RESULTS_DIR REFS.csv")
+    refs = load_refs(refs_path)
+    missing = {a["clip"] for a in load_attempts(out)} - set(refs)
+    manifest_path = os.path.join(out, "expected.json")
+    if os.path.exists(manifest_path):
+        with open(manifest_path, encoding="utf-8") as f:
+            missing |= set(json.load(f)["clips"]) - set(refs)
+    if missing:
+        sys.exit(f"missing reference transcripts: {sorted(missing)}")
+    report = render(*score(out, refs))
     with open(os.path.join(out, "report.md"), "w", encoding="utf-8") as f:
         f.write(report)
     print(report, end="")
