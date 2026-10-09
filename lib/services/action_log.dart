@@ -255,9 +255,9 @@ class ActionLog {
     _prune();
     final warning = historyProblem == null ? '' : '${historyProblem!}\n';
     final run = _entries.where((e) => e.runId == runId).toList();
-    if (run.isEmpty) return '$warningNo actions in this run.';
+    if (run.isEmpty) return '${warning}No actions in this run.';
     final failed = run.where((e) => e.failed).toList();
-    final buffer = StringBuffer('${warning}${run.length} actions');
+    final buffer = StringBuffer('$warning${run.length} actions');
     if (failed.isEmpty) return '$buffer, all succeeded.';
     buffer.write(', ${failed.length} failed: ');
     buffer.write(failed.map((e) => '${e.tool} (${e.recoveryHint})').join('; '));

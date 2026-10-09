@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/llm/tools.dart';
 import 'package:local_bluey/services/native_control.dart';
 import 'package:local_bluey/services/tool_executor.dart';
+import 'package:local_bluey/services/action_log.dart';
 
 void main() {
   late FakeControl control;
@@ -12,7 +13,10 @@ void main() {
 
   setUp(() {
     control = FakeControl();
-    executor = ToolExecutor(control: control);
+    executor = ToolExecutor(
+      control: control,
+      actionLog: ActionLog(storage: _ActionStorage()),
+    );
   });
 
   test('look_at_screen captures and returns targets + image', () async {
@@ -326,4 +330,21 @@ class FakeControl implements NativeControlClient {
 
   @override
   Future<String?> openURL(String url) async => 'Opened $url.';
+}
+
+// Each fixture owns its queue: fakeAsync must not leave shared production I/O
+// pending in a discarded fake zone or involve path_provider/disk.
+class _ActionStorage implements ActionStorage {
+  String? contents;
+  @override
+  Future<String?> read() async => contents;
+  @override
+  Future<void> write(String value) async {
+    contents = value;
+  }
+
+  @override
+  Future<void> delete() async {
+    contents = null;
+  }
 }
