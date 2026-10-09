@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:local_bluey/llm/brain.dart';
 import 'package:local_bluey/llm/llm_provider.dart' show BlueyStatus;
 import 'package:local_bluey/llm/tools.dart';
@@ -17,6 +19,10 @@ class FakeBrain implements BrainLike {
   final replies = <BrainReply>[];
   final toolResults = <String>[];
   String? lastAsked;
+  Completer<BrainReply>? asking, reacting;
+  final askEntered = Completer<void>(), resultEntered = Completer<void>();
+  void Function(String)? stream;
+  void Function()? onAsk, onResult;
 
   @override
   Future<BrainReply> askStreaming(
@@ -24,8 +30,11 @@ class FakeBrain implements BrainLike {
     void Function(String partialSpoken)? onToken,
   }) async {
     lastAsked = userText;
+    stream = onToken;
+    if (!askEntered.isCompleted) askEntered.complete();
+    onAsk?.call();
     onToken?.call('partial');
-    return replies.removeAt(0);
+    return asking?.future ?? Future.value(replies.removeAt(0));
   }
 
   @override
@@ -35,7 +44,9 @@ class FakeBrain implements BrainLike {
     List<String> images = const [],
   }) async {
     toolResults.add('$toolName|$result|${images.length}');
-    return replies.removeAt(0);
+    if (!resultEntered.isCompleted) resultEntered.complete();
+    onResult?.call();
+    return reacting?.future ?? Future.value(replies.removeAt(0));
   }
 }
 
@@ -43,6 +54,8 @@ class FakeGate implements GateLike {
   bool allow = true;
   void Function()? onAuthorize;
   int authorizeCalls = 0;
+  Completer<bool>? pending;
+  final entered = Completer<void>();
 
   @override
   bool killed = false;
@@ -52,8 +65,9 @@ class FakeGate implements GateLike {
   @override
   Future<bool> authorize(String tool, Map<String, dynamic> arguments) async {
     authorizeCalls++;
+    if (!entered.isCompleted) entered.complete();
     onAuthorize?.call();
-    return allow;
+    return pending?.future ?? Future.value(allow);
   }
 }
 
@@ -61,12 +75,15 @@ class FakeExecutor implements ExecutorLike {
   ToolResult next = const ToolResult('did it');
   void Function()? onExecute;
   int calls = 0;
+  Completer<ToolResult>? pending;
+  final entered = Completer<void>();
 
   @override
   Future<ToolResult> execute(ToolCall call) async {
     calls++;
+    if (!entered.isCompleted) entered.complete();
     onExecute?.call();
-    return next;
+    return pending?.future ?? Future.value(next);
   }
 }
 
@@ -74,10 +91,16 @@ class FakeSpeech implements SpeechLike {
   bool fail = false;
   int synthesized = 0;
   List<int>? played;
+  Completer<List<int>>? pending;
+  final entered = Completer<void>();
+  void Function()? onSynthesize;
 
   @override
   Future<List<int>> synthesize(String text, BrainSettings settings) async {
     synthesized++;
+    if (!entered.isCompleted) entered.complete();
+    onSynthesize?.call();
+    if (pending != null) return pending!.future;
     if (fail) throw SpeechException('boom');
     return [1, 2, 3];
   }
@@ -137,7 +160,13 @@ const _settings = BrainSettings(
   SpyHooks,
   List<List<String>>,
 )
-_rig({bool withBrain = true, Duration? jobTimeout}) {
+_rig({
+  bool withBrain = true,
+  Duration? jobTimeout,
+  DateTime Function()? now,
+  Future<void> Function(File)? deleteRecording,
+  void Function()? onSettings,
+}) {
   final b = FakeBrain();
   final gate = FakeGate();
   final exec = FakeExecutor();
@@ -151,13 +180,18 @@ _rig({bool withBrain = true, Duration? jobTimeout}) {
     tools: exec,
     speech: speech,
     brainProvider: withBrain ? () => b : () => null,
-    settingsLoader: () async => _settings,
+    settingsLoader: () async {
+      onSettings?.call();
+      return _settings;
+    },
     sttLoader: () async => const SttSettings(baseUrl: 'http://stt.local/v1'),
     matchRoutine: (_) => null,
     addToConversation: (role, text) => conversation.add([role, text]),
     currentVoice: () => 'alloy',
     hooks: hooks,
     jobTimeout: jobTimeout ?? const Duration(minutes: 3),
+    now: now,
+    deleteRecording: deleteRecording,
   );
   return (runner, b, gate, exec, speech, transcriber, hooks, conversation);
 }
@@ -327,22 +361,90 @@ void main() {
     },
   );
 
-  test('job deadline bounds the transcription (#199)', () async {
-    final (runner, brain, _, _, _, transcriber, hooks, _) = _rig(
-      jobTimeout: const Duration(milliseconds: 50),
-    );
-    transcriber.onTranscribe = () =>
-        Future<void>.delayed(const Duration(seconds: 5));
-    await runner.process(file);
-    expect(brain.lastAsked, isNull);
-    expect(hooks.statuses, contains(BlueyStatus.error));
-    expect(
-      hooks.bubbles.any(
-        (b) => b != null && b.startsWith('Transcription failed'),
-      ),
-      isTrue,
-    );
-  });
+  test(
+    'job timer bounds transcription and consumes prior stage budget (#199)',
+    () {
+      var finished = false;
+      late SpyHooks hooks;
+      final pending = Completer<void>();
+      fakeAsync((time) {
+        final (runner, brain, _, _, _, transcriber, spy, _) = _rig(
+          jobTimeout: const Duration(seconds: 3),
+          now: () => time.getClock(DateTime.utc(2026, 10, 10)).now(),
+          deleteRecording: (_) async {},
+        );
+        hooks = spy;
+        transcriber.onTranscribe = () => pending.future;
+        unawaited(
+          runner.process(file).then((_) {
+            finished = true;
+          }),
+        );
+        time.flushMicrotasks();
+        time.elapse(const Duration(seconds: 3));
+        time.flushMicrotasks();
+        expect(brain.lastAsked, isNull);
+        expect(hooks.statuses, contains(BlueyStatus.error));
+        expect(
+          hooks.bubbles.any(
+            (b) => b?.startsWith('Transcription failed') ?? false,
+          ),
+          isTrue,
+        );
+        pending.complete();
+        time.flushMicrotasks();
+      });
+      expect(finished, isTrue);
+    },
+  );
+
+  test(
+    'brain timeout discards late stream/reply and uses remaining budget',
+    () {
+      var finished = false;
+      late SpyHooks hooks;
+      late FakeBrain brain;
+      fakeAsync((time) {
+        final origin = DateTime.utc(2026, 10, 10);
+        var spent = Duration.zero;
+        final (runner, b, _, _, speech, _, spy, conversation) = _rig(
+          jobTimeout: const Duration(seconds: 3),
+          now: () => time.getClock(origin).now().add(spent),
+          deleteRecording: (_) async {},
+          onSettings: () {
+            spent = const Duration(seconds: 2);
+          },
+        );
+        // Deadline starts before the settings/STT stage budget is consumed.
+        spent = Duration.zero;
+        brain = b;
+        hooks = spy;
+        brain.asking = Completer<BrainReply>();
+
+        unawaited(
+          runner.process(file).then((_) {
+            finished = true;
+          }),
+        );
+        time.flushMicrotasks();
+        expect(brain.askEntered.isCompleted, isTrue);
+        time.elapse(const Duration(milliseconds: 999));
+        time.flushMicrotasks();
+        expect(hooks.statuses, isNot(contains(BlueyStatus.error)));
+        time.elapse(const Duration(milliseconds: 1));
+        time.flushMicrotasks();
+        brain.stream?.call('late timed stream');
+        brain.asking!.complete(const BrainReply(spoken: 'late timed reply'));
+        time.flushMicrotasks();
+        expect(hooks.says, isEmpty);
+        expect(speech.synthesized, 0);
+        expect(conversation.where((e) => e.first == 'bluey'), isEmpty);
+        expect(hooks.bubbles, isNot(contains('late timed stream')));
+        expect(hooks.statuses, contains(BlueyStatus.error));
+      });
+      expect(finished, isTrue);
+    },
+  );
 
   test('TTS failure still says the text and notes the failure', () async {
     final (runner, brain, _, _, speech, _, hooks, _) = _rig();
@@ -388,4 +490,216 @@ void main() {
     await failing.process(file);
     expect(hooks.statuses, contains(BlueyStatus.error));
   });
+  for (final resume in [false, true]) {
+    void invalidate(FakeGate gate) {
+      if (resume) {
+        gate.generation++;
+      } else {
+        gate.killed = true;
+      }
+    }
+
+    test(
+      'entered streaming/plain ask discards late reply after ${resume ? 'kill+resume' : 'Stop'}',
+      () async {
+        final (runner, brain, gate, _, speech, _, hooks, conversation) = _rig();
+        final dir = await Directory.systemTemp.createTemp('runner-stop-');
+        addTearDown(() => dir.delete(recursive: true));
+        final recording = await File('${dir.path}/audio')
+            .writeAsString('fixture');
+        brain.asking = Completer<BrainReply>();
+        final processing = runner.process(recording);
+        await brain.askEntered.future;
+        invalidate(gate);
+        brain.stream?.call('late stream');
+        brain.asking!.complete(const BrainReply(spoken: 'stale answer'));
+        await processing;
+        brain.stream?.call('later after finished');
+        expect(conversation, [
+          ['user', 'hello there'],
+        ]);
+        expect(hooks.bubbles, isNot(contains('late stream')));
+        expect(hooks.bubbles, isNot(contains('later after finished')));
+        expect(hooks.says, isEmpty);
+        expect(speech.synthesized, 0);
+        expect(hooks.faces, isNot(contains(Mood.talking)));
+        expect(await recording.exists(), isFalse);
+      },
+    );
+    test(
+      'entered allowed confirmation never executes after ${resume ? 'kill+resume' : 'Stop'}',
+      () async {
+        final (runner, brain, gate, exec, _, _, hooks, _) = _rig();
+        brain.replies.add(
+          BrainReply(spoken: '', toolCall: ToolCall('click', {})),
+        );
+        gate.pending = Completer<bool>();
+        final processing = runner.process(file);
+        await gate.entered.future;
+        invalidate(gate);
+        gate.pending!.complete(true);
+        await processing;
+        expect(exec.calls, 0);
+        expect(brain.toolResults, isEmpty);
+        expect(hooks.says, isEmpty);
+        expect(hooks.bubbles, contains('Stopped.'));
+      },
+    );
+    for (final denied in [false, true]) {
+      test(
+        'entered ${denied ? 'denied' : 'executed'} tool result discards late reply after ${resume ? 'kill+resume' : 'Stop'}',
+        () async {
+          final (runner, brain, gate, exec, speech, _, hooks, conversation) =
+              _rig();
+          brain.replies.add(
+            BrainReply(spoken: '', toolCall: ToolCall('click', {})),
+          );
+          gate.allow = !denied;
+          brain.reacting = Completer<BrainReply>();
+          final processing = runner.process(file);
+          await brain.resultEntered.future;
+          invalidate(gate);
+          brain.reacting!.complete(const BrainReply(spoken: 'late result'));
+          await processing;
+          expect(exec.calls, denied ? 0 : 1);
+          expect(conversation.where((e) => e.first == 'bluey'), isEmpty);
+          expect(speech.synthesized, 0);
+          expect(hooks.says, isEmpty);
+        },
+      );
+    }
+    for (final fails in [false, true]) {
+      test(
+        'entered synthesis ${fails ? 'error' : 'success'} cannot say/play after ${resume ? 'kill+resume' : 'Stop'}',
+        () async {
+          final (runner, brain, gate, _, speech, _, hooks, _) = _rig();
+          brain.replies.add(const BrainReply(spoken: 'active answer'));
+          speech.pending = Completer<List<int>>();
+          final processing = runner.process(file);
+          await speech.entered.future;
+          invalidate(gate);
+          if (fails) {
+            speech.pending!.completeError(SpeechException('late error'));
+          } else {
+            speech.pending!.complete([1, 2, 3]);
+          }
+          await processing;
+          expect(hooks.says, isEmpty);
+          expect(speech.played, isNull);
+          expect(
+            hooks.bubbles.any((b) => b?.contains('TTS failed') ?? false),
+            isFalse,
+          );
+        },
+      );
+    }
+  }
+
+  for (final delayed in [
+    'settings',
+    'stt-settings',
+    'transcription',
+    'ask',
+    'confirmation',
+    'execution',
+    'result',
+    'synthesis',
+  ]) {
+    test(
+      'whole-job budget expires at entered $delayed and discards late completion',
+      () async {
+        var now = DateTime.utc(2026, 10, 10);
+        final brain = FakeBrain(),
+            gate = FakeGate(),
+            exec = FakeExecutor(),
+            speech = FakeSpeech();
+        final transcriber = FakeTranscriber(), hooks = SpyHooks();
+        final entered = Completer<void>(), release = Completer<void>();
+        Future<void> delay() async {
+          entered.complete();
+          await release.future;
+          now = now.add(const Duration(seconds: 4));
+        }
+
+        if (delayed == 'transcription') transcriber.onTranscribe = delay;
+        if (delayed == 'ask') {
+          brain.asking = Completer<BrainReply>();
+        }
+        if (delayed == 'confirmation') gate.pending = Completer<bool>();
+        if (delayed == 'execution') exec.pending = Completer<ToolResult>();
+        if (delayed == 'result') brain.reacting = Completer<BrainReply>();
+        if (delayed == 'synthesis') speech.pending = Completer<List<int>>();
+        brain.replies.addAll([
+          if (['confirmation', 'execution', 'result'].contains(delayed))
+            BrainReply(spoken: '', toolCall: ToolCall('click', {})),
+          const BrainReply(spoken: 'active'),
+        ]);
+        final conversation = <List<String>>[];
+        final runner = RequestRunner(
+          safety: gate,
+          tools: exec,
+          speech: speech,
+          transcriber: transcriber,
+          now: () => now,
+          jobTimeout: const Duration(seconds: 3),
+          settingsLoader: () async {
+            if (delayed == 'settings') await delay();
+            now = now.add(const Duration(milliseconds: 500));
+            return _settings;
+          },
+          sttLoader: () async {
+            if (delayed == 'stt-settings') await delay();
+            now = now.add(const Duration(milliseconds: 500));
+            return const SttSettings(baseUrl: 'http://stt.local/v1');
+          },
+          brainProvider: () => brain,
+          matchRoutine: (_) => null,
+          hooks: hooks,
+          addToConversation: (role, text) => conversation.add([role, text]),
+          currentVoice: () => 'alloy',
+        );
+        final dir = await Directory.systemTemp.createTemp('runner-deadline-');
+        addTearDown(() => dir.delete(recursive: true));
+        final recording = await File('${dir.path}/audio')
+            .writeAsString('fixture');
+        final processing = runner.process(recording);
+        if (['settings', 'stt-settings', 'transcription'].contains(delayed)) {
+          await entered.future;
+          release.complete();
+        } else {
+          switch (delayed) {
+            case 'ask':
+              await brain.askEntered.future;
+              now = now.add(const Duration(seconds: 3));
+              brain.asking!.complete(const BrainReply(spoken: 'late'));
+            case 'confirmation':
+              await gate.entered.future;
+              now = now.add(const Duration(seconds: 3));
+              gate.pending!.complete(true);
+            case 'execution':
+              await exec.entered.future;
+              now = now.add(const Duration(seconds: 3));
+              exec.pending!.complete(const ToolResult('late'));
+            case 'result':
+              await brain.resultEntered.future;
+              now = now.add(const Duration(seconds: 3));
+              brain.reacting!.complete(const BrainReply(spoken: 'late'));
+            case 'synthesis':
+              await speech.entered.future;
+              now = now.add(const Duration(seconds: 3));
+              speech.pending!.complete([1, 2, 3]);
+          }
+        }
+        await processing;
+        expect(hooks.says, isEmpty);
+        expect(speech.played, isNull);
+        expect(hooks.statuses, contains(BlueyStatus.error));
+        expect(await recording.exists(), isFalse);
+        if (delayed != 'synthesis') {
+          expect(conversation.where((e) => e.first == 'bluey'), isEmpty);
+        }
+        if (delayed == 'confirmation') expect(exec.calls, 0);
+      },
+    );
+  }
 }

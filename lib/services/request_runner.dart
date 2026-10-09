@@ -58,7 +58,11 @@ class RequestRunner {
     this.stepTimeout = const Duration(seconds: 60),
     this.jobTimeout = const Duration(minutes: 3),
     this.maxToolSteps = 5,
-  }) : _injectedTranscriber = transcriber,
+    DateTime Function()? now,
+    Future<void> Function(File)? deleteRecording,
+  }) : _deleteRecording = deleteRecording ?? AudioCapture.deleteQuietly,
+       _now = now ?? DateTime.now,
+       _injectedTranscriber = transcriber,
        safety = safety ?? SafetyGate(),
        tools = tools ?? ToolExecutor(),
        speech = speech ?? SpeechService(),
@@ -68,6 +72,9 @@ class RequestRunner {
        addToConversation = addToConversation ?? ConversationStore.instance.add,
        currentVoice =
            currentVoice ?? (() => CharacterStore.instance.current.value.voice);
+
+  final DateTime Function() _now;
+  final Future<void> Function(File) _deleteRecording;
 
   /// Set when the caller injected a transcriber (tests, or a host that owns
   /// its own provider). Left null in the app, where the provider is resolved
@@ -135,36 +142,63 @@ class RequestRunner {
     // transcript instead of submitting it to the brain.
     final runGeneration = safety.generation;
     bool cancelled() => safety.killed || safety.generation != runGeneration;
-    final deadline = DateTime.now().add(jobTimeout);
+    final deadline = _now().add(jobTimeout);
+    var finished = false;
     Duration remaining() {
-      final r = deadline.difference(DateTime.now());
+      final r = deadline.difference(_now());
       return r.isNegative ? Duration.zero : r;
     }
 
+    void check() {
+      if (cancelled()) throw const _RunStopped();
+      if (remaining() == Duration.zero) {
+        throw TimeoutException('Request exceeded whole-job deadline');
+      }
+    }
+
+    // Timeouts discard results, not underlying native/network work. Every
+    // stage checks generation and the same deadline on both sides of await.
+    Future<T> stage<T>(
+      Future<T> Function() operation, {
+      bool stt = false,
+    }) async {
+      check();
+      final budget = remaining() < stepTimeout ? remaining() : stepTimeout;
+      try {
+        final value = await operation().timeout(budget);
+        check();
+        return value;
+      } on TimeoutException {
+        if (cancelled()) throw const _RunStopped();
+        if (stt) {
+          throw SttException(
+            SttErrorKind.timeout,
+            'Transcription exceeded request time budget',
+          );
+        }
+        rethrow;
+      } catch (_) {
+        check();
+        rethrow;
+      }
+    }
+
     try {
-      final settings = await settingsLoader();
-      final sttSettings = await sttLoader();
-      final text = await PerfMonitor.instance.measure(
-        'listening.transcription',
-        () => transcriberFor(sttSettings)
-            .transcribe(file, sttSettings)
-            .timeout(
-              remaining(),
-              onTimeout: () => throw SttException(
-                SttErrorKind.timeout,
-                'Transcription exceeded the ${jobTimeout.inSeconds}s job deadline',
-              ),
-            ),
+      final settings = await stage(settingsLoader);
+      final sttSettings = await stage(sttLoader);
+      final text = await stage(
+        () => PerfMonitor.instance.measure(
+          'listening.transcription',
+          () => transcriberFor(sttSettings).transcribe(file, sttSettings),
+        ),
+        stt: true,
       );
 
-      if (cancelled()) {
-        hooks.bubble('Stopped.');
-        return;
-      }
       if (text.isEmpty) {
         hooks.bubble("Didn't catch that.");
         return;
       }
+      check();
       hooks.bubble(text);
       addToConversation('user', text);
       // A routine trigger expands into its standing instructions (#56).
@@ -177,11 +211,18 @@ class RequestRunner {
         hooks.bubble('Set up the brain in settings first.');
         return;
       }
-      var reply = await PerfMonitor.instance.measure(
-        'thinking.brain',
-        () => brain
-            .askStreaming(effectiveText, onToken: hooks.bubble)
-            .timeout(stepTimeout),
+      var reply = await stage(
+        () => PerfMonitor.instance.measure(
+          'thinking.brain',
+          () => brain.askStreaming(
+            effectiveText,
+            onToken: (token) {
+              if (!finished && !cancelled() && remaining() > Duration.zero) {
+                hooks.bubble(token);
+              }
+            },
+          ),
+        ),
       );
       // Tool loop: let the brain act, then react to what happened.
       // #107/#199: a kill (or kill+resume, which bumps the generation) stops
@@ -194,33 +235,32 @@ class RequestRunner {
         }
         steps++;
         final call = reply.toolCall!;
-        if (!await safety.authorize(call.name, call.arguments)) {
-          if (cancelled()) {
-            hooks.bubble('Stopped.');
-            return;
-          }
-          reply = await brain
-              .toolResult(call.name, 'Denied by the user.')
-              .timeout(stepTimeout);
+        final allowed = await stage(
+          () => safety.authorize(call.name, call.arguments),
+        );
+        if (!allowed) {
+          reply = await stage(
+            () => brain.toolResult(call.name, 'Denied by the user.'),
+          );
           continue;
         }
+        check();
         hooks.status(BlueyStatus.acting);
-        final result = await PerfMonitor.instance.measure(
-          'acting.tool.${call.name}',
-          () => tools.execute(call),
+        final result = await stage(
+          () => PerfMonitor.instance.measure(
+            'acting.tool.${call.name}',
+            () => tools.execute(call),
+          ),
         );
-        if (cancelled()) {
-          hooks.bubble('Stopped.');
-          return;
-        }
-        reply = await brain
-            .toolResult(
-              call.name,
-              result.text,
-              images: [if (result.imageBase64 != null) result.imageBase64!],
-            )
-            .timeout(stepTimeout);
+        reply = await stage(
+          () => brain.toolResult(
+            call.name,
+            result.text,
+            images: [if (result.imageBase64 != null) result.imageBase64!],
+          ),
+        );
       }
+      check();
       if (reply.toolCall != null) {
         hooks.bubble('Too many steps - stopping here.');
       }
@@ -243,7 +283,10 @@ class RequestRunner {
             ttsModel: settings.ttsModel,
             ttsVoice: currentVoice(),
           );
-          final audio = await speech.synthesize(reply.spoken, voiced);
+          final audio = await stage(
+            () => speech.synthesize(reply.spoken, voiced),
+          );
+          check();
           hooks.say(
             Packet(
               command: 'say',
@@ -254,11 +297,14 @@ class RequestRunner {
           );
           unawaited(speech.playBytes(audio));
         } on SpeechException catch (e) {
+          check();
           hooks
             ..say(Packet(command: 'say', text: reply.spoken), reply.spoken)
             ..bubble('${reply.spoken}\n(TTS failed: $e)');
         }
       }
+    } on _RunStopped {
+      hooks.bubble('Stopped.');
     } on SttException catch (e) {
       hooks
         ..bubble('Transcription failed: $e')
@@ -268,7 +314,8 @@ class RequestRunner {
         ..bubble('Error: $e')
         ..status(BlueyStatus.error);
     } finally {
-      await AudioCapture.deleteQuietly(file); // #116
+      finished = true;
+      await _deleteRecording(file); // #116
       final face = FaceState(mood: awake ? Mood.listening : Mood.sleepy);
       hooks
         ..face(face)
@@ -276,4 +323,8 @@ class RequestRunner {
         ..sendFace(face);
     }
   }
+}
+
+class _RunStopped implements Exception {
+  const _RunStopped();
 }
