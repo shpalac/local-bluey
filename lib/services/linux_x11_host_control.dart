@@ -64,6 +64,7 @@ class LinuxX11HostControl extends LinuxHostControlBase {
 
   @override
   Future<ScreenSnapshot> snapshot() async {
+    lastTargets.clear();
     final (w, h) = await _displaySize();
     return _capture(region: null, screenWidth: w, screenHeight: h);
   }
@@ -75,6 +76,7 @@ class LinuxX11HostControl extends LinuxHostControlBase {
     double width,
     double height,
   ) async {
+    lastTargets.clear();
     final (w, h) = await _displaySize();
     return _capture(
       region:
@@ -90,6 +92,7 @@ class LinuxX11HostControl extends LinuxHostControlBase {
     required double screenWidth,
     required double screenHeight,
   }) async {
+    lastTargets.clear();
     final dir = await makeTempDir();
     try {
       final raw = '${dir.path}/shot.png';
@@ -103,6 +106,7 @@ class LinuxX11HostControl extends LinuxHostControlBase {
         screenWidth: screenWidth,
         screenHeight: screenHeight,
         frontApp: app,
+        verifyCrop: region != null,
       );
     } finally {
       await dir.delete(recursive: true);
