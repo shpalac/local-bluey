@@ -57,8 +57,13 @@ class EgressEntry {
 
 /// Storage holds metadata only. Null from read means no retained file.
 abstract interface class EgressStorage {
+  /// Reads retained lines, or null when the file is absent.
   Future<String?> read();
+
+  /// Replaces the retained metadata; failures must throw.
   Future<void> write(String contents);
+
+  /// Deletes retained history; failures must throw.
   Future<void> delete();
 }
 
@@ -90,12 +95,19 @@ class EgressMonitor {
     : _storage = storage ?? _FileEgressStorage(),
       _now = now ?? DateTime.now;
 
+  /// Shared production monitor.
   static final EgressMonitor instance = EgressMonitor();
+
+  /// Maximum retained metadata entries.
   static const keepEntries = 300;
+
+  /// Maximum retained age in days.
   static int retentionDays = 30;
 
   final EgressStorage _storage;
   final DateTime Function() _now;
+
+  /// In-memory retained entries, oldest first.
   final List<EgressEntry> entries = [];
   Future<void> _tail = Future<void>.value();
   bool _loaded = false;
@@ -103,6 +115,7 @@ class EgressMonitor {
   bool _incomplete = false;
   String? _storageProblem;
 
+  /// Whether the retained history was recovered without known gaps/errors.
   bool get historyAvailable =>
       _loaded && !_readFailed && !_incomplete && _storageProblem == null;
 
@@ -114,6 +127,7 @@ class EgressMonitor {
     return next;
   }
 
+  /// Idempotently recovers retained history in operation order.
   Future<void> load() => _ordered(_load);
 
   Future<void> _load() async {
@@ -154,6 +168,7 @@ class EgressMonitor {
     }
   }
 
+  /// Records metadata only after loading history, then persists in order.
   Future<void> record(String url, String kind, int bytes) {
     // Never use an unparsed URL as a host: it may contain a path or secret.
     final host = Uri.tryParse(url)?.host;
