@@ -104,7 +104,9 @@ void main() {
         now: async.getClock(DateTime(2026)).now,
       );
       final id = receipts.track(Packet(command: 'say', audio: 'x'), 'old');
-      async.elapse(const Duration(minutes: 2) - const Duration(microseconds: 1));
+      async.elapse(
+        const Duration(minutes: 2) - const Duration(microseconds: 1),
+      );
       expect(receipts.retryPacket(id), isNotNull);
       async.elapse(const Duration(microseconds: 1));
       expect(receipts.hasPending, isFalse);
