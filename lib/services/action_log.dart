@@ -94,6 +94,7 @@ class ActionEntry {
   /// Failure is recorded even if its guidance was truncated.
   bool get failed => recoveryHint != null;
 
+  /// Serializes bounded retained fields.
   Map<String, dynamic> toJson() => {
     'runId': runId,
     'tool': tool,
@@ -126,13 +127,22 @@ class ActionEntry {
 
 /// Null read means absent storage, not a failed read. Failures must throw.
 abstract interface class ActionStorage {
+  /// Reads retained JSONL; null means absent file.
   Future<String?> read();
+
+  /// Replaces retained history; throws on failure.
   Future<void> write(String contents);
+
+  /// Deletes retained history; throws on failure.
   Future<void> delete();
 }
 
+/// Local JSONL storage with an injectable file resolver.
 class FileActionStorage implements ActionStorage {
+  /// Uses [file] for each operation.
   FileActionStorage(this.file);
+
+  /// Resolves the target file.
   final Future<File> Function() file;
   @override
   Future<String?> read() async {
@@ -164,18 +174,29 @@ class ActionLog {
           ),
       _now = now ?? DateTime.now;
 
+  /// Shared production log.
   static final ActionLog instance = ActionLog();
+
+  /// Maximum retained entry count.
   static const keepEntries = 500;
+
+  /// Maximum retained age in days.
   static int retentionDays = 30;
   final ActionStorage _storage;
   final DateTime Function() _now;
   final List<ActionEntry> _entries = [];
+
+  /// Immutable view of retained entries in record order.
   List<ActionEntry> get entries => List.unmodifiable(_entries);
   Future<void> _tail = Future<void>.value();
   bool _loaded = false, _incomplete = false, _readFailed = false;
   String? _problem;
+
+  /// True only after known-complete recovery and successful storage.
   bool get historyAvailable =>
       _loaded && !_incomplete && !_readFailed && _problem == null;
+
+  /// Current history uncertainty, or null when available.
   String? get historyProblem => historyAvailable
       ? null
       : _problem ?? 'Retained action history is unavailable or incomplete.';
@@ -186,6 +207,7 @@ class ActionLog {
     return next;
   }
 
+  /// Idempotently recovers history in operation order.
   Future<void> load() => _ordered(_load);
   Future<void> _load() async {
     if (_loaded) return;
@@ -221,6 +243,7 @@ class ActionLog {
     }
   }
 
+  /// Loads first, then appends and persists in order.
   Future<void> record(ActionEntry entry) => _ordered(() async {
     await _load();
     _entries.add(entry);
@@ -251,6 +274,7 @@ class ActionLog {
     }
   });
 
+  /// Per-run outcome/recovery summary, with any known history warning.
   String summarizeRun(String runId) {
     _prune();
     final warning = historyProblem == null ? '' : '${historyProblem!}\n';
