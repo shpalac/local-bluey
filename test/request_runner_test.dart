@@ -702,4 +702,87 @@ void main() {
       },
     );
   }
+  for (final stage in ['confirmation', 'execution', 'synthesis']) {
+    for (final lateError in [false, true]) {
+      test(
+        'pending $stage times out at remaining budget before late ${lateError ? 'error' : 'success'}',
+        () {
+          fakeAsync((time) {
+            final origin = DateTime.utc(2026, 10, 10);
+            var spent = Duration.zero;
+            var finished = false, cleaned = false;
+            final (runner, brain, gate, exec, speech, _, hooks, _) = _rig(
+              jobTimeout: const Duration(seconds: 3),
+              now: () => time.getClock(origin).now().add(spent),
+              onSettings: () {
+                spent = const Duration(seconds: 2);
+              },
+              deleteRecording: (_) async {
+                cleaned = true;
+              },
+            );
+            if (stage == 'confirmation') gate.pending = Completer<bool>();
+            if (stage == 'execution') exec.pending = Completer<ToolResult>();
+            if (stage == 'synthesis') speech.pending = Completer<List<int>>();
+            brain.replies.addAll([
+              if (stage != 'synthesis')
+                BrainReply(spoken: '', toolCall: ToolCall('click', {})),
+              const BrainReply(spoken: 'active answer'),
+            ]);
+            unawaited(
+              runner.process(file).then((_) {
+                finished = true;
+              }),
+            );
+            time.flushMicrotasks();
+            final entered = switch (stage) {
+              'confirmation' => gate.entered.isCompleted,
+              'execution' => exec.entered.isCompleted,
+              _ => speech.entered.isCompleted,
+            };
+            expect(entered, isTrue);
+            time.elapse(const Duration(milliseconds: 999));
+            time.flushMicrotasks();
+            expect(finished, isFalse);
+            expect(cleaned, isFalse);
+            time.elapse(const Duration(milliseconds: 1));
+            time.flushMicrotasks();
+            expect(finished, isTrue);
+            expect(cleaned, isTrue);
+            expect(hooks.statuses, contains(BlueyStatus.error));
+            expect(hooks.says, isEmpty);
+            expect(speech.played, isNull);
+            final bubblesBefore = List<String?>.of(hooks.bubbles);
+            final facesBefore = List<Mood>.of(hooks.faces);
+            if (stage == 'confirmation') {
+              if (lateError) {
+                gate.pending!.completeError(StateError('late confirmation'));
+              } else {
+                gate.pending!.complete(true);
+              }
+            } else if (stage == 'execution') {
+              if (lateError) {
+                exec.pending!.completeError(StateError('late tool'));
+              } else {
+                exec.pending!.complete(const ToolResult('late tool'));
+              }
+            } else {
+              if (lateError) {
+                speech.pending!.completeError(SpeechException('late speech'));
+              } else {
+                speech.pending!.complete([1, 2, 3]);
+              }
+            }
+            time.flushMicrotasks();
+            expect(hooks.says, isEmpty);
+            expect(speech.played, isNull);
+            expect(hooks.bubbles, bubblesBefore);
+            expect(hooks.faces, facesBefore);
+            expect(brain.toolResults, isEmpty);
+            if (stage == 'confirmation') expect(exec.calls, 0);
+          });
+        },
+      );
+    }
+  }
 }
