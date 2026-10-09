@@ -18,9 +18,9 @@ abstract class WakeWordSpotter {
 }
 
 /// Opt-in always-listening wake word (#64). Records short overlapping
-/// windows, asks the spotter for a local confidence score, and only then
-/// confirms the phrase via the configured transcription endpoint - which
-/// must be local when local-only mode is on. The mic indicator is the
+/// windows and asks the spotter for a local confidence score. A wake is
+/// confirmed by transcription only when that stays on this machine;
+/// otherwise the spotter alone decides and no audio is uploaded (#79). The mic indicator is the
 /// existing listening status chip; [listening] exposes the state.
 class WakeWordService {
   WakeWordService({
@@ -108,18 +108,19 @@ class WakeWordService {
     if (engine == null) return false; // no engine bundled; stay dormant
     if (await engine.score(file) < scoreThreshold) return false;
 
+    // The spotter already fired on-device. Confirm via transcription only
+    // when that stays on this machine (an injected transcriber, or a local
+    // endpoint); otherwise trust the spotter and never upload the audio.
     final stt = await SttSettings.load();
-    if (await PrivacyGuard.isLocalOnly()) {
-      final endpoint = stt.baseUrl;
-      if (endpoint == null || !PrivacyGuard.isLocalUrl(endpoint)) {
-        return false; // confirmation would leave the Mac
-      }
+    final endpoint = stt.baseUrl;
+    final canConfirmLocally =
+        _transcription != null ||
+        (endpoint != null && PrivacyGuard.isLocalUrl(endpoint));
+    if (canConfirmLocally) {
+      final text = await (_transcription ?? SttProviders.create(stt))
+          .transcribe(file, stt);
+      if (!text.toLowerCase().contains(wakePhrase)) return false;
     }
-    final text = await (_transcription ?? SttProviders.create(stt)).transcribe(
-      file,
-      stt,
-    );
-    if (!text.toLowerCase().contains(wakePhrase)) return false;
     onWake?.call();
     return true;
   }

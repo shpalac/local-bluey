@@ -35,6 +35,20 @@ void main() {
     expect(spotter.calls, 1);
   });
 
+  test('remote endpoint: spotter alone wakes, no upload', () async {
+    SharedPreferences.setMockInitialValues({
+      'stt.baseUrl': 'https://api.example.com/v1',
+    });
+    final spotter = _FakeSpotter();
+    final service = WakeWordService(spotter: spotter);
+    var woke = false;
+    service.onWake = () => woke = true;
+    final file = await File('${Directory.systemTemp.path}/ww_test3.m4a')
+        .create();
+    expect(await service.scoreAndMaybeWake(file), isTrue);
+    expect(woke, isTrue);
+  });
+
   test('default is off and persisted', () async {
     expect(await WakeWordService.isEnabled(), isFalse);
     await WakeWordService.setEnabled(true);
