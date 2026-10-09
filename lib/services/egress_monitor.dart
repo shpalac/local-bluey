@@ -193,12 +193,6 @@ class EgressMonitor {
     });
   }
 
-  static bool _isLocalHost(String host) =>
-      host == 'localhost' ||
-      host == '127.0.0.1' ||
-      host == '::1' ||
-      host.endsWith('.local');
-
   /// Delete after all older operations. A failed delete is surfaced and does
   /// not claim cleared disk history; a successful clear establishes a new log.
   Future<void> clear() => _ordered(() async {
@@ -261,7 +255,7 @@ class EgressMonitor {
         problems.add('$kind endpoint is remote: $url');
       }
     });
-    final remote = entries.where((e) => !_isLocalHost(e.host));
+    final remote = entries.where((e) => !PrivacyGuard.isLocalHost(e.host));
     if (remote.isNotEmpty) {
       final hosts = remote.map((e) => e.host).toSet().join(', ');
       problems.add('log shows past transmissions to: $hosts');
