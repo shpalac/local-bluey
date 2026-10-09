@@ -1,44 +1,99 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// One executed action, persisted so "what did Bluey just do?" is always
-/// answerable (#57).
+// Bounds are storage limits, not a guarantee of secret detection. Arbitrary
+// argument/outcome text may still be private. No payload leaves this device.
+String _text(String value, int bytes) {
+  final out = StringBuffer();
+  var used = 0;
+  for (final rune in value.runes) {
+    final char = String.fromCharCode(rune);
+    final size = utf8.encode(char).length;
+    if (used + size > bytes) break;
+    out.write(char);
+    used += size;
+  }
+  return out.toString();
+}
+
+class _ArgumentSnapshot {
+  var remaining = 8192;
+  var nodes = 128;
+
+  String text(String value, int limit) {
+    final result = _text(value, remaining < limit ? remaining : limit);
+    remaining -= utf8.encode(result).length;
+    return result;
+  }
+
+  dynamic copy(dynamic value, int depth) {
+    if (remaining <= 0 || nodes-- <= 0 || depth > 4) return null;
+    if (value == null || value is bool || value is int) return value;
+    if (value is double) return value.isFinite ? value : null;
+    if (value is String) return text(value, 1024);
+    if (value is Map) {
+      final map = <String, dynamic>{};
+      for (final entry in value.entries.take(32)) {
+        if (remaining <= 0 || nodes <= 0) break;
+        if (entry.key is! String) continue;
+        final key = text(entry.key as String, 128);
+        map[key] = copy(entry.value, depth + 1);
+      }
+      return Map<String, dynamic>.unmodifiable(map);
+    }
+    if (value is List) {
+      final list = <dynamic>[];
+      for (final item in value.take(32)) {
+        if (remaining <= 0 || nodes <= 0) break;
+        list.add(copy(item, depth + 1));
+      }
+      return List<dynamic>.unmodifiable(list);
+    }
+    // Do not call arbitrary object.toString() or retain caller-owned objects.
+    return null;
+  }
+}
+
+/// Immutable bounded snapshot of one executed action (#57).
 class ActionEntry {
   ActionEntry({
-    required this.runId,
-    required this.tool,
-    required this.arguments,
-    required this.outcome,
+    required String runId,
+    required String tool,
+    required Map<String, dynamic> arguments,
+    required String outcome,
     DateTime? at,
-    this.recoveryHint,
-  }) : at = at ?? DateTime.now();
+    String? recoveryHint,
+  }) : runId = _text(runId, 256),
+       tool = _text(tool, 128),
+       arguments =
+           _ArgumentSnapshot().copy(arguments, 0) as Map<String, dynamic>,
+       outcome = _text(outcome, 2048),
+       recoveryHint = recoveryHint == null ? null : _text(recoveryHint, 1024),
+       at = at ?? DateTime.now();
 
-  /// All actions from one brain turn share a run id, so a run can be
-  /// summarized or audited as a unit.
+  /// Actions from one brain turn share this bounded id.
   final String runId;
 
-  /// The tool that ran.
+  /// Tool name.
   final String tool;
 
-  /// The exact arguments it ran with.
+  /// Bounded, detached arguments, not necessarily the full executed payload.
   final Map<String, dynamic> arguments;
 
-  /// First line of the tool result, or the error message.
+  /// Bounded tool result or error.
   final String outcome;
 
-  /// What to try when this action failed, in plain language.
+  /// Bounded recovery guidance.
   final String? recoveryHint;
 
-  /// When the action ran (defaults to now).
+  /// Time of execution.
   final DateTime at;
 
-  /// True when the action failed (a recovery hint is attached).
+  /// Failure is recorded even if its guidance was truncated.
   bool get failed => recoveryHint != null;
 
-  /// Serializes for the on-disk log.
   Map<String, dynamic> toJson() => {
     'runId': runId,
     'tool': tool,
@@ -48,70 +103,161 @@ class ActionEntry {
     'at': at.toIso8601String(),
   };
 
-  factory ActionEntry.fromJson(Map<String, dynamic> json) => ActionEntry(
-    runId: json['runId'] as String? ?? '',
-    tool: json['tool'] as String? ?? '',
-    arguments: Map<String, dynamic>.from(json['arguments'] as Map? ?? const {}),
-    outcome: json['outcome'] as String? ?? '',
-    recoveryHint: json['recoveryHint'] as String?,
-    at: DateTime.tryParse(json['at'] as String? ?? '') ?? DateTime.now(),
-  );
+  factory ActionEntry.fromJson(Map<String, dynamic> json) {
+    final at = json['at'] is String ? DateTime.tryParse(json['at']) : null;
+    if (json['runId'] is! String ||
+        json['tool'] is! String ||
+        json['arguments'] is! Map<String, dynamic> ||
+        json['outcome'] is! String ||
+        (json['recoveryHint'] != null && json['recoveryHint'] is! String) ||
+        at == null) {
+      throw const FormatException('Invalid action row');
+    }
+    return ActionEntry(
+      runId: json['runId'],
+      tool: json['tool'],
+      arguments: json['arguments'],
+      outcome: json['outcome'],
+      recoveryHint: json['recoveryHint'],
+      at: at,
+    );
+  }
 }
 
-/// Persistent, append-only action log (actions.jsonl in app documents).
+/// Null read means absent storage, not a failed read. Failures must throw.
+abstract interface class ActionStorage {
+  Future<String?> read();
+  Future<void> write(String contents);
+  Future<void> delete();
+}
+
+class FileActionStorage implements ActionStorage {
+  FileActionStorage(this.file);
+  final Future<File> Function() file;
+  @override
+  Future<String?> read() async {
+    final f = await file();
+    return await f.exists() ? await f.readAsString() : null;
+  }
+
+  @override
+  Future<void> write(String contents) async {
+    await (await file()).writeAsString(contents, flush: true);
+  }
+
+  @override
+  Future<void> delete() async {
+    final f = await file();
+    if (await f.exists()) await f.delete();
+  }
+}
+
+/// Bounded retained action history. Corrupt/unknown history is not overwritten.
 class ActionLog {
-  ActionLog._();
+  ActionLog({ActionStorage? storage, DateTime Function()? now})
+    : _storage =
+          storage ??
+          FileActionStorage(
+            () async => File(
+              '${(await getApplicationDocumentsDirectory()).path}/actions.jsonl',
+            ),
+          ),
+      _now = now ?? DateTime.now;
 
-  /// The shared log.
-  static final ActionLog instance = ActionLog._();
-
-  /// Rolling cap; retention window enforced on top (#83).
+  static final ActionLog instance = ActionLog();
   static const keepEntries = 500;
-
-  /// Entries older than this are pruned on every write (#83).
   static int retentionDays = 30;
+  final ActionStorage _storage;
+  final DateTime Function() _now;
+  final List<ActionEntry> _entries = [];
+  List<ActionEntry> get entries => List.unmodifiable(_entries);
+  Future<void> _tail = Future<void>.value();
+  bool _loaded = false, _incomplete = false, _readFailed = false;
+  String? _problem;
+  bool get historyAvailable =>
+      _loaded && !_incomplete && !_readFailed && _problem == null;
+  String? get historyProblem => historyAvailable
+      ? null
+      : _problem ?? 'Retained action history is unavailable or incomplete.';
 
-  /// The in-memory log, oldest first.
-  final List<ActionEntry> entries = [];
+  Future<void> _ordered(Future<void> Function() op) {
+    final next = _tail.then((_) => op());
+    _tail = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return next;
+  }
 
-  Future<File> _file() async =>
-      File('${(await getApplicationDocumentsDirectory()).path}/actions.jsonl');
-
-  /// Appends one entry and persists, pruning past retention (#83).
-  Future<void> record(ActionEntry entry) async {
-    entries.add(entry);
-    entries.removeWhere(
-      (e) => DateTime.now().difference(e.at).inDays > retentionDays,
-    );
-    while (entries.length > keepEntries) {
-      entries.removeAt(0);
-    }
+  Future<void> load() => _ordered(_load);
+  Future<void> _load() async {
+    if (_loaded) return;
     try {
-      final file = await _file();
-      final lines = entries.map((e) => jsonEncode(e.toJson())).join('\n');
-      await file.writeAsString('$lines\n', flush: true);
-    } catch (e) {
-      debugPrint('ActionLog write failed: $e');
+      final contents = await _storage.read();
+      final recovered = <ActionEntry>[];
+      for (final line in const LineSplitter().convert(contents ?? '')) {
+        if (line.trim().isEmpty) continue;
+        try {
+          final json = jsonDecode(line);
+          if (json is! Map<String, dynamic>) throw const FormatException('row');
+          recovered.add(ActionEntry.fromJson(json));
+        } catch (_) {
+          _incomplete = true;
+        }
+      }
+      _entries.insertAll(0, recovered);
+      _loaded = true;
+      _readFailed = false;
+      _problem = null;
+      _prune();
+    } catch (_) {
+      _readFailed = true;
+      _problem = 'Retained action history could not be read.';
     }
   }
 
-  /// Deletes the log, in memory and on disk (#83).
-  Future<void> clear() async {
-    entries.clear();
-    try {
-      final file = await _file();
-      if (await file.exists()) await file.delete();
-    } catch (e) {
-      debugPrint('ActionLog clear failed: $e');
+  void _prune() {
+    final cutoff = _now().subtract(Duration(days: retentionDays));
+    _entries.removeWhere((e) => e.at.isBefore(cutoff));
+    if (_entries.length > keepEntries) {
+      _entries.removeRange(0, _entries.length - keepEntries);
     }
   }
 
-  /// Per-run summary: "3 actions, 1 failed (click: re-look at the screen)".
+  Future<void> record(ActionEntry entry) => _ordered(() async {
+    await _load();
+    _entries.add(entry);
+    _prune();
+    if (_readFailed || _incomplete) return;
+    try {
+      final lines = _entries.map((e) => jsonEncode(e.toJson())).join('\n');
+      await _storage.write(lines.isEmpty ? '' : '$lines\n');
+      _problem = null;
+    } catch (_) {
+      _problem = 'Action history could not be saved.';
+    }
+  });
+
+  /// Deletes after all older operations. Failure propagates to DataRegistry.
+  Future<void> clear() => _ordered(() async {
+    try {
+      await _storage.delete();
+      _entries.clear();
+      _loaded = true;
+      _readFailed = false;
+      _incomplete = false;
+      _problem = null;
+    } catch (_) {
+      _problem = 'Action history deletion failed.';
+      _readFailed = true;
+      rethrow;
+    }
+  });
+
   String summarizeRun(String runId) {
-    final run = entries.where((e) => e.runId == runId).toList();
-    if (run.isEmpty) return 'No actions in this run.';
+    _prune();
+    final warning = historyProblem == null ? '' : '${historyProblem!}\n';
+    final run = _entries.where((e) => e.runId == runId).toList();
+    if (run.isEmpty) return '${warning}No actions in this run.';
     final failed = run.where((e) => e.failed).toList();
-    final buffer = StringBuffer('${run.length} actions');
+    final buffer = StringBuffer('${warning}${run.length} actions');
     if (failed.isEmpty) return '$buffer, all succeeded.';
     buffer.write(', ${failed.length} failed: ');
     buffer.write(failed.map((e) => '${e.tool} (${e.recoveryHint})').join('; '));
