@@ -17,6 +17,7 @@ import 'services/audio_capture.dart';
 import 'services/brain_host.dart';
 import 'llm/llm_provider.dart' show BlueyStatus;
 import 'services/characters.dart';
+import 'services/egress_monitor.dart';
 import 'services/conversation.dart';
 import 'services/perf_monitor.dart';
 import 'services/permission_watchdog.dart';
@@ -54,6 +55,7 @@ import 'services/native_control.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Strings.load();
+  await EgressMonitor.instance.load();
   await RoutineStore.instance.load();
   await CharacterStore.instance.load();
   await BiometricLock.instance.load();

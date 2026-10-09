@@ -160,7 +160,7 @@ class DataRegistry {
       whatEn: 'Egress record (what left the Mac, where to)',
       whatHe: 'רשומת תעבורה יוצאת (מה יצא מהמק, לאן)',
       where: 'Documents/egress.jsonl',
-      retentionEn: _logRetention,
+      retentionEn: 'Up to 300 entries / 30 days',
       retentionHe: 'עד 300 רשומות / 30 יום',
       clear: () => EgressMonitor.instance.clear(),
     ),
