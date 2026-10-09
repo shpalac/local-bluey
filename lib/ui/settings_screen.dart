@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 
 import '../llm/llm_provider.dart';
-import '../services/biometric_lock.dart';
+import 'app_lock_tile.dart';
 import 'theme.dart';
 import 'troubleshooting_screen.dart';
 import '../services/haptics.dart';
@@ -515,7 +515,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onChanged: (v) => setState(() => _perfOverlay = v),
             ),
             const _AppearanceTile(),
-            const _AppLockTile(),
+            const AppLockTile(),
             const _HapticsTile(),
             if (defaultTargetPlatform == TargetPlatform.macOS)
               const HoldKeySection(),
@@ -730,32 +730,6 @@ class _AppearanceTile extends StatelessWidget {
         ],
       ),
     ),
-  );
-}
-
-/// Optional biometric/passcode app lock (#92), persisted via BiometricLock.
-class _AppLockTile extends StatefulWidget {
-  const _AppLockTile();
-
-  @override
-  State<_AppLockTile> createState() => _AppLockTileState();
-}
-
-class _AppLockTileState extends State<_AppLockTile> {
-  bool _enabled = BiometricLock.instance.enabled;
-
-  @override
-  Widget build(BuildContext context) => SwitchListTile(
-    secondary: const Icon(Icons.lock_outline),
-    title: const Text('App lock'),
-    subtitle: const Text(
-      'Require Face ID / Touch ID or passcode for the remote and Settings.',
-    ),
-    value: _enabled,
-    onChanged: (value) {
-      setState(() => _enabled = value);
-      BiometricLock.instance.setEnabled(value);
-    },
   );
 }
 

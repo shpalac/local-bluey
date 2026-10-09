@@ -146,3 +146,28 @@ Mac hold-to-talk key (#228): in Settings, switch on "Hold a key to talk" to hold
 
 Platform limits: iOS App Intents/Shortcuts and widgets need native platform registration and are tracked as follow-up work.
 
+
+### App-lock regression and visual fixtures (#298)
+
+App lock remains off by default. Enabling it first requires successful device
+authentication and a successful preference save. Enabled gates hide content
+when backgrounded and require an explicit Unlock after returning; they do not
+automatically restart OS prompts on resume. Results from an attempt invalidated
+by backgrounding or disposal cannot unlock the gate. Missing device credentials,
+transient errors and incomplete authentication keep the gate locked with
+localized guidance and retry, never a bypass to Settings.
+
+Deterministic injected fixtures live in `test/lock_gate_test.dart` and
+`test/biometric_lock_test.dart`. To capture actual English/Hebrew lock-state
+pixels on CI, run:
+
+```bash
+flutter test test/lock_gate_test.dart --dart-define=LOCK_CAPTURE_DIR=build/lock-captures
+```
+
+The runner needs a Hebrew-capable font at
+`/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf`, or supply its path through
+`--dart-define=LOCK_CAPTURE_FONT=...`. Upload `build/lock-captures/*.png` and
+inspect those pixels for wrapping, clipping, readability and RTL before calling
+the UI ready. These injected fixtures do not establish native biometric or
+real-device acceptance.
