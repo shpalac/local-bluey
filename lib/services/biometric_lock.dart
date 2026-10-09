@@ -53,11 +53,12 @@ class BiometricLock {
 
   /// Isolated lock for injected authentication and widget fixtures.
   @visibleForTesting
-  BiometricLock.forTesting({
+  factory BiometricLock.forTesting({
     required Authenticator authenticator,
     bool enabled = false,
-  }) : _authenticator = authenticator,
-       _enabled = enabled;
+  }) => BiometricLock._fixture(authenticator, enabled);
+
+  BiometricLock._fixture(this._authenticator, this._enabled);
 
   /// The shared lock.
   static final BiometricLock instance = BiometricLock._();

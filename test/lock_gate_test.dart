@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -26,6 +25,7 @@ class _Auth implements Authenticator {
 }
 
 Widget _app(Widget child) => MaterialApp(
+  debugShowCheckedModeBanner: false,
   home: Directionality(
     textDirection: Strings.forceRtl ? TextDirection.rtl : TextDirection.ltr,
     child: child,
@@ -56,6 +56,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('private content'), findsOneWidget);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    // Paused disables scheduled frames. Force the requested widget rebuild
+    // before inspecting the hidden child, without pretending it resumed.
+    tester.binding.scheduleForcedFrame();
     await tester.pump();
     expect(find.text('private content'), findsNothing);
     tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
@@ -247,6 +250,9 @@ void main() {
           final loader = FontLoader('Roboto')
             ..addFont(Future.value(ByteData.sublistView(data)));
           await loader.load();
+          final icons = FontLoader('MaterialIcons')
+            ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+          await icons.load();
         });
         final key = GlobalKey();
         final auth = _Auth();
