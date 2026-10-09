@@ -67,6 +67,25 @@ void main() {
     expect(log.summarizeRun('nope'), 'No actions in this run.');
   });
 
+  test(
+    'unloaded and incomplete empty-run summaries keep warning boundary',
+    () async {
+      final unloaded = ActionLog(storage: MemoryActionStorage());
+      expect(
+        unloaded.summarizeRun('missing'),
+        'Retained action history is unavailable or incomplete.\nNo actions in this run.',
+      );
+      final corrupt = ActionLog(
+        storage: MemoryActionStorage()..contents = '{broken',
+      );
+      await corrupt.load();
+      expect(
+        corrupt.summarizeRun('missing'),
+        'Retained action history is unavailable or incomplete.\nNo actions in this run.',
+      );
+    },
+  );
+
   final now = DateTime.utc(2026, 10, 10);
   ActionEntry entry(String id, {DateTime? at, Map<String, dynamic>? args}) =>
       ActionEntry(
