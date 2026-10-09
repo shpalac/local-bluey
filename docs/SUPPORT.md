@@ -41,3 +41,5 @@ Denied portal consent surfaces as a clean tool error, not a hang.
 
 Symptom-by-symptom fixes live in [TROUBLESHOOTING.md](TROUBLESHOOTING.md);
 the user-facing feature tour is in [USER_GUIDE.md](USER_GUIDE.md).
+
+X11 zoom crop evidence (#285) is fixture-verified only: successful validated exact-capture TSV can verify clean/blank crops, while missing/error/malformed/low-confidence evidence fails closed. Real-X11 capture/OCR privacy checks remain pending; OCR and regex cannot guarantee every secret is detected. Wayland crop is unchanged and unimplemented.

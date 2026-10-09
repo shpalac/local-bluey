@@ -123,28 +123,59 @@ abstract class LinuxHostControlBase implements HostControl {
   /// OCRs [imagePath] with tesseract and formats each confident word as a
   /// target line (`W12 @500,300 "text"`), matching the macOS target format
   /// so the ToolExecutor can hand ids back to [resolveTarget].
-  Future<String> ocrTargets(String imagePath) async {
+  Future<String> ocrTargets(String imagePath) async =>
+      (await _ocrEvidence(imagePath)).$1;
+
+  Future<(String, bool)> _ocrEvidence(String imagePath) async {
     lastTargets.clear();
-    if (!await hasBinary('tesseract')) return '';
-    final result = await run('tesseract', [imagePath, 'stdout', 'tsv']);
-    if (result.exitCode != 0) return '';
-    final lines = const LineSplitter().convert('${result.stdout}');
-    final buffer = StringBuffer();
-    var index = 0;
-    for (final line in lines.skip(1)) {
-      final cols = line.split('\t');
-      if (cols.length != 12) continue;
-      final text = cols[11].trim();
-      final conf = double.tryParse(cols[10]) ?? -1;
-      if (text.isEmpty || conf < 40) continue;
-      final x = (double.parse(cols[6]) + double.parse(cols[8]) / 2).round();
-      final y = (double.parse(cols[7]) + double.parse(cols[9]) / 2).round();
-      index++;
-      final id = 'W$index';
-      lastTargets[id] = ResolvedTarget(x.toDouble(), y.toDouble(), text);
-      buffer.writeln('$id @$x,$y "$text"');
+    try {
+      if (!await hasBinary('tesseract')) return ('', false);
+      final result = await run('tesseract', [imagePath, 'stdout', 'tsv']);
+      if (result.exitCode != 0 || result.stdout is! String) return ('', false);
+      final lines = const LineSplitter().convert(result.stdout as String);
+      const headers = [
+        'level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext',
+        'level\tpage\tblock\tpar\tline\tword\tleft\ttop\twidth\theight\tconf\ttext',
+      ];
+      if (lines.isEmpty || !headers.contains(lines.first)) return ('', false);
+      final targets = <String, ResolvedTarget>{};
+      final buffer = StringBuffer();
+      var verified = true;
+      for (final line in lines.skip(1)) {
+        if (line.isEmpty) continue;
+        final cols = line.split('\t');
+        if (cols.length != 12) return ('', false);
+        final numbers = cols.take(10).map(int.tryParse).toList();
+        final conf = double.tryParse(cols[10]);
+        if (numbers.any((n) => n == null) ||
+            conf == null ||
+            !conf.isFinite ||
+            numbers.first! < 1 ||
+            numbers.first! > 5 ||
+            numbers.skip(1).any((n) => n! < 0) ||
+            conf < -1 ||
+            conf > 100) {
+          return ('', false);
+        }
+        final text = cols[11].trim();
+        if (text.isEmpty) continue;
+        // Discarded low-confidence words are not proof of a clean crop.
+        if (numbers.first != 5 || conf < 40) {
+          verified = false;
+          continue;
+        }
+        final x = (numbers[6]! + numbers[8]! / 2).round();
+        final y = (numbers[7]! + numbers[9]! / 2).round();
+        final id = 'W${targets.length + 1}';
+        targets[id] = ResolvedTarget(x.toDouble(), y.toDouble(), text);
+        buffer.writeln('$id @$x,$y "$text"');
+      }
+      lastTargets.addAll(targets);
+      return (buffer.toString().trimRight(), verified);
+    } catch (_) {
+      lastTargets.clear();
+      return ('', false);
     }
-    return buffer.toString().trimRight();
   }
 
   @override
@@ -165,6 +196,7 @@ abstract class LinuxHostControlBase implements HostControl {
     required double screenHeight,
     String? frontApp,
     int maxWidth = 1280,
+    bool verifyCrop = false,
   }) async {
     final jpg = '$rawPngPath.jpg';
     await ok('convert', [
@@ -176,10 +208,11 @@ abstract class LinuxHostControlBase implements HostControl {
       jpg,
     ]);
     final jpeg = await readBytes(jpg);
-    final targets = await ocrTargets(rawPngPath);
+    final (targets, verified) = await _ocrEvidence(rawPngPath);
     return ScreenSnapshot(
       jpeg: jpeg,
       targets: targets,
+      cropTextVerified: verifyCrop && verified,
       width: screenWidth,
       height: screenHeight,
       frontApp: frontApp,
