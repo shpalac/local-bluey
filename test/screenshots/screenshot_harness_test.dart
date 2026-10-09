@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,10 +32,44 @@ void main() {
   setUpAll(() async {
     // Real glyphs instead of the Ahem test font: the bundled Roboto is
     // registered under its own family name in pubspec.yaml.
-    final loader = FontLoader('Roboto')
+    final loader = FontLoader('BlueyRoboto')
       ..addFont(rootBundle.load('assets/fonts/Roboto-Regular.ttf'));
     await loader.load();
+    // Hebrew glyphs for the RTL shots (Roboto has none): Noto Sans Hebrew
+    // (SIL OFL) is committed next to the harness so every machine renders
+    // the same pixels.
+    final hebrew = FontLoader('NotoSansHebrew')
+      ..addFont(
+        Future.value(
+          ByteData.sublistView(
+            File('test/screenshots/fonts/NotoSansHebrew-Regular.ttf')
+                .readAsBytesSync(),
+          ),
+        ),
+      );
+    await hebrew.load();
+    // Icon glyphs: the Material icon font from the pinned Flutter SDK, so
+    // icons are not blank squares.
+    final root = Platform.environment['FLUTTER_ROOT'];
+    final icons = root == null
+        ? null
+        : File(
+            '$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+          );
+    if (icons == null || !icons.existsSync()) {
+      throw StateError('Material icon font not found under FLUTTER_ROOT');
+    }
+    final iconLoader = FontLoader('MaterialIcons')
+      ..addFont(Future.value(ByteData.sublistView(icons.readAsBytesSync())));
+    await iconLoader.load();
   });
+
+  ThemeData withFonts(ThemeData base) => base.copyWith(
+    textTheme: base.textTheme.apply(
+      fontFamily: 'BlueyRoboto',
+      fontFamilyFallback: const ['NotoSansHebrew'],
+    ),
+  );
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -56,7 +92,8 @@ void main() {
     }
     await tester.pumpWidget(
       MaterialApp(
-        theme: dark ? AppTheme.dark() : AppTheme.light(),
+        debugShowCheckedModeBanner: false,
+        theme: withFonts(dark ? AppTheme.dark() : AppTheme.light()),
         builder: (context, app) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(textScale)),
@@ -65,12 +102,19 @@ void main() {
             child: app!,
           ),
         ),
-        home: child,
+        // The app hosts the face in a Scaffold (lib/main.dart); mirror it so
+        // text gets Material's default style instead of a debug fallback.
+        home: child is FaceScreen ? Scaffold(body: child) : child,
       ),
     );
     // Fixed pumps instead of pumpAndSettle: the settings overlay has
     // perpetual diagnostics animations that never fully settle.
     await tester.pump();
+    // Let real async work (SharedPreferences, readiness probes) finish so a
+    // loading spinner is never captured as the documentation image.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump();
