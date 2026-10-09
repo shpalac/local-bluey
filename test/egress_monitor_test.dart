@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/egress_monitor.dart';
 import 'package:local_bluey/services/settings_store.dart';
+import 'package:local_bluey/services/privacy_guard.dart';
 
 class FakeStorage implements EgressStorage {
   String? contents;
@@ -246,4 +247,59 @@ void main() {
     expect(problems.join(), contains('transcription endpoint is remote'));
     expect(problems.join(), contains('tts endpoint is remote'));
   });
+  test(
+    'retained hosts match endpoint local-only policy without DNS (#297)',
+    () async {
+      const settings = BrainSettings(
+        backend: BrainBackend.ollama,
+        baseUrl: 'http://localhost:11434',
+        model: 'qwen',
+      );
+      for (final host in [
+        'localhost',
+        'LOCALHOST',
+        '127.0.0.1',
+        '127.2.3.4',
+        '0.0.0.0',
+        '::1',
+        '[::1]',
+        '::ffff:127.0.0.1',
+        '[::ffff:127.0.0.1]',
+      ]) {
+        final storage = FakeStorage()..contents = row(host);
+        final m = monitor(storage);
+        expect(PrivacyGuard.isLocalHost(host), isTrue, reason: host);
+        final authority = host.contains(':') && !host.startsWith('[')
+            ? '[$host]'
+            : host;
+        expect(
+          PrivacyGuard.isLocalUrl('http://$authority'),
+          isTrue,
+          reason: host,
+        );
+        expect(await m.offlineSelfTest(settings), isEmpty, reason: host);
+      }
+      for (final host in [
+        'nas.local',
+        'example.com',
+        'unknown-host',
+        '127.999.0.1',
+        '127.0.0',
+        'localhost:80',
+        '[::1]:80',
+        ' localhost',
+        '::ffff:192.168.1.1',
+        'localhost?token=x',
+      ]) {
+        final storage = FakeStorage()..contents = row(host);
+        final m = monitor(storage);
+        expect(PrivacyGuard.isLocalHost(host), isFalse, reason: host);
+        expect(
+          (await m.offlineSelfTest(settings)).join(),
+          contains('past transmissions'),
+          reason: host,
+        );
+      }
+    },
+  );
 }

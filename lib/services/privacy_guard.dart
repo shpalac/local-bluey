@@ -35,16 +35,26 @@ class PrivacyGuard {
     final uri = Uri.tryParse(url.trim());
     if (uri == null || uri.host.isEmpty) return false;
     if (uri.scheme != 'http' && uri.scheme != 'https') return false;
-    var host = uri.host.toLowerCase();
-    // Strip IPv6 brackets form variants.
-    if (host == 'localhost' || host == '::1') return true;
-    if (host == '0.0.0.0') return true;
+    return isLocalHost(uri.host);
+  }
+
+  /// Classifies bare retained host metadata without URL construction or DNS.
+  /// Accepts only supported loopback forms; malformed/LAN/unknown hosts fail.
+  static bool isLocalHost(String value) {
+    var host = value.toLowerCase();
+    if (host.startsWith('[') && host.endsWith(']')) {
+      host = host.substring(1, host.length - 1);
+    }
+    if (host == 'localhost' || host == '::1' || host == '0.0.0.0') return true;
     if (host.startsWith('::ffff:')) host = host.substring(7);
     final parts = host.split('.');
-    if (parts.length == 4 && parts.every((p) => int.tryParse(p) != null)) {
-      return parts[0] == '127';
-    }
-    return false;
+    if (parts.length != 4 || parts.first != '127') return false;
+    return parts.every(
+      (part) =>
+          RegExp(r'^[0-9]{1,3}$').hasMatch(part) &&
+          int.parse(part) >= 0 &&
+          int.parse(part) <= 255,
+    );
   }
 
   /// In local-only mode, remote endpoints are refused with a plain reason.

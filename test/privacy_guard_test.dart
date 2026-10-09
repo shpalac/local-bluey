@@ -66,4 +66,31 @@ void main() {
     );
     expect(await PrivacyGuard.refusalForUrl('http://127.0.0.1:11434'), isNull);
   });
+  test(
+    'bare-host classification rejects malformed/unknown destinations (#297)',
+    () {
+      for (final host in [
+        'LOCALHOST',
+        '[::1]',
+        '::ffff:127.0.0.1',
+        '127.2.3.4',
+      ]) {
+        expect(PrivacyGuard.isLocalHost(host), isTrue);
+      }
+      for (final host in [
+        'nas.local',
+        'unknown-host',
+        '127.999.0.1',
+        'localhost:80',
+        '[::1]:80',
+        ' localhost',
+        'localhost/path',
+        'user@localhost',
+        '127.-1.0.1',
+      ]) {
+        expect(PrivacyGuard.isLocalHost(host), isFalse, reason: host);
+      }
+      expect(PrivacyGuard.isLocalUrl('http://127.999.0.1'), isFalse);
+    },
+  );
 }
