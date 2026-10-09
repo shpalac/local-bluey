@@ -3,12 +3,15 @@ import 'package:local_bluey/services/conversation.dart';
 import 'package:local_bluey/services/discover.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'support/conversation_storage.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  late ConversationStore store;
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    ConversationStore.instance.entries.clear();
+    store = ConversationStore(storage: MemoryConversationStorage());
   });
 
   test('#93: notifications default to OFF per type', () async {
@@ -26,21 +29,18 @@ void main() {
     expect(s.length, lessThanOrEqualTo(3));
   });
 
-  test('#93: recents come from the local log; clearing clears them', () {
-    ConversationStore.instance.entries
-      ..add(ConversationEntry(role: 'user', text: 'what time is it'))
-      ..add(ConversationEntry(role: 'bluey', text: 'three pm'));
-    expect(Discover.recentRequests(), ['what time is it']);
-    ConversationStore.instance.entries.clear();
-    expect(Discover.recentRequests(), isEmpty);
+  test('#93: recents come from the local log; clearing clears them', () async {
+    await store.add('user', 'what time is it');
+    await store.add('bluey', 'three pm');
+    expect(Discover.recentRequests(store: store), ['what time is it']);
+    await store.clear();
+    expect(Discover.recentRequests(store: store), isEmpty);
   });
 
-  test('#93: search is offline over local items only', () {
-    ConversationStore.instance.entries.add(
-      ConversationEntry(role: 'bluey', text: 'the recipe uses basil'),
-    );
-    expect(Discover.search('basil'), ['the recipe uses basil']);
-    expect(Discover.search(''), isEmpty);
-    expect(Discover.search('nope'), isEmpty);
+  test('#93: search is offline over local items only', () async {
+    await store.add('bluey', 'the recipe uses basil');
+    expect(Discover.search('basil', store: store), ['the recipe uses basil']);
+    expect(Discover.search('', store: store), isEmpty);
+    expect(Discover.search('nope', store: store), isEmpty);
   });
 }
