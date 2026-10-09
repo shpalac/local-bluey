@@ -56,7 +56,7 @@ class SpeakReceipts {
   bool _disposed = false;
   final _pending = <int, Timer>{};
   final _spoken = <int, String>{};
-  final _packets = <int, Packet>{};
+  final _packets = <int, Map<String, dynamic>>{};
   final _sizes = <int, int>{};
   final _times = <int, DateTime>{};
   int _retainedBytes = 0;
@@ -95,7 +95,12 @@ class SpeakReceipts {
         utf8.encode(say.text ?? '').length +
         utf8.encode(spoken).length;
     _spoken[id] = spoken;
-    _packets[id] = say;
+    // toJson detaches nested FaceState data; keep both levels read-only.
+    final snapshot = say.toJson();
+    if (snapshot['face'] case final Map<String, dynamic> face) {
+      snapshot['face'] = Map<String, dynamic>.unmodifiable(face);
+    }
+    _packets[id] = Map<String, dynamic>.unmodifiable(snapshot);
     _sizes[id] = size;
     _times[id] = _now();
     _retainedBytes += size;
@@ -157,10 +162,12 @@ class SpeakReceipts {
     _pending.remove(speech)?.cancel();
   }
 
-  /// The packet to re-broadcast for a manual retry, if still known.
+  /// A detached packet to re-broadcast for a manual retry, if still known.
+  /// Mutating it cannot change the stored snapshot or its encoded byte budget.
   Packet? retryPacket(int speech) {
     _evict();
-    return _packets[speech];
+    final snapshot = _packets[speech];
+    return snapshot == null ? null : Packet.fromJson(snapshot);
   }
 
   /// Speech id of the most recent tracked reply, for manual retry.

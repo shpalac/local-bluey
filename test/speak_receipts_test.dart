@@ -43,8 +43,55 @@ void main() {
     final receipts = SpeakReceipts(timeout: const Duration(seconds: 30));
     final packet = Packet(command: 'say', text: 'retry me');
     final id = receipts.track(packet, 'retry me');
-    expect(receipts.retryPacket(id), same(packet));
+    final retry = receipts.retryPacket(id)!;
+    expect(retry, isNot(same(packet)));
+    expect(retry.toJson(), packet.toJson());
     expect(receipts.lastSpeech, id);
+    receipts.dispose();
+  });
+
+  test('#255: original packet mutations cannot enlarge retained payload', () {
+    final receipts = SpeakReceipts(maxRetainedBytes: 10);
+    final packet = Packet(
+      command: 'say',
+      audio: 'AAAA',
+      text: 'hi',
+      face: FaceState(gazeX: 0.5),
+    );
+    final id = receipts.track(packet, 'hi');
+    packet.audio = 'A' * 1000;
+    packet.text = 'changed' * 1000;
+    packet.speech = 999;
+    packet.face!.gazeX = -1;
+    final retry = receipts.retryPacket(id)!;
+    expect(retry.audio, 'AAAA');
+    expect(retry.text, 'hi');
+    expect(retry.speech, id);
+    expect(retry.face!.gazeX, 0.5);
+    expect(receipts.retainedBytes, 8);
+    expect(receipts.retainedReplies, 1);
+    receipts.dispose();
+  });
+
+  test('#255: retry mutations cannot alter the cache or later retries', () {
+    final receipts = SpeakReceipts(maxRetainedBytes: 10);
+    final id = receipts.track(
+      Packet(command: 'say', audio: 'AAAA', text: 'hi', face: FaceState()),
+      'hi',
+    );
+    final first = receipts.retryPacket(id)!;
+    first.audio = 'B' * 1000;
+    first.text = 'changed' * 1000;
+    first.speech = 999;
+    first.face!.gazeY = 1;
+    final second = receipts.retryPacket(id)!;
+    expect(second, isNot(same(first)));
+    expect(second.audio, 'AAAA');
+    expect(second.text, 'hi');
+    expect(second.speech, id);
+    expect(second.face!.gazeY, 0);
+    expect(receipts.retainedBytes, 8);
+    expect(receipts.retainedReplies, 1);
     receipts.dispose();
   });
 

@@ -104,7 +104,9 @@ from first delivery. All three limits apply, including to a single reply.
 At the age boundary the payload is released even if no new reply arrives.
 Acknowledgement cancels the receipt timer but does not extend retry eligibility.
 An oversized reply is still delivered once with its speech id, but is not
-cached for retry. Expired/evicted ids cannot restart receipt timers; eviction
+cached for retry. The cache holds detached read-only packet snapshots and
+returns fresh retry packets, so mutating a sent or retry packet cannot enlarge
+the retained payload after its bytes are counted. Expired/evicted ids cannot restart receipt timers; eviction
 cancels any associated timer. Missed-receipt history keeps at most 20 short
 lines, without retaining audio just for diagnostics. Host disposal releases
 packets, text, history and timers.
