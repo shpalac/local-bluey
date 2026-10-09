@@ -70,7 +70,13 @@ struct ScreenSnapshot {
 
 enum ScreenReaderError: LocalizedError {
     case noDisplay
-    var errorDescription: String? { "I couldn't find the main display to look at." }
+    case cropVerificationUnavailable
+    var errorDescription: String? {
+        switch self {
+        case .noDisplay: return "I couldn't find the main display to look at."
+        case .cropVerificationUnavailable: return "I couldn't verify the crop's text."
+        }
+    }
 }
 
 /// Captures the main display (without Googly's own cursor and captions) and reads every word with its exact box.
@@ -104,9 +110,20 @@ enum ScreenReader {
         request.recognitionLanguages = ["he-IL", "en-US"]
         request.usesLanguageCorrection = false
         try VNImageRequestHandler(cgImage: image).perform([request])
-        return (request.results ?? [])
-            .compactMap { $0.topCandidates(1).first?.string }
-            .joined(separator: "\n")
+        // Nil results or an observation without a text candidate are missing
+        // evidence, not a verified blank image. An empty results array after
+        // successful perform is the distinct, valid blank-crop case (#245).
+        guard let observations = request.results else {
+            throw ScreenReaderError.cropVerificationUnavailable
+        }
+        var lines: [String] = []
+        for observation in observations {
+            guard let text = observation.topCandidates(1).first?.string else {
+                throw ScreenReaderError.cropVerificationUnavailable
+            }
+            lines.append(text)
+        }
+        return lines.joined(separator: "\n")
     }
 
     static func snapshot() async throws -> ScreenSnapshot {

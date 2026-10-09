@@ -97,6 +97,34 @@ void main() {
     expect(zoom.imageBase64, isNotNull);
   });
 
+  test('verified blank crop still returns its image (#245)', () async {
+    await executor.execute(ToolCall('look_at_screen', {}));
+    control.regionTargets = '';
+    control.regionTextVerified = true;
+    final zoom = await executor.execute(ToolCall('zoom_screen', {}));
+    expect(zoom.imageBase64, isNotEmpty);
+  });
+
+  for (final app in ['Mail', 'Safari']) {
+    test('unknown crop after change to $app fails closed (#245)', () async {
+      await executor.execute(ToolCall('look_at_screen', {}));
+      // Mail models a window switch; Safari models an in-place page update.
+      control.regionApp = app;
+      control.regionTargets = '';
+      control.regionTextVerified = false;
+      final zoom = await executor.execute(ToolCall('zoom_screen', {}));
+      expect(zoom.imageBase64, isNull);
+    });
+  }
+
+  test('nonempty crop text without verification fails closed (#245)', () async {
+    await executor.execute(ToolCall('look_at_screen', {}));
+    control.regionTargets = 'Hello world';
+    control.regionTextVerified = false;
+    final zoom = await executor.execute(ToolCall('zoom_screen', {}));
+    expect(zoom.imageBase64, isNull);
+  });
+
   test('go_to_sleep fires the callback', () async {
     var slept = false;
     executor.onSleep = () => slept = true;
@@ -241,6 +269,8 @@ class FakeControl implements NativeControlClient {
   /// OCR text the fake reports for the zoom crop itself (#245).
   String regionTargets = '';
   bool throwOnRegion = false;
+  bool regionTextVerified = true;
+  String regionApp = 'Safari';
 
   @override
   Future<ScreenSnapshot> snapshotRegion(
@@ -254,9 +284,10 @@ class FakeControl implements NativeControlClient {
     return ScreenSnapshot(
       jpeg: Uint8List.fromList(_jpeg),
       targets: regionTargets,
+      cropTextVerified: regionTextVerified,
       width: width,
       height: height,
-      frontApp: 'Safari',
+      frontApp: regionApp,
     );
   }
 

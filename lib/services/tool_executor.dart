@@ -186,13 +186,12 @@ class ToolExecutor implements ExecutorLike {
         // detail view of the current snapshot in the same grid, so old
         // target ids keep their original staleness (#80).
         final crop = await _control.snapshotRegion(left, top, w, h);
-        // The crop is freshly captured, so the preceding snapshot's OCR
-        // says nothing about it (#245). The native side reads the crop's
-        // own text into crop.targets; withhold when that text, or the last
-        // snapshot (#122), is sensitive. A failed crop read throws and so
-        // returns no image at all. OCR is best effort and does not
-        // guarantee detection of every secret.
+        // OCR must explicitly verify these exact live pixels (#245). Missing
+        // evidence is not the same as a successfully verified blank crop.
+        // Unknown/failed verification and sensitive crops return no image.
+        // OCR remains best effort and cannot detect every secret.
         final withhold =
+            !crop.cropTextVerified ||
             PrivacyGuard.hasSensitive(_lastTargets) ||
             PrivacyGuard.hasSensitive(crop.targets);
         return ToolResult(
