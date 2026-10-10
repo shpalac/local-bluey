@@ -6,7 +6,49 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/link/models.dart';
 import 'package:local_bluey/services/phone_reply.dart';
 
+class _FlakyStream extends Stream<void> {
+  _FlakyStream(this.inner, this.owner);
+  final Stream<void> inner;
+  final _Session owner;
+
+  @override
+  StreamSubscription<void> listen(
+    void Function(void event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => _FlakySub(inner.listen(onData), owner);
+}
+
+class _FlakySub implements StreamSubscription<void> {
+  _FlakySub(this.inner, this.owner);
+  final StreamSubscription<void> inner;
+  final _Session owner;
+
+  @override
+  Future<void> cancel() async {
+    if (owner.cancelError != null) throw owner.cancelError!;
+    await inner.cancel();
+  }
+
+  @override
+  void onData(void Function(void data)? handleData) => inner.onData(handleData);
+  @override
+  void onError(Function? handleError) => inner.onError(handleError);
+  @override
+  void onDone(void Function()? handleDone) => inner.onDone(handleDone);
+  @override
+  void pause([Future<void>? resumeSignal]) => inner.pause(resumeSignal);
+  @override
+  void resume() => inner.resume();
+  @override
+  bool get isPaused => inner.isPaused;
+  @override
+  Future<E> asFuture<E>([E? futureValue]) => inner.asFuture(futureValue);
+}
+
 class _Session implements ReplySession {
+  Object? cancelError;
   final controller = StreamController<void>.broadcast();
   final events = <String>[];
   String? path;
@@ -19,7 +61,7 @@ class _Session implements ReplySession {
   bool disposed = false;
 
   @override
-  Stream<void> get completions => controller.stream;
+  Stream<void> get completions => _FlakyStream(controller.stream, this);
 
   @override
   Future<void> play(String p) async {
@@ -478,6 +520,83 @@ void main() {
     await settle();
     expect(receiver.cleanupPending.value, 0);
   });
+
+  test(
+    'completion while play is held: playing then exactly one done',
+    () async {
+      final hold = Completer<void>();
+      world.configure = (s, i) => s.holdPlay = hold;
+      receiver.handle(say('a', audio: _audio()));
+      await settle();
+      sess(0).controller.add(null);
+      await settle();
+      expect(receipts(), isEmpty, reason: 'start not resolved yet');
+      hold.complete();
+      await settle();
+      expect(receipts(), ['playing:a', 'done:a']);
+      expect(dir.listSync(), isEmpty);
+      expect(receiver.cleanupPending.value, 0);
+    },
+  );
+
+  test('completion while play is held, then play throws: no done', () async {
+    final hold = Completer<void>();
+    world.configure = (s, i) {
+      s.holdPlay = hold;
+      s.playError = StateError('boom');
+    };
+    receiver.handle(say('a', audio: _audio()));
+    await settle();
+    sess(0).controller.add(null);
+    hold.complete();
+    await settle();
+    expect(receipts(), isEmpty);
+    expect(dir.listSync(), isEmpty);
+  });
+
+  test(
+    'many stopped and replaced clips release subscriptions and files',
+    () async {
+      for (var i = 0; i < 12; i++) {
+        receiver.handle(say('s$i', audio: _audio()));
+        if (i.isEven) receiver.handle(Packet(command: 'stopSpeech'));
+      }
+      await settle();
+      receiver.handle(Packet(command: 'stopSpeech'));
+      await settle();
+      for (final s in world.sessions) {
+        expect(s.controller.hasListener, isFalse);
+        expect(s.disposed, isTrue);
+      }
+      expect(dir.listSync(), isEmpty);
+      expect(receiver.cleanupPending.value, 0);
+      for (final s in world.sessions) {
+        s.controller.add(null);
+      }
+      await settle();
+      expect(receipts().where((r) => r.startsWith('done')), isEmpty);
+    },
+  );
+
+  test(
+    'a throwing subscription cancel is contained, retried, recovers',
+    () async {
+      world.configure = (s, i) => s.cancelError = StateError('cancel');
+      receiver.handle(say('a', audio: _audio()));
+      await settle();
+      receiver.handle(Packet(command: 'stopSpeech'));
+      await settle();
+      expect(receiver.cleanupPending.value, 1);
+      receiver.handle(say('b', audio: _audio()));
+      await settle();
+      expect(world.sessions, hasLength(1), reason: 'cleanup first');
+      sess(0).cancelError = null;
+      receiver.handle(Packet(command: 'stopSpeech'));
+      await settle();
+      expect(receiver.cleanupPending.value, 0);
+      expect(dir.listSync(), isEmpty);
+    },
+  );
 
   test('a stuck stop that recovers is retried on the next release', () async {
     world.configure = (s, i) {

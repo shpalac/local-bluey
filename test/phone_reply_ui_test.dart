@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -18,7 +19,7 @@ void main() {
   final cases = {
     'reply-error-note':
         'Here is your answer.\n(Could not play the reply audio.)',
-    'reply-cleanup-pending': PhoneReplyReceiver.cleanupNote,
+    'reply-cleanup-pending': ReplyBubble.compose('Here is your answer.', true),
   };
   for (final entry in cases.entries) {
     testWidgets('bubble shows ${entry.key}', (tester) async {
@@ -70,5 +71,131 @@ void main() {
         image.dispose();
       });
     });
+  }
+
+  testWidgets(
+    'cleanup note keeps the answer, clears on recovery, no late use',
+    (tester) async {
+      final sessions = <_FakeSession>[];
+      late PhoneReplyReceiver receiver;
+      final key = GlobalKey<_HarnessState>();
+      final dir = Directory.systemTemp.createTempSync('reply_ui_');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      receiver = PhoneReplyReceiver(
+        createSession: () {
+          final s = _FakeSession();
+          sessions.add(s);
+          return s;
+        },
+        send: (_) {},
+        showText: (t) => key.currentState?.show(t),
+        isActive: () => key.currentState?.mounted ?? false,
+        tempDir: () async => dir,
+      );
+      await tester.pumpWidget(_Harness(receiver, key: key));
+      await tester.runAsync(() async {
+        receiver.handle(
+          Packet(command: 'say', text: 'Hello', audio: 'BQUF', speech: 1),
+        );
+        await receiver.idle;
+        sessions[0].failing = true;
+        receiver.handle(Packet(command: 'stopSpeech'));
+        await receiver.idle;
+      });
+      await tester.pump();
+      expect(
+        key.currentState!.bubble,
+        'Hello\n(${PhoneReplyReceiver.cleanupNote})',
+      );
+      await tester.runAsync(() async {
+        sessions[0].failing = false;
+        receiver.handle(Packet(command: 'stopSpeech'));
+        await receiver.idle;
+      });
+      await tester.pump();
+      expect(key.currentState!.bubble, 'Hello');
+      // Dispose while stuck, then a late completion: nothing throws.
+      await tester.runAsync(() async {
+        receiver.handle(
+          Packet(command: 'say', text: 'Again', audio: 'BQUF', speech: 2),
+        );
+        await receiver.idle;
+        sessions[1].failing = true;
+        await tester.pumpWidget(const SizedBox());
+        await receiver.dispose();
+        sessions[1].controller.add(null);
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+      });
+      expect(tester.takeException(), isNull);
+    },
+  );
+}
+
+class _Harness extends StatefulWidget {
+  const _Harness(this.receiver, {super.key});
+  final PhoneReplyReceiver receiver;
+  @override
+  State<_Harness> createState() => _HarnessState();
+}
+
+class _HarnessState extends State<_Harness> {
+  String? bubble;
+  String? replyText;
+  bool pending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.receiver.cleanupPending.addListener(_onCleanup);
+  }
+
+  void _onCleanup() {
+    if (!mounted) return;
+    final now = widget.receiver.cleanupPending.value > 0;
+    if (now == pending) return;
+    setState(() {
+      bubble = ReplyBubble.next(bubble, replyText, pending, now);
+      pending = now;
+    });
+  }
+
+  void show(String text) => setState(() {
+    replyText = text;
+    bubble = ReplyBubble.compose(text, pending);
+  });
+
+  @override
+  void dispose() {
+    widget.receiver.cleanupPending.removeListener(_onCleanup);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    home: Scaffold(
+      body: FaceScreen(
+        face: FaceState(mood: Mood.happy),
+        bubble: bubble,
+      ),
+    ),
+  );
+}
+
+class _FakeSession implements ReplySession {
+  final controller = StreamController<void>.broadcast();
+  bool failing = false;
+
+  @override
+  Stream<void> get completions => controller.stream;
+  @override
+  Future<void> play(String path) async {}
+  @override
+  Future<void> stop() async {
+    if (failing) throw StateError('stop');
+  }
+
+  @override
+  Future<void> dispose() async {
+    if (failing) throw StateError('dispose');
   }
 }

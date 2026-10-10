@@ -53,7 +53,14 @@ class _Clip {
   final ReplySession session;
   final int ticket;
   final int? speech;
-  final finished = Completer<void>();
+
+  /// Completes true on natural completion, false when the clip is retired
+  /// (cancelled) so the waiter never outlives its resources.
+  final finished = Completer<bool>();
+
+  /// Completes true once play succeeded and the playing receipt was handled,
+  /// false when the start failed or was superseded.
+  final started = Completer<bool>();
   StreamSubscription<void>? subscription;
 
   /// Audio may be playing: set before play starts, cleared by natural
@@ -88,7 +95,7 @@ class PhoneReplyReceiver {
   });
 
   /// Short user-safe note shown while reply audio is still being released.
-  static const cleanupNote = 'Reply audio is still stopping.';
+  static const cleanupNote = 'Reply audio cleanup is still pending.';
 
   /// Largest accepted decoded reply; the link frame cap is 16 MiB.
   static const maxBytes = 12 * 1024 * 1024;
@@ -226,7 +233,7 @@ class PhoneReplyReceiver {
       // observe completion for every entered session, whatever happens next.
       final owned = clip;
       clip.subscription = clip.session.completions.listen((_) {
-        if (!owned.finished.isCompleted) owned.finished.complete();
+        if (!owned.finished.isCompleted) owned.finished.complete(true);
       });
       unawaited(_awaitCompletion(owned));
       clip.live = true;
@@ -250,10 +257,15 @@ class PhoneReplyReceiver {
       } catch (e) {
         debugPrint('PhoneReplyReceiver: $e');
       }
+      if (!clip.started.isCompleted) clip.started.complete(true);
     } catch (e) {
       debugPrint('PhoneReplyReceiver: $e');
       if (clip != null) await _settle(clip);
       _fail(ticket, text, 'Could not play the reply audio.');
+    } finally {
+      if (clip != null && !clip.started.isCompleted) {
+        clip.started.complete(false);
+      }
     }
   }
 
@@ -261,14 +273,19 @@ class PhoneReplyReceiver {
   /// reply, then evidence-based cleanup whatever the receipt send does.
   Future<void> _awaitCompletion(_Clip clip) async {
     try {
-      await clip.finished.future;
+      final natural = await clip.finished.future;
+      // Cancelled: the clip was already retired; no receipt, nothing queued.
+      if (!natural) return;
       clip.live = false; // natural end is evidence the audio stopped
-      if (clip.playingSent && _isCurrent(clip.ticket) && isActive()) {
+      // Completion evidence is kept apart from start readiness: a completion
+      // that lands while play is still held waits for the start outcome.
+      final ready = await clip.started.future;
+      if (ready && clip.playingSent && _isCurrent(clip.ticket) && isActive()) {
         send(Packet(command: 'done', speech: clip.speech));
       }
+      _enqueue(() => _settle(clip));
     } catch (e) {
       debugPrint('PhoneReplyReceiver: $e');
-    } finally {
       _enqueue(() => _settle(clip));
     }
   }
@@ -277,6 +294,8 @@ class PhoneReplyReceiver {
   Future<bool> _settle(_Clip clip) async {
     final done = await _retire(clip);
     if (done) {
+      // Retired: release the waiter without a completion outcome.
+      if (!clip.finished.isCompleted) clip.finished.complete(false);
       _stuck.remove(clip);
       if (identical(_current, clip)) _current = null;
     } else {
@@ -387,5 +406,29 @@ class PhoneReplyReceiver {
     await _ops;
     await _release();
     _publishPending();
+  }
+}
+
+/// Pure rules for the phone bubble so the latest answer survives a cleanup
+/// note and only the note is removed on recovery.
+class ReplyBubble {
+  const ReplyBubble._();
+
+  /// The answer with the safe cleanup note appended when [pending].
+  static String compose(String? text, bool pending) {
+    if (!pending) return text ?? '';
+    return text == null
+        ? PhoneReplyReceiver.cleanupNote
+        : '$text\n(${PhoneReplyReceiver.cleanupNote})';
+  }
+
+  /// New bubble after the pending flag changed from [was] to [now]. Only a
+  /// bubble this class composed is touched; anything else is left alone.
+  static String? next(String? current, String? text, bool was, bool now) {
+    if (was == now) return current;
+    final mine = compose(text, was);
+    if (current != mine) return current;
+    final out = compose(text, now);
+    return out.isEmpty ? null : out;
   }
 }

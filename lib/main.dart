@@ -758,7 +758,11 @@ class _IosHomeState extends State<IosHome> {
     createSession: AudioplayersReplySession.new,
     send: (packet) => _link.send(packet),
     showText: (text) {
-      if (mounted) setState(() => _bubble = text);
+      if (!mounted) return;
+      setState(() {
+        _replyText = text;
+        _bubble = ReplyBubble.compose(text, _cleanupPending);
+      });
     },
     isActive: () => mounted,
   );
@@ -766,6 +770,8 @@ class _IosHomeState extends State<IosHome> {
   bool _connected = false;
   bool _awake = false;
   String? _bubble;
+  String? _replyText;
+  bool _cleanupPending = false;
 
   @override
   void initState() {
@@ -794,16 +800,14 @@ class _IosHomeState extends State<IosHome> {
     _link.start();
   }
 
-  /// Shows a short safe note while reply audio could not be released.
+  /// Adds or removes the short safe note; the latest answer is preserved.
   void _onReplyCleanup() {
     if (!mounted) return;
-    final pending = _reply.cleanupPending.value > 0;
+    final now = _reply.cleanupPending.value > 0;
+    if (now == _cleanupPending) return;
     setState(() {
-      if (pending) {
-        _bubble = PhoneReplyReceiver.cleanupNote;
-      } else if (_bubble == PhoneReplyReceiver.cleanupNote) {
-        _bubble = null;
-      }
+      _bubble = ReplyBubble.next(_bubble, _replyText, _cleanupPending, now);
+      _cleanupPending = now;
     });
   }
 
