@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -50,7 +51,11 @@ class RoutineStore {
     Future<File> Function()? file,
     Future<void> Function(File staging, String contents)? stage,
     Future<void> Function(File staging, String path)? commit,
+    Future<String> Function(File file)? read,
+    Future<void> Function(File file)? delete,
   }) : _fileProvider = file,
+       _read = read ?? ((f) => f.readAsString()),
+       _delete = delete ?? ((f) => f.delete()),
        _stage =
            stage ?? ((f, contents) => f.writeAsString(contents, flush: true)),
        _commit = commit ?? ((f, path) => f.rename(path));
@@ -61,18 +66,59 @@ class RoutineStore {
     required Future<File> Function() file,
     Future<void> Function(File staging, String contents)? stage,
     Future<void> Function(File staging, String path)? commit,
-  }) : this._(file: file, stage: stage, commit: commit);
+    Future<String> Function(File file)? read,
+    Future<void> Function(File file)? delete,
+  }) : this._(
+         file: file,
+         stage: stage,
+         commit: commit,
+         read: read,
+         delete: delete,
+       );
 
   final Future<File> Function()? _fileProvider;
   final Future<void> Function(File staging, String contents) _stage;
   final Future<void> Function(File staging, String path) _commit;
+  final Future<String> Function(File file) _read;
+  final Future<void> Function(File file) _delete;
 
   /// The shared store.
   static final RoutineStore instance = RoutineStore._();
 
-  /// The in-memory routines.
-  final List<Routine> routines = [];
+  final List<Routine> _routines = [];
+
+  /// The loaded routines, read-only. Change them through [add], [remove],
+  /// [importFrom] and [clear] so every change is persisted.
+  List<Routine> get routines => UnmodifiableListView(_routines);
+
+  /// Replaces the in-memory list without touching storage (tests only).
+  @visibleForTesting
+  void seed(List<Routine> list) {
+    _routines
+      ..clear()
+      ..addAll(list);
+    _loaded = true;
+  }
+
   bool _loaded = false;
+  bool _incomplete = false;
+
+  /// Why saved routines could not be fully read, or null. While this is set
+  /// the store refuses changes so the unreadable file is never overwritten;
+  /// a later [load] retries a transient read failure and [clear] is the
+  /// explicit way to discard an unreadable file.
+  final ValueNotifier<String?> problem = ValueNotifier(null);
+
+  /// One ordered queue for load, add, remove, import and clear: operations
+  /// never interleave, so an older save cannot land after a newer clear.
+  Future<void> _tail = Future<void>.value();
+
+  Future<T> _run<T>(Future<T> Function() fn) {
+    final prev = _tail;
+    final done = Completer<void>();
+    _tail = done.future;
+    return prev.then((_) => fn()).whenComplete(done.complete);
+  }
 
   Future<File> _file() async => _fileProvider != null
       ? _fileProvider()
@@ -80,60 +126,143 @@ class RoutineStore {
           '${(await getApplicationDocumentsDirectory()).path}/routines.json',
         );
 
-  /// Loads routines from disk.
-  Future<void> load() async {
+  /// Loads routines from disk. A read failure leaves the store unloaded so
+  /// the next call retries; bad rows are skipped and reported in [problem].
+  Future<void> load() => _run(_load);
+
+  Future<void> _load() async {
     if (_loaded) return;
-    _loaded = true;
+    final String raw;
     try {
-      final raw = await (await _file()).readAsString();
-      final list = List<dynamic>.from(jsonDecode(raw) as List);
-      routines.addAll(
-        list.map((e) => Routine.fromJson(Map<String, dynamic>.from(e as Map))),
-      );
+      final file = await _file();
+      if (!await file.exists()) {
+        _loaded = true;
+        problem.value = null;
+        return;
+      }
+      raw = await _read(file);
     } catch (e) {
-      debugPrint('RoutineStore load failed: $e');
+      debugPrint('RoutineStore read failed: $e');
+      problem.value = 'Saved routines could not be read';
+      return; // not loaded: a later load() retries
+    }
+    final good = <Routine>[];
+    var skipped = false;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        skipped = true;
+      } else {
+        for (final e in decoded) {
+          final r = _parseStored(e);
+          r == null ? skipped = true : good.add(r);
+        }
+      }
+    } on FormatException {
+      skipped = true;
+    }
+    _routines
+      ..clear()
+      ..addAll(good);
+    _loaded = true;
+    _incomplete = skipped;
+    problem.value = skipped
+        ? 'Some saved routines could not be read and were left untouched'
+        : null;
+  }
+
+  static Routine? _parseStored(Object? e) {
+    if (e is! Map) return null;
+    final name = e['name'];
+    final trigger = e['trigger'] ?? '';
+    final instructions = e['instructions'] ?? '';
+    final enabled = e['enabled'] ?? true;
+    if (name is! String || name.isEmpty) return null;
+    if (trigger is! String || instructions is! String) return null;
+    if (enabled is! bool) return null;
+    return Routine(
+      name: name,
+      trigger: trigger.toLowerCase(),
+      instructions: instructions,
+      enabled: enabled,
+    );
+  }
+
+  /// Makes sure storage was read and is safe to rewrite, or throws.
+  Future<void> _ensureWritable() async {
+    await _load();
+    if (!_loaded || _incomplete) {
+      throw RoutineStoreException(
+        problem.value ?? 'Saved routines are not available',
+      );
     }
   }
 
   /// Persists the current list.
-  Future<void> save() async {
+  Future<void> save() => _run(() async {
+    await _ensureWritable();
+    await _persist(_routines);
+  });
+
+  Future<void> _persist(List<Routine> list) async {
     try {
-      await (await _file()).writeAsString(
-        jsonEncode(routines.map((r) => r.toJson()).toList()),
-      );
+      await _write(list);
     } catch (e) {
-      debugPrint('RoutineStore save failed: $e');
+      debugPrint('RoutineStore write failed: $e');
+      throw const RoutineStoreException('Routines could not be saved');
     }
   }
 
-  /// Deletes all routines, in memory and on disk (#83).
-  Future<void> clear() async {
-    routines.clear();
+  /// Deletes all routines, in memory and on disk (#83). Throws when the file
+  /// could not be removed; memory is cleared only after the file is gone, so
+  /// the two never disagree. This is also how an unreadable file is
+  /// discarded on purpose.
+  Future<void> clear() => _run(() async {
     try {
       final file = await _file();
-      if (await file.exists()) await file.delete();
+      if (await file.exists()) await _delete(file);
     } catch (e) {
       debugPrint('RoutineStore clear failed: $e');
+      throw const RoutineStoreException('Routines could not be deleted');
     }
-  }
+    _routines.clear();
+    _loaded = true;
+    _incomplete = false;
+    problem.value = null;
+  });
 
-  /// Adds (or replaces by name) and persists.
-  Future<void> add(Routine routine) async {
-    routines.removeWhere((r) => r.name == routine.name);
-    routines.add(routine);
-    await save();
-  }
+  /// Adds (or replaces by name) and persists. Memory changes only after the
+  /// write succeeds.
+  Future<void> add(Routine routine) => _run(() async {
+    await _ensureWritable();
+    final next = [
+      for (final r in _routines)
+        if (r.name != routine.name) r,
+      routine,
+    ];
+    await _persist(next);
+    _routines
+      ..clear()
+      ..addAll(next);
+  });
 
-  /// Removes by name and persists.
-  Future<void> remove(String name) async {
-    routines.removeWhere((r) => r.name == name);
-    await save();
-  }
+  /// Removes by name and persists; memory changes only after the write.
+  Future<void> remove(String name) => _run(() async {
+    await _ensureWritable();
+    final next = [
+      for (final r in _routines)
+        if (r.name != name) r,
+    ];
+    await _persist(next);
+    _routines
+      ..clear()
+      ..addAll(next);
+  });
 
   /// The routine this utterance triggers, if any.
   Routine? match(String utterance) {
     final text = utterance.toLowerCase();
-    for (final r in routines) {
+    for (final r in _routines) {
       if (r.enabled && r.trigger.isNotEmpty && text.contains(r.trigger)) {
         return r;
       }
@@ -142,7 +271,7 @@ class RoutineStore {
   }
 
   /// Shareable skill pack: routines as portable JSON.
-  String export() => jsonEncode(routines.map((r) => r.toJson()).toList());
+  String export() => jsonEncode(_routines.map((r) => r.toJson()).toList());
 
   /// Largest accepted pack, in characters.
   static const maxPackChars = 256 * 1024;
@@ -170,26 +299,22 @@ class RoutineStore {
   /// data; it never runs a routine.
   Future<int> importFrom(String json) async {
     final incoming = _parsePack(json); // pure; fails before queueing
-    final prev = _importTail;
-    final done = Completer<void>();
-    _importTail = done.future;
-    try {
-      await prev;
-      return await _applyImport(incoming);
-    } finally {
-      done.complete();
-    }
+    return _run(() => _applyImport(incoming));
   }
 
-  /// Serializes imports with each other only. Broader ordering against
-  /// load, save, add, remove and clear is a separate, unresolved concern
-  /// (#333); this does not make those concurrency-safe.
-  Future<void> _importTail = Future<void>.value();
   int _stagingId = 0;
 
-  /// Runs alone: collision check, snapshot, stage, commit and publication.
+  /// Runs alone on the shared queue: collision check, snapshot, stage,
+  /// commit and publication.
   Future<int> _applyImport(List<Routine> incoming) async {
-    final taken = {for (final r in routines) r.name};
+    try {
+      await _ensureWritable();
+    } on RoutineStoreException {
+      throw const RoutineImportException(
+        'Saved routines could not be read, so nothing was imported',
+      );
+    }
+    final taken = {for (final r in _routines) r.name};
     final seen = <String>{};
     for (final r in incoming) {
       if (!seen.add(r.name)) {
@@ -202,14 +327,14 @@ class RoutineStore {
       }
     }
     if (incoming.isEmpty) return 0;
-    final next = [...routines, ...incoming];
+    final next = [..._routines, ...incoming];
     try {
       await _write(next);
     } catch (e) {
       debugPrint('RoutineStore import write failed: $e');
       throw const RoutineImportException('Routines could not be saved');
     }
-    routines.addAll(incoming);
+    _routines.addAll(incoming);
     return incoming.length;
   }
 
@@ -293,6 +418,19 @@ class RoutineImportException implements Exception {
   const RoutineImportException(this.message);
 
   /// Safe description of why the pack was rejected.
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
+/// Thrown when a routine change or deletion could not be completed; nothing
+/// was changed. Messages are generic and never echo stored content.
+class RoutineStoreException implements Exception {
+  /// Creates the exception with a generic [message].
+  const RoutineStoreException(this.message);
+
+  /// Safe description of what failed.
   final String message;
 
   @override

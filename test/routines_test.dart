@@ -6,32 +6,33 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/routines.dart';
 
 void main() {
+  _recoveryTests();
   final store = RoutineStore.instance;
 
-  setUp(() => store.routines.clear());
+  setUp(() => store.seed([]));
 
   test('trigger matches case-insensitively inside the utterance', () {
-    store.routines.add(
+    store.seed([
       const Routine(
         name: 'work mode',
         trigger: 'work mode',
         instructions: 'Silence notifications, open the editor.',
       ),
-    );
+    ]);
     final hit = store.match('hey, switch to Work Mode please');
     expect(hit?.name, 'work mode');
     expect(store.match('what is the weather'), isNull);
   });
 
   test('disabled routines never fire', () {
-    store.routines.add(
+    store.seed([
       const Routine(
         name: 'sleep',
         trigger: 'sleep',
         instructions: 'Go dark.',
         enabled: false,
       ),
-    );
+    ]);
     expect(store.match('go to sleep'), isNull);
   });
 
@@ -41,21 +42,26 @@ void main() {
     final store = RoutineStore.forTest(
       file: () async => File('${tmpDir.path}/routines.json'),
     );
-    store.routines.add(
+    store.seed([
       const Routine(
         name: 'standup',
         trigger: 'standup',
         instructions: 'Open the board and read blockers.',
       ),
-    );
+    ]);
     final pack = store.export();
-    store.routines.clear();
+    store.seed([]);
     expect(await store.importFrom(pack), 1);
     expect(store.match('start my standup')?.name, 'standup');
   });
 
   test('an empty pack imports nothing', () async {
-    expect(await store.importFrom('[]'), 0);
+    final tmpDir = Directory.systemTemp.createTempSync('routines_empty');
+    addTearDown(() => tmpDir.deleteSync(recursive: true));
+    final s = RoutineStore.forTest(
+      file: () async => File('${tmpDir.path}/routines.json'),
+    );
+    expect(await s.importFrom('[]'), 0);
   });
 
   group('import (#287)', () {
@@ -114,11 +120,7 @@ void main() {
     tearDown(() => tmp.deleteSync(recursive: true));
 
     Future<void> expectRejected(String payload) async {
-      s.routines.removeWhere((r) => true);
-      s.routines.clear();
-      s.routines.add(
-        const Routine(name: 'keep', trigger: 'keep', instructions: 'x'),
-      );
+      s.seed([const Routine(name: 'keep', trigger: 'keep', instructions: 'x')]);
       final before = file.existsSync() ? file.readAsStringSync() : null;
       await expectLater(
         s.importFrom(payload),
@@ -285,7 +287,7 @@ void main() {
       };
       await expectRejected(jsonEncode([lim(121, 5)]));
       await expectRejected(jsonEncode([lim(5, 4001)]));
-      s.routines.clear();
+      s.seed([]);
       expect(await s.importFrom(jsonEncode([lim(120, 4000)])), 1);
       final n = {...item('nullable'), 'enabled': null};
       expect(await s.importFrom(jsonEncode([n])), 1);
@@ -299,6 +301,199 @@ void main() {
       expect(jsonDecode(s.export()), hasLength(1));
       await s.remove('x');
       expect(s.routines, isEmpty);
+    });
+  });
+}
+
+void _recoveryTests() {
+  group('load recovery and ordering (#333)', () {
+    late Directory tmp;
+    late File file;
+    var readFails = false;
+    var deleteFails = false;
+    Completer<void>? stageGate;
+    var stagesEntered = 0;
+    late RoutineStore s;
+
+    String rows(List<Object?> items) => jsonEncode(items);
+    Map<String, Object?> row(String n) => {
+      'name': n,
+      'trigger': n,
+      'instructions': 'Do $n.',
+    };
+
+    setUp(() {
+      tmp = Directory.systemTemp.createTempSync('routines_rec');
+      file = File('${tmp.path}/routines.json');
+      readFails = false;
+      deleteFails = false;
+      stageGate = null;
+      stagesEntered = 0;
+      s = RoutineStore.forTest(
+        file: () async => file,
+        read: (f) async {
+          if (readFails) throw FileSystemException('locked', f.path);
+          return f.readAsString();
+        },
+        delete: (f) async {
+          if (deleteFails) throw FileSystemException('busy', f.path);
+          await f.delete();
+        },
+        stage: (f, contents) async {
+          stagesEntered++;
+          final gate = stageGate;
+          if (gate != null) await gate.future;
+          await f.writeAsString(contents);
+        },
+      );
+    });
+    tearDown(() => tmp.deleteSync(recursive: true));
+
+    Future<void> until(bool Function() c) async {
+      final end = DateTime.now().add(const Duration(seconds: 10));
+      while (!c()) {
+        if (DateTime.now().isAfter(end)) throw StateError('never reached');
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+      }
+    }
+
+    test('read failure keeps the file; changes refused; retry loads', () async {
+      file.writeAsStringSync(rows([row('a'), row('b')]));
+      readFails = true;
+      await s.load();
+      expect(s.problem.value, isNotNull);
+      expect(s.routines, isEmpty);
+      await expectLater(
+        s.add(const Routine(name: 'x', trigger: 'x', instructions: 'i')),
+        throwsA(isA<RoutineStoreException>()),
+      );
+      expect(jsonDecode(file.readAsStringSync()), hasLength(2));
+      readFails = false;
+      await s.load(); // transient failure: retried, not stuck as loaded
+      expect(s.problem.value, isNull);
+      expect(s.routines.map((r) => r.name), ['a', 'b']);
+      await s.add(const Routine(name: 'x', trigger: 'x', instructions: 'i'));
+      expect(jsonDecode(file.readAsStringSync()), hasLength(3));
+    });
+
+    test('malformed JSON is reported and never overwritten', () async {
+      file.writeAsStringSync('{broken');
+      await s.load();
+      expect(s.problem.value, isNotNull);
+      await expectLater(
+        s.add(const Routine(name: 'x', trigger: 'x', instructions: 'i')),
+        throwsA(isA<RoutineStoreException>()),
+      );
+      await expectLater(
+        s.importFrom(rows([row('n')])),
+        throwsA(isA<RoutineImportException>()),
+      );
+      await expectLater(s.remove('x'), throwsA(isA<RoutineStoreException>()));
+      expect(file.readAsStringSync(), '{broken');
+    });
+
+    test(
+      'one bad row keeps the good rows, reports, protects the file',
+      () async {
+        final raw = rows([
+          row('a'),
+          {...row('bad'), 'enabled': 'yes'},
+          5,
+          row('c'),
+        ]);
+        file.writeAsStringSync(raw);
+        await s.load();
+        expect(s.routines.map((r) => r.name), ['a', 'c']);
+        expect(s.problem.value, isNotNull);
+        await expectLater(
+          s.add(const Routine(name: 'x', trigger: 'x', instructions: 'i')),
+          throwsA(isA<RoutineStoreException>()),
+        );
+        expect(file.readAsStringSync(), raw); // unreadable row not destroyed
+      },
+    );
+
+    test('clear is the explicit way out of an unreadable file', () async {
+      file.writeAsStringSync('{broken');
+      await s.load();
+      await s.clear();
+      expect(file.existsSync(), isFalse);
+      expect(s.problem.value, isNull);
+      await s.add(const Routine(name: 'x', trigger: 'x', instructions: 'i'));
+      expect(jsonDecode(file.readAsStringSync()), hasLength(1));
+    });
+
+    test(
+      'add then clear (entered write) ends empty on disk and in memory',
+      () async {
+        stageGate = Completer<void>();
+        final adding = s.add(
+          const Routine(name: 'x', trigger: 'x', instructions: 'i'),
+        );
+        final clearing = s.clear();
+        await until(() => stagesEntered == 1); // write entered, held open
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(file.existsSync(), isFalse); // clear has not run yet
+        stageGate!.complete();
+        await adding;
+        await clearing;
+        expect(file.existsSync(), isFalse);
+        expect(s.routines, isEmpty);
+      },
+    );
+
+    test('clear then add: add lands after the delete', () async {
+      await s.add(
+        const Routine(name: 'old', trigger: 'old', instructions: 'i'),
+      );
+      final clearing = s.clear();
+      final adding = s.add(
+        const Routine(name: 'new', trigger: 'new', instructions: 'i'),
+      );
+      await clearing;
+      await adding;
+      expect(s.routines.map((r) => r.name), ['new']);
+      expect(
+        (jsonDecode(file.readAsStringSync()) as List).single['name'],
+        'new',
+      );
+    });
+
+    test(
+      'failing delete rethrows, keeps memory and file, retry works',
+      () async {
+        await s.add(const Routine(name: 'x', trigger: 'x', instructions: 'i'));
+        deleteFails = true;
+        await expectLater(s.clear(), throwsA(isA<RoutineStoreException>()));
+        expect(s.routines, hasLength(1));
+        expect(file.existsSync(), isTrue);
+        deleteFails = false;
+        await s.clear();
+        expect(s.routines, isEmpty);
+        expect(file.existsSync(), isFalse);
+      },
+    );
+
+    test('the public list is read-only', () async {
+      await s.add(const Routine(name: 'x', trigger: 'x', instructions: 'i'));
+      expect(() => s.routines.add(s.routines.first), throwsUnsupportedError);
+      expect(() => s.routines.clear(), throwsUnsupportedError);
+    });
+
+    test('write failure leaves memory and disk unchanged', () async {
+      await s.add(const Routine(name: 'a', trigger: 'a', instructions: 'i'));
+      final before = file.readAsStringSync();
+      final bad = RoutineStore.forTest(
+        file: () async => file,
+        stage: (f, c) async => throw FileSystemException('full', f.path),
+      );
+      await bad.load();
+      await expectLater(
+        bad.add(const Routine(name: 'b', trigger: 'b', instructions: 'i')),
+        throwsA(isA<RoutineStoreException>()),
+      );
+      expect(bad.routines.map((r) => r.name), ['a']);
+      expect(file.readAsStringSync(), before);
     });
   });
 }
