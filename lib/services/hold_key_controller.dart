@@ -217,59 +217,172 @@ class HoldKeyController {
   HoldKeyBridge? _bridge;
   HoldKey? _runningKey;
   int? _runningThreshold;
+  bool _active = false;
+  bool _disposed = false;
+  bool _recording = false;
+  bool _cleanupPending = false;
+  int _generation = 0;
+  (bool, HoldKey, int)? _desired;
+  Future<void>? _tail;
+  Future<void>? _pendingSync;
 
-  /// Whether the listener is currently on.
+  /// Whether the currently owned bridge reports enabled, even during cleanup.
   bool get running => _bridge?.enabled ?? false;
 
-  /// Brings the listener in line with the settings. Call after any change.
-  Future<void> sync() async {
-    final wanted = supported && settings.enabled;
-    final changed =
-        _runningKey != settings.key ||
-        _runningThreshold != settings.thresholdMs;
-    if (!wanted || (_bridge != null && changed)) {
+  /// A disable outcome is unresolved or failed. No stopped guarantee.
+  bool get cleanupPending => _cleanupPending;
+
+  (bool, HoldKey, int) get _snapshot =>
+      (supported && settings.enabled, settings.key, settings.thresholdMs);
+
+  bool _current(int generation, (bool, HoldKey, int) desired) =>
+      !_disposed && generation == _generation && desired == _snapshot;
+
+  Future<void> _enqueue(Future<void> Function() action) {
+    final next = (_tail ?? Future<void>.value()).then((_) => action());
+    final settled = next.catchError((_) {});
+    _tail = settled;
+    settled.then((_) {
+      if (identical(_tail, settled)) _tail = null;
+    });
+    return next;
+  }
+
+  /// Coalesces equal entered requests; changed desired state invalidates old work.
+  Future<void> sync() {
+    if (_disposed) return Future<void>.value();
+    final desired = _snapshot;
+    if (_desired == desired && _pendingSync != null) return _pendingSync!;
+    if (_desired != desired) {
+      _desired = desired;
+      _generation++;
+      _active = false;
+    }
+    final generation = _generation;
+    final next = _enqueue(() => _transition(generation, desired));
+    _pendingSync = next;
+    next.then(
+      (_) {
+        if (identical(_pendingSync, next)) _pendingSync = null;
+      },
+      onError: (Object _, StackTrace _) {
+        if (identical(_pendingSync, next)) _pendingSync = null;
+      },
+    );
+    return next;
+  }
+
+  Future<void> _transition(int generation, (bool, HoldKey, int) desired) async {
+    if (!_current(generation, desired)) return;
+    final (wanted, key, threshold) = desired;
+    if (_bridge != null &&
+        (!wanted ||
+            _cleanupPending ||
+            _runningKey != key ||
+            _runningThreshold != threshold)) {
       await _stop();
     }
-    if (!wanted || _bridge != null) return;
-    final bridge = _createBridge(
-      HoldKeyMachine(
-        key: settings.key,
-        threshold: Duration(milliseconds: settings.thresholdMs),
-      ),
-      _handle,
-    );
-    if (!await bridge.hasPermission()) {
-      await bridge.requestPermission();
+    if (!_current(generation, desired) || !wanted) return;
+    if (_bridge != null) {
+      _active = true;
+      return;
     }
-    if (await bridge.enable()) {
-      _bridge = bridge;
-      _runningKey = settings.key;
-      _runningThreshold = settings.thresholdMs;
-      settings.markPermissionMissing(false);
-    } else {
-      settings.markPermissionMissing(true);
+    late final HoldKeyBridge bridge;
+    try {
+      bridge = _createBridge(
+        HoldKeyMachine(
+          key: key,
+          threshold: Duration(milliseconds: threshold),
+        ),
+        (action) => _handle(bridge, action),
+      );
+    } catch (_) {
+      throw const HoldKeyControllerException();
+    }
+    _bridge = bridge;
+    _runningKey = key;
+    _runningThreshold = threshold;
+    try {
+      final allowed = await bridge.hasPermission();
+      if (!_current(generation, desired)) {
+        await _stop();
+        return;
+      }
+      if (!allowed) {
+        await bridge.requestPermission();
+        if (!_current(generation, desired)) {
+          await _stop();
+          return;
+        }
+      }
+      final enabled = await bridge.enable();
+      if (!_current(generation, desired)) {
+        await _stop();
+        return;
+      }
+      if (enabled) {
+        _active = true;
+        settings.markPermissionMissing(false);
+      } else {
+        await _stop();
+        if (_current(generation, desired)) settings.markPermissionMissing(true);
+      }
+    } catch (_) {
+      // Failed cleanup retains the exact candidate for explicit later retry.
+      if (!_cleanupPending) await _stop();
+      throw const HoldKeyControllerException();
     }
   }
 
-  /// Sleep, lock or the kill switch: cancel any hold in progress.
+  /// Sleep, lock or the kill switch: cancel an entered hold, never send it.
   void reset() => _bridge?.reset();
 
-  /// Stops the listener.
-  Future<void> dispose() => _stop();
+  /// Invalidates immediately, then waits for entered candidate cleanup.
+  /// Calling dispose again explicitly retries a failed disable.
+  Future<void> dispose() {
+    _disposed = true;
+    _generation++;
+    _active = false;
+    return _enqueue(_stop);
+  }
 
   Future<void> _stop() async {
     final bridge = _bridge;
+    if (bridge == null) return;
+    _active = false;
+    _cleanupPending = true;
+    try {
+      // Cancel an owned recording even when resource disable later fails.
+      bridge.reset();
+      await bridge.disable();
+    } catch (_) {
+      throw const HoldKeyControllerException();
+    }
     _bridge = null;
     _runningKey = null;
     _runningThreshold = null;
-    await bridge?.disable();
+    _cleanupPending = false;
+    // Fake/native bridges may not emit reset cancellation themselves.
+    if (_recording) {
+      _recording = false;
+      onCancel();
+    }
   }
 
-  void _handle(HoldKeyAction action) {
+  void _handle(HoldKeyBridge bridge, HoldKeyAction action) {
+    if (!identical(_bridge, bridge)) return;
+    if (action == HoldKeyAction.cancel && _recording) {
+      _recording = false;
+      onCancel();
+      return;
+    }
+    if (!_active || _disposed || _desired != _snapshot) return;
     switch (action) {
       case HoldKeyAction.start:
+        _recording = true;
         onStart();
       case HoldKeyAction.send:
+        _recording = false;
         onSend();
       case HoldKeyAction.cancel:
         onCancel();
@@ -277,4 +390,12 @@ class HoldKeyController {
         break;
     }
   }
+}
+
+/// Generic controller operation failure; cleanup remains owned when uncertain.
+class HoldKeyControllerException implements Exception {
+  /// Creates a safe controller failure.
+  const HoldKeyControllerException();
+  @override
+  String toString() => 'Hold-key listener could not be updated or stopped.';
 }
