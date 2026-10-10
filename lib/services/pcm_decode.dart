@@ -13,13 +13,14 @@ class PcmAudio {
     required this.duration,
   });
 
-  /// Raw little-endian Int16 samples, mono, at [sampleRate].
+  /// Raw little-endian Int16 samples, mono, at [sampleRate]. Decoder returns
+  /// are detached read-only snapshots; this public constructor accepts fixtures.
   final Uint8List bytes;
 
   /// Samples per second (always 16000 from the native decoder).
   final int sampleRate;
 
-  /// Source audio duration.
+  /// Source audio duration, not an exact decoded byte/sample-count guarantee.
   final Duration duration;
 }
 
@@ -41,33 +42,33 @@ class NativePcmDecoderDriver implements PcmDecoderDriver {
 
   @override
   Future<PcmAudio> decode(String path) async {
-    final Map<dynamic, dynamic> res;
     try {
-      final raw = await _channel.invokeMethod<Map<dynamic, dynamic>>(
-        'decodeM4aToPcm',
-        {'path': path},
-      );
-      if (raw == null) {
-        throw SttException(SttErrorKind.decoderError, 'Decoder returned null.');
+      final raw = await _channel.invokeMethod<dynamic>('decodeM4aToPcm', {
+        'path': path,
+      });
+      if (raw is! Map) throw _decodeFailure();
+      final pcm = raw['pcm'];
+      final rate = raw['sampleRate'];
+      final durationMs = raw['durationMs'];
+      if (pcm is! Uint8List ||
+          rate is! int ||
+          durationMs is! int ||
+          durationMs <= 0 ||
+          durationMs > PcmDecoder.maxDuration.inMilliseconds) {
+        throw _decodeFailure();
       }
-      res = raw;
-    } on PlatformException catch (e) {
-      throw SttException(
-        SttErrorKind.decoderError,
-        'Audio decode failed: ${e.message ?? e.code}',
+      return _validateOutput(
+        PcmAudio(
+          bytes: pcm,
+          sampleRate: rate,
+          duration: Duration(milliseconds: durationMs),
+        ),
       );
+    } on SttException {
+      rethrow;
+    } catch (_) {
+      throw _decodeFailure();
     }
-    final pcm = res['pcm'];
-    final rate = res['sampleRate'];
-    final durationMs = res['durationMs'];
-    if (pcm is! Uint8List || rate is! int || durationMs is! int) {
-      throw SttException(SttErrorKind.decoderError, 'Malformed decoder reply.');
-    }
-    return PcmAudio(
-      bytes: pcm,
-      sampleRate: rate,
-      duration: Duration(milliseconds: durationMs),
-    );
   }
 }
 
@@ -86,26 +87,46 @@ class PcmDecoder {
   /// native decoder.
   static const maxInputBytes = 8 * 1024 * 1024;
 
+  /// Native-backed output cap, also enforced on injected drivers.
+  static const maxOutputBytes = 40 * 1024 * 1024;
+
+  /// Maximum supported source duration, matching the native decoder bound.
+  static const maxDuration = Duration(seconds: 600);
+
   /// Decodes [audio] (an m4a capture) to mono 16 kHz PCM. Throws
   /// [SttException] with [SttErrorKind.decoderError] when the file is
   /// missing, empty, oversized, corrupt, or undecodable.
   Future<PcmAudio> decode(File audio) async {
-    if (!await audio.exists()) {
-      throw SttException(
-        SttErrorKind.decoderError,
-        'Audio file missing: ${audio.path}',
-      );
+    try {
+      if (!await audio.exists()) throw _decodeFailure();
+      final size = await audio.length();
+      if (size <= 0 || size > maxInputBytes) throw _decodeFailure();
+      return _validateOutput(await _driver.decode(audio.path));
+    } on SttException {
+      rethrow;
+    } catch (_) {
+      throw _decodeFailure();
     }
-    final size = await audio.length();
-    if (size == 0) {
-      throw SttException(SttErrorKind.decoderError, 'Audio file is empty.');
-    }
-    if (size > maxInputBytes) {
-      throw SttException(
-        SttErrorKind.decoderError,
-        'Audio file too large ($size bytes).',
-      );
-    }
-    return _driver.decode(audio.path);
   }
+}
+
+SttException _decodeFailure() =>
+    SttException(SttErrorKind.decoderError, 'Audio decode failed.');
+
+PcmAudio _validateOutput(PcmAudio pcm) {
+  if (pcm.sampleRate != 16000 ||
+      pcm.bytes.isEmpty ||
+      pcm.bytes.length.isOdd ||
+      pcm.bytes.length > PcmDecoder.maxOutputBytes ||
+      pcm.duration <= Duration.zero ||
+      pcm.duration > PcmDecoder.maxDuration) {
+    throw _decodeFailure();
+  }
+  // Validate before copying. The owned read-only copy detaches later driver
+  // mutations without changing the public PcmAudio constructor contract.
+  return PcmAudio(
+    bytes: Uint8List.fromList(pcm.bytes).asUnmodifiableView(),
+    sampleRate: pcm.sampleRate,
+    duration: pcm.duration,
+  );
 }
