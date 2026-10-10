@@ -257,12 +257,18 @@ class ModelStore {
   /// delete changes never interleave.
   Future<T> _run<T>(Future<T> Function() fn) {
     _ensureLive();
+    // Counted before scheduling, so dispose() sees queued work immediately.
+    _pending++;
     final prev = _tail;
     final done = Completer<void>();
     _tail = done.future;
-    return prev.then((_) => fn()).whenComplete(done.complete);
+    return prev.then((_) => fn()).whenComplete(() {
+      _pending--;
+      done.complete();
+    });
   }
 
+  int _pending = 0;
   bool _disposed = false;
 
   /// Whether [dispose] retired this store.
@@ -273,9 +279,10 @@ class ModelStore {
   /// from live work. A retired store rejects every later call.
   void dispose() {
     if (_disposed) return;
-    if (_leases.isNotEmpty || _inflight.isNotEmpty) {
+    if (_leases.isNotEmpty || _inflight.isNotEmpty || _pending > 0) {
       throw StateError(
-        'Cannot dispose a ModelStore with open leases or running transfers',
+        'Cannot dispose a ModelStore with open leases, running transfers '
+        'or queued changes',
       );
     }
     _disposed = true;
@@ -295,6 +302,7 @@ class ModelStore {
   /// Reads the persisted verified selection, or null if none or broken.
   /// A selection whose file is missing or the wrong size is ignored.
   Future<ModelAsset?> activeAsset() async {
+    _ensureLive();
     if (!_selection.existsSync()) return null;
     try {
       final json = jsonDecode(await _selection.readAsString());
@@ -593,6 +601,7 @@ class ModelStore {
   /// Inventory for the privacy screen: id, revision and size of the active
   /// asset plus bytes held in partial transfers. Empty when nothing is stored.
   Future<Map<String, Object>> inventory() async {
+    _ensureLive();
     final asset = await activeAsset();
     var partialBytes = 0;
     if (_partial.existsSync()) {

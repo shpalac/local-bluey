@@ -267,9 +267,9 @@ void main() {
         expect((await s.inventory())['partialBytes'], 3);
         await s.deleteAll();
         expect(await s.activeAsset(), isNull);
-        expect(await store().activeAsset(), isNull);
         expect(await s.inventory(), {'partialBytes': 0});
         expect(Directory('${dir.path}/assets').listSync(), isEmpty);
+        expect(await store().activeAsset(), isNull);
       },
     );
 
@@ -457,6 +457,36 @@ void main() {
       expect(first.acquire, throwsStateError);
       expect(() => first.install(asset), throwsStateError);
       expect(first.deleteAll, throwsStateError);
+      open().dispose();
+    });
+
+    test('dispose right after acquire() is refused, no lease leaks', () async {
+      final support = Directory('${dir.path}/support4')..createSync();
+      final models = Directory('${support.path}/models')..createSync();
+      ModelStore open() => ModelStore(
+        root: models,
+        acceptedFormats: const {'gguf'},
+        acceptedBackends: const {'fake'},
+        freeSpace: () async => free,
+        downloader: (a, offset) async* {
+          yield bytes.sublist(offset);
+        },
+      );
+      final first = open();
+      await first.install(asset);
+      final pending = first.acquire(); // queued, not yet executed
+      expect(first.dispose, throwsStateError);
+      expect(first.isDisposed, isFalse);
+      expect(open, throwsStateError);
+      final lease = (await pending)!;
+      expect(File(lease.path).existsSync(), isTrue);
+      // The queued lease is honored by a registry clear through the owner.
+      await ModelStore.clearOnDisk(supportDir: support);
+      expect(File(lease.path).existsSync(), isTrue);
+      await lease.release();
+      first.dispose();
+      expect(first.activeAsset, throwsStateError);
+      expect(first.inventory, throwsStateError);
       open().dispose();
     });
 
