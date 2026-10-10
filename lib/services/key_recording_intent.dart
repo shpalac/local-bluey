@@ -51,7 +51,8 @@ class KeyRecordingIntent extends ChangeNotifier {
   bool _closeFailed = false;
   int _session = 0;
   bool _ended = true, _disposed = false;
-  bool _captureOwned = false;
+  CaptureAcquisition? _acquisition;
+  Future<void>? _recovery;
   bool _captureUncertain = false;
   File? _pendingFile;
   KeyRecordingStatus _status = KeyRecordingStatus.idle;
@@ -61,7 +62,7 @@ class KeyRecordingIntent extends ChangeNotifier {
 
   /// Unresolved entered capture stop or file deletion is retained for retry.
   bool get cleanupPending =>
-      _captureUncertain || _captureOwned || _pendingFile != null;
+      _captureUncertain || _acquisition != null || _pendingFile != null;
 
   bool _current(int session) => !_disposed && session == _session && _allowed();
   void _publish(int session, KeyRecordingStatus value) {
@@ -101,25 +102,70 @@ class KeyRecordingIntent extends ChangeNotifier {
 
   Future<File?> _stopOwned() async {
     if (_captureUncertain) throw const KeyRecordingException();
-    if (!_captureOwned) return null;
-    File? file;
+    if (_pendingFile != null) return _pendingFile;
+    final identity = _acquisition;
+    if (identity == null) return null;
     try {
-      file = await _capture.stop();
+      final result = await _capture.release(identity);
+      if (!_settled(result.outcome)) throw const KeyRecordingException();
+      if (identical(identity, _acquisition)) {
+        _pendingFile = result.file;
+        if (result.file == null) _acquisition = null;
+      }
+      return result.file;
     } catch (_) {
       _captureUncertain = true;
       rethrow;
     }
-    _captureOwned = false;
-    _pendingFile = file;
-    return file;
   }
 
-  Future<void> _cleanup() async {
-    // AudioCapture cannot verify a partial native start/stop failure. Keep
-    // ownership unresolved rather than treat a later null stop as proof.
-    if (_captureUncertain) throw const KeyRecordingException();
-    await _stopOwned();
+  bool _settled(CaptureCleanupOutcome outcome) =>
+      outcome == CaptureCleanupOutcome.cleaned ||
+      outcome == CaptureCleanupOutcome.noDriverEntry ||
+      outcome == CaptureCleanupOutcome.transferred;
+
+  Future<void> _cleanup({bool explicit = false}) async {
+    if (_captureUncertain && !explicit) throw const KeyRecordingException();
+    final identity = _acquisition;
+    if (identity != null) {
+      try {
+        final result = await _capture.cleanup(identity);
+        if (!_settled(result)) throw const KeyRecordingException();
+      } catch (_) {
+        _captureUncertain = true;
+        rethrow;
+      }
+    }
+    // A transferred capture receipt never authorizes deletion of external
+    // output. Only this key owner's separately retained File is deleted.
     await _deletePending();
+    if (identical(identity, _acquisition)) {
+      _acquisition = null;
+      _captureUncertain = false;
+    }
+  }
+
+  /// Dedicated explicit no-delivery recovery. Fresh holds never call this.
+  /// Concurrent calls join installed completion through stop/file deletion.
+  /// Resource cleanup can finish after kill/cancel, but only current allowed
+  /// generation publishes. Disposed owners cannot be revived.
+  Future<void> recover() {
+    if (_disposed) return Future<void>.value();
+    final pending = _recovery;
+    if (pending != null) return pending;
+    final session = _session;
+    final op = _enqueue(session, () async {
+      await _cleanup(explicit: true);
+      _publish(session, KeyRecordingStatus.idle);
+    });
+    _recovery = op;
+    final settled = op.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    settled.then((_) {
+      if (identical(_recovery, op)) _recovery = null;
+    });
+    // Installed first: a reentrant recovery joins this exact operation.
+    _publish(session, KeyRecordingStatus.pending);
+    return op;
   }
 
   /// A fresh key hold supersedes older permission/start/delivery publication.
@@ -139,9 +185,11 @@ class KeyRecordingIntent extends ChangeNotifier {
         return;
       }
       // Retain ownership even if start fails partially.
-      _captureOwned = true;
+      final identity = _capture.acquire();
+      if (identity == null) throw const KeyRecordingException();
+      _acquisition = identity;
       try {
-        await _capture.start();
+        await identity.started;
       } catch (_) {
         _captureUncertain = true;
         rethrow;
@@ -173,6 +221,7 @@ class KeyRecordingIntent extends ChangeNotifier {
       }
       // Transfer exactly once on entry to the existing utterance processor.
       _pendingFile = null;
+      _acquisition = null;
       await _deliver(file);
     });
   }
@@ -213,6 +262,6 @@ class KeyRecordingIntent extends ChangeNotifier {
     _disposed = true;
     _ended = true;
     final session = ++_session;
-    return _enqueue(session, _cleanup);
+    return _enqueue(session, () => _cleanup());
   }
 }
