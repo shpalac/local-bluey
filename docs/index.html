@@ -34,15 +34,19 @@
   <li><strong>Phone remote.</strong> Pair an iPhone over your local
     network to wake the Mac, talk to it, or put it to sleep.</li>
   <li><strong>Point at things.</strong> Ask about what's on screen;
-    screenshots are withheld entirely in local-only mode.</li>
+    local-only mode limits which endpoints it may use, and screenshots whose
+    text looks sensitive are withheld (pattern matching, so not a
+    guarantee).</li>
 </ul>
 
 <h2>Privacy, stated plainly</h2>
 <ul>
-  <li>Local-only mode talks to a model on your own machine (Ollama) and
-    nothing else - verified by a strict loopback check.</li>
-  <li>Every outbound connection is recorded in an on-device egress log
-    you can read: what left, where to, how big.</li>
+  <li>Local-only mode only accepts supported endpoints on your own machine
+    (loopback addresses) for the brain, transcription and speech - checked
+    strictly.</li>
+  <li>Requests Bluey itself makes are recorded in a bounded on-device egress
+    log you can read: where to, how big. It is recorded history, not a
+    complete audit of every connection.</li>
   <li>Voice recordings are deleted right after transcription.</li>
   <li>Known gaps are tracked as open issues, not hidden:
     <a href="https://github.com/shpalac/local-bluey/issues">issue tracker</a>.</li>
