@@ -8,6 +8,7 @@ import 'retry.dart';
 import '../services/egress_monitor.dart';
 import 'ollama_provider.dart' show LlmException;
 import 'tools.dart';
+import 'stream_records.dart';
 
 /// Any OpenAI-compatible REST endpoint: OpenRouter, LocalAI, OpenCode, etc.
 /// Uses POST {baseUrl}/chat/completions.
@@ -155,27 +156,35 @@ class OpenAiCompatibleProvider extends LlmProvider {
     });
     final streamed = await _client.send(request);
     if (streamed.statusCode != 200) {
+      await streamed.stream.listen((_) {}, onError: (Object _) {}).cancel();
       throw LlmException('OpenAI-compatible ${streamed.statusCode}');
     }
-    await for (final chunk in streamed.stream.transform(utf8.decoder)) {
-      for (final line in chunk.split('\n')) {
-        final trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) continue;
-        final payload = trimmed.substring(5).trim();
-        if (payload == '[DONE]') return;
-        try {
-          final body = Map<String, dynamic>.from(jsonDecode(payload) as Map);
-          final choices = body['choices'] as List? ?? const [];
-          if (choices.isEmpty) continue;
-          final delta = Map<String, dynamic>.from(
-            (choices.first as Map)['delta'] as Map? ?? const {},
-          );
-          final content = delta['content'] as String? ?? '';
-          if (content.isNotEmpty) yield content;
-        } catch (_) {
-          // Partial JSON line - skip.
-        }
+    await for (final payload in sseRecords(streamed.stream)) {
+      if (payload.trim() == '[DONE]') return;
+      if (payload.isEmpty) continue;
+      final body = streamObject(payload);
+      if (body.containsKey('error')) {
+        throw LlmException('OpenAI-compatible stream backend error');
       }
+      final choices = body['choices'];
+      if (choices == null) continue;
+      if (choices is! List) {
+        throw LlmException('Malformed OpenAI-compatible stream choices');
+      }
+      if (choices.isEmpty) continue;
+      final first = choices.first;
+      if (first is! Map) {
+        throw LlmException('Malformed OpenAI-compatible stream choice');
+      }
+      final delta = first['delta'];
+      if (delta != null && delta is! Map) {
+        throw LlmException('Malformed OpenAI-compatible stream delta');
+      }
+      final content = delta is Map ? delta['content'] : null;
+      if (content != null && content is! String) {
+        throw LlmException('Malformed OpenAI-compatible stream content');
+      }
+      if (content is String && content.isNotEmpty) yield content;
     }
   }
 }
