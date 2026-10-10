@@ -12,6 +12,42 @@ class CaptureLifecycleException extends StateError {
     : super('Audio capture cleanup could not be verified.');
 }
 
+/// Token-scoped Dart cleanup evidence, never native readiness or key reuse.
+enum CaptureCleanupOutcome {
+  /// Acquisition failed before any driver start entry.
+  noDriverEntry,
+
+  /// This token's driver candidate and owned files were cleaned.
+  cleaned,
+
+  /// A legacy release consumed this token's output. Reporting only.
+  transferred,
+
+  /// The instance closed without a confirmed complete cleanup receipt.
+  disposalUncertain,
+
+  /// The identity does not own this instance's current candidate.
+  mismatch,
+}
+
+/// Opaque attempted acquisition. Retained even when [started] rejects.
+/// Evidence lives on this handle, not an unbounded capture history.
+class CaptureAcquisition {
+  CaptureAcquisition._(this._owner);
+  final AudioCapture _owner;
+  late final Future<void> _started;
+  Future<CaptureCleanupOutcome>? _cleanup;
+  CaptureCleanupOutcome? _outcome;
+  bool _driverEntered = false, _stopConfirmed = false;
+
+  /// Actual attempted start completion; failures must be observed by caller.
+  Future<void> get started => _started;
+
+  /// Positive terminal evidence, null while this resource remains unresolved.
+  /// Transfer does not authorize reuse by a key owner.
+  CaptureCleanupOutcome? get outcome => _outcome;
+}
+
 /// Thin wrapper over the platform recorder so the capture state machine is
 /// testable without a microphone (#117).
 abstract class RecorderDriver {
@@ -76,6 +112,8 @@ class AudioCapture {
   final Future<void> Function(File) _deleteFile;
   final Set<String> _cleanupFiles = {};
   Future<void>? _cleanupOp;
+  CaptureAcquisition? _acquisition;
+  Future<CaptureCleanupOutcome>? _sessionCleanup;
 
   /// Hard cap on one hold-to-talk recording (#117).
   final Duration maxDuration;
@@ -110,9 +148,31 @@ class AudioCapture {
   Future<bool> hasPermission() => _driver.hasPermission();
 
   /// Starts a capture into a fresh temp .m4a (AAC-LC 16 kHz).
-  Future<void> start() async {
+  Future<void> start() => _startWithIdentity(null);
+
+  /// Attempts exclusive opt-in acquisition; busy legacy work yields no token.
+  /// The handle exists before temp/driver awaits and survives start failure.
+  CaptureAcquisition? acquire() {
+    if (_disposed ||
+        _recording ||
+        _startOp != null ||
+        _sessionCleanup != null ||
+        _uncertain ||
+        _cleanupFiles.isNotEmpty ||
+        _stopOp != null ||
+        _pendingFile != null ||
+        _stopError != null) {
+      return null;
+    }
+    final identity = CaptureAcquisition._(this);
+    identity._started = _startWithIdentity(identity);
+    return identity;
+  }
+
+  Future<void> _startWithIdentity(CaptureAcquisition? identity) async {
     if (_disposed) throw StateError('Audio capture is disposed');
-    if (_uncertain ||
+    if (_sessionCleanup != null ||
+        _uncertain ||
         _cleanupFiles.isNotEmpty ||
         _stopOp != null ||
         _pendingFile != null ||
@@ -120,10 +180,16 @@ class AudioCapture {
       throw StateError('Release the previous capture before starting another');
     }
     if (_recording || _startOp != null) return;
+    _acquisition = identity;
     final op = _start();
     _startOp = op;
     try {
       await op;
+    } catch (_) {
+      if (identity != null && !identity._driverEntered) {
+        identity._outcome = CaptureCleanupOutcome.noDriverEntry;
+      }
+      rethrow;
     } finally {
       _startOp = null;
     }
@@ -136,6 +202,7 @@ class AudioCapture {
     _path =
         '${dir.path}/bluey_hold_${DateTime.now().millisecondsSinceEpoch}.m4a';
     _candidate = true;
+    _acquisition?._driverEntered = true;
     try {
       await _driver.start(_path!);
     } catch (_) {
@@ -169,6 +236,7 @@ class AudioCapture {
         final wasUncertain = _uncertain;
         final path = await _driver.stop();
         if (session == _session) {
+          _acquisition?._stopConfirmed = true;
           _candidate = false;
           _uncertain = false;
           if (path != null) _pendingFile = File(path);
@@ -225,7 +293,12 @@ class AudioCapture {
   /// previous session, so one hold cannot receive another hold's recording.
   Future<File?> stop() => _stop();
 
-  Future<File?> _stop({bool closing = false}) async {
+  Future<File?> _stop({bool closing = false, bool recovering = false}) async {
+    final cleanup = _sessionCleanup;
+    if (cleanup != null && !recovering && !closing) {
+      await cleanup;
+      return null; // Explicit recovery owns output, never delivers it.
+    }
     final startOp = _startOp;
     if (startOp != null) {
       try {
@@ -243,14 +316,97 @@ class AudioCapture {
       if (identical(stopOp, _stopOp)) _stopOp = null;
       throw failure; // Every joiner observes failure, never false idle/null.
     }
-    if (_disposed && !closing) return null; // Closing owns post-close files.
+    if (_sessionCleanup != null && !recovering && !closing) {
+      await _sessionCleanup;
+      return null;
+    }
+    if (_disposed && !closing && !recovering) {
+      return null;
+    } // Closing owns post-close files.
     if (!identical(stopOp, _stopOp)) return null;
     _stopOp = null;
     final error = _stopError;
     if (error != null) throw error;
     final pending = _pendingFile;
     _pendingFile = null;
+    final identity = _acquisition;
+    if (!recovering && !closing && identity != null) {
+      if (pending != null) {
+        identity._outcome = CaptureCleanupOutcome.transferred;
+      } else if (identity._stopConfirmed && _cleanupFiles.isEmpty) {
+        identity._outcome = CaptureCleanupOutcome.cleaned;
+      }
+    }
     return pending;
+  }
+
+  /// Explicit token-scoped cleanup with no file delivery. Concurrent calls
+  /// return the same completion through stop and exact owned-file deletion.
+  /// Foreign/stale tokens never touch a newer capture. Typed errors retain
+  /// ownership for another explicit attempt. No stop on a disposed driver.
+  Future<CaptureCleanupOutcome> cleanup(CaptureAcquisition identity) {
+    if (!identical(identity._owner, this)) {
+      return Future.value(CaptureCleanupOutcome.mismatch);
+    }
+    final pending = identity._cleanup;
+    if (pending != null) return pending;
+    final terminal = identity._outcome;
+    if (terminal != null) return Future.value(terminal);
+    if (!identical(identity, _acquisition)) {
+      return Future.value(CaptureCleanupOutcome.mismatch);
+    }
+    if (_disposed || _driverDisposed) {
+      return Future.value(CaptureCleanupOutcome.disposalUncertain);
+    }
+    // Install fence before asynchronous entry, including legacy acquisition.
+    final op = Future<CaptureCleanupOutcome>.microtask(
+      () => _cleanupAcquisition(identity),
+    );
+    identity._cleanup = op;
+    _sessionCleanup = op;
+    void settled() {
+      if (identical(identity._cleanup, op)) identity._cleanup = null;
+      if (identical(_sessionCleanup, op)) _sessionCleanup = null;
+    }
+
+    op.then((_) => settled(), onError: (Object _, StackTrace _) => settled());
+    return op;
+  }
+
+  Future<CaptureCleanupOutcome> _cleanupAcquisition(
+    CaptureAcquisition identity,
+  ) async {
+    try {
+      await identity.started;
+    } catch (_) {
+      // A failed entered driver start may still own a candidate.
+    }
+    if (identity._outcome != null) return identity._outcome!;
+    if (!identical(identity, _acquisition)) {
+      return CaptureCleanupOutcome.mismatch;
+    }
+    if (_disposed || _driverDisposed) {
+      return CaptureCleanupOutcome.disposalUncertain;
+    }
+    final file = await _stop(recovering: true);
+    if (file != null) _cleanupFiles.add(file.path);
+    try {
+      await _cleanupOwnedFiles();
+    } catch (_) {
+      throw CaptureLifecycleException();
+    }
+    if (!identity._driverEntered) {
+      identity._outcome = CaptureCleanupOutcome.noDriverEntry;
+    } else if (identity._stopConfirmed &&
+        !_candidate &&
+        !_uncertain &&
+        _pendingFile == null &&
+        _cleanupFiles.isEmpty) {
+      identity._outcome = CaptureCleanupOutcome.cleaned;
+    } else {
+      throw CaptureLifecycleException();
+    }
+    return identity._outcome!;
   }
 
   /// Deletes leftover `bluey_hold_*.m4a` captures from previous sessions
@@ -303,6 +459,14 @@ class AudioCapture {
     _maxTimer?.cancel();
     _maxTimer = null;
     var failed = false;
+    final cleanup = _sessionCleanup;
+    if (cleanup != null) {
+      try {
+        await cleanup;
+      } catch (_) {
+        // Closing retains its existing explicit cleanup/disposal attempt.
+      }
+    }
     try {
       final file = await _stop(closing: true);
       if (file != null) _cleanupFiles.add(file.path);
@@ -318,6 +482,17 @@ class AudioCapture {
       } catch (_) {
         _disposeFailed = true;
         failed = true;
+      }
+    }
+    final identity = _acquisition;
+    if (identity != null &&
+        (identity._outcome == null ||
+            identity._outcome == CaptureCleanupOutcome.disposalUncertain)) {
+      if (!failed && identity._stopConfirmed && !cleanupPending) {
+        identity._outcome = CaptureCleanupOutcome.cleaned;
+      } else {
+        // Disposal success alone is not evidence of confirmed stop.
+        identity._outcome = CaptureCleanupOutcome.disposalUncertain;
       }
     }
     if (failed) throw CaptureLifecycleException();
