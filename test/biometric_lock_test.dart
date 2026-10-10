@@ -190,12 +190,24 @@ void main() {
       final lock = BiometricLock.forTesting(
         authenticator: _FakeAuth(AuthResult.success),
         enabled: true,
-        remove: () async => !fail,
+        remove: () async {
+          if (fail) throw StateError('secret path /private/prefs.plist');
+          return true;
+        },
       );
-      await expectLater(lock.clearPreference(), throwsStateError);
+      await expectLater(
+        lock.clearPreference(),
+        throwsA(
+          isA<AppLockClearException>().having(
+            (e) => e.toString(),
+            'message',
+            isNot(contains('secret')),
+          ),
+        ),
+      );
       expect(lock.enabled, isTrue, reason: 'cache still matches storage');
       fail = false;
-      await lock.clearPreference();
+      await lock.clearPreference(); // queue still usable
       expect(lock.enabled, isFalse);
     });
 

@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/biometric_lock.dart';
 import 'package:local_bluey/services/strings.dart';
 import 'package:local_bluey/ui/app_lock_tile.dart';
+import 'package:local_bluey/ui/data_privacy_section.dart';
 import 'package:local_bluey/ui/lock_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -260,6 +261,79 @@ void main() {
     expect(lock.enabled, isTrue);
     expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
   });
+
+  testWidgets(
+    '#363: registry clear route reports failure safely and recovers',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({'lock.enabled': true});
+      final lock = BiometricLock.instance;
+      final auth = _Auth()..result = AuthResult.success;
+      lock.debugAuthenticator = auth;
+      await tester.runAsync(lock.load);
+      var fail = true;
+      lock.debugStorage(
+        remove: () async {
+          if (fail) throw StateError('secret path /private/prefs.plist');
+          return (await SharedPreferences.getInstance()).remove('lock.enabled');
+        },
+      );
+      await tester.pumpWidget(
+        _app(
+          Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  AppLockTile(lock: lock),
+                  const DataPrivacySection(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      final row = find.widgetWithText(ListTile, 'App-lock on/off preference');
+      final clear = find.descendant(of: row, matching: find.byType(IconButton));
+      await tester.ensureVisible(clear);
+      await tester.tap(clear);
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('secret'), findsNothing);
+      expect(
+        find.textContaining('Could not delete local data'),
+        findsOneWidget,
+      );
+      expect(lock.enabled, isTrue);
+      expect(
+        (await SharedPreferences.getInstance()).getBool('lock.enabled'),
+        isTrue,
+        reason: 'preference retained after failed removal',
+      );
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+
+      fail = false;
+      await tester.pump(const Duration(seconds: 5));
+      await tester.tap(clear);
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      expect(lock.enabled, isFalse);
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+      expect(
+        (await SharedPreferences.getInstance()).containsKey('lock.enabled'),
+        isFalse,
+      );
+
+      // Fresh enable on the same service needs new successful authentication.
+      final before = auth.calls;
+      await tester.ensureVisible(find.byType(Switch));
+      await tester.tap(find.byType(Switch));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      expect(auth.calls, before + 1);
+      expect(lock.enabled, isTrue);
+      lock.debugStorage();
+      await tester.runAsync(lock.clearPreference);
+    },
+  );
 
   // CI opt-in captures rendered pixels, not DOM/text approximations.
   // Run with --dart-define=LOCK_CAPTURE_DIR=build/lock-captures, upload PNGs,

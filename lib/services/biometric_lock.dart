@@ -45,6 +45,16 @@ class LocalAuthAuthenticator implements Authenticator {
   }
 }
 
+/// Raised when the app-lock preference could not be removed. The message is
+/// deliberately generic: it reaches user-visible deletion error text.
+class AppLockClearException implements Exception {
+  /// Creates the generic failure.
+  const AppLockClearException();
+
+  @override
+  String toString() => 'Could not remove the app-lock preference';
+}
+
 /// Optional app lock (#92): off by default; when on, gated screens (phone
 /// remote, Settings with API key + safety) require Face ID/Touch ID or the
 /// device passcode.
@@ -74,8 +84,8 @@ class BiometricLock extends ChangeNotifier {
 
   Authenticator _authenticator = LocalAuthAuthenticator();
   bool _enabled = false;
-  final Future<bool> Function(bool value)? _write;
-  final Future<bool> Function()? _remove;
+  Future<bool> Function(bool value)? _write;
+  Future<bool> Function()? _remove;
 
   /// Bumped by every explicit clear so older entered work cannot undo it.
   int _generation = 0;
@@ -89,13 +99,17 @@ class BiometricLock extends ChangeNotifier {
     return done;
   }
 
-  Future<bool> _persist(bool value) async => _write != null
-      ? _write(value)
-      : (await SharedPreferences.getInstance()).setBool(_kEnabled, value);
+  Future<bool> _persist(bool value) async {
+    final write = _write;
+    if (write != null) return write(value);
+    return (await SharedPreferences.getInstance()).setBool(_kEnabled, value);
+  }
 
-  Future<bool> _removeStored() async => _remove != null
-      ? _remove()
-      : (await SharedPreferences.getInstance()).remove(_kEnabled);
+  Future<bool> _removeStored() async {
+    final remove = _remove;
+    if (remove != null) return remove();
+    return (await SharedPreferences.getInstance()).remove(_kEnabled);
+  }
 
   /// Whether the app lock is on (persisted).
   bool get enabled => _enabled;
@@ -103,6 +117,16 @@ class BiometricLock extends ChangeNotifier {
   @visibleForTesting
   /// Test seam: replaces the authenticator.
   set debugAuthenticator(Authenticator a) => _authenticator = a;
+
+  /// Test seam: replaces the storage write/removal; null restores the real one.
+  @visibleForTesting
+  void debugStorage({
+    Future<bool> Function(bool value)? write,
+    Future<bool> Function()? remove,
+  }) {
+    _write = write;
+    _remove = remove;
+  }
 
   /// Loads the persisted enabled flag.
   Future<void> load() => _queued(() async {
@@ -116,14 +140,17 @@ class BiometricLock extends ChangeNotifier {
   /// Explicit preference deletion (data registry): invalidates entered enable
   /// or write work, removes the stored value in order after any write already
   /// entered, then publishes the default-off state. Throws when removal fails
-  /// so the caller can report it; the cached state then still matches storage.
+  /// so the caller can report it (always an [AppLockClearException]); the cached state then still matches storage.
   Future<void> clearPreference() {
     _generation++;
     return _queued(() async {
-      final removed = await _removeStored();
-      if (!removed) {
-        throw StateError('Could not remove the app-lock preference');
+      bool removed;
+      try {
+        removed = await _removeStored();
+      } catch (_) {
+        throw const AppLockClearException();
       }
+      if (!removed) throw const AppLockClearException();
       if (_enabled) {
         _enabled = false;
         notifyListeners();
