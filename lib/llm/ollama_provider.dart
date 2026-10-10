@@ -7,6 +7,7 @@ import 'llm_provider.dart';
 import 'retry.dart';
 import '../services/egress_monitor.dart';
 import 'tools.dart';
+import 'stream_records.dart';
 
 /// Local Ollama backend: POST {baseUrl}/api/chat with streaming disabled.
 class OllamaProvider extends LlmProvider {
@@ -112,22 +113,24 @@ class OllamaProvider extends LlmProvider {
     });
     final streamed = await _client.send(request);
     if (streamed.statusCode != 200) {
+      await streamed.stream.listen((_) {}, onError: (Object _) {}).cancel();
       throw LlmException('Ollama ${streamed.statusCode}');
     }
-    await for (final chunk in streamed.stream.transform(utf8.decoder)) {
-      for (final line in chunk.split('\n')) {
-        if (line.trim().isEmpty) continue;
-        try {
-          final body = Map<String, dynamic>.from(jsonDecode(line) as Map);
-          final message = Map<String, dynamic>.from(
-            body['message'] as Map? ?? const {},
-          );
-          final content = message['content'] as String? ?? '';
-          if (content.isNotEmpty) yield content;
-        } catch (_) {
-          // Partial JSON line - skip.
-        }
+    await for (final payload in ndjsonRecords(streamed.stream)) {
+      final body = streamObject(payload);
+      if (body.containsKey('error')) {
+        throw LlmException('Ollama stream backend error');
       }
+      final message = body['message'];
+      if (message != null && message is! Map) {
+        throw LlmException('Malformed Ollama stream message');
+      }
+      final content = message is Map ? message['content'] : null;
+      if (content != null && content is! String) {
+        throw LlmException('Malformed Ollama stream content');
+      }
+      if (content is String && content.isNotEmpty) yield content;
+      if (body['done'] == true) return;
     }
   }
 }
