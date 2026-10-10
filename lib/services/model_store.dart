@@ -79,11 +79,19 @@ class ModelAsset {
   /// Language codes the asset supports.
   final List<String> languages;
 
-  /// Directory-safe key unique per id and revision.
-  String get key => '${_safe(id)}__${_safe(revision)}';
+  /// Collision-free, directory-safe key per id and revision. Each part is
+  /// base64url (no '.'), so distinct pairs such as a/b and a_b never collide.
+  String get key =>
+      '${base64Url.encode(utf8.encode(id)).replaceAll('=', '')}.'
+      '${base64Url.encode(utf8.encode(revision)).replaceAll('=', '')}';
 
-  static String _safe(String s) =>
-      s.replaceAll(RegExp(r'[^A-Za-z0-9._-]'), '_');
+  /// Immutable, content-unique file name: the key plus a digest prefix. A
+  /// different digest under the same id and revision gets a different file,
+  /// so a leased file's contents never change under its holder.
+  String get fileName {
+    final sha = sha256Hex.length >= 32 ? sha256Hex.substring(0, 32) : sha256Hex;
+    return '$key.$sha';
+  }
 }
 
 /// A versioned list of assets supplied by the caller.
@@ -206,7 +214,9 @@ class ModelStore {
     required this.freeSpace,
     this.acceptedFormats = const {},
     this.acceptedBackends = const {},
-  });
+  }) {
+    _live[_rootKey] = this;
+  }
 
   static Stream<List<int>> _noDownloads(ModelAsset a, int o) =>
       throw StateError('no downloader configured');
@@ -229,6 +239,26 @@ class ModelStore {
 
   final Map<String, int> _leases = {};
   final Set<String> _pendingDelete = {};
+  int _generation = 0;
+  Future<void> _tail = Future<void>.value();
+
+  static final Map<String, ModelStore> _live = {};
+
+  /// Runs [fn] after every earlier mutation finished. Selection, lease and
+  /// delete changes never interleave.
+  Future<T> _run<T>(Future<T> Function() fn) {
+    final prev = _tail;
+    final done = Completer<void>();
+    _tail = done.future;
+    return prev.then((_) => fn()).whenComplete(done.complete);
+  }
+
+  /// Stops this store being the live owner for its folder (tests, teardown).
+  void dispose() {
+    if (identical(_live[_rootKey], this)) _live.remove(_rootKey);
+  }
+
+  String get _rootKey => root.absolute.path;
 
   Directory get _assets => Directory('${root.path}/assets');
   Directory get _partial => Directory('${root.path}/partial');
@@ -241,7 +271,7 @@ class ModelStore {
     try {
       final json = jsonDecode(await _selection.readAsString());
       final asset = ModelAsset.fromJson(json as Map<String, dynamic>);
-      final file = File('${_assets.path}/${asset.key}');
+      final file = File('${_assets.path}/${asset.fileName}');
       if (!file.existsSync() || file.lengthSync() != asset.bytes) return null;
       return asset;
     } on FormatException {
@@ -268,15 +298,16 @@ class ModelStore {
         !acceptedBackends.contains(asset.backend)) {
       return ModelInstallResult.incompatible;
     }
+    final generation = _generation;
     final current = await activeAsset();
-    if (current != null &&
-        current.key == asset.key &&
-        current.sha256Hex == asset.sha256Hex) {
+    if (current != null && current.fileName == asset.fileName) {
       return ModelInstallResult.alreadyActive;
     }
+    bool stale() => generation != _generation;
     await _partial.create(recursive: true);
     await _assets.create(recursive: true);
-    final part = File('${_partial.path}/${asset.key}.part');
+    if (stale()) return ModelInstallResult.cancelled;
+    final part = File('${_partial.path}/${asset.fileName}.part');
     var have = part.existsSync() ? part.lengthSync() : 0;
     if (have > asset.bytes) {
       await part.delete();
@@ -289,7 +320,7 @@ class ModelStore {
       final sink = part.openWrite(mode: FileMode.append);
       try {
         await for (final chunk in downloader(asset, have)) {
-          if (cancel?.isCancelled ?? false) {
+          if ((cancel?.isCancelled ?? false) || stale()) {
             await sink.close();
             return ModelInstallResult.cancelled;
           }
@@ -304,7 +335,14 @@ class ModelStore {
         }
         return ModelInstallResult.interrupted;
       }
-      if (cancel?.isCancelled ?? false) return ModelInstallResult.cancelled;
+      if ((cancel?.isCancelled ?? false) || stale()) {
+        return ModelInstallResult.cancelled;
+      }
+    }
+    if (!part.existsSync()) {
+      return stale()
+          ? ModelInstallResult.cancelled
+          : ModelInstallResult.interrupted;
     }
     if (part.lengthSync() != asset.bytes) {
       // Short transfers resume later; overlong ones are corrupt.
@@ -314,17 +352,30 @@ class ModelStore {
       }
       return ModelInstallResult.interrupted;
     }
-    final digest = await sha256.bind(part.openRead()).first;
+    Digest digest;
+    try {
+      digest = await sha256.bind(part.openRead()).first;
+    } on FileSystemException {
+      return stale()
+          ? ModelInstallResult.cancelled
+          : ModelInstallResult.interrupted;
+    }
+    if (stale()) return ModelInstallResult.cancelled;
     if (digest.toString() != asset.sha256Hex) {
-      await part.delete();
+      if (part.existsSync()) await part.delete();
       return ModelInstallResult.hashMismatch;
     }
-    final target = File('${_assets.path}/${asset.key}');
-    await part.rename(target.path);
-    await _writeSelection(asset);
-    _pendingDelete.remove(asset.key);
-    await _pruneInactive(keep: asset.key);
-    return ModelInstallResult.activated;
+    // Commit is serialized and re-checks the generation: a delete that ran
+    // while this install was downloading or hashing wins.
+    return _run(() async {
+      if (stale() || !part.existsSync()) return ModelInstallResult.cancelled;
+      final target = File('${_assets.path}/${asset.fileName}');
+      await part.rename(target.path);
+      await _writeSelection(asset);
+      _pendingDelete.remove(asset.fileName);
+      await _pruneInactive(keep: asset.fileName);
+      return ModelInstallResult.activated;
+    });
   }
 
   Future<void> _writeSelection(ModelAsset asset) async {
@@ -346,15 +397,18 @@ class ModelStore {
   }
 
   /// Opens a lease on the active asset, or null when none is active.
-  Future<ModelLease?> acquire() async {
+  /// Lookup and lease registration are one serialized step, so a switch or
+  /// delete cannot remove the file between them.
+  Future<ModelLease?> acquire() => _run(() async {
     final asset = await activeAsset();
     if (asset == null) return null;
-    _leases[asset.key] = (_leases[asset.key] ?? 0) + 1;
-    return ModelLease._(this, asset, '${_assets.path}/${asset.key}');
-  }
+    final name = asset.fileName;
+    _leases[name] = (_leases[name] ?? 0) + 1;
+    return ModelLease._(this, asset, '${_assets.path}/$name');
+  });
 
-  Future<void> _release(ModelLease lease) async {
-    final key = lease.asset.key;
+  Future<void> _release(ModelLease lease) => _run(() async {
+    final key = lease.asset.fileName;
     final left = (_leases[key] ?? 1) - 1;
     if (left <= 0) {
       _leases.remove(key);
@@ -362,7 +416,7 @@ class ModelStore {
     } else {
       _leases[key] = left;
     }
-  }
+  });
 
   Future<void> _deleteFiles(String key) async {
     final file = File('${_assets.path}/$key');
@@ -370,6 +424,7 @@ class ModelStore {
   }
 
   /// Removes every verified file except [keep]; leased ones wait for release.
+  /// Runs inside the serialized commit.
   Future<void> _pruneInactive({required String keep}) async {
     if (!_assets.existsSync()) return;
     for (final entity in _assets.listSync()) {
@@ -386,50 +441,68 @@ class ModelStore {
 
   /// Removes the active asset and clears the selection. Files in use wait for
   /// the last lease; the selection is cleared now so it cannot come back.
-  Future<void> removeActive() async {
-    final asset = await activeAsset();
-    if (_selection.existsSync()) await _selection.delete();
-    if (asset == null) return;
-    if ((_leases[asset.key] ?? 0) > 0) {
-      _pendingDelete.add(asset.key);
-    } else {
-      await _deleteFiles(asset.key);
-    }
+  Future<void> removeActive() {
+    _generation++;
+    return _run(() async {
+      final asset = await activeAsset();
+      if (_selection.existsSync()) await _selection.delete();
+      if (asset == null) return;
+      final name = asset.fileName;
+      if ((_leases[name] ?? 0) > 0) {
+        _pendingDelete.add(name);
+      } else {
+        await _deleteFiles(name);
+      }
+    });
   }
 
   /// Deletes everything: selection, verified files and partials. Leased files
   /// are removed on release. A deleted selection is never resurrected.
-  Future<void> deleteAll() async {
-    if (_selection.existsSync()) await _selection.delete();
-    final tmp = File('${root.path}/selection.json.tmp');
-    if (tmp.existsSync()) await tmp.delete();
-    if (_partial.existsSync()) await _partial.delete(recursive: true);
-    if (_assets.existsSync()) {
-      for (final entity in _assets.listSync()) {
-        if (entity is! File) continue;
-        final key = entity.uri.pathSegments.last;
-        if ((_leases[key] ?? 0) > 0) {
-          _pendingDelete.add(key);
-        } else {
-          await entity.delete();
+  Future<void> deleteAll() {
+    _generation++;
+    return _run(() async {
+      if (_selection.existsSync()) await _selection.delete();
+      final tmp = File('${root.path}/selection.json.tmp');
+      if (tmp.existsSync()) await tmp.delete();
+      if (_partial.existsSync()) await _partial.delete(recursive: true);
+      if (_assets.existsSync()) {
+        for (final entity in _assets.listSync()) {
+          if (entity is! File) continue;
+          final key = entity.uri.pathSegments.last;
+          if ((_leases[key] ?? 0) > 0) {
+            _pendingDelete.add(key);
+          } else {
+            await entity.delete();
+          }
         }
       }
-    }
+    });
   }
 
-  /// Registry clear: deletes the on-disk store under the app support folder.
-  /// Nothing to delete when no platform folder exists (tests).
-  static Future<void> clearOnDisk() async {
+  /// Registry clear: deletes the on-disk store under the app support folder
+  /// (or [supportDir] when injected). A live store on that folder owns its
+  /// leases, so the clear goes through it; files still leased are removed on
+  /// release. Nothing to delete when no platform folder exists (tests).
+  static Future<void> clearOnDisk({Directory? supportDir}) async {
     try {
-      final dir = Directory(
-        '${(await getApplicationSupportDirectory()).path}/models',
-      );
+      final base = supportDir ?? await getApplicationSupportDirectory();
+      final dir = Directory('${base.path}/models');
+      final live = _live[dir.absolute.path];
+      if (live != null) {
+        await live.deleteAll();
+        return;
+      }
       if (!dir.existsSync()) return;
-      await ModelStore(
+      final temp = ModelStore(
         root: dir,
         downloader: _noDownloads,
         freeSpace: _noSpace,
-      ).deleteAll();
+      );
+      try {
+        await temp.deleteAll();
+      } finally {
+        temp.dispose();
+      }
     } on MissingPluginException {
       // No platform channel, so no store exists either.
     }
