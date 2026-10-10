@@ -16,6 +16,7 @@ import 'model_store.dart';
 import 'perf_monitor.dart';
 import 'routines.dart';
 import 'settings_store.dart';
+import 'safety_gate.dart';
 import 'stt.dart';
 import 'strings.dart';
 import '../ui/theme.dart';
@@ -365,11 +366,7 @@ class DataRegistry {
       where: 'SharedPreferences',
       retentionEn: 'Kept until you delete it',
       retentionHe: 'נשמר עד שמוחקים',
-      clear: () async {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('safety.enabled');
-        await prefs.remove('safety.appAllowlist');
-      },
+      clear: () => SafetyPreferences.instance.clear(),
     ),
   ];
 
