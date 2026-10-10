@@ -197,20 +197,36 @@ void main() {
     expect(p.events, isEmpty, reason: 'nothing repopulates the cleared buffer');
   });
 
-  test('buffer is capped and clear wipes the session trace', () async {
-    final watch = await liveWatch();
-    final p = pipe(watch, [], []);
-    for (var i = 0; i < 250; i++) {
-      p.events.add(
-        WatchEvent(
-          kind: WatchEventKind.appSwitch,
-          at: DateTime.now(),
-          app: 'x',
-        ),
+  test(
+    'real emitted buffer capped with immutable independent snapshots',
+    () async {
+      final watch = await liveWatch();
+      var i = 0;
+      final p = WatchPipeline(
+        watch: watch,
+        frontmost: () async => at('Safari', 'title ${i++}'),
+        frameDiff: () async => 0.3,
       );
-    }
-    expect(p.events.length, 250);
-    p.clear();
-    expect(p.events, isEmpty);
-  });
+      final emitted = <WatchEvent>[];
+      final sub = p.stream.listen(emitted.add);
+      await p.tick();
+      final snapshot = p.events;
+      for (var j = 1; j < 250; j++) {
+        await p.tick();
+      }
+      await Future<void>.delayed(Duration.zero);
+      expect(emitted.length, 250);
+      expect(p.events.length, WatchPipeline.bufferCap);
+      expect(p.events.first.detail, 'title 50');
+      expect(p.events.last.detail, 'title 249');
+      expect(snapshot.single.detail, 'title 0');
+      expect(() => p.events.clear(), throwsUnsupportedError);
+      p.clear();
+      expect(p.events, isEmpty);
+      expect(snapshot.length, 1);
+      await sub.cancel();
+      await p.dispose();
+      watch.dispose();
+    },
+  );
 }

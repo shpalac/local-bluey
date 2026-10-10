@@ -100,7 +100,20 @@ class WatchPipeline {
   static const bufferCap = 200;
 
   /// Rolling event buffer for the session trace UI (#213).
-  final List<WatchEvent> events = [];
+  final List<WatchEvent> _events = [];
+
+  /// Immutable independent snapshot of the current capped session trace.
+  List<WatchEvent> get events => List.unmodifiable(_events);
+
+  /// Evidence longer than these UTF-16 code-unit limits stays silent, never
+  /// truncated into a comparison collision. Raw display data is not interpreted.
+  static const maxAppLength = 128;
+
+  /// Maximum title or vision-summary code units retained in session evidence.
+  static const maxDetailLength = 512;
+  int _generation = 0;
+  bool _disposed = false;
+  Future<void>? _closing;
   final _eventsController = StreamController<WatchEvent>.broadcast();
 
   /// Event stream for the suggestion layer (#214).
@@ -114,23 +127,42 @@ class WatchPipeline {
   /// One pipeline tick: read cheap signals, then let the 212 gate decide
   /// whether any deeper work may run.
   Future<WatchEvent?> tick() async {
-    if (!_watch.isActive) return null;
-    final info = await frontmost();
-    return _watch.runIfAllowed<WatchEvent?>(
-      frontApp: info.app,
-      windowTitle: info.title,
-      locked: info.locked,
-      operation: () => _process(info),
-    );
+    if (_disposed || !_watch.isActive) return null;
+    final gen = _generation;
+    final session = _watch.generation;
+    bool stale() =>
+        _disposed ||
+        gen != _generation ||
+        session != _watch.generation ||
+        !_watch.isActive;
+    try {
+      final info = await frontmost();
+      if (stale()) return null;
+      final result = await _watch.runIfAllowed<WatchEvent?>(
+        frontApp: info.app,
+        windowTitle: info.title,
+        locked: info.locked,
+        operation: () => _process(info, stale),
+      );
+      return stale() ? null : result;
+    } catch (_) {
+      if (stale()) return null;
+      rethrow;
+    }
   }
 
-  Future<WatchEvent?> _process(FrontmostInfo info) async {
-    // A stop (kill switch) bumps the generation and clears the buffer. Any
-    // await below can straddle it, so each emit re-checks and drops its
-    // event instead of repopulating a buffer that stop just erased (#212).
-    final gen = _watch.generation;
-    bool stale() => gen != _watch.generation;
-
+  Future<WatchEvent?> _process(
+    FrontmostInfo info,
+    bool Function() stale,
+  ) async {
+    if (stale()) return null;
+    if (info.app.length > maxAppLength || info.title.length > maxDetailLength) {
+      // Fail silent without retaining oversized strings as a baseline. The
+      // next normal observation starts from a fresh comparison, not a prefix.
+      _lastApp = _lastTitle = null;
+      _changeStreak = 0;
+      return null;
+    }
     final switched = info.app != _lastApp || info.title != _lastTitle;
     _lastApp = info.app;
     _lastTitle = info.title;
@@ -176,6 +208,7 @@ class WatchPipeline {
       _lastVisionAt = _clock.now();
       final summary = await onVision!(info.app, info.title);
       if (stale()) return null;
+      if (summary != null && summary.length > maxDetailLength) return change;
       _emit(
         WatchEvent(
           kind: WatchEventKind.visionCall,
@@ -189,15 +222,26 @@ class WatchPipeline {
   }
 
   WatchEvent _emit(WatchEvent event) {
-    events.add(event);
-    if (events.length > bufferCap) events.removeAt(0);
+    _events.add(event);
+    if (_events.length > bufferCap) _events.removeAt(0);
     _eventsController.add(event);
     return event;
   }
 
   /// Session trace ends here; wired to session stop (#212/#213).
-  void clear() => events.clear();
+  void clear() {
+    _generation++;
+    _events.clear();
+    _lastApp = _lastTitle = null;
+    _changeStreak = 0;
+    _lastVisionAt = null;
+  }
 
   /// Closes the event stream.
-  Future<void> dispose() => _eventsController.close();
+  Future<void> dispose() {
+    if (_disposed) return _closing!;
+    _disposed = true;
+    clear();
+    return _closing = _eventsController.close();
+  }
 }
