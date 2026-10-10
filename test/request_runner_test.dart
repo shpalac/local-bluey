@@ -849,6 +849,48 @@ void main() {
       expect(deleted, ['d.m4a', 'a.m4a', 'b.m4a', 'c.m4a']);
     });
 
+    test('a Stop between turn grant and entry revokes the request', () async {
+      final gate = _RacingGate();
+      final deleted = <String>[];
+      final b = FakeBrain();
+      final transcriber = FakeTranscriber();
+      var stt = 0;
+      transcriber.onTranscribe = () async => stt++;
+      final conversation = <List<String>>[];
+      final hooks = SpyHooks();
+      final runner = RequestRunner(
+        transcriber: transcriber,
+        safety: gate,
+        tools: FakeExecutor(),
+        speech: FakeSpeech(),
+        brainProvider: () => b,
+        settingsLoader: () async => _settings,
+        sttLoader: () async =>
+            const SttSettings(baseUrl: 'http://stt.local/v1'),
+        matchRoutine: (_) => null,
+        addToConversation: (r, t) => conversation.add([r, t]),
+        currentVoice: () => 'alloy',
+        hooks: hooks,
+        deleteRecording: (f) async {
+          deleted.add(f.path);
+          // Arm the race for the hand-off that follows the first run.
+          if (f.path == 'a.m4a') gate.bumpAfterNextRead = true;
+        },
+      );
+      b.asking = Completer<BrainReply>();
+      final first = runner.process(File('a.m4a'));
+      await b.askEntered.future;
+      final queued = runner.process(File('b.m4a'));
+      await Future<void>.delayed(Duration.zero);
+      expect(runner.queuedCount, 1);
+      b.asking!.complete(const BrainReply(spoken: 'first'));
+      await Future.wait([first, queued]);
+      expect(stt, 1, reason: 'revoked turn never reached the transcriber');
+      expect(conversation.where((c) => c[0] == 'user'), hasLength(1));
+      expect(hooks.bubbles, contains('Stopped.'));
+      expect(deleted, ['a.m4a', 'b.m4a']);
+    });
+
     test('Stop discards queued requests instead of running them', () async {
       final deleted = <String>[];
       final (runner, brain, gate, _, _, transcriber, hooks, conversation) =
@@ -879,4 +921,25 @@ void main() {
       expect(conversation.last, ['bluey', 'back']);
     });
   });
+}
+
+/// A gate whose generation changes right after the hand-off reads it, the
+/// moment between a granted turn and the queued run starting.
+class _RacingGate extends FakeGate {
+  bool bumpAfterNextRead = false;
+
+  @override
+  int get generation {
+    final value = _generation;
+    if (bumpAfterNextRead) {
+      bumpAfterNextRead = false;
+      _generation++;
+    }
+    return value;
+  }
+
+  int _generation = 0;
+
+  @override
+  set generation(int value) => _generation = value;
 }

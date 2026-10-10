@@ -393,27 +393,20 @@ class _MacHomeState extends State<MacHome>
       setState(() => _awake = packet.command == 'wake');
     }
     if (packet.command == 'holdAudio' && packet.audio != null) {
-      unawaited(_onPhoneAudio(packet.audio!));
+      _phoneAudio.handle(packet.audio!);
     }
   }
 
   /// Phone-side hold-to-talk audio rides the link; same pipeline as the
   /// Mac's own mic.
-  Future<void> _onPhoneAudio(String encoded) async {
-    final File file;
-    try {
-      file = await PhoneAudioIntake.stage(encoded);
-    } on PhoneAudioException catch (e) {
-      _applyBubble(e.message);
-      return;
-    }
-    if (mounted) setState(() => _face.value = FaceState(mood: Mood.thinking));
-    try {
-      await _processUtterance(file);
-    } catch (e) {
-      debugPrint('Phone request failed: $e');
-    }
-  }
+  late final _phoneAudio = PhoneAudioReceiver(
+    process: (file) {
+      if (mounted) setState(() => _face.value = FaceState(mood: Mood.thinking));
+      return _processUtterance(file);
+    },
+    onRejected: _applyBubble,
+    isActive: () => mounted,
+  );
 
   void _setAwake(bool awake) {
     if (awake) _tutorial.notifyAwake();

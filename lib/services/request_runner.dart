@@ -150,13 +150,16 @@ class RequestRunner {
   /// further ones are rejected. A Stop (kill or generation bump) discards
   /// everything that was queued before it instead of running it late.
   Future<void> process(File file) async {
+    // Admission generation: a Stop/resume after this point revokes the
+    // request even if its turn is granted later.
+    final admitted = safety.generation;
     if (_busy) {
       if (_waiting.length >= maxQueued) {
         hooks.bubble('Busy - try again in a moment.');
         await _deleteRecording(file);
         return;
       }
-      final waiting = _Waiting(safety.generation);
+      final waiting = _Waiting(admitted);
       _waiting.add(waiting);
       if (!await waiting.turn.future) {
         hooks.bubble('Stopped.');
@@ -167,7 +170,7 @@ class RequestRunner {
       _busy = true;
     }
     try {
-      await _run(file);
+      await _run(file, admitted);
     } finally {
       _handOff();
       // With another utterance starting, leave the shared face/status to it
@@ -196,14 +199,14 @@ class RequestRunner {
     _busy = false;
   }
 
-  Future<void> _run(File file) async {
+  Future<void> _run(File file, int admitted) async {
     hooks
       ..face(FaceState(mood: Mood.thinking))
       ..status(BlueyStatus.thinking);
     // #199: snapshot the generation BEFORE transcription starts and bound
     // the whole job. A Stop mid-transcription must discard the late
     // transcript instead of submitting it to the brain.
-    final runGeneration = safety.generation;
+    final runGeneration = admitted;
     bool cancelled() => safety.killed || safety.generation != runGeneration;
     final deadline = _now().add(jobTimeout);
     var finished = false;
