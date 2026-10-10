@@ -47,53 +47,98 @@ typedef Check = Future<CheckResult> Function();
 class Diagnostics {
   Diagnostics._();
 
-  static Future<CheckResult> _providerReachable() async {
-    final settings = await SettingsStore.load();
-    final localOnly = await PrivacyGuard.isLocalOnly();
-    final isLocal =
-        settings.baseUrl.contains('localhost') ||
-        settings.baseUrl.contains('127.0.0.1');
-    if (localOnly && !isLocal) {
-      return const CheckResult(
-        id: 'provider',
-        titleEn: 'Brain provider',
-        titleHe: 'ספק המוח',
-        status: CheckStatus.fail,
-        fixEn:
-            'Local-only mode is on but the provider URL is remote - point it '
-            'at a local server or turn local-only off in Settings.',
-        fixHe: 'מצב מקומי-בלבד פעיל אבל הכתובת חיצונית - עדכן בהגדרות.',
+  /// Tests exercise the actual bounded provider probe without real endpoints.
+  /// Successful headers mean reachability only, never model/auth readiness.
+  /// Owns and closes only its default client. Shared clients remain open;
+  /// timeout discards late headers, not guaranteed transport abort.
+  static Future<CheckResult> providerReachable({
+    Future<BrainSettings> Function()? settings,
+    Future<bool> Function()? localOnly,
+    http.Client? client,
+    Duration timeout = const Duration(seconds: 4),
+  }) async {
+    var active = true;
+    final transport = client ?? http.Client();
+    Future<CheckResult> probe() async {
+      final config = await (settings ?? SettingsStore.load)();
+      final local = await (localOnly ?? PrivacyGuard.isLocalOnly)();
+      if (!active) return _providerResult(CheckStatus.fail);
+      final uri = Uri.tryParse(config.baseUrl.trim());
+      if (uri == null ||
+          uri.host.isEmpty ||
+          (uri.scheme != 'http' && uri.scheme != 'https') ||
+          uri.userInfo.isNotEmpty) {
+        return _providerResult(
+          CheckStatus.fail,
+          'The provider URL is invalid or unsupported - edit it in Settings.',
+          'כתובת הספק לא תקינה או לא נתמכת - עדכן בהגדרות.',
+        );
+      }
+      if (local && !PrivacyGuard.isLocalUrl(config.baseUrl)) {
+        return _providerResult(
+          CheckStatus.fail,
+          'Local-only mode is on but the provider URL is remote - point it at a local server or turn local-only off in Settings.',
+          'מצב מקומי-בלבד פעיל אבל הכתובת חיצונית - עדכן בהגדרות.',
+        );
+      }
+      final request = http.Request('GET', uri)..followRedirects = false;
+      final response = await transport.send(request);
+      // Header-only probe: no response data is needed, including stalled body.
+      // Cancel our listener even for late headers. Cancellation may settle
+      // later/fail; it must not extend the probe or close a shared client.
+      unawaited(
+        response.stream
+            .listen((_) {}, onError: (Object _) {})
+            .cancel()
+            .catchError((Object _) {}),
+      );
+      if (!active) return _providerResult(CheckStatus.fail);
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        return _providerResult(
+          CheckStatus.fail,
+          'The provider did not return a successful HTTP response - check its URL and server in Settings. Redirects are not followed.',
+          'הספק לא החזיר תשובת HTTP מוצלחת - בדוק את הכתובת והשרת בהגדרות. הפניות לא נעקבות.',
+        );
+      }
+      return _providerResult(
+        CheckStatus.pass,
+        'HTTP endpoint reachable only; model, capability and authentication are not verified.',
+        'נקודת HTTP נגישה בלבד; מודל, יכולות ואימות לא נבדקו.',
       );
     }
+
     try {
-      final uri = Uri.parse(settings.baseUrl);
-      await http.get(uri).timeout(const Duration(seconds: 4));
-      return const CheckResult(
-        id: 'provider',
-        titleEn: 'Brain provider',
-        titleHe: 'ספק המוח',
-        status: CheckStatus.pass,
-      );
-    } on TimeoutException {
-      return const CheckResult(
-        id: 'provider',
-        titleEn: 'Brain provider',
-        titleHe: 'ספק המוח',
-        status: CheckStatus.fail,
-        fixEn:
-            'The provider did not answer in time - check the URL and '
-            'that the server is running (Settings).',
-        fixHe: 'הספק לא ענה בזמן - בדוק את הכתובת ושהשרת פעיל.',
+      return await probe().timeout(
+        timeout,
+        onTimeout: () {
+          active = false;
+          return _providerResult(
+            CheckStatus.fail,
+            'The provider did not answer in time - check the URL and that the server is running (Settings).',
+            'הספק לא ענה בזמן - בדוק את הכתובת ושהשרת פעיל.',
+          );
+        },
       );
     } catch (_) {
-      return const CheckResult(
-        id: 'provider',
-        titleEn: 'Brain provider',
-        titleHe: 'ספק המוח',
-        status: CheckStatus.unknown,
-      );
+      return _providerResult(CheckStatus.unknown);
+    } finally {
+      active = false;
+      if (client == null) transport.close();
     }
   }
+
+  static CheckResult _providerResult(
+    CheckStatus status, [
+    String? en,
+    String? he,
+  ]) => CheckResult(
+    id: 'provider',
+    titleEn: 'Brain HTTP reachability (not model readiness)',
+    titleHe: 'נגישות HTTP של המוח (לא מוכנות מודל)',
+    status: status,
+    fixEn: en,
+    fixHe: he,
+  );
 
   /// Linux runtime dependency check (#152): looks up a binary on PATH and
   /// reports unknown on non-Linux or lookup failure - never a false pass.
@@ -208,7 +253,7 @@ class Diagnostics {
     Future<bool> Function(String)? which,
   }) async {
     final checks = <String, Check>{
-      'provider': _providerReachable,
+      'provider': providerReachable,
       'pairing': () async => _pairingUnknown,
     };
     linuxChecks(
