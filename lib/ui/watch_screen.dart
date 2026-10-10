@@ -17,6 +17,7 @@ class WatchScreen extends StatefulWidget {
 class _WatchScreenState extends State<WatchScreen> {
   List<String> _allowlist = [];
   Duration _length = ScreenWatch.defaultSessionLength;
+  bool _consenting = false;
   final _appField = TextEditingController();
 
   @override
@@ -33,50 +34,73 @@ class _WatchScreenState extends State<WatchScreen> {
   String _t(String en, String he) => Strings.t(en, he);
 
   Future<void> _start() async {
-    final minutes = _length.inMinutes;
-    final yes = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(_t('Watch your screen?', 'לצפות במסך?')),
-        content: Text(
-          _t(
-            'For the next $minutes minutes Bluey will look at your screen.\n\n'
-                '- Only apps on your allowlist are observed.\n'
-                '- Password managers, banking, private windows, System Settings '
-                'and the lock screen are never observed.\n'
-                '- Everything stays on this Mac (local-only).\n'
-                '- Nothing is stored when the session ends.\n\n'
-                'You can stop at any time with one tap.',
-            'במשך $minutes הדקות הבאות Bluey יסתכל על המסך שלך.\n\n'
-                '- רק אפליקציות ברשימה שלך נצפות.\n'
-                '- מנהלי סיסמאות, בנקים, חלונות פרטיים, הגדרות המערכת '
-                'ומסך הנעילה לעולם לא נצפים.\n'
-                '- הכל נשאר על המק הזה (מקומי בלבד).\n'
-                '- שום דבר לא נשמר כשהסשן מסתיים.\n\n'
-                'אפשר לעצור בכל רגע בלחיצה אחת.',
+    if (_consenting || ScreenWatch.instance.isActive) return;
+    setState(() => _consenting = true);
+    final watch = ScreenWatch.instance;
+    try {
+      final consent = await watch.prepareConsent(length: _length);
+      if (!mounted) return;
+      final minutes = consent.length.inMinutes;
+      final yes = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(_t('Watch your screen?', 'לצפות במסך?')),
+          content: Text(
+            _t(
+              'For the next $minutes minutes Bluey will look at your screen.\n\n'
+                  '- Only these apps are observed: ${consent.apps.join(', ')}.\n'
+                  '- Password managers, banking, private windows, System Settings '
+                  'and the lock screen are never observed.\n'
+                  '- Everything stays on this Mac (local-only).\n'
+                  '- Nothing is stored when the session ends.\n\n'
+                  'You can stop at any time with one tap.',
+              'במשך $minutes הדקות הבאות Bluey יסתכל על המסך שלך.\n\n'
+                  '- רק האפליקציות האלה נצפות: ${consent.apps.join(', ')}.\n'
+                  '- מנהלי סיסמאות, בנקים, חלונות פרטיים, הגדרות המערכת '
+                  'ומסך הנעילה לעולם לא נצפים.\n'
+                  '- הכל נשאר על המק הזה (מקומי בלבד).\n'
+                  '- שום דבר לא נשמר כשהסשן מסתיים.\n\n'
+                  'אפשר לעצור בכל רגע בלחיצה אחת.',
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(_t('Not now', 'לא עכשיו')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(_t('Start watching', 'התחל צפייה')),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(_t('Not now', 'לא עכשיו')),
+      );
+      if (yes != true || !mounted) return;
+      final refusal = await watch.start(
+        consent: consent,
+        length: consent.length,
+        consentConfirmed: true,
+      );
+      if (!mounted) return;
+      if (refusal != null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(refusal)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _t(
+                'Could not read watching policy. Try again.',
+                'לא ניתן לקרוא את מדיניות הצפייה. נסו שוב.',
+              ),
+            ),
           ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(_t('Start watching', 'התחל צפייה')),
-          ),
-        ],
-      ),
-    );
-    if (yes != true || !mounted) return;
-    final refusal = await ScreenWatch.instance.start(
-      length: _length,
-      consentConfirmed: true,
-    );
-    if (!mounted) return;
-    if (refusal != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(refusal)));
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _consenting = false);
     }
   }
 
@@ -157,6 +181,7 @@ class _WatchScreenState extends State<WatchScreen> {
                     icon: const Icon(Icons.remove_circle_outline),
                     onPressed: () async {
                       await WatchPolicy.removeFromAllowlist(app);
+                      if (watch.isActive) watch.stop();
                       await _reload();
                     },
                   ),
@@ -166,6 +191,7 @@ class _WatchScreenState extends State<WatchScreen> {
                   Expanded(
                     child: TextField(
                       controller: _appField,
+                      enabled: !watch.isActive && !_consenting,
                       decoration: InputDecoration(
                         hintText: _t(
                           'App name, e.g. Safari',
@@ -177,7 +203,7 @@ class _WatchScreenState extends State<WatchScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline),
-                    onPressed: _addApp,
+                    onPressed: watch.isActive || _consenting ? null : _addApp,
                   ),
                 ],
               ),
@@ -199,14 +225,16 @@ class _WatchScreenState extends State<WatchScreen> {
                         ),
                       ),
                       selected: _length == option,
-                      onSelected: (_) => setState(() => _length = option),
+                      onSelected: watch.isActive || _consenting
+                          ? null
+                          : (_) => setState(() => _length = option),
                     ),
                 ],
               ),
               const SizedBox(height: 24),
               if (!watch.isActive)
                 FilledButton.icon(
-                  onPressed: _start,
+                  onPressed: _consenting ? null : _start,
                   icon: const Icon(Icons.visibility_outlined),
                   label: Text(_t('Start a session', 'התחלת סשן')),
                 )
@@ -253,6 +281,7 @@ class _WatchScreenState extends State<WatchScreen> {
   }
 
   Future<void> _addApp() async {
+    if (ScreenWatch.instance.isActive || _consenting) return;
     final app = _appField.text;
     if (app.trim().isEmpty) return;
     await WatchPolicy.addToAllowlist(app);
