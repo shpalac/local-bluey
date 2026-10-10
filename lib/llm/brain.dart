@@ -6,17 +6,18 @@ import 'tools.dart';
 /// and splits each reply into what Bluey says and what Bluey does.
 class Brain implements BrainLike {
   Brain({required this.provider, List<LlmMessage>? history, String? persona})
-    : _history =
-          history ??
-          [
-            LlmMessage(
-              'system',
-              buildSystemPrompt(
-                nativeTools: provider.supportsNativeTools,
-                persona: persona,
+    : _persona = persona,
+      _history = history != null
+          ? List.of(history)
+          : [
+              LlmMessage(
+                'system',
+                buildSystemPrompt(
+                  nativeTools: provider.supportsNativeTools,
+                  persona: persona,
+                ),
               ),
-            ),
-          ];
+            ];
 
   /// Conversation never grows past this many messages; the system prompt
   /// always stays. Older turns are folded into a running memory summary
@@ -32,6 +33,20 @@ class Brain implements BrainLike {
   /// The backend that answers chat calls (Ollama or OpenAI-compatible).
   final LlmProvider provider;
   final List<LlmMessage> _history;
+  final String? _persona;
+  int _generation = 0;
+  Future<void>? _summary;
+
+  List<LlmMessage> _snapshot(Iterable<LlmMessage> messages) =>
+      List.unmodifiable(
+        messages.map(
+          (m) => LlmMessage(
+            m.role,
+            m.content,
+            images: List.unmodifiable(m.images),
+          ),
+        ),
+      );
 
   /// Turns that overflowed the window but were not summarized yet.
   final List<LlmMessage> _overflow = [];
@@ -40,10 +55,16 @@ class Brain implements BrainLike {
   String? memory;
 
   /// Read-only view of the conversation as sent to the provider.
-  List<LlmMessage> get history => List.unmodifiable(_history);
+  List<LlmMessage> get history => _snapshot(_history);
 
   void _boundedAdd(LlmMessage message) {
-    _history.add(message);
+    _history.add(
+      LlmMessage(
+        message.role,
+        message.content,
+        images: List.unmodifiable(message.images),
+      ),
+    );
     // Prune images from anything older than the last exchanges.
     for (var i = 1; i < _history.length - keepImagesInLast; i++) {
       final m = _history[i];
@@ -63,8 +84,17 @@ class Brain implements BrainLike {
 
   /// Folds overflowed turns into the running memory before the next call.
   /// Failures keep the overflow buffered so nothing is lost silently.
-  Future<void> _consolidateMemory() async {
-    if (_overflow.isEmpty) return;
+  Future<void> _consolidateMemory(int gen) {
+    if (gen != _generation || _overflow.isEmpty) return Future.value();
+    if (_summary != null) return _summary!;
+    late Future<void> current;
+    current = _summarize(gen).whenComplete(() {
+      if (identical(_summary, current)) _summary = null;
+    });
+    return _summary = current;
+  }
+
+  Future<void> _summarize(int gen) async {
     final batch = List<LlmMessage>.from(_overflow);
     final turns = batch.map((m) => '${m.role}: ${m.content}').join('\n');
     final prompt = [
@@ -79,11 +109,11 @@ class Brain implements BrainLike {
     ];
     final String updated;
     try {
-      updated = await provider.chat(prompt);
+      updated = await provider.chat(_snapshot(prompt));
     } catch (_) {
       return; // retry on the next call; overflow stays buffered
     }
-    if (updated.trim().isEmpty) return;
+    if (gen != _generation || updated.trim().isEmpty) return;
     _overflow.removeRange(0, batch.length);
     memory = updated;
     final memMessage = LlmMessage('system', '$memoryPrefix\n$updated');
@@ -95,15 +125,24 @@ class Brain implements BrainLike {
   }
 
   /// Sends the user's words (transcribed speech) and returns Bluey's reply.
+  /// Reset during entered work returns an empty reply with no tool, not abort.
   Future<BrainReply> ask(
     String userText, {
     List<String> images = const [],
   }) async {
+    final gen = _generation;
     _boundedAdd(LlmMessage('user', userText, images: images));
-    await _consolidateMemory();
-    final response = await provider.chatWithTools(_history);
-    _boundedAdd(LlmMessage('assistant', response.text));
-    return BrainReply(spoken: response.text, toolCall: response.toolCall);
+    try {
+      await _consolidateMemory(gen);
+      if (gen != _generation) return const BrainReply(spoken: '');
+      final response = await provider.chatWithTools(_snapshot(_history));
+      if (gen != _generation) return const BrainReply(spoken: '');
+      _boundedAdd(LlmMessage('assistant', response.text));
+      return BrainReply(spoken: response.text, toolCall: response.toolCall);
+    } catch (_) {
+      if (gen != _generation) return const BrainReply(spoken: '');
+      rethrow;
+    }
   }
 
   /// Streaming ask: [onToken] gets raw fragments as they arrive; the
@@ -115,47 +154,74 @@ class Brain implements BrainLike {
     List<String> images = const [],
     void Function(String partialSpoken)? onToken,
   }) async {
+    final gen = _generation;
     _boundedAdd(LlmMessage('user', userText, images: images));
-    final raw = await _streamCollect(onToken);
-    final parsed = parseAssistantReply(raw);
-    _boundedAdd(LlmMessage('assistant', raw));
-    return BrainReply(spoken: parsed.spoken, toolCall: parsed.toolCall);
+    try {
+      final raw = await _streamCollect(gen, onToken);
+      if (gen != _generation) return const BrainReply(spoken: '');
+      final parsed = parseAssistantReply(raw);
+      _boundedAdd(LlmMessage('assistant', raw));
+      return BrainReply(spoken: parsed.spoken, toolCall: parsed.toolCall);
+    } catch (_) {
+      if (gen != _generation) return const BrainReply(spoken: '');
+      rethrow;
+    }
   }
 
   Future<String> _streamCollect(
+    int gen,
     void Function(String partialSpoken)? onToken,
   ) async {
     final buffer = StringBuffer();
-    await for (final fragment in provider.chatStream(_history)) {
+    await for (final fragment in provider.chatStream(_snapshot(_history))) {
+      if (gen != _generation) return '';
       buffer.write(fragment);
       onToken?.call(buffer.toString());
+      if (gen != _generation) return '';
     }
     return buffer.toString();
   }
 
   /// Feeds a tool result back so the model can react to what it saw/did.
+  /// Reset invalidates the reply, not an already-performed external action.
   @override
   Future<BrainReply> toolResult(
     String toolName,
     String result, {
     List<String> images = const [],
   }) async {
+    final gen = _generation;
     _boundedAdd(
       LlmMessage('tool', 'Result of $toolName:\n$result', images: images),
     );
-    final response = await provider.chatWithTools(_history);
-    _boundedAdd(LlmMessage('assistant', response.text));
-    return BrainReply(spoken: response.text, toolCall: response.toolCall);
+    try {
+      final response = await provider.chatWithTools(_snapshot(_history));
+      if (gen != _generation) return const BrainReply(spoken: '');
+      _boundedAdd(LlmMessage('assistant', response.text));
+      return BrainReply(spoken: response.text, toolCall: response.toolCall);
+    } catch (_) {
+      if (gen != _generation) return const BrainReply(spoken: '');
+      rethrow;
+    }
   }
 
-  /// Clears conversation history back to the system prompt.
+  /// Clears history, overflow and memory back to the configured system persona.
+  /// Invalidates entered replies/tokens/tools/summaries; stale methods return an
+  /// empty reply without tools. Not provider cancellation or retrospective undo.
   void reset() {
+    _generation++;
+    _summary = null;
+    _overflow.clear();
+    memory = null;
     _history
       ..clear()
       ..add(
         LlmMessage(
           'system',
-          buildSystemPrompt(nativeTools: provider.supportsNativeTools),
+          buildSystemPrompt(
+            nativeTools: provider.supportsNativeTools,
+            persona: _persona,
+          ),
         ),
       );
   }
