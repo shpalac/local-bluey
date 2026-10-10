@@ -96,35 +96,110 @@ class BlueyCharacters {
       all.firstWhere((c) => c.id == id, orElse: () => bluey);
 }
 
-/// Loads and persists the selected character (#55, cleared by #83).
+/// Safe character storage failure, without plugin details or rollback claims.
+class CharacterStorageException implements Exception {
+  /// Creates a generic preference failure.
+  const CharacterStorageException();
+  @override
+  String toString() => 'Character preference could not be verified or updated.';
+}
+
+/// Orders actual selection storage and publishes only source-grounded choices.
 class CharacterStore {
-  CharacterStore._();
+  /// Uses preferences by default, or injected actual operations for fixtures.
+  CharacterStore({
+    Future<String?> Function()? read,
+    Future<bool> Function(String)? write,
+    Future<bool> Function()? remove,
+  }) : _read =
+           read ??
+           (() async =>
+               (await SharedPreferences.getInstance()).getString(_kCharacter)),
+       _write =
+           write ??
+           ((id) async => (await SharedPreferences.getInstance()).setString(
+             _kCharacter,
+             id,
+           )),
+       _remove =
+           remove ??
+           (() async =>
+               (await SharedPreferences.getInstance()).remove(_kCharacter));
 
-  /// The shared store.
-  static final CharacterStore instance = CharacterStore._();
+  static final _instance = CharacterStore();
 
+  /// Isolated owner for registry fixtures; production uses the shared owner.
+  @visibleForTesting
+  static CharacterStore? debugOverride;
+
+  /// The shared store used by consumers and the registry.
+  static CharacterStore get instance => debugOverride ?? _instance;
   static const _kCharacter = 'character.id';
+  final Future<String?> Function() _read;
+  final Future<bool> Function(String) _write;
+  final Future<bool> Function() _remove;
+  Future<void>? _tail;
+  int _revision = 0;
+  int _clearEpoch = 0;
+  bool _verified = false;
 
-  /// The active character; the UI listens to this.
+  /// Last verified character, initially the existing Bluey default.
   final ValueNotifier<Character> current = ValueNotifier(BlueyCharacters.bluey);
 
-  /// Loads the stored choice (or the default) into [current].
-  Future<void> load() async {
-    final id =
-        (await SharedPreferences.getInstance()).getString(_kCharacter) ??
-        BlueyCharacters.bluey.id;
-    current.value = BlueyCharacters.byId(id);
+  /// Whether the retained choice has been verified by a successful current read.
+  bool get verified => _verified;
+
+  Future<void> _publishStored(int revision) async {
+    final id = await _read();
+    if (revision != _revision) return;
+    _verified = true;
+    current.value = BlueyCharacters.byId(id ?? BlueyCharacters.bluey.id);
   }
 
-  /// Resets to the default character and removes the stored choice (#83).
-  Future<void> clear() async {
-    current.value = BlueyCharacters.bluey;
-    await (await SharedPreferences.getInstance()).remove(_kCharacter);
+  Future<void> _enqueue(Future<void> Function() action) {
+    final revision = ++_revision;
+    final next = (_tail ?? Future<void>.value()).then((_) async {
+      try {
+        await action();
+        await _publishStored(revision);
+      } catch (_) {
+        if (revision == _revision) {
+          try {
+            await _publishStored(revision);
+          } catch (_) {
+            // Keep the last verified character, never fabricate a new default.
+            if (revision == _revision) _verified = false;
+          }
+        }
+        throw const CharacterStorageException();
+      }
+    });
+    final settled = next.catchError((_) {});
+    _tail = settled;
+    settled.then((_) {
+      if (identical(_tail, settled)) _tail = null;
+    });
+    return next;
   }
 
-  /// Selects and persists the character with [id].
-  Future<void> select(String id) async {
-    current.value = BlueyCharacters.byId(id);
-    await (await SharedPreferences.getInstance()).setString(_kCharacter, id);
+  /// Loads the choice in storage order; failed reads retain prior state.
+  Future<void> load() => _enqueue(() async {});
+
+  /// Orders deletion after entered writes and invalidates older queued choices.
+  Future<void> clear() {
+    _clearEpoch++;
+    return _enqueue(() async {
+      if (!await _remove()) throw const CharacterStorageException();
+    });
+  }
+
+  /// Persists the original ID then reconciles the actual stored choice.
+  /// Unknown IDs continue to use the existing Bluey fallback without migration.
+  Future<void> select(String id) {
+    final epoch = _clearEpoch;
+    return _enqueue(() async {
+      if (epoch != _clearEpoch) return;
+      if (!await _write(id)) throw const CharacterStorageException();
+    });
   }
 }
