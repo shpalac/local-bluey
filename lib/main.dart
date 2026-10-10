@@ -12,6 +12,8 @@ import 'link/models.dart';
 import 'link/phone_server.dart';
 import 'services/audio_capture.dart';
 import 'services/brain_host.dart';
+import 'services/host_reload_controller.dart';
+import 'ui/host_reload_notice.dart';
 import 'llm/llm_provider.dart' show BlueyStatus;
 import 'services/characters.dart';
 import 'services/egress_monitor.dart';
@@ -121,6 +123,7 @@ class MacHome extends StatefulWidget {
 class _MacHomeState extends State<MacHome>
     with TrayListener, WidgetsBindingObserver {
   bool _showOnboarding = false;
+  final _hostReload = HostReloadController();
   final _watchdog = PermissionWatchdog(checker: const LivePermissionChecker());
   List<OnboardingPermission> _revoked = [];
   final _tutorial = TutorialController.instance;
@@ -165,7 +168,7 @@ class _MacHomeState extends State<MacHome>
     HoldKeySettings.instance.load().then((_) => _syncHoldKey());
     ScreenWatch.instance.addListener(_syncWatchTray);
     ScreenWatch.instance.addListener(_syncWatchDriver);
-    BrainHost.reload();
+    unawaited(_hostReload.reload());
     ConversationStore.instance.load();
     OnboardingScreen.isDone().then((done) {
       if (!done && mounted) setState(() => _showOnboarding = true);
@@ -512,6 +515,7 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void dispose() {
+    _hostReload.dispose();
     _tutorial.removeListener(_onTutorialChanged);
     WidgetsBinding.instance.removeObserver(this);
     trayManager.removeListener(this);
@@ -530,34 +534,47 @@ class _MacHomeState extends State<MacHome>
   @override
   Widget build(BuildContext context) {
     if (_showOnboarding) {
-      return OnboardingScreen(
-        onPlan: (plan) => _tutorial.configure(
-          askPrompt: plan.suggestedRequest,
-          pointing: plan.pointingAvailable,
-        ),
-        onOpenSettings: () async {
-          final saved = await Navigator.of(context).push<bool>(
-            MaterialPageRoute(
-              builder: (_) => LockGate(
-                reason: Strings.t(
-                  'Unlock Bluey settings',
-                  'ביטול נעילת הגדרות Bluey',
-                ),
-                child: SettingsScreen(
-                  onDeleteAll: () {
-                    BrainHost.reload();
-                    if (mounted) setState(() => _showOnboarding = true);
+      return Material(
+        child: SafeArea(
+          child: Column(
+            children: [
+              HostReloadNotice(controller: _hostReload),
+              Expanded(
+                child: OnboardingScreen(
+                  onPlan: (plan) => _tutorial.configure(
+                    askPrompt: plan.suggestedRequest,
+                    pointing: plan.pointingAvailable,
+                  ),
+                  onOpenSettings: () async {
+                    final saved = await Navigator.of(context).push<bool>(
+                      MaterialPageRoute(
+                        builder: (_) => LockGate(
+                          reason: Strings.t(
+                            'Unlock Bluey settings',
+                            'ביטול נעילת הגדרות Bluey',
+                          ),
+                          child: SettingsScreen(
+                            onDeleteAll: () {
+                              unawaited(_hostReload.reload());
+                              if (mounted) {
+                                setState(() => _showOnboarding = true);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                    if (saved ?? false) unawaited(_hostReload.reload());
+                  },
+                  onDone: () {
+                    _watchdog.recordGranted();
+                    setState(() => _showOnboarding = false);
                   },
                 ),
               ),
-            ),
-          );
-          if (saved ?? false) BrainHost.reload();
-        },
-        onDone: () {
-          _watchdog.recordGranted();
-          setState(() => _showOnboarding = false);
-        },
+            ],
+          ),
+        ),
       );
     }
     return Scaffold(
@@ -577,14 +594,14 @@ class _MacHomeState extends State<MacHome>
                     ),
                     child: SettingsScreen(
                       onDeleteAll: () {
-                        BrainHost.reload();
+                        unawaited(_hostReload.reload());
                         if (mounted) setState(() => _showOnboarding = true);
                       },
                     ),
                   ),
                 ),
               );
-              if (saved ?? false) BrainHost.reload();
+              if (saved ?? false) unawaited(_hostReload.reload());
             },
           ),
         ],
@@ -700,6 +717,7 @@ class _MacHomeState extends State<MacHome>
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          HostReloadNotice(controller: _hostReload),
           ValueListenableBuilder<String?>(
             valueListenable: BrainHost.refusedReason,
             builder: (context, refused, _) {
