@@ -59,6 +59,12 @@ class SafetyGate implements GateLike {
   int _generation = 0;
 
   final _killListeners = <void Function()>[];
+  bool _dispatchingKill = false;
+  int _killListenerFailures = 0;
+
+  /// Cumulative failed kill callbacks, without their errors or private contents.
+  /// Later listeners still receive the same dispatch.
+  int get killListenerFailures => _killListenerFailures;
 
   @override
   bool get killed => _killed;
@@ -66,19 +72,35 @@ class SafetyGate implements GateLike {
   int get generation => _generation;
 
   /// Engages the kill switch: every [authorize] call denies, and running
-  /// tool loops polling [generation] stop (#107).
+  /// tool loops polling [generation] stop (#107). Repeated calls notify again;
+  /// reentrant calls update state/generation without recursively dispatching.
+  /// Listener failures are isolated and counted in [killListenerFailures].
   void kill() {
     _killed = true;
     _generation++;
-    for (final listener in _killListeners) {
-      listener();
+    // Reentrant kill still invalidates work but does not recursively dispatch.
+    // A separate later kill dispatches again, including newly added listeners.
+    if (_dispatchingKill) return;
+    _dispatchingKill = true;
+    try {
+      for (final listener in List<void Function()>.of(_killListeners)) {
+        try {
+          listener();
+        } catch (_) {
+          _killListenerFailures++;
+        }
+      }
+    } finally {
+      _dispatchingKill = false;
     }
   }
 
   /// Lifts the kill switch so new actions can be confirmed again.
   void reset() => _killed = false;
 
-  /// Registers [listener] to run immediately when [kill] fires.
+  /// Registers for the next kill dispatch. Each dispatch snapshots listeners;
+  /// additions during delivery begin next time. Exceptions are counted and
+  /// isolated. Reentrant kills invalidate generation but do not recurse.
   void onKill(void Function() listener) => _killListeners.add(listener);
 
   /// A time-boxed pause (#133): the gate turns itself back on at this time.
@@ -137,33 +159,46 @@ class SafetyGate implements GateLike {
         apps.join(','),
       );
 
-  /// True when the tool call may execute.
+  /// True when the tool call may execute. Captures kill generation before
+  /// reads; kill/reset cannot revive entered authorization. Stale read or
+  /// confirmation errors deny quietly; current errors still propagate.
   @override
   Future<bool> authorize(String tool, Map<String, dynamic> arguments) async {
     if (_killed) return false;
-    if (!await isEnabled()) return true;
-    if (!riskyTools.contains(tool)) return true;
+    final gen = _generation;
+    bool stale() => _killed || gen != _generation;
+    try {
+      final enabled = await isEnabled();
+      if (stale()) return false;
+      if (!enabled) return true;
+      if (!riskyTools.contains(tool)) return true;
 
-    final allowed = await allowlist();
-    // open_app targets the named app; every other risky tool targets
-    // whatever is in front right now (#109).
-    var targetApp = tool == 'open_app'
-        ? (arguments['name'] as String? ?? '').toLowerCase()
-        : (frontAppProvider?.call() ?? '').toLowerCase();
-    if (targetApp.isNotEmpty) {
-      if (defaultDenyApps.contains(targetApp) && !allowed.contains(targetApp)) {
-        return false;
+      final allowed = await allowlist();
+      if (stale()) return false;
+      // open_app targets the named app; every other risky tool targets
+      // whatever is in front right now (#109).
+      var targetApp = tool == 'open_app'
+          ? (arguments['name'] as String? ?? '').toLowerCase()
+          : (frontAppProvider?.call() ?? '').toLowerCase();
+      if (targetApp.isNotEmpty) {
+        if (defaultDenyApps.contains(targetApp) &&
+            !allowed.contains(targetApp)) {
+          return false;
+        }
+        if (allowed.isNotEmpty && !allowed.contains(targetApp)) return false;
       }
-      if (allowed.isNotEmpty && !allowed.contains(targetApp)) return false;
-    }
 
-    final description = describe(tool, arguments);
-    final confirm = onConfirm;
-    if (confirm == null) return false;
-    final ok = await confirm(description);
-    // A kill while the confirmation dialog was open must still win (#107).
-    if (_killed) return false;
-    return ok;
+      final description = describe(tool, arguments);
+      final confirm = onConfirm;
+      if (confirm == null || stale()) return false;
+      final ok = await confirm(description);
+      // A kill while the confirmation dialog was open must still win (#107).
+      if (stale()) return false;
+      return ok;
+    } catch (_) {
+      if (stale()) return false;
+      rethrow;
+    }
   }
 
   /// Human-readable one-liner for a tool call, shown in the confirmation
