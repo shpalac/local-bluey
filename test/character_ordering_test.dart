@@ -303,8 +303,12 @@ void main() {
     await c.load();
     expect(c.verified, true);
   });
-  test('caller audit preserves excluded awaited main startup wiring', () {
+  test('caller audit uses contained main startup load without changing store owner', () {
     final source = File('lib/main.dart').readAsStringSync();
-    expect(source, contains('await CharacterStore.instance.load();'));
+    expect(source, contains('await character.reload();'));
+    expect(
+      File('lib/services/character_startup.dart').readAsStringSync(),
+      contains('CharacterStore.instance.load'),
+    );
   });
 }

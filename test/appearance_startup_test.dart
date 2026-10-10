@@ -200,11 +200,11 @@ void main() {
       'EgressMonitor.instance.load()',
       'ActionLog.instance.load()',
       'RoutineStore.instance.load()',
-      'CharacterStore.instance.load()',
       'BiometricLock.instance.load()',
     ]) {
       expect(startup, contains('await $load;'));
     }
+    expect(startup, contains('await character.reload();'));
     expect(startup, contains('await windowManager.ensureInitialized();'));
     expect(s, contains('themeMode: ThemeController.instance.mode'));
   });
