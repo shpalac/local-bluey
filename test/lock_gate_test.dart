@@ -447,6 +447,7 @@ void main() {
               body: SingleChildScrollView(
                 child: Column(
                   children: [
+                    const SizedBox(height: 24),
                     AppLockTile(lock: lock),
                     const DataPrivacySection(),
                   ],
@@ -457,7 +458,10 @@ void main() {
         ),
       );
       Future<void> shot(String name) async {
-        await tester.ensureVisible(find.byType(Switch));
+        tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position
+            .jumpTo(0);
         await tester.pump();
         final boundary =
             key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
