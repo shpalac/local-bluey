@@ -5,12 +5,166 @@ import 'request_interfaces.dart';
 import 'dart:async';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
+
+/// Safe failure from safety preference reads or mutations.
+class SafetyStorageException implements Exception {
+  /// Creates a failure without raw plugin data.
+  const SafetyStorageException();
+  @override
+  String toString() => 'Safety preferences could not be updated.';
+}
+
+/// Shared ordered preference owner; kill state remains local to SafetyGate.
+class SafetyPreferences {
+  SafetyPreferences._()
+    : _read = (() async {
+        final prefs = await SharedPreferences.getInstance();
+        return {
+          for (final key in [_enabled, _allowlist, _resume])
+            key: prefs.get(key),
+        };
+      }),
+      _write = ((key, value) async {
+        final prefs = await SharedPreferences.getInstance();
+        if (value is bool) return prefs.setBool(key, value);
+        if (value is int) return prefs.setInt(key, value);
+        return prefs.setString(key, value as String);
+      }),
+      _remove = ((key) async =>
+          (await SharedPreferences.getInstance()).remove(key));
+
+  /// Actual storage-operation seams for isolated synthetic tests.
+  @visibleForTesting
+  SafetyPreferences.forTest({
+    required this._read,
+    required this._write,
+    required this._remove,
+  });
+
+  /// Production preference owner shared by all gates and registry deletion.
+  static final SafetyPreferences instance = SafetyPreferences._();
+  static const _enabled = 'safety.enabled',
+      _allowlist = 'safety.appAllowlist',
+      _resume = 'safety.resumeAtMs';
+  final Future<Map<String, Object?>> Function() _read;
+  final Future<bool> Function(String, Object) _write;
+  final Future<bool> Function(String) _remove;
+  Future<void>? _io;
+  int _revision = 0;
+
+  Future<T> _enqueue<T>(Future<T> Function() operation) {
+    Future<T> invoke() async {
+      try {
+        return await operation();
+      } catch (_) {
+        throw const SafetyStorageException();
+      }
+    }
+
+    final previous = _io;
+    final next = previous == null ? invoke() : previous.then((_) => invoke());
+    final settled = next.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    _io = settled;
+    settled.then((_) {
+      if (identical(_io, settled)) _io = null;
+    });
+    return next;
+  }
+
+  Future<void> _put(String key, Object value) async {
+    if (!await _write(key, value)) throw const SafetyStorageException();
+  }
+
+  Future<void> _delete(String key) async {
+    if (!await _remove(key)) throw const SafetyStorageException();
+  }
+
+  /// Reads the retained deadline in storage order.
+  Future<DateTime?> resumeAt() => _enqueue(() async {
+    final ms = (await _read())[_resume] as int?;
+    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
+  });
+
+  /// Reads current policy; an older expiry cannot overwrite a newer intent.
+  Future<bool> isEnabled(DateTime Function() now) {
+    final revision = _revision;
+    return _enqueue(() async {
+      final prefs = Map<String, Object?>.of(await _read());
+      if (revision != _revision) return true; // Never bypass on stale policy.
+      final enabled = prefs[_enabled] as bool? ?? true;
+      if (enabled) return true;
+      final deadline = prefs[_resume] as int?;
+      if (deadline != null && now().millisecondsSinceEpoch >= deadline) {
+        if (revision != _revision) return true; // conservative stale read
+        await _put(_enabled, true);
+        // A newer explicit choice may have entered while this setter waited.
+        // It is queued after this read and owns the final storage state.
+        await _delete(_resume);
+        return true;
+      }
+      return false;
+    });
+  }
+
+  /// Explicit user choice, serialized against all gates and clears.
+  Future<void> setEnabled(bool value) {
+    _revision++;
+    return _enqueue(() async {
+      await _put(_enabled, value);
+      if (value) await _delete(_resume);
+    });
+  }
+
+  /// Writes the deadline before disabling, so a failed deadline write cannot
+  /// create a new indefinite disabled state. Partial success is not rollback.
+  Future<void> pauseFor(Duration duration, DateTime Function() now) {
+    _revision++;
+    return _enqueue(() async {
+      await _put(_resume, now().add(duration).millisecondsSinceEpoch);
+      await _put(_enabled, false);
+    });
+  }
+
+  /// Reads the actual retained allowlist in storage order.
+  Future<Set<String>> allowlist() => _enqueue(() async {
+    final raw = (await _read())[_allowlist] as String? ?? '';
+    return raw
+        .split(',')
+        .map((e) => e.trim().toLowerCase())
+        .where((e) => e.isNotEmpty)
+        .toSet();
+  });
+
+  /// Snapshots and writes a fresh allowlist choice.
+  Future<void> setAllowlist(Set<String> apps) {
+    final raw = Set<String>.of(apps).join(',');
+    _revision++;
+    return _enqueue(() => _put(_allowlist, raw));
+  }
+
+  /// Explicit preference deletion only; does not alter any gate's kill state.
+  Future<void> clear() {
+    _revision++;
+    return _enqueue(() async {
+      await _delete(_enabled);
+      await _delete(_allowlist);
+      await _delete(_resume);
+    });
+  }
+}
 
 /// Decides whether a tool call may run. Safe tools always run; risky ones
 /// need a human yes through [onConfirm] (wired to a dialog on the Mac).
 /// A global kill switch cancels everything in flight.
 class SafetyGate implements GateLike {
-  SafetyGate({this.onConfirm, Clock? clock}) : _clockOverride = clock;
+  SafetyGate({this.onConfirm, Clock? clock, SafetyPreferences? preferences})
+    : _clockOverride = clock,
+      _preferences = preferences ?? SafetyPreferences.instance;
+  final SafetyPreferences _preferences;
 
   /// Injectable clock for tests (#136); falls back to the zone-aware
   /// package:clock so fakeAsync controls time in tests.
@@ -43,10 +197,6 @@ class SafetyGate implements GateLike {
   /// Input tools act on whatever app is in front, so the allowlist must
   /// cover them too (#109). Wired from the executor's last snapshot.
   String Function()? frontAppProvider;
-
-  static const _kEnabled = 'safety.enabled';
-  static const _kAllowlist = 'safety.appAllowlist';
-  static const _kResumeAt = 'safety.resumeAtMs';
 
   /// UI hook: describe the action, get a yes/no. Null = deny risky actions.
   Future<bool> Function(String description)? onConfirm;
@@ -103,61 +253,28 @@ class SafetyGate implements GateLike {
   /// isolated. Reentrant kills invalidate generation but do not recurse.
   void onKill(void Function() listener) => _killListeners.add(listener);
 
-  /// A time-boxed pause (#133): the gate turns itself back on at this time.
-  Future<DateTime?> resumeAt() async {
-    final ms = (await SharedPreferences.getInstance()).getInt(_kResumeAt);
-    return ms == null ? null : DateTime.fromMillisecondsSinceEpoch(ms);
-  }
+  /// Retained pause deadline.
+  Future<DateTime?> resumeAt() => _preferences.resumeAt();
 
-  /// Whether the gate currently asks for confirmations. An expired
-  /// time-boxed pause re-enables it on read (#133).
-  Future<bool> isEnabled() async {
-    final prefs = await SharedPreferences.getInstance();
-    final enabled = prefs.getBool(_kEnabled) ?? true;
-    if (enabled) return true;
-    final resumeMs = prefs.getInt(_kResumeAt);
-    if (resumeMs != null && _clock.now().millisecondsSinceEpoch >= resumeMs) {
-      // The pause expired: re-enable without waiting for the UI (#133).
-      await setEnabled(true);
-      return true;
-    }
-    return false;
-  }
+  /// Confirmation state, with ordered clock expiry.
+  Future<bool> isEnabled() => _preferences.isEnabled(() => _clock.now());
 
-  /// Turns confirmations on or off; turning on clears any pause deadline.
-  Future<void> setEnabled(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kEnabled, value);
-    if (value) await prefs.remove(_kResumeAt);
-  }
+  /// Explicit toggle choice; enabling removes any deadline.
+  Future<void> setEnabled(bool value) => _preferences.setEnabled(value);
 
-  /// Disables the gate until [duration] has passed (#133).
-  Future<void> pauseFor(Duration duration) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kEnabled, false);
-    await prefs.setInt(
-      _kResumeAt,
-      _clock.now().add(duration).millisecondsSinceEpoch,
-    );
-  }
+  /// Time-boxed pause using this gate's injected clock.
+  Future<void> pauseFor(Duration duration) =>
+      _preferences.pauseFor(duration, () => _clock.now());
 
-  /// Empty = every app allowed except [defaultDenyApps] (#109).
-  Future<Set<String>> allowlist() async {
-    final raw =
-        (await SharedPreferences.getInstance()).getString(_kAllowlist) ?? '';
-    return raw
-        .split(',')
-        .map((e) => e.trim().toLowerCase())
-        .where((e) => e.isNotEmpty)
-        .toSet();
-  }
+  /// Empty means every app except the default deny list.
+  Future<Set<String>> allowlist() => _preferences.allowlist();
 
-  /// Replaces the allowlist. Values are lowercased app names.
-  Future<void> setAllowlist(Set<String> apps) async =>
-      (await SharedPreferences.getInstance()).setString(
-        _kAllowlist,
-        apps.join(','),
-      );
+  /// Replaces allowed app names.
+  Future<void> setAllowlist(Set<String> apps) =>
+      _preferences.setAllowlist(apps);
+
+  /// Explicit local preference clear, preserving kill/generation/listeners.
+  Future<void> clearPreferences() => _preferences.clear();
 
   /// True when the tool call may execute. Captures kill generation before
   /// reads; kill/reset cannot revive entered authorization. Stale read or
