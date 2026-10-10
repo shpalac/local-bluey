@@ -2,12 +2,26 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:local_bluey/services/audio_capture.dart';
 import 'package:local_bluey/services/key_recording_intent.dart';
 
+class _SynchronousTemp implements Directory {
+  _SynchronousTemp(this.path);
+  @override
+  final String path;
+  @override
+  Stream<FileSystemEntity> list({
+    bool recursive = false,
+    bool followLinks = true,
+  }) => const Stream.empty();
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class Driver implements RecorderDriver {
   String? hold, fail, path;
-  bool permission = true, on = false, partialStart = false;
+  bool permission = true, on = false, partialStart = false, nullStop = false;
   int starts = 0, stops = 0, disposals = 0;
   final entered = Completer<void>(), release = Completer<void>();
   Future<void> stage(String name) async {
@@ -44,7 +58,7 @@ class Driver implements RecorderDriver {
     stops++;
     await stage('stop');
     on = false;
-    return path;
+    return nullStop ? null : path;
   }
 
   @override
@@ -62,9 +76,24 @@ class Fixture {
   late final KeyRecordingIntent owner;
   final delivered = <String>[];
   bool deleteFail = false, allowed = true;
+  Completer<void>? deleteEntered, deleteGate;
+  var tempFail = false;
+  int tempIndex = 0;
   Future<void> init() async {
     dir = Directory.systemTemp.createTempSync('key-fixture');
-    capture = AudioCapture(driver: driver, tempDirProvider: () async => dir);
+    capture = AudioCapture(
+      driver: driver,
+      tempDirProvider: () async {
+        if (tempFail) throw StateError('private');
+        return Directory('${dir.path}/session-${tempIndex++}')..createSync();
+      },
+      deleteFile: (file) async {
+        if (!(deleteEntered?.isCompleted ?? true)) deleteEntered!.complete();
+        if (deleteGate != null) await deleteGate!.future;
+        if (deleteFail) throw StateError('private delete');
+        if (await file.exists()) await file.delete();
+      },
+    );
     owner = KeyRecordingIntent(
       capture: capture,
       allowed: () => allowed,
@@ -73,6 +102,8 @@ class Fixture {
         await file.delete();
       },
       delete: (file) async {
+        if (!(deleteEntered?.isCompleted ?? true)) deleteEntered!.complete();
+        if (deleteGate != null) await deleteGate!.future;
         if (deleteFail) throw StateError('private delete');
         if (await file.exists()) await file.delete();
       },
@@ -201,7 +232,7 @@ void main() {
     expect(f.owner.status, KeyRecordingStatus.idle);
   });
   test(
-    'dispose delete uncertainty remains owned and can be explicitly retried',
+    'disposed capture-owned delete failure remains uncertain without revival',
     () async {
       final f = Fixture();
       await f.init();
@@ -214,8 +245,14 @@ void main() {
       );
       expect(f.owner.cleanupPending, true);
       f.deleteFail = false;
-      await f.owner.disposeIntent();
-      expect(f.owner.cleanupPending, false);
+      await expectLater(
+        f.owner.disposeIntent(),
+        throwsA(isA<KeyRecordingException>()),
+      );
+      expect(
+        f.owner.cleanupPending,
+        true,
+      ); // Disposed owner cannot recover/revive.
     },
   );
   for (final failure in ['partial-start', 'stop']) {
@@ -321,7 +358,7 @@ void main() {
     );
   }
   test(
-    'failed delete retains exact file until explicit cancel retry',
+    'capture-owned delete failure requires dedicated explicit recovery',
     () async {
       final f = Fixture();
       await f.init();
@@ -335,7 +372,11 @@ void main() {
       expect(f.owner.cleanupPending, true);
       expect(File(f.driver.path!).existsSync(), true);
       f.deleteFail = false;
-      await f.owner.cancel();
+      await expectLater(
+        f.owner.cancel(),
+        throwsA(isA<KeyRecordingException>()),
+      );
+      await f.owner.recover();
       expect(f.owner.cleanupPending, false);
       expect(File(f.driver.path!).existsSync(), false);
       expect(f.delivered, isEmpty);
@@ -383,4 +424,443 @@ void main() {
     expect(source, contains('await _keyRecording.closeCapture();'));
     expect(source, contains('allowed: () => mounted && !_safety.killed'));
   });
+  for (final failure in ['partial', 'stop']) {
+    test(
+      'explicit $failure recovery failed attempt retains then cleans without delivery',
+      () async {
+        final f = Fixture();
+        await f.init();
+        addTearDown(f.finish);
+        if (failure == 'partial') {
+          f.driver.partialStart = true;
+          await expectLater(
+            f.owner.start(),
+            throwsA(isA<KeyRecordingException>()),
+          );
+        } else {
+          await f.owner.start();
+          f.driver.fail = 'stop';
+          await expectLater(
+            f.owner.send(),
+            throwsA(isA<KeyRecordingException>()),
+          );
+        }
+        f.driver.fail = 'stop';
+        await expectLater(
+          f.owner.recover(),
+          throwsA(isA<KeyRecordingException>()),
+        );
+        expect(f.owner.cleanupPending, true);
+        expect(f.driver.on, true);
+        f.driver.fail = null;
+        f.driver.partialStart = false;
+        final old = f.driver.path!;
+        await f.owner.recover();
+        expect(f.driver.on, false);
+        expect(f.owner.cleanupPending, false);
+        expect(File(old).existsSync(), false);
+        expect(f.delivered, isEmpty);
+        expect(f.owner.status, KeyRecordingStatus.idle);
+        await f.owner.start();
+        await f.owner.send();
+        expect(f.delivered.length, 1);
+      },
+    );
+  }
+  test(
+    'explicit recovery held deletion concurrent completion remains pending',
+    () async {
+      final f = Fixture();
+      await f.init();
+      addTearDown(f.finish);
+      f.driver.partialStart = true;
+      await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+      f.deleteEntered = Completer<void>();
+      f.deleteGate = Completer<void>();
+      final a = f.owner.recover(), b = f.owner.recover();
+      expect(b, same(a));
+      await f.deleteEntered!.future;
+      var done = false;
+      a.then((_) => done = true);
+      await Future<void>.value();
+      expect(done, false);
+      expect(f.driver.stops, 1);
+      f.deleteGate!.complete();
+      await Future.wait([a, b]);
+      expect(done, true);
+      expect(f.owner.cleanupPending, false);
+      expect(f.delivered, isEmpty);
+    },
+  );
+  test(
+    'explicit recovery held stop reentrant retry joins completion',
+    () async {
+      final f = Fixture();
+      await f.init();
+      addTearDown(f.finish);
+      f.driver.partialStart = true;
+      await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+      f.driver.hold = 'stop';
+      Future<void>? reentrant;
+      f.owner.addListener(() {
+        if (f.owner.status == KeyRecordingStatus.pending) {
+          reentrant = f.owner.recover();
+        }
+      });
+      final a = f.owner.recover(), b = f.owner.recover();
+      expect(b, same(a));
+      expect(reentrant, same(a));
+      await f.driver.entered.future;
+      var done = false;
+      a.then((_) => done = true);
+      await Future<void>.value();
+      expect(done, false);
+      f.driver.release.complete();
+      await Future.wait([a, b]);
+      expect(done, true);
+      expect(f.delivered, isEmpty);
+    },
+  );
+  test(
+    'busy legacy start no key claim send cancel recovery zero effects',
+    () async {
+      final f = Fixture();
+      await f.init();
+      addTearDown(f.finish);
+      f.driver.hold = 'start';
+      final legacy = f.capture.start();
+      await f.driver.entered.future;
+      await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+      expect(f.owner.cleanupPending, false);
+      await f.owner.send();
+      await f.owner.cancel();
+      await f.owner.recover();
+      expect(f.driver.stops, 0);
+      expect(f.driver.starts, 1);
+      expect(f.delivered, isEmpty);
+      f.driver.release.complete();
+      await legacy;
+      final file = await f.capture.stop();
+      await AudioCapture.deleteQuietly(file);
+    },
+  );
+  test('external consumption fresh legacy stale key send cancel recovery zero effects', () async {
+    final f = Fixture();
+    await f.init();
+    addTearDown(f.finish);
+    await f.owner.start();
+    final external = await f.capture.stop();
+    final retained = external!;
+    await f.capture.start();
+    final stops = f.driver.stops;
+    await f.owner.send();
+    await f.owner.cancel();
+    await f.owner.recover();
+    expect(f.driver.stops, stops);
+    expect(f.driver.on, true);
+    expect(f.delivered, isEmpty);
+    expect(retained.existsSync(), true);
+    final current = await f.capture.stop();
+    await AudioCapture.deleteQuietly(current);
+  });
+  test(
+    'successful current driver null explicit recovery is no-delivery receipt',
+    () async {
+      final f = Fixture();
+      await f.init();
+      addTearDown(f.finish);
+      f.driver.partialStart = true;
+      f.driver.nullStop = true;
+      await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+      final exact = f.driver.path!;
+      await f.owner.recover();
+      final stops = f.driver.stops;
+      await f.owner.recover();
+      expect(f.driver.stops, stops);
+      expect(File(exact).existsSync(), false);
+      expect(f.owner.cleanupPending, false);
+      expect(f.delivered, isEmpty);
+    },
+  );
+  test('capture-owned deletion failure explicit retry never repeats confirmed stop', () async {
+    final f = Fixture();
+    await f.init();
+    addTearDown(f.finish);
+    await f.owner.start();
+    f.deleteFail = true;
+    await expectLater(f.owner.cancel(), throwsA(isA<KeyRecordingException>()));
+    final stops = f.driver.stops, exact = f.driver.path!;
+    await expectLater(f.owner.recover(), throwsA(isA<KeyRecordingException>()));
+    expect(f.owner.cleanupPending, true);
+    expect(File(exact).existsSync(), true);
+    f.deleteFail = false;
+    await f.owner.recover();
+    expect(f.driver.stops, stops);
+    expect(File(exact).existsSync(), false);
+    expect(f.delivered, isEmpty);
+    expect(f.owner.cleanupPending, false);
+  });
+  for (final end in ['fresh', 'cancel', 'kill', 'dispose']) {
+    test(
+      'entered explicit recovery superseded by $end no stale publication',
+      () async {
+        final f = Fixture();
+        await f.init();
+        addTearDown(f.finish);
+        f.driver.partialStart = true;
+        await expectLater(
+          f.owner.start(),
+          throwsA(isA<KeyRecordingException>()),
+        );
+        f.driver.partialStart = false;
+        f.driver.hold = 'stop';
+        final recover = f.owner.recover();
+        await f.driver.entered.future;
+        Future<void>? ending;
+        if (end == 'fresh') ending = f.owner.start();
+        if (end == 'cancel') ending = f.owner.cancel();
+        if (end == 'kill') f.allowed = false;
+        if (end == 'dispose') ending = f.owner.disposeIntent();
+        final prior = f.owner.status;
+        var notices = 0;
+        f.owner.addListener(() => notices++);
+        f.driver.release.complete();
+        await recover;
+        if (ending != null) await ending;
+        expect(f.delivered, isEmpty);
+        if (end == 'kill' || end == 'dispose') {
+          expect(notices, 0);
+          expect(f.owner.status, prior);
+        }
+        expect(f.driver.starts, end == 'fresh' ? 2 : 1);
+      },
+    );
+  }
+  test('no-driver-entry recovery clears only its receipt and fresh hold later works', () async {
+    final f = Fixture();
+    await f.init();
+    addTearDown(f.finish);
+    f.tempFail = true;
+    await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+    expect(f.driver.starts, 0);
+    expect(f.owner.cleanupPending, true);
+    await f.owner.recover();
+    expect(f.driver.stops, 0);
+    expect(f.owner.cleanupPending, false);
+    f.tempFail = false;
+    await f.owner.start();
+    await f.owner.send();
+    expect(f.delivered.length, 1);
+  });
+  test(
+    'disposed capture receipt retains key uncertainty without new driver stop',
+    () async {
+      final f = Fixture();
+      await f.init();
+      addTearDown(f.finish);
+      f.driver.partialStart = true;
+      await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+      f.driver.fail = 'stop';
+      await expectLater(
+        f.capture.dispose(),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      final stops = f.driver.stops;
+      await expectLater(
+        f.owner.recover(),
+        throwsA(isA<KeyRecordingException>()),
+      );
+      expect(f.driver.stops, stops);
+      expect(f.owner.cleanupPending, true);
+      expect(f.delivered, isEmpty);
+      expect(f.owner.status, KeyRecordingStatus.uncertain);
+    },
+  );
+  test(
+    'kill before explicit recovery allows retained cleanup only no publication',
+    () async {
+      final f = Fixture();
+      await f.init();
+      addTearDown(f.finish);
+      f.driver.partialStart = true;
+      await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+      f.allowed = false;
+      final status = f.owner.status;
+      var notices = 0;
+      f.owner.addListener(() => notices++);
+      await f.owner.recover();
+      expect(notices, 0);
+      expect(f.owner.status, status);
+      expect(f.owner.cleanupPending, false);
+      expect(f.delivered, isEmpty);
+      expect(f.driver.starts, 1);
+      await f.owner.start();
+      expect(f.driver.starts, 1);
+    },
+  );
+  test('synchronous recovery listener cancel preserves resource vs publication ordering', () async {
+    final f = Fixture();
+    await f.init();
+    addTearDown(f.finish);
+    f.driver.partialStart = true;
+    await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+    Future<void>? cancel;
+    var once = false;
+    f.owner.addListener(() {
+      if (!once && f.owner.status == KeyRecordingStatus.pending) {
+        once = true;
+        cancel = f.owner.cancel();
+      }
+    });
+    await f.owner.recover();
+    await cancel;
+    expect(f.owner.status, KeyRecordingStatus.idle);
+    expect(f.owner.cleanupPending, false);
+    expect(f.driver.stops, 1);
+    expect(f.delivered, isEmpty);
+  });
+  test('separately transferred key file failed delete cancel retries without capture stop', () async {
+    final f = Fixture();
+    await f.init();
+    addTearDown(f.finish);
+    await f.owner.start();
+    f.driver.hold = 'stop';
+    f.deleteFail = true;
+    final sending = expectLater(
+      f.owner.send(),
+      throwsA(isA<KeyRecordingException>()),
+    );
+    await f.driver.entered.future;
+    final canceling = expectLater(
+      f.owner.cancel(),
+      throwsA(isA<KeyRecordingException>()),
+    );
+    f.driver.release.complete();
+    await Future.wait([sending, canceling]);
+    final exact = f.driver.path!, stops = f.driver.stops;
+    expect(File(exact).existsSync(), true);
+    expect(f.owner.cleanupPending, true);
+    f.deleteFail = false;
+    await f.owner.cancel();
+    expect(File(exact).existsSync(), false);
+    expect(f.driver.stops, stops);
+    expect(f.owner.cleanupPending, false);
+    expect(f.delivered, isEmpty);
+  });
+  test('explicit recovery cannot hide retry behind fresh hold during retained failure', () async {
+    final f = Fixture();
+    await f.init();
+    addTearDown(f.finish);
+    f.driver.partialStart = true;
+    await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+    final stops = f.driver.stops;
+    f.driver.partialStart = false;
+    await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+    expect(f.driver.stops, stops);
+    expect(f.driver.starts, 1);
+    await f.owner.recover();
+    expect(f.driver.starts, 1);
+    expect(f.delivered, isEmpty);
+    await f.owner.start();
+    expect(f.driver.starts, 2);
+  });
+  test(
+    'disposed before recovery zero effects and retained capture uncertainty',
+    () async {
+      final f = Fixture();
+      await f.init();
+      addTearDown(f.finish);
+      f.driver.partialStart = true;
+      await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+      await expectLater(
+        f.owner.disposeIntent(),
+        throwsA(isA<KeyRecordingException>()),
+      );
+      final starts = f.driver.starts,
+          stops = f.driver.stops,
+          disposals = f.driver.disposals;
+      final exact = f.driver.path!;
+      var notices = 0;
+      f.owner.addListener(() => notices++);
+      await f.owner.recover();
+      await f.owner.start();
+      await f.owner.send();
+      expect(f.driver.starts, starts);
+      expect(f.driver.stops, stops);
+      expect(f.driver.disposals, disposals);
+      expect(File(exact).existsSync(), true);
+      expect(f.delivered, isEmpty);
+      expect(notices, 0);
+      expect(f.owner.cleanupPending, true);
+    },
+  );
+  for (final recoveryFirst in [false, true]) {
+    test(
+      'key held cap send recovery exact owner recoveryFirst=$recoveryFirst',
+      () {
+        final dir = Directory.systemTemp.createTempSync('key-cap-recovery-');
+        final delivered = <String>[], deleted = <String>[];
+        fakeAsync((async) {
+          final driver = Driver()..hold = 'stop';
+          final capture = AudioCapture(
+            driver: driver,
+            maxDuration: const Duration(seconds: 1),
+            tempDirProvider: () async => _SynchronousTemp(dir.path),
+            deleteFile: (file) async {
+              deleted.add(file.path);
+              if (file.existsSync()) file.deleteSync();
+            },
+          );
+          final owner = KeyRecordingIntent(
+            capture: capture,
+            deliver: (file) async {
+              delivered.add(file.path);
+              if (file.existsSync()) file.deleteSync();
+            },
+            delete: (file) async {
+              deleted.add(file.path);
+              if (file.existsSync()) file.deleteSync();
+            },
+          );
+          owner.start();
+          async.flushMicrotasks();
+          expect(driver.starts, 1);
+          final exact = driver.path!;
+          async.elapse(const Duration(seconds: 1));
+          async.flushMicrotasks();
+          expect(driver.entered.isCompleted, true);
+          expect(driver.stops, 1);
+          Future<void> send, recover;
+          if (recoveryFirst) {
+            recover = owner.recover();
+            send = owner.send();
+          } else {
+            send = owner.send();
+            recover = owner.recover();
+          }
+          var sent = false, recovered = false;
+          send.then((_) => sent = true);
+          recover.then((_) => recovered = true);
+          async.flushMicrotasks();
+          expect(sent, false);
+          expect(recovered, false);
+          driver.release.complete();
+          async.flushMicrotasks();
+          expect(sent, true);
+          expect(recovered, true);
+          expect(driver.stops, 1);
+          expect(delivered, recoveryFirst ? isEmpty : [exact]);
+          expect(deleted, recoveryFirst ? [exact] : isEmpty);
+          expect(File(exact).existsSync(), false);
+          expect(owner.cleanupPending, false);
+          owner.disposeIntent();
+          async.flushMicrotasks();
+          owner.dispose();
+          capture.dispose();
+          async.flushMicrotasks();
+        });
+        dir.deleteSync(recursive: true);
+      },
+    );
+  }
 }
