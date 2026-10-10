@@ -16,6 +16,7 @@ import 'routines.dart';
 import 'settings_store.dart';
 import 'stt.dart';
 import 'strings.dart';
+import '../ui/theme.dart';
 
 /// One persistent store, registered in the single inventory (#83).
 class DataStoreInfo {
@@ -142,8 +143,7 @@ class DataRegistry {
       where: 'SharedPreferences (theme.mode)',
       retentionEn: 'Kept until you delete it',
       retentionHe: 'נשמר עד שמוחקים',
-      clear: () async =>
-          (await SharedPreferences.getInstance()).remove('theme.mode'),
+      clear: () => ThemeController.instance.clear(),
     ),
     DataStoreInfo(
       id: 'conversation',

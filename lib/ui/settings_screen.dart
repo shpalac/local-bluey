@@ -839,8 +839,19 @@ class _AppearanceTile extends StatelessWidget {
       title: const Text('Appearance'),
       trailing: DropdownButton<ThemeMode>(
         value: ThemeController.instance.mode,
-        onChanged: (mode) {
-          if (mode != null) ThemeController.instance.setMode(mode);
+        onChanged: (mode) async {
+          if (mode == null) return;
+          try {
+            await ThemeController.instance.setMode(mode);
+          } catch (_) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Could not update appearance. Please retry.'),
+                ),
+              );
+            }
+          }
         },
         items: const [
           DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
