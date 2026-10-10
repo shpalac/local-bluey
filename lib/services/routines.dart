@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -168,7 +169,26 @@ class RoutineStore {
   /// published in memory only after that write succeeds. Import only stores
   /// data; it never runs a routine.
   Future<int> importFrom(String json) async {
-    final incoming = _parsePack(json);
+    final incoming = _parsePack(json); // pure; fails before queueing
+    final prev = _importTail;
+    final done = Completer<void>();
+    _importTail = done.future;
+    try {
+      await prev;
+      return await _applyImport(incoming);
+    } finally {
+      done.complete();
+    }
+  }
+
+  /// Serializes imports with each other only. Broader ordering against
+  /// load, save, add, remove and clear is a separate, unresolved concern
+  /// (#333); this does not make those concurrency-safe.
+  Future<void> _importTail = Future<void>.value();
+  int _stagingId = 0;
+
+  /// Runs alone: collision check, snapshot, stage, commit and publication.
+  Future<int> _applyImport(List<Routine> incoming) async {
     final taken = {for (final r in routines) r.name};
     final seen = <String>{};
     for (final r in incoming) {
@@ -198,7 +218,7 @@ class RoutineStore {
   /// file untouched and removes the staging file.
   Future<void> _write(List<Routine> list) async {
     final target = await _file();
-    final staging = File('${target.path}.tmp');
+    final staging = File('${target.path}.${++_stagingId}.tmp');
     try {
       await _stage(staging, jsonEncode(list.map((r) => r.toJson()).toList()));
       await _commit(staging, target.path);

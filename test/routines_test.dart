@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -63,6 +64,14 @@ void main() {
     late RoutineStore s;
     var writes = 0;
     var failStage = false;
+    var failFirstOnly = false;
+    Completer<void>? stageGate;
+    final stagedPaths = <String>[];
+    List<String> tmpFiles() => tmp
+        .listSync()
+        .map((e) => e.path)
+        .where((p) => p.endsWith('.tmp'))
+        .toList();
     var failCommit = false;
 
     String pack(List<Map<String, Object?>> items) => jsonEncode(items);
@@ -78,12 +87,18 @@ void main() {
       file = File('${tmp.path}/routines.json');
       writes = 0;
       failStage = false;
+      failFirstOnly = false;
       failCommit = false;
+      stageGate = null;
+      stagedPaths.clear();
       s = RoutineStore.forTest(
         file: () async => file,
         stage: (f, contents) async {
           writes++;
-          if (failStage) {
+          stagedPaths.add(f.path);
+          final gate = stageGate;
+          if (gate != null) await gate.future;
+          if (failStage && (!failFirstOnly || writes == 1)) {
             // Partial bytes hit the staging file, then the write fails.
             await f.writeAsString(contents.substring(0, 5));
             throw FileSystemException('disk full', f.path);
@@ -193,16 +208,74 @@ void main() {
           );
           expect(s.routines.map((r) => r.name), ['first']);
           expect(file.readAsStringSync(), before);
-          expect(File('${file.path}.tmp').existsSync(), isFalse);
+          expect(tmpFiles(), isEmpty);
           failStage = false;
           failCommit = false;
           expect(await s.importFrom(pack([item('second')])), 1);
           expect(s.routines.map((r) => r.name), ['first', 'second']);
           expect(jsonDecode(file.readAsStringSync()), hasLength(2));
-          expect(File('${file.path}.tmp').existsSync(), isFalse);
+          expect(tmpFiles(), isEmpty);
         },
       );
     }
+
+    Future<void> until(bool Function() c) async {
+      final end = DateTime.now().add(const Duration(seconds: 10));
+      while (!c()) {
+        if (DateTime.now().isAfter(end)) throw StateError('never reached');
+        await Future<void>.delayed(const Duration(milliseconds: 2));
+      }
+    }
+
+    test(
+      'overlapping imports of different names serialize, keep both',
+      () async {
+        stageGate = Completer<void>();
+        final a = s.importFrom(pack([item('A')]));
+        final b = s.importFrom(pack([item('B')]));
+        await until(() => stagedPaths.length == 1); // A entered staging
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        expect(stagedPaths, hasLength(1)); // B has not started
+        stageGate!.complete();
+        expect(await a, 1);
+        expect(await b, 1);
+        expect(s.routines.map((r) => r.name), ['A', 'B']);
+        expect(
+          (jsonDecode(file.readAsStringSync()) as List).map((e) => e['name']),
+          ['A', 'B'],
+        );
+        expect(stagedPaths.toSet(), hasLength(2)); // owned, unique staging
+        expect(tmpFiles(), isEmpty);
+      },
+    );
+
+    test('overlapping imports of the same name: second is rejected', () async {
+      stageGate = Completer<void>();
+      final a = s.importFrom(pack([item('same')]));
+      final b = s.importFrom(pack([item('same')]));
+      await until(() => stagedPaths.length == 1);
+      stageGate!.complete();
+      expect(await a, 1);
+      await expectLater(b, throwsA(isA<RoutineImportException>()));
+      expect(s.routines.map((r) => r.name), ['same']);
+      expect(jsonDecode(file.readAsStringSync()), hasLength(1));
+      expect(tmpFiles(), isEmpty);
+    });
+
+    test('a failed import cleans up, then the next import succeeds', () async {
+      stageGate = Completer<void>();
+      failStage = true;
+      failFirstOnly = true; // only the first staged write fails
+      final a = s.importFrom(pack([item('A')]));
+      final b = s.importFrom(pack([item('B')]));
+      await until(() => stagedPaths.length == 1);
+      stageGate!.complete();
+      await expectLater(a, throwsA(isA<RoutineImportException>()));
+      expect(await b, 1);
+      expect(s.routines.map((r) => r.name), ['B']);
+      expect(jsonDecode(file.readAsStringSync()), hasLength(1));
+      expect(tmpFiles(), isEmpty);
+    });
 
     test('field limits are exact and enabled null means true', () async {
       Map<String, Object?> lim(int t, int i) => {
