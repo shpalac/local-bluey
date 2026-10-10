@@ -1,0 +1,7 @@
+# Language startup caller synthetic app evidence
+
+24 actual LocalBlueyApp cases at 320/390dp x844dp, scale1/1.5/2, English/Hebrew RTL, light/dark. 72 complete failure/entered disabled retry/recovery pixels, four contact sheets and decisive320dp2x samples inspected. Three independent language/character/appearance notices fit without shared layout changes; each retry, Watch Stop/countdown, route back/body readable/operable. Exact back and Stop taps work; character and appearance retries remain independent. Language-only recovery leaves other failures. English320dp2x AppBar title ellipsizes, back remains visible. Extra actual shared owner EN->Hebrew/speech he->en retry test proves app RTL and localized independent notice update without route replacement.
+
+Default fixture uses shipped Roboto; pixel mode DejaVu for readable English/Hebrew and Material icons. Initial added cross-language test left ThemeController first preferences access on fake clock; next case hung. Initial theme setup now runs actual IO via runAsync before fake-clock app construction; no production theme/owner changes. Two interrupted attempts recorded, final focused/full evidence separately validated.
+
+Synthetic routes/watch and injected actual language storage only, not native engine/biometric/app-lock/whole-startup readiness. All other startup security loads remain awaited. No locale resolution, translations elsewhere, speech policy, Settings/storage owner/global tokens changed.

@@ -196,7 +196,6 @@ void main() {
       s.indexOf('/// Picks the home'),
     );
     for (final load in [
-      'Strings.load()',
       'EgressMonitor.instance.load()',
       'ActionLog.instance.load()',
       'RoutineStore.instance.load()',
@@ -204,6 +203,7 @@ void main() {
     ]) {
       expect(startup, contains('await $load;'));
     }
+    expect(startup, contains('await language.reload();'));
     expect(startup, contains('await character.reload();'));
     expect(startup, contains('await windowManager.ensureInitialized();'));
     expect(s, contains('themeMode: ThemeController.instance.mode'));
