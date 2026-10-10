@@ -205,7 +205,19 @@ class SttException implements Exception {
 /// Posts audio to the configured HTTP endpoint as multipart and reads
 /// back JSON `text`. Honors local-only mode by refusing to send (#199).
 class HttpSttProvider implements TranscriberLike {
-  HttpSttProvider({http.Client? client}) : _client = client ?? http.Client();
+  HttpSttProvider({
+    http.Client? client,
+    this.timeout = requestTimeout,
+    Future<http.MultipartFile> Function(File)? multipartFile,
+  }) : _client = client ?? http.Client(),
+       _multipartFile =
+           multipartFile ??
+           ((audio) => http.MultipartFile.fromPath('file', audio.path));
+
+  final Future<http.MultipartFile> Function(File) _multipartFile;
+
+  /// One elapsed invocation budget, including preparation and body.
+  final Duration timeout;
 
   final http.Client _client;
 
@@ -213,11 +225,39 @@ class HttpSttProvider implements TranscriberLike {
   /// Hard ceiling on one transcription request.
   static const requestTimeout = Duration(seconds: 120);
 
-  @override
-  /// Transcribes [audio]. Throws [SttException] when no endpoint is
-  /// configured, local-only mode blocks egress, or the endpoint fails.
+  /// Transcribes [audio] within one deadline from invocation, including
+  /// privacy/file preparation, upload, headers and body consumption. Timeout
+  /// discards late results and cancels an owned body listener, not all transport
+  /// work; caller-owned clients are never closed.
   @override
   Future<String> transcribe(File audio, SttSettings settings) async {
+    final request = _SttRequest();
+    try {
+      return await _transcribe(audio, settings, request).timeout(
+        timeout,
+        onTimeout: () {
+          request.expire();
+          throw SttException(
+            SttErrorKind.timeout,
+            'Transcription timed out after ${timeout.inSeconds}s',
+          );
+        },
+      );
+    } on TimeoutException {
+      throw SttException(
+        SttErrorKind.timeout,
+        'Transcription timed out after ${timeout.inSeconds}s',
+      );
+    } finally {
+      request.expire();
+    }
+  }
+
+  Future<String> _transcribe(
+    File audio,
+    SttSettings settings,
+    _SttRequest scope,
+  ) async {
     final base = settings.baseUrl;
     if (base == null || base.isEmpty) {
       throw SttException(
@@ -229,6 +269,7 @@ class HttpSttProvider implements TranscriberLike {
     // Snapshot the local-only decision once for the whole request (#199):
     // the redirect check below must not re-read mutable global state.
     final localOnly = await PrivacyGuard.isLocalOnly();
+    scope.check();
     if (localOnly && !PrivacyGuard.isLocalUrl(base)) {
       throw SttException(
         SttErrorKind.unreachable,
@@ -241,13 +282,16 @@ class HttpSttProvider implements TranscriberLike {
     // builder, which surfaced as a crash rather than as the permissions problem
     // it actually is. Checked after the local-only gate so an off-device
     // endpoint still reports the privacy refusal, the more useful error (#254).
-    if (!await audio.exists() || await audio.length() <= 0) {
+    final exists = await audio.exists();
+    scope.check();
+    if (!exists || await audio.length() <= 0) {
       throw SttException(
         SttErrorKind.modelUnavailable,
         'Nothing was recorded - check the microphone permission and hold a '
         'little longer.',
       );
     }
+    scope.check();
     final request = http.MultipartRequest(
       'POST',
       Uri.parse(endpoint(base, '/audio/transcriptions')),
@@ -260,7 +304,8 @@ class HttpSttProvider implements TranscriberLike {
     if (settings.apiKey?.isNotEmpty == true) {
       request.headers['Authorization'] = 'Bearer ${settings.apiKey}';
     }
-    request.files.add(await http.MultipartFile.fromPath('file', audio.path));
+    request.files.add(await _multipartFile(audio));
+    scope.check();
     unawaited(
       EgressMonitor.instance.record(
         base,
@@ -272,21 +317,29 @@ class HttpSttProvider implements TranscriberLike {
         audio.existsSync() ? audio.lengthSync() : 0,
       ),
     );
-    final http.Response response;
-    try {
-      // #199: the deadline covers the body read too, not just send() - a
-      // stalled response stream cannot pin the UI in "thinking".
-      // Redirects are validated below instead of followed blindly.
-      request.followRedirects = false;
-      final streamed = await _client.send(request).timeout(requestTimeout);
-      response = await http.Response.fromStream(streamed)
-          .timeout(requestTimeout);
-    } on TimeoutException {
-      throw SttException(
-        SttErrorKind.timeout,
-        'Transcription timed out after ${requestTimeout.inSeconds}s',
+    request.followRedirects = false;
+    final streamed = await _client.send(request);
+    if (!scope.active) {
+      // Headers arriving after timeout still carry a stream we must release.
+      unawaited(
+        streamed.stream
+            .listen((_) {}, onError: (Object _) {})
+            .cancel()
+            .catchError((Object _) {}),
       );
+      scope.check();
     }
+    final bytes = await scope.read(streamed.stream);
+    scope.check();
+    final response = http.Response.bytes(
+      bytes,
+      streamed.statusCode,
+      headers: streamed.headers,
+      request: streamed.request,
+      isRedirect: streamed.isRedirect,
+      persistentConnection: streamed.persistentConnection,
+      reasonPhrase: streamed.reasonPhrase,
+    );
     // Some clients normalize redirect state away; check the status and
     // location header directly so a 3xx can never slip through.
     final isRedirect =
@@ -331,6 +384,58 @@ class HttpSttProvider implements TranscriberLike {
       );
     }
     return (decoded['text'] as String).trim();
+  }
+}
+
+// One invocation owns one body listener. Expiry is synchronous; cancellation
+// may settle later and failures are consumed rather than unhandled.
+class _SttRequest {
+  bool active = true;
+  StreamSubscription<List<int>>? _body;
+  Completer<List<int>>? _result;
+  void check() {
+    if (!active) {
+      throw SttException(
+        SttErrorKind.timeout,
+        'Transcription deadline expired',
+      );
+    }
+  }
+
+  void expire() {
+    active = false;
+    final body = _body;
+    _body = null;
+    if (body != null) unawaited(body.cancel().catchError((Object _) {}));
+    final result = _result;
+    if (result != null && !result.isCompleted) {
+      result.completeError(
+        SttException(SttErrorKind.timeout, 'Transcription deadline expired'),
+      );
+    }
+  }
+
+  Future<List<int>> read(Stream<List<int>> stream) async {
+    check();
+    final bytes = <int>[];
+    final result = _result = Completer<List<int>>();
+    _body = stream.listen(
+      bytes.addAll,
+      onError: (Object error, StackTrace stack) {
+        if (!result.isCompleted) result.completeError(error, stack);
+      },
+      onDone: () {
+        if (!result.isCompleted) result.complete(bytes);
+      },
+    );
+    try {
+      return await result.future;
+    } finally {
+      final body = _body;
+      _body = null;
+      if (body != null) unawaited(body.cancel().catchError((Object _) {}));
+      _result = null;
+    }
   }
 }
 
