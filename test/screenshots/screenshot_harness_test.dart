@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,10 +32,44 @@ void main() {
   setUpAll(() async {
     // Real glyphs instead of the Ahem test font: the bundled Roboto is
     // registered under its own family name in pubspec.yaml.
-    final loader = FontLoader('Roboto')
+    final loader = FontLoader('BlueyRoboto')
       ..addFont(rootBundle.load('assets/fonts/Roboto-Regular.ttf'));
     await loader.load();
+    // Hebrew glyphs for the RTL shots (Roboto has none): Noto Sans Hebrew
+    // (SIL OFL) is committed next to the harness so every machine renders
+    // the same pixels.
+    final hebrew = FontLoader('NotoSansHebrew')
+      ..addFont(
+        Future.value(
+          ByteData.sublistView(
+            File('test/screenshots/fonts/NotoSansHebrew-Regular.ttf')
+                .readAsBytesSync(),
+          ),
+        ),
+      );
+    await hebrew.load();
+    // Icon glyphs: the Material icon font from the pinned Flutter SDK, so
+    // icons are not blank squares.
+    final root = Platform.environment['FLUTTER_ROOT'];
+    final icons = root == null
+        ? null
+        : File(
+            '$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf',
+          );
+    if (icons == null || !icons.existsSync()) {
+      throw StateError('Material icon font not found under FLUTTER_ROOT');
+    }
+    final iconLoader = FontLoader('MaterialIcons')
+      ..addFont(Future.value(ByteData.sublistView(icons.readAsBytesSync())));
+    await iconLoader.load();
   });
+
+  ThemeData withFonts(ThemeData base) => base.copyWith(
+    textTheme: base.textTheme.apply(
+      fontFamily: 'BlueyRoboto',
+      fontFamilyFallback: const ['NotoSansHebrew'],
+    ),
+  );
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -48,6 +84,7 @@ void main() {
     Size? size,
     double textScale = 1.0,
     bool rtl = false,
+    bool scrollToBottom = false,
   }) async {
     if (size != null) {
       tester.view.physicalSize = size;
@@ -56,7 +93,8 @@ void main() {
     }
     await tester.pumpWidget(
       MaterialApp(
-        theme: dark ? AppTheme.dark() : AppTheme.light(),
+        debugShowCheckedModeBanner: false,
+        theme: withFonts(dark ? AppTheme.dark() : AppTheme.light()),
         builder: (context, app) => MediaQuery(
           data: MediaQuery.of(context)
               .copyWith(textScaler: TextScaler.linear(textScale)),
@@ -65,15 +103,26 @@ void main() {
             child: app!,
           ),
         ),
-        home: child,
+        // The app hosts the face in a Scaffold (lib/main.dart); mirror it so
+        // text gets Material's default style instead of a debug fallback.
+        home: child is FaceScreen ? Scaffold(body: child) : child,
       ),
     );
     // Fixed pumps instead of pumpAndSettle: the settings overlay has
     // perpetual diagnostics animations that never fully settle.
     await tester.pump();
+    // Let real async work (SharedPreferences, readiness probes) finish so a
+    // loading spinner is never captured as the documentation image.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump();
+    if (scrollToBottom) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -5000));
+      await tester.pump(const Duration(milliseconds: 500));
+    }
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/$name'),
@@ -216,6 +265,107 @@ void main() {
         textScale: v.$4,
         rtl: true,
       );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  // Scrolled-bottom evidence for the two cases whose initial viewport ends
+  // mid-card: English compact dark 200% and Hebrew dark 200%.
+  for (final v in const [
+    ('compact-dark-200-bottom', false),
+    ('he-dark-200-bottom', true),
+  ]) {
+    testWidgets('onboarding ${v.$1}', (tester) async {
+      if (v.$2) {
+        Strings.uiLanguage = UiLanguage.hebrew;
+        addTearDown(() => Strings.uiLanguage = UiLanguage.english);
+      }
+      await shot(
+        tester,
+        'onboarding-${v.$1}.png',
+        OnboardingScreen(
+          readiness: _fakeReady,
+          onDone: () {},
+          checker: const _AllDeniedChecker(),
+        ),
+        size: const Size(720, 520),
+        dark: true,
+        textScale: 2.0,
+        rtl: v.$2,
+        scrollToBottom: true,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  // The 200% captures above show the initial scrollable viewport, which can
+  // end mid-card. These assertions are the layout evidence: each action is
+  // scrolled into view and must then sit fully inside the window, and nothing
+  // may overflow (a render overflow would be a thrown exception).
+  for (final v in const [
+    ('compact-dark-200', Size(720, 520), true, 2.0, false),
+    ('desktop-light-200', Size(1360, 845), false, 2.0, false),
+    ('he-dark-200', Size(720, 520), true, 2.0, true),
+  ]) {
+    testWidgets('onboarding ${v.$1} actions stay reachable', (tester) async {
+      if (v.$5) {
+        Strings.uiLanguage = UiLanguage.hebrew;
+        addTearDown(() => Strings.uiLanguage = UiLanguage.english);
+      }
+      tester.view.physicalSize = v.$2;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: withFonts(v.$3 ? AppTheme.dark() : AppTheme.light()),
+          builder: (context, app) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(v.$4)),
+            child: Directionality(
+              textDirection: v.$5 ? TextDirection.rtl : TextDirection.ltr,
+              child: app!,
+            ),
+          ),
+          home: OnboardingScreen(
+            readiness: _fakeReady,
+            onDone: () {},
+            checker: const _AllDeniedChecker(),
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+      final scrollables = find.byType(Scrollable);
+      if (scrollables.evaluate().isNotEmpty) {
+        await tester.drag(scrollables.first, const Offset(0, -5000));
+        await tester.pump(const Duration(milliseconds: 500));
+      }
+      final screen = Offset.zero & v.$2;
+      final buttons = find.byWidgetPredicate(
+        (w) => w is FilledButton || w is OutlinedButton || w is TextButton,
+      );
+      expect(buttons, findsWidgets);
+      // Every action must be reachable: scroll each one into view, then it
+      // must be fully inside the window (all four edges).
+      final count = buttons.evaluate().length;
+      for (var i = 0; i < count; i++) {
+        final one = buttons.at(i);
+        await tester.ensureVisible(one);
+        await tester.pump(const Duration(milliseconds: 300));
+        final rect = tester.getRect(one);
+        expect(
+          rect.left >= screen.left - 0.5 &&
+              rect.right <= screen.right + 0.5 &&
+              rect.top >= screen.top - 0.5 &&
+              rect.bottom <= screen.bottom + 0.5,
+          isTrue,
+          reason: 'action $i at $rect is not fully inside $screen',
+        );
+      }
       expect(tester.takeException(), isNull);
     });
   }
