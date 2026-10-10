@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:fake_async/fake_async.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/link/line_connection.dart';
 import 'package:local_bluey/link/models.dart';
@@ -109,9 +111,7 @@ void main() {
         'exact',
       );
       for (final terminated in [false, true]) {
-        final t = FakeTransport(),
-            c = LineConnection.withTransport(FakeTransport());
-        await c.close();
+        final t = FakeTransport();
         final actual = LineConnection.withTransport(
           t,
           frameLimit: bytes.length,
@@ -166,21 +166,25 @@ void main() {
         expect(c.isClosed, isTrue);
         c.start();
         c.send(Packet(command: 'no'));
-        await a;
+        await Future<void>.delayed(Duration.zero);
+        var completed = false;
+        unawaited(a.then((_) => completed = true));
+        expect(completed, isFalse);
         expect(done, 1);
         expect(t.listens, 1);
         expect(t.configured, 1);
         expect(t.writes, 0);
         expect(t.cancels, 1);
         expect(t.closes, 1);
-        expect(t.destroys, 1);
+        expect(t.destroys, 0);
         t.controller.add(utf8.encode('${wire('after')}\n'));
         if (error) {
           release.completeError(StateError('late drain'));
         } else {
           release.complete();
         }
-        await Future<void>.delayed(Duration.zero);
+        await a;
+        expect(t.destroys, 1);
         expect(packets, isEmpty);
         expect(done, 1);
         await t.controller.close();
@@ -235,19 +239,72 @@ void main() {
       unawaited(t.controller.close());
     });
   }
-  test('pending cancellation does not hold logical close future', () async {
-    final t = FakeTransport(), release = Completer<void>();
-    t.cancel = () => release.future;
-    final c = LineConnection.withTransport(t);
-    var done = 0;
-    c.done.listen((_) => done++);
-    c.start();
-    await c.close();
-    expect(done, 1);
-    expect(c.isClosed, isTrue);
-    expect(t.cancels, 1);
-    release.completeError(StateError('late cancel'));
-    await Future<void>.delayed(Duration.zero);
-    await t.controller.close();
+  for (final pending in ['drain', 'cancel']) {
+    test('stalled $pending has finite fake-clock teardown and late error', () {
+      fakeAsync((clock) {
+        final t = FakeTransport(), release = Completer<void>();
+        if (pending == 'drain') {
+          t.drain = () => release.future;
+        } else {
+          t.cancel = () => release.future;
+        }
+        final c = LineConnection.withTransport(t);
+        var done = 0, completed = false;
+        c.done.listen((_) => done++);
+        c.start();
+        final a = c.close();
+        expect(identical(a, c.close()), isTrue);
+        unawaited(a.then((_) => completed = true));
+        clock.flushMicrotasks();
+        expect(c.isClosed, isTrue);
+        expect(done, 1);
+        expect(completed, isFalse);
+        expect(t.destroys, 0);
+        clock.elapse(const Duration(milliseconds: 1999));
+        expect(completed, isFalse);
+        clock.elapse(const Duration(milliseconds: 1));
+        expect(completed, isTrue);
+        expect(t.destroys, 1);
+        expect(t.cancels, 1);
+        release.completeError(StateError('late cleanup'));
+        clock.flushMicrotasks();
+        expect(done, 1);
+        expect(t.destroys, 1);
+      });
+    });
+  }
+  test(
+    'entered drain error force releases before deadline with fake clock',
+    () {
+      fakeAsync((clock) {
+        final t = FakeTransport(), release = Completer<void>();
+        t.drain = () => release.future;
+        final c = LineConnection.withTransport(t);
+        c.start();
+        var completed = false;
+        unawaited(c.close().then((_) => completed = true));
+        clock.flushMicrotasks();
+        expect(completed, isFalse);
+        release.completeError(StateError('drain failed'));
+        clock.flushMicrotasks();
+        expect(completed, isTrue);
+        expect(t.destroys, 1);
+        expect(clock.elapsed, Duration.zero);
+      });
+    },
+  );
+  test('paused consumers do not block bounded transport teardown', () {
+    fakeAsync((clock) {
+      final t = FakeTransport();
+      final actual = LineConnection.withTransport(t);
+      final sub = actual.done.listen((_) {});
+      sub.pause();
+      var completed = false;
+      unawaited(actual.close().then((_) => completed = true));
+      clock.flushMicrotasks();
+      expect(completed, isTrue);
+      sub.resume();
+      clock.flushMicrotasks();
+    });
   });
 }

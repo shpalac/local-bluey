@@ -62,6 +62,20 @@ void main() {
   });
 
   group('LineConnection close semantics (#113)', () {
+    test(
+      'terminal authFailed sent before close reaches loopback peer',
+      () async {
+        final (a, b) = await _pair();
+        final terminal = b.packets.first;
+        a.send(Packet(command: 'authFailed'));
+        await a.close();
+        expect(
+          (await terminal.timeout(const Duration(seconds: 3))).command,
+          'authFailed',
+        );
+        await b.close();
+      },
+    );
     test('local close emits done exactly once', () async {
       final (a, b) = await _pair();
       var count = 0;

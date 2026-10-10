@@ -50,13 +50,21 @@ class LineConnection {
   LineConnection.withTransport(
     this._transport, {
     int frameLimit = maxFrameBytes,
+    this.closeTimeout = const Duration(seconds: 2),
   }) : _frameLimit = frameLimit {
     if (frameLimit < 1) throw ArgumentError.value(frameLimit, 'frameLimit');
+    if (closeTimeout <= Duration.zero) {
+      throw ArgumentError.value(closeTimeout, 'closeTimeout');
+    }
   }
 
   /// Largest individual wire frame before LF, in bytes (including CR, #115).
   /// Coalesced valid frames never count against each other's limit.
   static const maxFrameBytes = 16 * 1024 * 1024;
+
+  /// Finite best-effort drain and input cleanup deadline before force destroy.
+  final Duration closeTimeout;
+
   final LineTransport _transport;
   final int _frameLimit;
   final _onPacket = StreamController<Packet>.broadcast();
@@ -134,11 +142,12 @@ class LineConnection {
     }
   }
 
-  /// Idempotent logical teardown: clear tail, emit done and stop owned input
-  /// immediately. Returns one shared future for controller shutdown, not output
-  /// drain/cancel completion. Pending/failed transport cleanup is consumed and
-  /// cannot hold logical close open. Socket is destroyed, not gracefully drained.
-  /// Packets already queued before close are not retrospectively retracted.
+  /// Idempotent logical teardown clears tail, emits done and stops input now.
+  /// One shared future completes after best-effort drain/input cleanup or the
+  /// finite [closeTimeout], then force release. Successful drain preserves queued
+  /// outbound data; timeout/error makes delivery best-effort, not guaranteed.
+  /// Paused packet/done consumers do not hold transport teardown open. Packets
+  /// already queued before close are not retrospectively retracted.
   Future<void> close() {
     if (_closing != null) return _closing!;
     final completion = Completer<void>();
@@ -149,21 +158,30 @@ class LineConnection {
     _onDone.add(null);
     final subscription = _subscription;
     _subscription = null;
-    if (subscription != null) _ignoreCleanup(subscription.cancel);
-    _ignoreCleanup(_transport.close);
-    try {
-      _transport.destroy();
-    } catch (_) {}
-    Future.wait([_onPacket.close(), _onDone.close()]).then(
-      (_) => completion.complete(),
-      onError: (Object _, StackTrace st) => completion.complete(),
-    );
+    final cleanup = <Future<void>>[
+      if (subscription != null) _consumeCleanup(subscription.cancel),
+      _consumeCleanup(_transport.close),
+    ];
+    unawaited(_onPacket.close());
+    unawaited(_onDone.close());
+    unawaited(() async {
+      try {
+        await Future.wait(cleanup).timeout(closeTimeout);
+      } catch (_) {
+        // Finite deadline; late cleanup errors are consumed independently.
+      } finally {
+        try {
+          _transport.destroy();
+        } catch (_) {}
+        completion.complete();
+      }
+    }());
     return _closing!;
   }
 
-  void _ignoreCleanup(Future<void> Function() action) {
+  Future<void> _consumeCleanup(Future<void> Function() action) async {
     try {
-      unawaited(action().catchError((Object _) {}));
+      await action();
     } catch (_) {}
   }
 }
