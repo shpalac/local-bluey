@@ -348,13 +348,136 @@ void main() {
       await settle();
       expect(receipts(), ['playing:old']);
       expect(dir.listSync(), isEmpty);
-      expect(receiver.cleanupPending.value, 0);
+      expect(receiver.cleanupPending.value, 1, reason: 'dispose still failing');
+      sess(0).disposeError = null;
       receiver.handle(say('again', audio: _audio(), text: 'again'));
       await settle();
       expect(world.sessions, hasLength(2));
       expect(receipts(), ['playing:old', 'playing:again']);
     },
   );
+
+  test(
+    'held old play, newer say, stop/dispose fail: completion still seen',
+    () async {
+      final hold = Completer<void>();
+      world.configure = (s, i) {
+        if (i == 0) {
+          s.holdPlay = hold;
+          s.stopError = StateError('cannot stop');
+          s.disposeError = StateError('cannot dispose');
+        }
+      };
+      receiver.handle(say('old', audio: _audio()));
+      await settle();
+      receiver.handle(say('new', audio: _audio()));
+      await settle();
+      hold.complete();
+      await settle();
+      expect(world.sessions, hasLength(1));
+      expect(receiver.cleanupPending.value, 1);
+      sess(0).controller.add(null);
+      await settle();
+      expect(receipts(), isEmpty);
+      expect(dir.listSync(), isEmpty, reason: 'completion removed the file');
+    },
+  );
+
+  test(
+    'play side effect then throw + failing stop/dispose: kept, retryable',
+    () async {
+      world.configure = (s, i) {
+        if (i == 0) {
+          s.playError = StateError('boom');
+          s.stopError = StateError('cannot stop');
+          s.disposeError = StateError('cannot dispose');
+        }
+      };
+      receiver.handle(say('a', audio: _audio()));
+      await settle();
+      expect(receiver.cleanupPending.value, 1);
+      expect(dir.listSync(), hasLength(1), reason: 'uncertain audio kept');
+      receiver.handle(say('b', audio: _audio()));
+      await settle();
+      expect(world.sessions, hasLength(1), reason: 'no overlap');
+      sess(0).stopError = null;
+      sess(0).disposeError = null;
+      receiver.handle(say('c', audio: _audio()));
+      await settle();
+      expect(world.sessions, hasLength(2));
+      expect(receiver.cleanupPending.value, 0);
+    },
+  );
+
+  test(
+    'throwing playing send + failing stop/dispose: kept, no overlap',
+    () async {
+      var fail = true;
+      receiver = PhoneReplyReceiver(
+        createSession: world.create,
+        send: (p) {
+          if (fail && p.command == 'playing') throw StateError('link');
+          sent.add(p);
+        },
+        showText: shown.add,
+        tempDir: () async => dir,
+      );
+      world.configure = (s, i) {
+        if (i == 0) {
+          s.stopError = StateError('cannot stop');
+          s.disposeError = StateError('cannot dispose');
+        }
+      };
+      receiver.handle(say('a', audio: _audio()));
+      await settle();
+      receiver.handle(Packet(command: 'stopSpeech'));
+      await settle();
+      expect(receiver.cleanupPending.value, 1);
+      receiver.handle(say('b', audio: _audio()));
+      await settle();
+      expect(world.sessions, hasLength(1));
+      fail = false;
+    },
+  );
+
+  test(
+    'dispose with stop+dispose failure then completion: nothing published',
+    () async {
+      world.configure = (s, i) {
+        s.stopError = StateError('cannot stop');
+        s.disposeError = StateError('cannot dispose');
+      };
+      final errors = <Object>[];
+      await runZonedGuarded(() async {
+        receiver.handle(say('a', audio: _audio()));
+        await settle();
+        await receiver.dispose();
+        expect(receiver.cleanupPending.value, 1);
+        sess(0).controller.add(null);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }, (e, _) => errors.add(e));
+      expect(errors, isEmpty);
+      expect(receipts(), ['playing:a']);
+    },
+  );
+
+  test('subscription cancel and dispose failures are contained', () async {
+    world.configure = (s, i) {
+      s.disposeError = StateError('cannot dispose');
+    };
+    receiver.handle(say('a', audio: _audio()));
+    await settle();
+    sess(0).controller.add(null);
+    await settle();
+    expect(receiver.cleanupPending.value, 1);
+    receiver.handle(Packet(command: 'stopSpeech'));
+    await settle();
+    expect(receiver.cleanupPending.value, 1);
+    sess(0).disposeError = null;
+    receiver.handle(Packet(command: 'stopSpeech'));
+    await settle();
+    expect(receiver.cleanupPending.value, 0);
+  });
 
   test('a stuck stop that recovers is retried on the next release', () async {
     world.configure = (s, i) {

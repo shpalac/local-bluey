@@ -48,19 +48,33 @@ class AudioplayersReplySession implements ReplySession {
 }
 
 class _Clip {
-  _Clip(this.file, this.session);
+  _Clip(this.file, this.session, this.ticket, this.speech);
   final File file;
   final ReplySession session;
+  final int ticket;
+  final int? speech;
   final finished = Completer<void>();
   StreamSubscription<void>? subscription;
-  bool released = false;
+
+  /// Audio may be playing: set before play starts, cleared by natural
+  /// completion or by stop/dispose evidence.
+  bool live = false;
+  bool playingSent = false;
+  bool subscriptionCancelled = false;
+  bool sessionDisposed = false;
+  bool fileRemoved = false;
 }
 
 /// Phone-side owner of Mac reply audio (#372): guarded intake, unique clip
-/// files, latest-reply-wins ordered playback, receipts tied to real playback,
-/// and cleanup on completion, replacement, failure, stopSpeech and dispose.
-/// The audio stays opaque (the host sends MP3); nothing here validates it as
-/// a codec stream. Every entry point contains its own errors.
+/// files, latest-wins ordered playback, receipts tied to real playback, and
+/// cleanup on completion, replacement, failure, stopSpeech and dispose. The
+/// audio stays opaque (the host sends MP3); nothing here validates it as a
+/// codec stream. Every entry point contains its own errors.
+///
+/// A clip's resources (live audio, subscription, session, file) are released
+/// only on evidence: natural completion, or a confirmed stop/dispose.
+/// Anything unconfirmed stays tracked in [cleanupPending] and is retried on
+/// the next release, and no replacement audio starts over it.
 class PhoneReplyReceiver {
   /// Creates the receiver. The remaining parameters are test seams.
   PhoneReplyReceiver({
@@ -72,6 +86,9 @@ class PhoneReplyReceiver {
     this.write,
     this.delete,
   });
+
+  /// Short user-safe note shown while reply audio is still being released.
+  static const cleanupNote = 'Reply audio is still stopping.';
 
   /// Largest accepted decoded reply; the link frame cap is 16 MiB.
   static const maxBytes = 12 * 1024 * 1024;
@@ -104,17 +121,22 @@ class PhoneReplyReceiver {
   Future<void> _ops = Future<void>.value();
   _Clip? _current;
   bool _disposed = false;
-  final _leftovers = <File>[];
-
+  bool _notifierClosed = false;
   final _stuck = <_Clip>[];
 
-  /// Clips whose deletion or stop could not be completed; retried on the next
-  /// release. Observable by the caller; this is not an erasure guarantee.
+  /// Number of clips with unreleased resources (unconfirmed stop, failed
+  /// dispose/cancel or failed delete), retried on the next release. Not an
+  /// erasure guarantee. After dispose it reaches 0 only once they resolve.
   final ValueNotifier<int> cleanupPending = ValueNotifier<int>(0);
 
   void _publishPending() {
-    final count = _leftovers.length + _stuck.length;
+    if (_notifierClosed) return;
+    final count = _stuck.length;
     if (cleanupPending.value != count) cleanupPending.value = count;
+    if (_disposed && count == 0) {
+      _notifierClosed = true;
+      cleanupPending.dispose();
+    }
   }
 
   /// Completes when no queued operation is pending (test seam). Follow-up
@@ -147,7 +169,7 @@ class PhoneReplyReceiver {
           // Text-only reply: display is the receipt (#87).
           _enqueue(() async {
             await _release();
-            if (ticket == _generation && isActive()) {
+            if (_isCurrent(ticket) && isActive()) {
               send(Packet(command: 'done', speech: packet.speech));
             }
           });
@@ -187,59 +209,82 @@ class PhoneReplyReceiver {
         return;
       }
       final file = await _newFile();
-      final session = createSession();
-      clip = _Clip(file, session);
+      clip = _Clip(file, createSession(), ticket, packet.speech);
       _current = clip;
       try {
         await (write ?? (f, b) => f.writeAsBytes(b, flush: true))(file, bytes);
       } catch (_) {
-        await _discard(clip);
+        await _settle(clip);
         _fail(ticket, text, 'Could not save the reply audio.');
         return;
       }
       if (!_isCurrent(ticket)) {
-        await _discard(clip);
+        await _settle(clip);
         return;
       }
-      // Subscribe before starting so an immediate completion is not lost.
+      // Subscribe before starting so an immediate completion is not lost, and
+      // observe completion for every entered session, whatever happens next.
       final owned = clip;
-      clip.subscription = session.completions.listen((_) {
+      clip.subscription = clip.session.completions.listen((_) {
         if (!owned.finished.isCompleted) owned.finished.complete();
       });
+      unawaited(_awaitCompletion(owned));
+      clip.live = true;
       try {
-        await session.play(file.path);
+        await clip.session.play(file.path);
       } catch (_) {
-        await _discard(clip);
+        // Play may have started natively before it threw: stop evidence is
+        // required before anything is released.
+        await _settle(clip);
         _fail(ticket, text, 'Could not play the reply audio.');
         return;
       }
-      if (!_isCurrent(ticket) || clip.released) {
-        // Superseded while starting: no receipt; the newer turn (queued
-        // behind this one) or dispose releases the clip.
+      if (!_isCurrent(ticket)) {
+        // Superseded while starting: no receipt; the release queued behind
+        // this turn (or dispose) retires the clip.
         return;
       }
-      if (isActive()) send(Packet(command: 'playing', speech: packet.speech));
-      unawaited(_awaitCompletion(owned, packet, ticket));
+      clip.playingSent = true;
+      try {
+        if (isActive()) send(Packet(command: 'playing', speech: packet.speech));
+      } catch (e) {
+        debugPrint('PhoneReplyReceiver: $e');
+      }
     } catch (e) {
       debugPrint('PhoneReplyReceiver: $e');
-      if (clip != null) await _discard(clip);
+      if (clip != null) await _settle(clip);
       _fail(ticket, text, 'Could not play the reply audio.');
     }
   }
 
-  /// Natural completion of [clip]: receipt for the current reply, then cleanup
-  /// no matter what the receipt send does.
-  Future<void> _awaitCompletion(_Clip clip, Packet packet, int ticket) async {
+  /// Natural completion of [clip]: receipt only for the current, started
+  /// reply, then evidence-based cleanup whatever the receipt send does.
+  Future<void> _awaitCompletion(_Clip clip) async {
     try {
       await clip.finished.future;
-      if (_isCurrent(ticket) && !clip.released && isActive()) {
-        send(Packet(command: 'done', speech: packet.speech));
+      clip.live = false; // natural end is evidence the audio stopped
+      if (clip.playingSent && _isCurrent(clip.ticket) && isActive()) {
+        send(Packet(command: 'done', speech: clip.speech));
       }
     } catch (e) {
       debugPrint('PhoneReplyReceiver: $e');
     } finally {
-      _enqueue(() => _discard(clip));
+      _enqueue(() => _settle(clip));
     }
+  }
+
+  /// Retires [clip] now, parking it for retry when something is unconfirmed.
+  Future<bool> _settle(_Clip clip) async {
+    final done = await _retire(clip);
+    if (done) {
+      _stuck.remove(clip);
+      if (identical(_current, clip)) _current = null;
+    } else {
+      if (!_stuck.contains(clip)) _stuck.add(clip);
+      if (identical(_current, clip)) _current = null;
+    }
+    _publishPending();
+    return done;
   }
 
   void _fail(int ticket, String text, String note) {
@@ -270,83 +315,77 @@ class PhoneReplyReceiver {
     );
   }
 
-  /// Stops and removes the current and any previously stuck clips. Returns
-  /// false when a stop could not be confirmed: such a clip keeps its file and
-  /// session and is retried on the next release, and no replacement starts.
+  /// Stops and removes the current and any parked clips. Returns false when
+  /// some resource could not be released on evidence; those clips stay
+  /// tracked and retried, and no replacement starts.
   Future<bool> _release() async {
     var confirmed = true;
-    final clips = <_Clip>[..._stuck, ?_current];
-    for (final clip in clips) {
-      if (await _stopClip(clip)) {
-        _stuck.remove(clip);
-        await _discard(clip);
-      } else {
-        if (!_stuck.contains(clip)) _stuck.add(clip);
-        if (identical(_current, clip)) _current = null;
-        confirmed = false;
-      }
+    for (final clip in <_Clip>[..._stuck, ?_current]) {
+      if (!await _settle(clip)) confirmed = false;
     }
-    await _retryLeftovers();
-    _publishPending();
     return confirmed;
   }
 
-  /// Stop evidence for [clip]: stop() succeeded, or failing that, dispose().
-  Future<bool> _stopClip(_Clip clip) async {
+  /// Releases every resource of [clip] it has evidence for; true when all
+  /// are released. Safe to call repeatedly: finished steps are not repeated.
+  Future<bool> _retire(_Clip clip) async {
+    if (clip.live) {
+      if (!await _confirmStopped(clip)) return false;
+    }
+    if (!clip.subscriptionCancelled) {
+      try {
+        await clip.subscription?.cancel();
+        clip.subscriptionCancelled = true;
+      } catch (_) {}
+    }
+    if (!clip.sessionDisposed) {
+      try {
+        await clip.session.dispose();
+        clip.sessionDisposed = true;
+      } catch (_) {}
+    }
+    if (!clip.fileRemoved) {
+      try {
+        if (delete != null) {
+          await delete!(clip.file);
+        } else if (await clip.file.exists()) {
+          await clip.file.delete();
+        }
+        clip.fileRemoved = true;
+      } catch (_) {}
+    }
+    return clip.subscriptionCancelled &&
+        clip.sessionDisposed &&
+        clip.fileRemoved;
+  }
+
+  /// Stop evidence: stop() succeeded, or failing that, dispose() did.
+  Future<bool> _confirmStopped(_Clip clip) async {
     try {
       await clip.session.stop();
+      clip.live = false;
       return true;
     } catch (_) {}
     try {
       await clip.session.dispose();
+      clip.sessionDisposed = true;
+      clip.live = false;
       return true;
     } catch (_) {
       return false;
     }
   }
 
-  Future<void> _discard(_Clip clip) async {
-    if (clip.released) return;
-    clip.released = true;
-    _stuck.remove(clip);
-    try {
-      await clip.subscription?.cancel();
-    } catch (_) {}
-    try {
-      await clip.session.dispose();
-    } catch (_) {}
-    if (identical(_current, clip)) _current = null;
-    await _remove(clip.file);
-    _publishPending();
-  }
-
-  Future<void> _remove(File file) async {
-    try {
-      if (delete != null) {
-        await delete!(file);
-      } else if (await file.exists()) {
-        await file.delete();
-      }
-      _leftovers.removeWhere((f) => f.path == file.path);
-    } catch (_) {
-      if (!_leftovers.any((f) => f.path == file.path)) _leftovers.add(file);
-    }
-  }
-
-  Future<void> _retryLeftovers() async {
-    for (final file in List<File>.of(_leftovers)) {
-      await _remove(file);
-    }
-  }
-
   /// Stops playback, removes clips and releases the sessions. Late
-  /// completions after this call send no receipt and touch no UI.
+  /// completions after this call send no receipt and touch no UI. Clips that
+  /// could not be released stay tracked until a natural completion resolves
+  /// them; [cleanupPending] is closed only when none remain.
   Future<void> dispose() async {
     if (_disposed) return;
     _disposed = true;
     _generation++;
     await _ops;
     await _release();
-    cleanupPending.dispose();
+    _publishPending();
   }
 }

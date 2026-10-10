@@ -771,6 +771,7 @@ class _IosHomeState extends State<IosHome> {
   void initState() {
     super.initState();
     unawaited(RemoteHaptics.instance.loadForStartup());
+    _reply.cleanupPending.addListener(_onReplyCleanup);
     _link = MacLink(deviceName: SupportMatrix.deviceName());
     _link.faces.listen((face) {
       if (mounted) setState(() => _face = face);
@@ -793,10 +794,24 @@ class _IosHomeState extends State<IosHome> {
     _link.start();
   }
 
+  /// Shows a short safe note while reply audio could not be released.
+  void _onReplyCleanup() {
+    if (!mounted) return;
+    final pending = _reply.cleanupPending.value > 0;
+    setState(() {
+      if (pending) {
+        _bubble = PhoneReplyReceiver.cleanupNote;
+      } else if (_bubble == PhoneReplyReceiver.cleanupNote) {
+        _bubble = null;
+      }
+    });
+  }
+
   @override
   void dispose() {
     _link.stop();
     _capture.dispose();
+    _reply.cleanupPending.removeListener(_onReplyCleanup);
     unawaited(_reply.dispose());
     super.dispose();
   }
