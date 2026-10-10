@@ -43,6 +43,7 @@ class CharacterStartup extends ChangeNotifier {
   }
 
   Future<void> _run(int generation) async {
+    if (_disposed || generation != _generation) return;
     _loading = true;
     _publish();
     if (_disposed || generation != _generation) return;
