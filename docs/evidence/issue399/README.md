@@ -1,0 +1,7 @@
+# WatchBanner local visual evidence
+
+Actual LocalBlueyApp with injected synthetic watch session, pushed synthetic lock-like route, independent appearance notice failure/disabled entered retry/recovery. Width320/390dp,height844, text scale1/1.5/2,English/Hebrew RTL,light/dark.72 individual complete pixels directly inspected via four labeled contact sheets and decisive compact2x full-size samples: readable Stop/countdown, notice, route body and unobscured AppBar/back. Existing AppBar title can ellipsize at2x320; back remains visible/operable. Synthetic route wording is not biometric/native proof.
+
+WatchBanner only changes. Local text/dot/Stop colors #5F1414 and #FFEAEA reversed in dark, contrast11.40398:1, no global token changes. Stop target at least48x48 in every fixture; exact existing stop action ends synthetic session; back returns to original route. Existing home_status_cards_test verifies same Stop/active semantics and tap action. Route painted/traversed first with reverse Column layout reserves banner above it, avoiding Navigator semantics excluding persistent control.
+
+Fixture loads shipped real Roboto in default CI because Ahem font at320dp/scaled makes unchanged appearance notice taller than screen; pixel mode uses DejaVu for readable English/Hebrew. No production font/theme/appearance implementation edits. Sessions injected with no pipeline/native observation. ScreenWatch/service, consent/image-admission/allowlist/provider/session policies unchanged; #351 remains held.

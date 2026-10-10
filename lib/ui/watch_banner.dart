@@ -17,85 +17,90 @@ class WatchBanner extends StatelessWidget {
       listenable: ScreenWatch.instance,
       builder: (context, _) {
         final active = ScreenWatch.instance.isActive;
-        return Stack(
+        final dark = Theme.of(context).brightness == Brightness.dark;
+        final background = dark
+            ? const Color(0xFF5F1414)
+            : const Color(0xFFFFEAEA);
+        final foreground = dark
+            ? const Color(0xFFFFEAEA)
+            : const Color(0xFF5F1414);
+        // Paint/traverse the route first so Navigator semantics cannot hide the
+        // persistent control. Reverse layout reserves the banner above the route.
+        return Column(
+          verticalDirection: VerticalDirection.up,
           children: [
-            child,
+            Expanded(child: child),
             if (active)
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: SafeArea(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: Container(
-                      margin: const EdgeInsets.all(8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Wrap(
-                        spacing: 8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Semantics(
-                            container: true,
-                            label: Strings.t(
-                              'Screen watching is active',
-                              'צפייה במסך פעילה',
-                            ),
-                            child: ExcludeSemantics(
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.fiber_manual_record,
-                                    size: 12,
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      Strings.t(
-                                        'Watching ${_mmss(ScreenWatch.instance.remaining)}',
-                                        'צופה ${_mmss(ScreenWatch.instance.remaining)}',
-                                      ),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+              SafeArea(
+                bottom: false,
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: background,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Wrap(
+                      spacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Semantics(
+                          container: true,
+                          label: Strings.t(
+                            'Screen watching is active',
+                            'צפייה במסך פעילה',
                           ),
-                          Semantics(
-                            container: true,
-                            label: Strings.t(
-                              'Stop screen watching',
-                              'עצירת צפייה במסך',
-                            ),
-                            button: true,
-                            onTap: ScreenWatch.instance.stop,
-                            child: ExcludeSemantics(
-                              child: TextButton(
-                                style: TextButton.styleFrom(
-                                  minimumSize: const Size(48, 48),
-                                  foregroundColor: Theme.of(context)
-                                      .colorScheme
-                                      .error,
+                          child: ExcludeSemantics(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.fiber_manual_record,
+                                  size: 12,
+                                  color: foreground,
                                 ),
-                                onPressed: ScreenWatch.instance.stop,
-                                child: Text(Strings.t('Stop', 'עצירה')),
-                              ),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    Strings.t(
+                                      'Watching ${_mmss(ScreenWatch.instance.remaining)}',
+                                      'צופה ${_mmss(ScreenWatch.instance.remaining)}',
+                                    ),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelLarge
+                                        ?.copyWith(color: foreground),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                        Semantics(
+                          container: true,
+                          label: Strings.t(
+                            'Stop screen watching',
+                            'עצירת צפייה במסך',
+                          ),
+                          button: true,
+                          onTap: ScreenWatch.instance.stop,
+                          child: ExcludeSemantics(
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(48, 48),
+                                foregroundColor: foreground,
+                              ),
+                              onPressed: ScreenWatch.instance.stop,
+                              child: Text(Strings.t('Stop', 'עצירה')),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
