@@ -67,6 +67,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _localOnly = false;
   UiLanguage _uiLanguage = Strings.uiLanguage;
   String _speechLanguage = Strings.speechLanguage;
+  late final LanguagePreferences _languageOwner;
+  int _languageGeneration = 0;
+  int _languageFormRevision = 0;
   bool _testing = false;
   String? _testResult;
   ConnectionFailure? _testFailure;
@@ -81,6 +84,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _languageOwner = Strings.preferences;
+    _languageOwner.addListener(_refreshLanguage);
     _reloadFields('privacy');
     _reloadFields('safety');
     _reloadFields('perf');
@@ -158,8 +163,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  void _refreshLanguage() {
+    if (!mounted) return;
+    setState(() {
+      _uiLanguage = _languageOwner.uiLanguage;
+      _speechLanguage = _languageOwner.speechLanguage;
+      _languageFormRevision++;
+    });
+  }
+
+  Future<void> _changeLanguage(Future<void> Function() write) async {
+    final generation = ++_languageGeneration;
+    var failed = false;
+    try {
+      await write();
+    } catch (_) {
+      failed = true;
+    }
+    if (!mounted || generation != _languageGeneration) return;
+    setState(() {
+      _uiLanguage = Strings.uiLanguage;
+      _speechLanguage = Strings.speechLanguage;
+      _languageFormRevision++;
+    });
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    if (failed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not update language. Please retry.'),
+        ),
+      );
+    }
+  }
+
   Future<void> _onDataCleared(String? storeId) async {
     if (!mounted) return;
+    if (storeId == 'language') {
+      _languageGeneration++;
+      setState(() {
+        _uiLanguage = Strings.uiLanguage;
+        _speechLanguage = Strings.speechLanguage;
+        _languageFormRevision++;
+      });
+      return;
+    }
     if (storeId == 'safety' || storeId == 'perf' || storeId == 'privacy') {
       // Drop the form's unsaved values before reading the cleared source.
       setState(() {
@@ -205,6 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    _languageOwner.removeListener(_refreshLanguage);
     _baseUrl.dispose();
     _model.dispose();
     _apiKey.dispose();
@@ -525,6 +573,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text('Language', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             DropdownButtonFormField<UiLanguage>(
+              key: ValueKey('ui-language-$_languageFormRevision'),
               initialValue: _uiLanguage,
               decoration: const InputDecoration(labelText: 'UI language'),
               items: const [
@@ -543,12 +592,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
               onChanged: (v) async {
                 if (v == null) return;
-                setState(() => _uiLanguage = v);
-                await Strings.setUiLanguage(v);
+                await _changeLanguage(() => Strings.setUiLanguage(v));
               },
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
+              key: ValueKey('speech-language-$_languageFormRevision'),
               initialValue: _speechLanguage,
               decoration: const InputDecoration(
                 labelText: 'Speech language (transcription)',
@@ -560,8 +609,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
               onChanged: (v) async {
                 if (v == null) return;
-                setState(() => _speechLanguage = v);
-                await Strings.setSpeechLanguage(v);
+                await _changeLanguage(() => Strings.setSpeechLanguage(v));
               },
             ),
             const SizedBox(height: 24),
