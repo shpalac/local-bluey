@@ -131,6 +131,11 @@ class AudioCapture {
       }
     } catch (error) {
       if (!_disposed && session == _session) _stopError = error;
+      // The native stop failed, so nobody will receive this file: drop it
+      // now rather than leaving it for the next start's sweep.
+      try {
+        if (_path != null) File(_path!).deleteSync();
+      } catch (_) {}
     }
   }
 

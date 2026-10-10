@@ -69,6 +69,11 @@ class WakeWordService {
   /// stale: it may clean up its files but never wakes or touches notifiers.
   int _generation = 0;
   Future<void>? _loopFuture;
+
+  /// Test seam: runs right after the STT settings load, before the
+  /// generation is re-checked and the transcriber is invoked.
+  @visibleForTesting
+  Future<void> Function()? debugAfterSettingsLoad;
   Completer<void>? _cancelWindow;
 
   /// Called when the wake phrase is confirmed - main wires this to the same
@@ -195,6 +200,8 @@ class WakeWordService {
     // when that stays on this machine (an injected transcriber, or a local
     // endpoint); otherwise trust the spotter and never upload the audio.
     final stt = await SttSettings.load();
+    await debugAfterSettingsLoad?.call();
+    if (stale()) return false;
     final endpoint = stt.baseUrl;
     final canConfirmLocally =
         _transcription != null ||
