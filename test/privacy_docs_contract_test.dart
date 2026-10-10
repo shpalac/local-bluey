@@ -64,5 +64,15 @@ void main() {
       expect(readme, contains('email addresses, 16-digit card numbers'));
       expect(readme, contains('9-digit numbers'));
     });
+
+    test('egress and local-only wording stays within what is recorded', () {
+      final site = File('docs/index.html').readAsStringSync();
+      expect(guide, isNot(contains('exactly what left')));
+      expect(guide, contains('not a\n  complete audit'));
+      expect(site, isNot(contains('Every outbound connection')));
+      expect(site, isNot(contains('(Ollama) and')));
+      expect(site, contains('supported endpoints'));
+      expect(site, contains('not a\n    complete audit'));
+    });
   });
 }

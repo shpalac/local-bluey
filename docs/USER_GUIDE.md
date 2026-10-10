@@ -80,8 +80,10 @@ moment Bluey starts doing something you didn't mean.
   [#351](https://github.com/shpalac/local-bluey/issues/351)). This is
   pattern matching and can miss secrets; see the README privacy section for
   the exact limits.
-- **Data-egress report**: every outbound request is counted, per endpoint,
-  so you can see exactly what left the machine.
+- **Data-egress report**: a bounded on-device record of the requests Bluey
+  itself instruments (destination, size, time). It is recorded history, not a
+  complete audit of every connection, and a missing record is not proof that
+  nothing was sent.
 - **Action log**: a persistent record of what Bluey did.
 - **Data deletion & retention**: Settings > data privacy clears stored data
   by category.
