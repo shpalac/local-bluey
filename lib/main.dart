@@ -46,6 +46,8 @@ import 'ui/tutorial_card.dart';
 import 'ui/lock_gate.dart';
 import 'ui/onboarding_screen.dart';
 import 'ui/theme.dart';
+import 'services/appearance_startup.dart';
+import 'ui/appearance_startup_notice.dart';
 import 'ui/settings_screen.dart';
 import 'ui/unsupported_screen.dart';
 import 'services/screen_watch.dart';
@@ -66,12 +68,13 @@ void main() async {
   await RoutineStore.instance.load();
   await CharacterStore.instance.load();
   await BiometricLock.instance.load();
-  await ThemeController.instance.load();
+  final appearance = AppearanceStartup();
+  await appearance.reload();
   final profile = SupportMatrix.profile();
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
   }
-  runApp(LocalBlueyApp(home: homeForProfile(profile)));
+  runApp(LocalBlueyApp(home: homeForProfile(profile), appearance: appearance));
 }
 
 /// Picks the home screen from the support matrix (#84): unsupported
@@ -85,10 +88,30 @@ Widget homeForProfile(PlatformProfile profile) => switch (profile.role) {
   AppRole.unsupported => UnsupportedScreen(profile: profile),
 };
 
-class LocalBlueyApp extends StatelessWidget {
-  const LocalBlueyApp({super.key, required this.home});
+class LocalBlueyApp extends StatefulWidget {
+  const LocalBlueyApp({super.key, required this.home, this.appearance});
 
   final Widget home;
+  final AppearanceStartup? appearance;
+
+  @override
+  State<LocalBlueyApp> createState() => _LocalBlueyAppState();
+}
+
+class _LocalBlueyAppState extends State<LocalBlueyApp> {
+  @override
+  void didUpdateWidget(LocalBlueyApp oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.appearance, widget.appearance)) {
+      oldWidget.appearance?.dispose();
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.appearance?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -106,9 +129,22 @@ class LocalBlueyApp extends StatelessWidget {
               ? TextDirection.rtl
               : TextDirection.ltr,
           // Always-visible watch indicator on every route (#212).
-          child: WatchBanner(child: child!),
+          child: Column(
+            children: [
+              if (widget.appearance != null)
+                SafeArea(
+                  bottom: false,
+                  child: Material(
+                    child: AppearanceStartupNotice(
+                      controller: widget.appearance!,
+                    ),
+                  ),
+                ),
+              Expanded(child: WatchBanner(child: child!)),
+            ],
+          ),
         ),
-        home: home,
+        home: widget.home,
       ),
     );
   }
