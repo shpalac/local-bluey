@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'action_log.dart';
 import 'biometric_lock.dart';
 import 'characters.dart';
+import 'haptics.dart';
 import 'conversation.dart';
 import 'egress_monitor.dart';
 import 'model_store.dart';
@@ -105,8 +106,7 @@ class DataRegistry {
       where: 'SharedPreferences (haptics.enabled)',
       retentionEn: 'Kept until you delete it',
       retentionHe: 'נשמר עד שמוחקים',
-      clear: () async =>
-          (await SharedPreferences.getInstance()).remove('haptics.enabled'),
+      clear: () => RemoteHaptics.current.clear(),
     ),
     DataStoreInfo(
       id: 'app_lock_pref',
