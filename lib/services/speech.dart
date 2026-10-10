@@ -23,11 +23,16 @@ class SpeechService implements SpeechLike {
     AudioPlayer? player,
     SpeechPlayback? playback,
     SpeechClipStorage? storage,
+    Duration timeout = requestTimeout,
   }) : _client = client ?? http.Client(),
        _playback = playback ?? _AudioPlayback(player),
-       _storage = storage ?? FileSpeechClipStorage();
+       _storage = storage ?? FileSpeechClipStorage(),
+       _timeout = timeout {
+    if (timeout <= Duration.zero) throw ArgumentError.value(timeout, 'timeout');
+  }
 
   final http.Client _client;
+  final Duration _timeout;
 
   final SpeechPlayback _playback;
   final SpeechClipStorage _storage;
@@ -71,7 +76,9 @@ class SpeechService implements SpeechLike {
   /// Network cap so a stalled TTS server cannot hang a reply (#118).
   static const requestTimeout = Duration(seconds: 60);
 
-  /// Requests speech audio for [text]. Returns the raw audio bytes (mp3).
+  /// Requests speech audio for [text]. Returns opaque nonempty audio bytes.
+  /// JSON/error envelopes rejected; this is not MP3 codec validation.
+  /// Transport/deadline failures use safe typed messages without retries.
   @override
   Future<List<int>> synthesize(String text, BrainSettings settings) async {
     final base = settings.ttsBaseUrl?.isNotEmpty == true
@@ -85,38 +92,68 @@ class SpeechService implements SpeechLike {
       headers['Authorization'] = 'Bearer ${settings.apiKey}';
     }
     unawaited(EgressMonitor.instance.record(base, 'tts', text.length));
-    final response = await _client
-        .post(
-          Uri.parse(endpoint(base, '/audio/speech')),
-          headers: headers,
-          body: jsonEncode({
-            'model': settings.ttsModel,
-            'voice': settings.ttsVoice,
-            'input': text,
-            'response_format': 'mp3',
-          }),
-        )
-        .timeout(requestTimeout);
+    final http.Response response;
+    try {
+      response = await _client
+          .post(
+            Uri.parse(endpoint(base, '/audio/speech')),
+            headers: headers,
+            body: jsonEncode({
+              'model': settings.ttsModel,
+              'voice': settings.ttsVoice,
+              'input': text,
+              'response_format': 'mp3',
+            }),
+          )
+          .timeout(_timeout);
+    } on TimeoutException {
+      throw SpeechException('Speech request timed out.');
+    } catch (_) {
+      throw SpeechException('Speech request failed.');
+    }
     if (response.statusCode != 200) {
-      throw SpeechException('Speech ${response.statusCode}: ${response.body}');
+      throw SpeechException('Speech HTTP ${response.statusCode}.');
     }
-    // Checked parsing: some servers return a JSON error with a 200 (#118).
     final bytes = response.bodyBytes;
-    if (bytes.isEmpty) {
-      throw SpeechException('Speech returned empty audio');
-    }
-    if (bytes[0] == 0x7B) {
-      // '{' - looks like JSON, not mp3 frames.
-      try {
-        final decoded = jsonDecode(utf8.decode(bytes));
-        if (decoded is Map) {
-          throw SpeechException('Speech returned an error: $decoded');
-        }
-      } on FormatException {
-        // Not valid JSON; treat as audio and let the player judge.
-      }
+    if (bytes.isEmpty) throw SpeechException('Speech returned empty audio.');
+    final mediaType = response.headers['content-type']
+        ?.split(';')
+        .first
+        .trim()
+        .toLowerCase();
+    if (mediaType == 'application/json' ||
+        mediaType?.endsWith('+json') == true ||
+        _isJsonEnvelope(bytes)) {
+      throw SpeechException('Speech returned a JSON response, not audio.');
     }
     return bytes;
+  }
+
+  bool _isJsonEnvelope(List<int> bytes) {
+    var i = 0;
+    while (i < bytes.length &&
+        (bytes[i] == 32 || bytes[i] == 9 || bytes[i] == 10 || bytes[i] == 13)) {
+      i++;
+    }
+    if (i == bytes.length) return false;
+    final first = bytes[i];
+    // Only potential JSON starts warrant decoding. Binary remains opaque.
+    if (!(first == 123 ||
+        first == 91 ||
+        first == 34 ||
+        first == 45 ||
+        (first >= 48 && first <= 57) ||
+        first == 116 ||
+        first == 102 ||
+        first == 110)) {
+      return false;
+    }
+    try {
+      jsonDecode(utf8.decode(bytes));
+      return true;
+    } on FormatException {
+      return false;
+    }
   }
 
   /// Latest request wins. Stop/dispose invalidate pending file work; player
