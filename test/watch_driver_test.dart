@@ -18,6 +18,9 @@ void main() {
 
   test('driver ticks adaptively, stops with the session, clears events', () {
     fakeAsync((async) {
+      var done = false;
+      Object? failure;
+      StackTrace? failureTrace;
       () async {
         final watch = ScreenWatch.forTesting();
         await watch.start(
@@ -33,9 +36,13 @@ void main() {
           },
           frameDiff: () async => 0.0,
         );
-        final driver = WatchDriver(pipeline: pipeline, differ: FrameDiffer());
+        final driver = WatchDriver(
+          pipeline: pipeline,
+          differ: FrameDiffer(),
+          watch: watch,
+        );
         driver.start();
-        async.elapse(const Duration(milliseconds: 100));
+        async.elapse(const Duration(seconds: 1));
         final afterFirst = reads;
         expect(afterFirst, greaterThan(0));
 
@@ -55,7 +62,19 @@ void main() {
         expect(reads, readsAtStop, reason: 'no ticks after stop');
         expect(driver.running, isFalse);
         expect(pipeline.events, isEmpty);
-      }();
+        await pipeline.dispose();
+        watch.dispose();
+      }().then(
+        (_) => done = true,
+        onError: (Object e, StackTrace st) {
+          failure = e;
+          failureTrace = st;
+          done = true;
+        },
+      );
+      async.flushMicrotasks();
+      if (failure != null) Error.throwWithStackTrace(failure!, failureTrace!);
+      expect(done, isTrue, reason: 'all async assertions finished');
     });
   });
 }
