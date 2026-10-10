@@ -256,15 +256,34 @@ class ModelStore {
   /// Runs [fn] after every earlier mutation finished. Selection, lease and
   /// delete changes never interleave.
   Future<T> _run<T>(Future<T> Function() fn) {
+    _ensureLive();
     final prev = _tail;
     final done = Completer<void>();
     _tail = done.future;
     return prev.then((_) => fn()).whenComplete(done.complete);
   }
 
-  /// Stops this store being the live owner for its folder (tests, teardown).
+  bool _disposed = false;
+
+  /// Whether [dispose] retired this store.
+  bool get isDisposed => _disposed;
+
+  /// Retires this store and frees its folder for a new owner. Refused while a
+  /// lease is open or a transfer is running, so ownership never moves away
+  /// from live work. A retired store rejects every later call.
   void dispose() {
+    if (_disposed) return;
+    if (_leases.isNotEmpty || _inflight.isNotEmpty) {
+      throw StateError(
+        'Cannot dispose a ModelStore with open leases or running transfers',
+      );
+    }
+    _disposed = true;
     if (identical(_live[_rootKey], this)) _live.remove(_rootKey);
+  }
+
+  void _ensureLive() {
+    if (_disposed) throw StateError('ModelStore is disposed');
   }
 
   String get _rootKey => root.absolute.path;
@@ -310,6 +329,7 @@ class ModelStore {
     final name = asset.fileName;
     // The same file name in the same delete epoch shares one transfer, so two
     // callers never append to one part file or race a rename.
+    _ensureLive();
     final key = '$name@$_deleteEpoch';
     final running = _inflight[key];
     if (running != null) return running;

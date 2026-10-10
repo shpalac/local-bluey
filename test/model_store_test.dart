@@ -344,18 +344,21 @@ void main() {
       expect(filesUnder(dir), isEmpty);
     });
 
-    test('deleteAll while hashing waits for nothing and wins', () async {
-      final s = store();
-      final first = s.install(asset);
-      await Future<void>.delayed(Duration.zero);
-      await s.deleteAll();
-      final result = await first;
-      // Either the delete beat the commit (cancelled/interrupted) or the
-      // install had already committed and the delete removed it afterwards.
-      expect(await s.activeAsset(), isNull);
-      expect(filesUnder(dir), isEmpty);
-      expect(result, isNotNull);
-    });
+    test(
+      'deleteAll right after an install starts leaves nothing behind',
+      () async {
+        final s = store();
+        final first = s.install(asset);
+        await Future<void>.delayed(Duration.zero);
+        await s.deleteAll();
+        final result = await first;
+        // General interleave only (no claim that hashing was entered): either
+        // the delete beat the commit or removed it afterwards.
+        expect(await s.activeAsset(), isNull);
+        expect(filesUnder(dir), isEmpty);
+        expect(result, isNotNull);
+      },
+    );
 
     test(
       'simultaneous installs of one asset share a single transfer',
@@ -416,17 +419,63 @@ void main() {
       final first = store();
       await first.install(asset);
       final lease = (await first.acquire())!;
-      expect(
-        () => ModelStore(
-          root: dir,
-          freeSpace: () async => free,
-          downloader: (a, o) => const Stream.empty(),
-        ),
-        throwsStateError,
+      ModelStore second() => ModelStore(
+        root: dir,
+        freeSpace: () async => free,
+        downloader: (a, o) => const Stream.empty(),
       );
-      // The first owner and its lease are untouched.
+      expect(second, throwsStateError);
       expect(File(lease.path).existsSync(), isTrue);
       await lease.release();
+    });
+
+    test('dispose is refused while leased, then frees the folder', () async {
+      final support = Directory('${dir.path}/support3')..createSync();
+      final models = Directory('${support.path}/models')..createSync();
+      ModelStore open() => ModelStore(
+        root: models,
+        acceptedFormats: const {'gguf'},
+        acceptedBackends: const {'fake'},
+        freeSpace: () async => free,
+        downloader: (a, offset) async* {
+          yield bytes.sublist(offset);
+        },
+      );
+      final first = open();
+      await first.install(asset);
+      final lease = (await first.acquire())!;
+      expect(first.dispose, throwsStateError);
+      expect(first.isDisposed, isFalse);
+      expect(open, throwsStateError);
+      // Registry clear still goes through the first (live) owner.
+      await ModelStore.clearOnDisk(supportDir: support);
+      expect(File(lease.path).existsSync(), isTrue);
+      await lease.release();
+      expect(File(lease.path).existsSync(), isFalse);
+      first.dispose();
+      expect(first.isDisposed, isTrue);
+      expect(first.acquire, throwsStateError);
+      expect(() => first.install(asset), throwsStateError);
+      expect(first.deleteAll, throwsStateError);
+      open().dispose();
+    });
+
+    test('dispose is refused while a transfer is running', () async {
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      final s = store(
+        source: (a, offset) async* {
+          entered.complete();
+          await release.future;
+          yield bytes.sublist(offset);
+        },
+      );
+      final install = s.install(asset);
+      await entered.future;
+      expect(s.dispose, throwsStateError);
+      release.complete();
+      expect(await install, ModelInstallResult.activated);
+      s.dispose();
     });
 
     test('acquire is atomic with a concurrent removeActive', () async {
