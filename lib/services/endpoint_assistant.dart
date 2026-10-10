@@ -86,7 +86,8 @@ class EndpointCheckOk extends EndpointCheckResult {
   /// Round-trip time of the verification request.
   final Duration latency;
 
-  /// Model ids the endpoint listed; empty when it listed none.
+  /// Model ids the endpoint listed; empty when it listed none. Assistant
+  /// results are detached read-only lists, not inference readiness proof.
   final List<String> models;
 }
 
@@ -100,7 +101,7 @@ class EndpointCheckFailed extends EndpointCheckResult {
   /// The failure category.
   final EndpointCheckFailure reason;
 
-  /// Optional lower-level error text for diagnostics.
+  /// Optional safe generic failure description, never raw response/error text.
   final String? detail;
 
   /// HTTP status when the failure was [EndpointCheckFailure.httpError].
@@ -114,7 +115,8 @@ class OllamaDetection {
   /// The base URL the local Ollama answered on.
   final String baseUrl;
 
-  /// Model ids it listed; empty when none are pulled yet.
+  /// Model ids it listed; empty when none are pulled yet. Assistant results
+  /// are detached read-only lists.
   final List<String> models;
 
   /// The model the assistant pre-selects: the first one Ollama lists.
@@ -143,7 +145,7 @@ class EndpointAssistant {
     return switch (result) {
       EndpointCheckOk(:final models) => OllamaDetection(
         baseUrl: ollamaDefaultBaseUrl,
-        models: models,
+        models: List<String>.unmodifiable(models),
       ),
       _ => null,
     };
@@ -177,10 +179,10 @@ class EndpointAssistant {
         EndpointCheckFailure.unreachable,
         detail: 'timed out',
       );
-    } catch (e) {
-      return EndpointCheckFailed(
+    } catch (_) {
+      return const EndpointCheckFailed(
         EndpointCheckFailure.unreachable,
-        detail: e.toString(),
+        detail: 'Endpoint request failed.',
       );
     }
     sw.stop();
@@ -188,26 +190,33 @@ class EndpointAssistant {
       return EndpointCheckFailed(
         EndpointCheckFailure.httpError,
         statusCode: response.statusCode,
-        detail: response.body.length > 200
-            ? response.body.substring(0, 200)
-            : response.body,
+        detail: 'Endpoint returned an HTTP error.',
       );
     }
     try {
       final body = jsonDecode(response.body);
-      final raw = backend == BrainBackend.ollama
-          ? (body['models'] as List?) ?? const []
-          : (body['data'] as List?) ?? const [];
-      final models = [
-        for (final m in raw)
-          if (backend == BrainBackend.ollama)
-            (m as Map)['name'] as String
-          else
-            (m as Map)['id'] as String,
-      ];
-      return EndpointCheckOk(latency: sw.elapsed, models: models);
+      if (body is! Map) throw const FormatException();
+      final raw = body[backend == BrainBackend.ollama ? 'models' : 'data'];
+      if (raw is! List) throw const FormatException();
+      final idKey = backend == BrainBackend.ollama ? 'name' : 'id';
+      final models = <String>[];
+      for (final row in raw) {
+        if (row is! Map) throw const FormatException();
+        final id = row[idKey];
+        if (id is! String || id.trim().isEmpty) {
+          throw const FormatException();
+        }
+        models.add(id);
+      }
+      return EndpointCheckOk(
+        latency: sw.elapsed,
+        models: List<String>.unmodifiable(models),
+      );
     } catch (_) {
-      return const EndpointCheckFailed(EndpointCheckFailure.badResponse);
+      return const EndpointCheckFailed(
+        EndpointCheckFailure.badResponse,
+        detail: 'Invalid model-list response.',
+      );
     }
   }
 }
