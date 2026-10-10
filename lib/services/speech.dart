@@ -157,27 +157,41 @@ class SpeechService implements SpeechLike {
         _ownedPath = clip;
         // Listen before play: some clients complete during the play await.
         try {
-          _completion = _playback.completed.listen(
-            (_) {
-              if (_ownedPath != clip) return;
-              unawaited(
-                _playerOp(() async {
-                  if (_ownedPath == clip) await _release();
-                }).catchError((Object _) {
-                  _cleanupProblem = 'Speech completion cleanup failed.';
-                }),
+          _completion = _playback
+              .completed(clip)
+              .listen(
+                (_) {
+                  if (_ownedPath != clip) return;
+                  unawaited(
+                    _playerOp(() async {
+                      if (_ownedPath == clip) {
+                        try {
+                          await _playback.stop();
+                        } finally {
+                          await _release();
+                        }
+                      }
+                    }).catchError((Object _) {
+                      _cleanupProblem = 'Speech completion cleanup failed.';
+                    }),
+                  );
+                },
+                onError: (Object _) {
+                  unawaited(
+                    _playerOp(() async {
+                      if (_ownedPath == clip) {
+                        try {
+                          await _playback.stop();
+                        } finally {
+                          await _release();
+                        }
+                      }
+                    }).catchError((Object _) {
+                      _cleanupProblem = 'Speech completion cleanup failed.';
+                    }),
+                  );
+                },
               );
-            },
-            onError: (Object _) {
-              unawaited(
-                _playerOp(() async {
-                  if (_ownedPath == clip) await _release();
-                }).catchError((Object _) {
-                  _cleanupProblem = 'Speech completion cleanup failed.';
-                }),
-              );
-            },
-          );
           await _playback.play(clip);
           if (!current()) {
             await _playback.stop();
@@ -244,7 +258,7 @@ class SpeechException implements Exception {
 /// Playback boundary; fixtures never open a platform audio channel.
 abstract interface class SpeechPlayback {
   /// Completion events for the currently started clip.
-  Stream<void> get completed;
+  Stream<void> completed(String path);
 
   /// Starts one file; completion may occur before this future settles.
   Future<void> play(String path);
@@ -257,21 +271,47 @@ abstract interface class SpeechPlayback {
 }
 
 class _AudioPlayback implements SpeechPlayback {
-  _AudioPlayback(this._player);
+  _AudioPlayback(this._injected);
+  AudioPlayer? _injected;
   AudioPlayer? _player;
-  AudioPlayer get player => _player ??= AudioPlayer();
+  String? _path;
   @override
-  Stream<void> get completed => player.onPlayerComplete;
+  Stream<void> completed(String path) {
+    // A player identity is never reused for a replacement clip. Native late
+    // events from the old player cannot enter the new clip's stream.
+    _path = path;
+    _player = _injected ?? AudioPlayer();
+    _injected = null;
+    return _player!.onPlayerComplete;
+  }
+
   @override
-  Future<void> play(String path) => player.play(DeviceFileSource(path));
+  Future<void> play(String path) {
+    if (path != _path) throw StateError('Unowned speech clip');
+    return _player!.play(DeviceFileSource(path));
+  }
+
   @override
   Future<void> stop() async {
-    await _player?.stop();
+    final player = _player;
+    _player = null;
+    _path = null;
+    if (player == null) return;
+    try {
+      await player.stop();
+    } finally {
+      await player.dispose();
+    }
   }
 
   @override
   Future<void> dispose() async {
-    await _player?.dispose();
+    try {
+      await stop();
+    } finally {
+      await _injected?.dispose();
+      _injected = null;
+    }
   }
 }
 

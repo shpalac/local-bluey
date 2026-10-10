@@ -35,14 +35,18 @@ class Clips implements SpeechClipStorage {
 }
 
 class Player implements SpeechPlayback {
-  final events = StreamController<void>.broadcast(sync: true);
+  final sessions = <String, StreamController<void>>{};
+  final idleEvents = StreamController<void>.broadcast(sync: true);
+  StreamController<void> get events =>
+      sessions.isEmpty ? idleEvents : sessions.values.last;
   final entered = Completer<void>();
   Completer<void>? starting;
   final played = <String>[];
   String? active;
   bool disposed = false, immediate = false, fail = false, failStop = false;
   @override
-  Stream<void> get completed => events.stream;
+  Stream<void> completed(String path) =>
+      (sessions[path] ??= StreamController<void>.broadcast(sync: true)).stream;
   @override
   Future<void> play(String path) async {
     played.add(path);
@@ -62,7 +66,10 @@ class Player implements SpeechPlayback {
   @override
   Future<void> dispose() async {
     disposed = true;
-    await events.close();
+    await idleEvents.close();
+    for (final events in sessions.values) {
+      await events.close();
+    }
   }
 }
 
@@ -229,6 +236,45 @@ void main() {
     expect(player.disposed, isTrue);
     await expectLater(service.playBytes([2]), throwsStateError);
   });
+  for (final error in [false, true]) {
+    test(
+      'late old completion/error after replacement does not touch newer clip $error',
+      () async {
+        final clips = Clips(), player = Player();
+        final service = SpeechService(storage: clips, playback: player);
+        await service.playBytes([1]);
+        final old = player.events;
+        await service.playBytes([2]);
+        if (error) {
+          old.addError(StateError('old completion'));
+        } else {
+          old.add(null);
+        }
+        await tick();
+        expect(player.active, 'clip-1');
+        expect(clips.files.keys, ['clip-1']);
+        expect(player.events.hasListener, isTrue);
+        await service.dispose();
+      },
+    );
+  }
+  test(
+    'completion error stops active playback even if stop reports failure',
+    () async {
+      final clips = Clips(), player = Player();
+      final service = SpeechService(storage: clips, playback: player);
+      await service.playBytes([1]);
+      player.failStop = true;
+      player.events.addError(StateError('completion'));
+      await tick();
+      expect(player.active, isNull);
+      expect(clips.files, isEmpty);
+      expect(player.events.hasListener, isFalse);
+      expect(service.cleanupProblem, isNotNull);
+      player.failStop = false;
+      await service.dispose();
+    },
+  );
   test(
     'production storage reserves unique files and cleans owned directory',
     () async {
