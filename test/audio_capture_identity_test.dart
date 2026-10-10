@@ -471,4 +471,358 @@ void main() {
       expect(driver.stops, before);
     },
   );
+  test('token release concurrent held stop transfers exactly once', () async {
+    final token = capture.acquire()!;
+    await token.started;
+    driver.stopEntered = Completer<void>();
+    driver.stopGate = Completer<void>();
+    final a = capture.release(token), b = capture.release(token);
+    await driver.stopEntered!.future;
+    var done = 0;
+    a.then((_) => done++);
+    b.then((_) => done++);
+    await Future<void>.value();
+    expect(done, 0);
+    expect(driver.stops, 1);
+    expect(capture.acquire(), null);
+    await expectLater(capture.start(), throwsStateError);
+    driver.stopGate!.complete();
+    final results = await Future.wait([a, b]);
+    final files = results.map((x) => x.file).whereType<File>().toList();
+    expect(files.length, 1);
+    expect(
+      results.every((x) => x.outcome == CaptureCleanupOutcome.transferred),
+      true,
+    );
+    expect(files.single.path, driver.path);
+    expect((await capture.release(token)).file, null);
+    expect(await capture.cleanup(token), CaptureCleanupOutcome.transferred);
+    expect(files.single.existsSync(), true);
+    expect(deletes, isEmpty);
+    await AudioCapture.deleteQuietly(files.single);
+  });
+  for (final cleanupFirst in [false, true]) {
+    test(
+      'release cleanup pending order cleanupFirst=$cleanupFirst no delivery',
+      () async {
+        final token = capture.acquire()!;
+        await token.started;
+        driver.stopEntered = Completer<void>();
+        driver.stopGate = Completer<void>();
+        Future<CaptureCleanupOutcome> cleanup;
+        Future<CaptureRelease> release;
+        if (cleanupFirst) {
+          cleanup = capture.cleanup(token);
+          release = capture.release(token);
+        } else {
+          release = capture.release(token);
+          await driver.stopEntered!.future;
+          cleanup = capture.cleanup(token);
+        }
+        if (cleanupFirst) await driver.stopEntered!.future;
+        driver.stopGate!.complete();
+        expect(await cleanup, CaptureCleanupOutcome.cleaned);
+        final result = await release;
+        expect(result.file, null);
+        expect(result.outcome, CaptureCleanupOutcome.cleaned);
+        expect(driver.stops, 1);
+        expect(deletes.length, 1);
+        expect(File(driver.path!).existsSync(), false);
+      },
+    );
+  }
+  test(
+    'transferred token release never touches new legacy capture or old file',
+    () async {
+      final oldDir = Directory('${dir.path}/old')..createSync();
+      final newDir = Directory('${dir.path}/new')..createSync();
+      var count = 0;
+      capture = AudioCapture(
+        driver: driver,
+        tempDirProvider: () async => count++ == 0 ? oldDir : newDir,
+      );
+      final token = capture.acquire()!;
+      await token.started;
+      final old = (await capture.release(token)).file!;
+      await capture.start();
+      final current = capture.debugPath!;
+      final stops = driver.stops;
+      final stale = await capture.release(token);
+      expect(stale.file, null);
+      expect(stale.outcome, CaptureCleanupOutcome.transferred);
+      expect(driver.stops, stops);
+      expect(driver.open, true);
+      expect(old.existsSync(), true);
+      expect(File(current).existsSync(), true);
+      expect(await capture.cleanup(token), CaptureCleanupOutcome.transferred);
+      expect(old.existsSync(), true);
+      final fresh = await capture.stop();
+      expect(fresh!.path, current);
+      await AudioCapture.deleteQuietly(old);
+      await AudioCapture.deleteQuietly(fresh);
+    },
+  );
+  test(
+    'external legacy consumption then stale release zero new capture effects',
+    () async {
+      final oldDir = Directory('${dir.path}/old')..createSync();
+      final newDir = Directory('${dir.path}/new')..createSync();
+      var count = 0;
+      capture = AudioCapture(
+        driver: driver,
+        tempDirProvider: () async => count++ == 0 ? oldDir : newDir,
+      );
+      final token = capture.acquire()!;
+      await token.started;
+      final old = await capture.stop();
+      await capture.start();
+      final stops = driver.stops;
+      final stale = await capture.release(token);
+      expect(stale.file, null);
+      expect(stale.outcome, CaptureCleanupOutcome.transferred);
+      expect(driver.stops, stops);
+      expect(driver.open, true);
+      final fresh = await capture.stop();
+      await AudioCapture.deleteQuietly(old);
+      await AudioCapture.deleteQuietly(fresh);
+    },
+  );
+  test('current driver null is token receipt not wrapper null proof', () async {
+    driver.nullStop = true;
+    final token = capture.acquire()!;
+    await token.started;
+    final result = await capture.release(token);
+    expect(result.file, null);
+    expect(result.outcome, CaptureCleanupOutcome.cleaned);
+    expect(driver.stops, 1);
+    expect(File(driver.path!).existsSync(), false);
+    expect(
+      (await capture.release(token)).outcome,
+      CaptureCleanupOutcome.cleaned,
+    );
+    expect(driver.stops, 1);
+  });
+  test(
+    'token release failed stop retains uncertainty for explicit cleanup',
+    () async {
+      final token = capture.acquire()!;
+      await token.started;
+      driver.failStop = true;
+      await expectLater(
+        capture.release(token),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      expect(token.outcome, null);
+      expect(driver.open, true);
+      driver.failStop = false;
+      expect(await capture.cleanup(token), CaptureCleanupOutcome.cleaned);
+      expect((await capture.release(token)).file, null);
+      expect(File(driver.path!).existsSync(), false);
+    },
+  );
+  test(
+    'partial entered start release reports failure without file transfer',
+    () async {
+      driver.partial = true;
+      driver.startEntered = Completer<void>();
+      driver.startGate = Completer<void>();
+      final token = capture.acquire()!;
+      final started = expectLater(
+        token.started,
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      await driver.startEntered!.future;
+      final released = expectLater(
+        capture.release(token),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      driver.startGate!.complete();
+      await started;
+      await released;
+      expect(driver.stops, 0);
+      expect(token.outcome, null);
+      expect(await capture.cleanup(token), CaptureCleanupOutcome.cleaned);
+    },
+  );
+  test('release held start success joins and transfers its own file', () async {
+    driver.startEntered = Completer<void>();
+    driver.startGate = Completer<void>();
+    final token = capture.acquire()!;
+    await driver.startEntered!.future;
+    final release = capture.release(token);
+    var done = false;
+    release.then((_) => done = true);
+    await Future<void>.value();
+    expect(done, false);
+    driver.startGate!.complete();
+    await token.started;
+    final result = await release;
+    expect(result.file!.path, driver.path);
+    expect(driver.stops, 1);
+    await AudioCapture.deleteQuietly(result.file);
+  });
+  test(
+    'foreign no-entry and disposed token release distinct zero-effect receipts',
+    () async {
+      final otherDir = Directory('${dir.path}/other')..createSync();
+      final other = AudioCapture(
+        driver: _Driver(),
+        tempDirProvider: () async => otherDir,
+      );
+      final foreign = other.acquire()!;
+      await foreign.started;
+      await capture.start();
+      expect(
+        (await capture.release(foreign)).outcome,
+        CaptureCleanupOutcome.mismatch,
+      );
+      expect(driver.stops, 0);
+      await other.dispose();
+      final failed = AudioCapture(
+        driver: _Driver(),
+        tempDirProvider: () async => throw StateError('private'),
+      );
+      final noEntry = failed.acquire()!;
+      await expectLater(noEntry.started, throwsStateError);
+      expect(
+        (await failed.release(noEntry)).outcome,
+        CaptureCleanupOutcome.noDriverEntry,
+      );
+      await failed.dispose();
+      final current = await capture.stop();
+      await AudioCapture.deleteQuietly(current);
+      final token = capture.acquire()!;
+      await token.started;
+      driver.failStop = true;
+      await expectLater(
+        capture.dispose(),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      final before = driver.stops;
+      expect(
+        (await capture.release(token)).outcome,
+        CaptureCleanupOutcome.disposalUncertain,
+      );
+      expect(driver.stops, before);
+    },
+  );
+  test('release joining held cleanup deletion cannot steal output', () async {
+    final token = capture.acquire()!;
+    await token.started;
+    deleteEntered = Completer<void>();
+    deleteGate = Completer<void>();
+    final cleanup = capture.cleanup(token);
+    await deleteEntered!.future;
+    final release = capture.release(token);
+    var done = false;
+    release.then((_) => done = true);
+    await Future<void>.value();
+    expect(done, false);
+    deleteGate!.complete();
+    await cleanup;
+    expect((await release).file, null);
+    expect(driver.stops, 1);
+  });
+  test(
+    'dispose held token release joins and closing owns untransferred file',
+    () async {
+      final token = capture.acquire()!;
+      await token.started;
+      driver.stopEntered = Completer<void>();
+      driver.stopGate = Completer<void>();
+      final release = capture.release(token);
+      await driver.stopEntered!.future;
+      final close = capture.dispose();
+      driver.stopGate!.complete();
+      expect((await release).file, null);
+      await close;
+      expect(driver.stops, 1);
+      expect(driver.disposals, 1);
+      expect(File(driver.path!).existsSync(), false);
+    },
+  );
+  test('capped token release consumes once without second driver stop', () {
+    fakeAsync((async) {
+      final capped = AudioCapture(
+        driver: driver,
+        maxDuration: const Duration(seconds: 1),
+        tempDirProvider: () async => _Temp(dir.path),
+        deleteFile: (file) async {
+          if (file.existsSync()) file.deleteSync();
+        },
+      );
+      final token = capped.acquire()!;
+      async.flushMicrotasks();
+      async.elapse(const Duration(seconds: 1));
+      async.flushMicrotasks();
+      CaptureRelease? result, again;
+      capped.release(token).then((x) => result = x);
+      capped.release(token).then((x) => again = x);
+      async.flushMicrotasks();
+      expect([result!.file, again!.file].whereType<File>().length, 1);
+      expect(driver.stops, 1);
+      (result!.file ?? again!.file)!.deleteSync();
+      capped.dispose();
+      async.flushMicrotasks();
+    });
+  });
+  test(
+    'entered legacy release joined by token release transfers only token file',
+    () async {
+      final token = capture.acquire()!;
+      await token.started;
+      driver.stopEntered = Completer<void>();
+      driver.stopGate = Completer<void>();
+      final legacy = capture.stop();
+      await driver.stopEntered!.future;
+      final released = capture.release(token);
+      driver.stopGate!.complete();
+      final result = await released;
+      expect(await legacy, null);
+      expect(result.file!.path, driver.path);
+      expect(driver.stops, 1);
+      await AudioCapture.deleteQuietly(result.file);
+    },
+  );
+  test(
+    'release selected before queued immediate disposal returns no output',
+    () async {
+      final token = capture.acquire()!;
+      await token.started;
+      final release = capture.release(token);
+      final close = capture.dispose();
+      final result = await release;
+      expect(result.file, null);
+      expect(result.outcome, CaptureCleanupOutcome.disposalUncertain);
+      await close;
+      expect(driver.stops, 1);
+      expect(driver.disposals, 1);
+      expect(token.outcome, CaptureCleanupOutcome.cleaned);
+    },
+  );
+  test(
+    'release observes failed cleanup deletion retains exact file for retry',
+    () async {
+      final token = capture.acquire()!;
+      await token.started;
+      failDelete = true;
+      final cleanup = expectLater(
+        capture.cleanup(token),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      final release = expectLater(
+        capture.release(token),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      await Future.wait([cleanup, release]);
+      expect(driver.stops, 1);
+      expect(File(driver.path!).existsSync(), true);
+      expect(token.outcome, null);
+      failDelete = false;
+      expect(await capture.cleanup(token), CaptureCleanupOutcome.cleaned);
+      expect((await capture.release(token)).file, null);
+      expect(driver.stops, 1);
+      expect(File(driver.path!).existsSync(), false);
+    },
+  );
 }

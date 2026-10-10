@@ -30,6 +30,18 @@ enum CaptureCleanupOutcome {
   mismatch,
 }
 
+/// Token release result. A file is transferred to exactly one caller.
+/// A null file has an explicit token-scoped outcome, never generic idle proof.
+class CaptureRelease {
+  CaptureRelease._(this.file, this.outcome);
+
+  /// Exact owned output, or null when no output was transferred to this call.
+  final File? file;
+
+  /// Positive terminal evidence for this identity, not native/key readiness.
+  final CaptureCleanupOutcome outcome;
+}
+
 /// Opaque attempted acquisition. Retained even when [started] rejects.
 /// Evidence lives on this handle, not an unbounded capture history.
 class CaptureAcquisition {
@@ -37,6 +49,8 @@ class CaptureAcquisition {
   final AudioCapture _owner;
   late final Future<void> _started;
   Future<CaptureCleanupOutcome>? _cleanup;
+  Future<File?>? _release;
+  bool _fileClaimed = false;
   CaptureCleanupOutcome? _outcome;
   bool _driverEntered = false, _stopConfirmed = false;
 
@@ -114,6 +128,7 @@ class AudioCapture {
   Future<void>? _cleanupOp;
   CaptureAcquisition? _acquisition;
   Future<CaptureCleanupOutcome>? _sessionCleanup;
+  Future<void>? _sessionRelease;
 
   /// Hard cap on one hold-to-talk recording (#117).
   final Duration maxDuration;
@@ -157,6 +172,7 @@ class AudioCapture {
         _recording ||
         _startOp != null ||
         _sessionCleanup != null ||
+        _sessionRelease != null ||
         _uncertain ||
         _cleanupFiles.isNotEmpty ||
         _stopOp != null ||
@@ -172,6 +188,7 @@ class AudioCapture {
   Future<void> _startWithIdentity(CaptureAcquisition? identity) async {
     if (_disposed) throw StateError('Audio capture is disposed');
     if (_sessionCleanup != null ||
+        _sessionRelease != null ||
         _uncertain ||
         _cleanupFiles.isNotEmpty ||
         _stopOp != null ||
@@ -293,7 +310,16 @@ class AudioCapture {
   /// previous session, so one hold cannot receive another hold's recording.
   Future<File?> stop() => _stop();
 
-  Future<File?> _stop({bool closing = false, bool recovering = false}) async {
+  Future<File?> _stop({
+    bool closing = false,
+    bool recovering = false,
+    bool releasing = false,
+  }) async {
+    final release = _sessionRelease;
+    if (release != null && !releasing && !recovering && !closing) {
+      await release;
+      return null;
+    }
     final cleanup = _sessionCleanup;
     if (cleanup != null && !recovering && !closing) {
       await cleanup;
@@ -315,6 +341,10 @@ class AudioCapture {
     if (failure != null) {
       if (identical(stopOp, _stopOp)) _stopOp = null;
       throw failure; // Every joiner observes failure, never false idle/null.
+    }
+    if (_sessionRelease != null && !releasing && !recovering && !closing) {
+      await _sessionRelease;
+      return null;
     }
     if (_sessionCleanup != null && !recovering && !closing) {
       await _sessionCleanup;
@@ -338,6 +368,66 @@ class AudioCapture {
       }
     }
     return pending;
+  }
+
+  /// Opt-in token-scoped normal release. Concurrent callers join one stop,
+  /// but only one receives the file. Cleanup selected before consumption owns
+  /// output without delivery. Terminal/foreign tokens have no resource effect.
+  Future<CaptureRelease> release(CaptureAcquisition identity) {
+    if (!identical(identity._owner, this)) {
+      return Future.value(
+        CaptureRelease._(null, CaptureCleanupOutcome.mismatch),
+      );
+    }
+    final pending = identity._release;
+    if (pending != null) return _claimRelease(identity, pending);
+    final terminal = identity._outcome;
+    if (terminal != null) return Future.value(CaptureRelease._(null, terminal));
+    if (!identical(identity, _acquisition)) {
+      return Future.value(
+        CaptureRelease._(null, CaptureCleanupOutcome.mismatch),
+      );
+    }
+    if (_disposed || _driverDisposed) {
+      return Future.value(
+        CaptureRelease._(null, CaptureCleanupOutcome.disposalUncertain),
+      );
+    }
+    final op = Future<File?>.microtask(() => _releaseAcquisition(identity));
+    identity._release = op;
+    final fence = op.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    _sessionRelease = fence;
+    fence.then((_) {
+      if (identical(identity._release, op)) identity._release = null;
+      if (identical(_sessionRelease, fence)) _sessionRelease = null;
+    });
+    return _claimRelease(identity, op);
+  }
+
+  Future<CaptureRelease> _claimRelease(
+    CaptureAcquisition identity,
+    Future<File?> op,
+  ) async {
+    final file = await op;
+    final claimed = identity._fileClaimed;
+    if (file != null && !claimed) identity._fileClaimed = true;
+    return CaptureRelease._(
+      claimed ? null : file,
+      identity._outcome ?? CaptureCleanupOutcome.disposalUncertain,
+    );
+  }
+
+  Future<File?> _releaseAcquisition(CaptureAcquisition identity) async {
+    try {
+      await identity.started;
+    } catch (_) {
+      if (identity._driverEntered) throw CaptureLifecycleException();
+    }
+    if (identity._outcome != null) return null;
+    if (!identical(identity, _acquisition) || _disposed || _driverDisposed) {
+      return null;
+    }
+    return _stop(releasing: true);
   }
 
   /// Explicit token-scoped cleanup with no file delivery. Concurrent calls
@@ -459,6 +549,8 @@ class AudioCapture {
     _maxTimer?.cancel();
     _maxTimer = null;
     var failed = false;
+    final release = _sessionRelease;
+    if (release != null) await release;
     final cleanup = _sessionCleanup;
     if (cleanup != null) {
       try {
