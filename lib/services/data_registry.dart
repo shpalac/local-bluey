@@ -10,6 +10,7 @@ import 'action_log.dart';
 import 'characters.dart';
 import 'conversation.dart';
 import 'egress_monitor.dart';
+import 'model_store.dart';
 import 'perf_monitor.dart';
 import 'routines.dart';
 import 'settings_store.dart';
@@ -83,6 +84,16 @@ class DataRegistry {
         }
         await HoldKeySettings.instance.load();
       },
+    ),
+    DataStoreInfo(
+      id: 'model_store',
+      sourceFile: 'lib/services/model_store.dart',
+      whatEn: 'Downloaded speech models (verified files and partial downloads)',
+      whatHe: 'מודלי דיבור שהורדו (קבצים מאומתים והורדות חלקיות)',
+      where: 'Application support/models',
+      retentionEn: 'Kept until you delete it; nothing is downloaded unasked',
+      retentionHe: 'נשמר עד שמוחקים; שום דבר לא יורד בלי בקשה',
+      clear: ModelStore.clearOnDisk,
     ),
     DataStoreInfo(
       id: 'haptics_pref',

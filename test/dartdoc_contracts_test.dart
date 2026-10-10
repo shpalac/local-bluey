@@ -16,6 +16,7 @@ void main() {
     'lib/services/safety_gate.dart',
     'lib/llm/brain.dart',
     'lib/services/stt.dart',
+    'lib/services/model_store.dart',
     'lib/services/linux_host_base.dart',
     'lib/services/endpoint_assistant.dart',
     'lib/services/user_feedback.dart',
