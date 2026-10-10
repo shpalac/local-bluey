@@ -8,20 +8,27 @@ import 'settings_store.dart';
 class _StagedNotifier<T> extends ValueNotifier<T> {
   _StagedNotifier(this._current) : super(_current);
   T _current;
+  bool _dirty = false;
   @override
   T get value => _current;
   @override
   set value(T next) {
-    if (stage(next)) notifyListeners();
+    stage(next);
+    publish();
   }
 
   bool stage(T next) {
     if (_current == next) return false;
     _current = next;
+    _dirty = true;
     return true;
   }
 
-  void publish() => notifyListeners();
+  void publish() {
+    if (!_dirty) return;
+    _dirty = false;
+    notifyListeners();
+  }
 }
 
 /// Isolated reload owner, with narrow offline fixture dependencies. Current
@@ -55,7 +62,8 @@ class BrainHostState {
 
   /// Latest invocation owns publication across settings/refusal waits. Builds
   /// before staging; all three values change before the first notification.
-  /// Reentrant reload takes ownership; old remaining notifications stop.
+  /// Reentrant reload takes ownership; old remaining notifications stop but
+  /// remain dirty for the new owner, including on equal values or failure.
   Future<void> reload() async {
     final gen = ++_generation;
     bool stale() => gen != _generation;
@@ -68,18 +76,25 @@ class BrainHostState {
       final remote =
           reason == null && !PrivacyGuard.isLocalUrl(settings.baseUrl);
       if (stale()) return;
-      final brainChanged = _brain.stage(next);
-      final refusedChanged = _refused.stage(reason);
-      final remoteChanged = _remote.stage(remote);
-      if (brainChanged) _brain.publish();
-      if (stale()) return;
-      if (refusedChanged) _refused.publish();
-      if (stale()) return;
-      if (remoteChanged) _remote.publish();
+      _brain.stage(next);
+      _refused.stage(reason);
+      _remote.stage(remote);
+      _publishPending(gen);
     } catch (_) {
       if (stale()) return;
+      // New owner failed without staging a new result. Deliver any pending
+      // notifications for the retained coherent snapshot, never older writes.
+      _publishPending(gen);
       rethrow;
     }
+  }
+
+  void _publishPending(int gen) {
+    _brain.publish();
+    if (gen != _generation) return;
+    _refused.publish();
+    if (gen != _generation) return;
+    _remote.publish();
   }
 }
 

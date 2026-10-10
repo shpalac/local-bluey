@@ -263,4 +263,90 @@ void main() {
       clean(host);
     },
   );
+  for (final failure in [false, true]) {
+    test(
+      'reentrant same remote ${failure ? "failure" : "success"} delivers pending listener',
+      () async {
+        var n = 0;
+        final entered = Completer<void>(), release = Completer<void>();
+        Future<void>? fresh;
+        final host = BrainHostState(
+          load: () async {
+            if (n++ > 0) {
+              entered.complete();
+              await release.future;
+              if (failure) throw StateError('new load');
+            }
+            return settings('remote$n', remote: true);
+          },
+          refusal: (_) async => null,
+          build: build,
+        );
+        final observed = <bool>[];
+        host.remoteActive.addListener(() {
+          observed.add(host.remoteActive.value);
+          expect(host.brain.value, isNotNull);
+          expect(host.refusedReason.value, isNull);
+        });
+        host.brain.addListener(() {
+          if (n == 1) fresh = host.reload();
+        });
+        await host.reload();
+        await entered.future;
+        expect(observed, isEmpty);
+        final done = failure ? expectLater(fresh, throwsStateError) : fresh!;
+        release.complete();
+        await done;
+        expect(observed, [true]);
+        expect(host.remoteActive.value, isTrue);
+        clean(host);
+      },
+    );
+  }
+  for (final failure in [false, true]) {
+    test(
+      'reentrant same refusal ${failure ? "failure" : "success"} delivers pending listener',
+      () async {
+        var n = 0;
+        final entered = Completer<void>(), release = Completer<void>();
+        Future<void>? fresh;
+        final host = BrainHostState(
+          load: () async {
+            if (n++ == 2) {
+              entered.complete();
+              await release.future;
+              if (failure) throw StateError('new load');
+            }
+            return settings('s$n', remote: true);
+          },
+          refusal: (s) async => s.model == 's1' ? null : 'blocked',
+          build: build,
+        );
+        await host.reload();
+        final observed = <String?>[];
+        final remotes = <bool>[];
+        host.refusedReason.addListener(() {
+          observed.add(host.refusedReason.value);
+          expectState(host, null, 'blocked', false);
+        });
+        host.remoteActive.addListener(
+          () => remotes.add(host.remoteActive.value),
+        );
+        host.brain.addListener(() {
+          if (n == 2) fresh = host.reload();
+        });
+        await host.reload();
+        await entered.future;
+        expect(observed, isEmpty);
+        expect(remotes, isEmpty);
+        final done = failure ? expectLater(fresh, throwsStateError) : fresh!;
+        release.complete();
+        await done;
+        expect(observed, ['blocked']);
+        expect(remotes, [false]);
+        expectState(host, null, 'blocked', false);
+        clean(host);
+      },
+    );
+  }
 }
