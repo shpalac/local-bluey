@@ -14,6 +14,38 @@ WatchEvent event(String app, String detail) => WatchEvent(
 void main() {
   for (final disposal in [false, true]) {
     test(
+      'late preference error after invalidation stays silent $disposal',
+      () async {
+        final read = Completer<Set<String>>();
+        final s = WatchSuggestions(readNeverApps: () => read.future);
+        final old = s.onEvent(event('Terminal', 'error'));
+        if (disposal) {
+          await s.dispose();
+        } else {
+          s.resetSession();
+        }
+        read.completeError(StateError('late read'));
+        expect(await old, isNull);
+        expect(s.retainedKeyCount, 0);
+        await s.dispose();
+      },
+    );
+  }
+  test('oversized app and empty detail do not retain keys', () async {
+    final s = WatchSuggestions(readNeverApps: () async => {});
+    expect(
+      await s.onEvent(
+        event('x' * (WatchSuggestions.maxAppLength + 1), 'detail'),
+      ),
+      isNull,
+    );
+    expect(await s.onEvent(event('Terminal', '  ')), isNull);
+    expect(s.retainedKeyCount, 0);
+    await s.dispose();
+  });
+
+  for (final disposal in [false, true]) {
+    test(
       'entered read stays silent after ${disposal ? 'dispose' : 'reset'}; current events independent',
       () async {
         final read = Completer<Set<String>>();
