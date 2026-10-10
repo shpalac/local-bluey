@@ -22,8 +22,10 @@ enum WatchVerdict {
 /// Allowlist + hard deny list for proactive screen watching (#212).
 ///
 /// The user picks the apps that may be observed. The hard deny list always
-/// wins - it exists so a mistake or a prompt-injected allowlist entry can
-/// never open observation on the most sensitive surfaces.
+/// wins over the allowlist for recognized surfaces. This is a best-effort
+/// name/title heuristic, not proof that every sensitive surface is detected:
+/// renamed apps, unknown providers, missing titles and embedded content can
+/// evade it. No credential or screen content is inspected by this policy.
 class WatchPolicy {
   WatchPolicy._();
 
@@ -31,9 +33,13 @@ class WatchPolicy {
   static const _kUserDenylist = 'watch.appUserDenylist';
 
   /// Apps that are never observed, even if allowlisted (#212).
-  /// Matched lowercase against the frontmost app name/bundle.
-  static const hardDenyApps = {
-    // Password managers and keychains.
+  /// Canonical lowercase names. Known branded variants are checked separately.
+  static const hardDenyApps = {..._brandedAliases, ..._genericAliases};
+
+  // Distinctive product phrases may occur anywhere, with ASCII letter/digit
+  // boundaries. Dots/hyphens/underscores in bundle-style input separate tokens;
+  // this recognizes branded segments, not every vendor's opaque bundle ID.
+  static const _brandedAliases = {
     '1password',
     'bitwarden',
     'dashlane',
@@ -41,12 +47,34 @@ class WatchPolicy {
     'keepass',
     'lastpass',
     'enpass',
+    'proton pass',
+    'protonpass',
+    'nordpass',
+    'authy',
+    'roboform',
+    'google authenticator',
+    'microsoft authenticator',
     'keychain access',
-    // System surfaces.
     'system settings',
     'system preferences',
     'loginwindow',
   };
+  // Generic names are only exact or followed by an explicit version/client/
+  // vault qualifier, not arbitrary prose. An article named exactly Passwords,
+  // or a product-review title containing Bitwarden, is intentionally denied.
+  static const _genericAliases = {'passwords', 'wallet', 'keeper', 'strongbox'};
+  static bool _hasAlias(String value, String alias) =>
+      RegExp(r'(^|[^a-z0-9])' + RegExp.escape(alias) + r'($|[^a-z0-9])')
+          .hasMatch(value);
+  static bool _secretSurface(String value) {
+    if (_brandedAliases.any((alias) => _hasAlias(value, alias))) return true;
+    return _genericAliases.any(
+      (alias) => RegExp(
+        '^${RegExp.escape(alias)}'
+        r'(?:$|\s+(?:desktop|app|vault|web vault|[0-9]+(?:\.[0-9]+)*)(?:$|\s|\s*[-:]))',
+      ).hasMatch(value),
+    );
+  }
 
   /// Substrings that mark a banking/payment app or site title. Matched
   /// lowercase against app name AND window title.
@@ -127,7 +155,8 @@ class WatchPolicy {
 
   static bool _isHardDenied(String appNorm, String? windowTitle) {
     if (hardDenyApps.contains(appNorm)) return true;
-    final title = (windowTitle ?? '').toLowerCase();
+    final title = (windowTitle ?? '').trim().toLowerCase();
+    if (_secretSurface(appNorm) || _secretSurface(title)) return true;
     for (final marker in hardDenySubstrings) {
       if (appNorm.contains(marker) || title.contains(marker)) return true;
     }
