@@ -119,8 +119,18 @@ class PhoneAudioReceiver {
   /// Handles one `holdAudio` payload without throwing.
   void handle(String encoded) {
     final run = _handle(encoded);
-    _inFlight.add(run);
-    unawaited(run.whenComplete(() => _inFlight.remove(run)));
+    late final Future<void> tracked;
+    // One tracked future that never errors: the original failure is reported
+    // once to the zone, exactly as an unawaited call would, and tracking is
+    // removed either way.
+    tracked = run.then<void>(
+      (_) => _inFlight.remove(tracked),
+      onError: (Object e, StackTrace st) {
+        _inFlight.remove(tracked);
+        Zone.current.handleUncaughtError(e, st);
+      },
+    );
+    _inFlight.add(tracked);
   }
 
   final _inFlight = <Future<void>>{};

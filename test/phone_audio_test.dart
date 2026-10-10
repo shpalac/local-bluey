@@ -230,6 +230,7 @@ void main() {
     test('a receiver disposed during staging neither runs nor leaks', () async {
       var active = true;
       final release = Completer<void>();
+      final entered = Completer<void>();
       final r = receiver(
         isActive: () => active,
         stage: (e) async {
@@ -237,14 +238,13 @@ void main() {
             e,
             tempDir: () async => dir,
           );
+          entered.complete();
           await release.future;
           return file;
         },
       );
       await feed(r, base64Encode(_m4a(64)), settle: false);
-      for (var i = 0; i < 500 && dir.listSync().isEmpty; i++) {
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-      }
+      await entered.future;
       expect(dir.listSync(), hasLength(1), reason: 'staged and held');
       active = false;
       release.complete();
@@ -253,6 +253,24 @@ void main() {
       expect(bubbles, isEmpty);
       expect(dir.listSync(), isEmpty);
     });
+
+    test(
+      'a throwing refusal callback is reported once and tracking settles',
+      () async {
+        final r = PhoneAudioReceiver(
+          process: (f) async {},
+          onRejected: (_) => throw StateError('callback'),
+          stage: (e) => PhoneAudioIntake.stage(e, tempDir: () async => dir),
+        );
+        await feed(r, '%%%');
+        expect(uncaught, hasLength(1), reason: 'one report, not duplicated');
+        await r.idle.timeout(const Duration(seconds: 2));
+        expect(dir.listSync(), isEmpty);
+        // The receiver stays usable afterwards.
+        await feed(r, base64Encode(_m4a(64)));
+        expect(uncaught, hasLength(1));
+      },
+    );
 
     test('a disposed receiver shows no bubble for a refusal', () async {
       await feed(receiver(isActive: () => false), '%%%');
