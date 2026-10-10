@@ -1,101 +1,169 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'models.dart';
 
-/// Newline-delimited JSON [Packet]s over one socket, ported from LineConnection in
-/// Shared/GooglyLink.swift.
+/// Narrow owned byte transport; production delegates to its Socket.
+abstract interface class LineTransport {
+  /// Single inbound byte stream owned by this connection.
+  Stream<List<int>> get input;
+
+  /// Sets transport options before subscribing.
+  void configure();
+
+  /// Writes one encoded JSON line.
+  void write(String line);
+
+  /// Starts best-effort output drain; completion is not logical close.
+  Future<void> close();
+
+  /// Forces release; no drain is required for logical closure.
+  void destroy();
+}
+
+class _SocketTransport implements LineTransport {
+  _SocketTransport(this.socket);
+  final Socket socket;
+  @override
+  Stream<List<int>> get input => socket;
+  @override
+  void configure() => socket.setOption(SocketOption.tcpNoDelay, true);
+  @override
+  void write(String line) => socket.write(line);
+  @override
+  Future<void> close() async {
+    await socket.close();
+  }
+
+  @override
+  void destroy() => socket.destroy();
+}
+
+/// Newline-delimited JSON [Packet]s over one owned socket. No protocol or
+/// authentication decisions are made here; malformed lines remain ignored.
 class LineConnection {
-  LineConnection(this._socket);
+  LineConnection(Socket socket) : this.withTransport(_SocketTransport(socket));
 
-  /// Largest buffered backlog accepted before the connection is dropped;
-  /// measured in BYTES (#115), not UTF-16 code units.
+  /// Narrow fixture seam; cap defaults to the production wire-frame limit.
+  LineConnection.withTransport(
+    this._transport, {
+    int frameLimit = maxFrameBytes,
+  }) : _frameLimit = frameLimit {
+    if (frameLimit < 1) throw ArgumentError.value(frameLimit, 'frameLimit');
+  }
+
+  /// Largest individual wire frame before LF, in bytes (including CR, #115).
+  /// Coalesced valid frames never count against each other's limit.
   static const maxFrameBytes = 16 * 1024 * 1024;
-
-  final Socket _socket;
+  final LineTransport _transport;
+  final int _frameLimit;
   final _onPacket = StreamController<Packet>.broadcast();
   final _onDone = StreamController<void>.broadcast();
-
-  /// Incoming text is kept as a list of pieces and joined only when a
-  /// newline arrives - appending to one growing string cost O(n^2) copies
-  /// on large base64 audio frames (#115).
-  final List<String> _pieces = [];
+  final _tail = BytesBuilder(copy: false);
   int _pendingBytes = 0;
+  StreamSubscription<List<int>>? _subscription;
+  Future<void>? _closing;
+  bool _started = false, _closed = false;
 
-  bool _started = false;
-  bool _closed = false;
-  bool _doneEmitted = false;
-
+  /// True immediately when logical close begins, not after outbound drain.
   bool get isClosed => _closed;
 
+  /// Incoming valid packets; none are added after logical closure.
   Stream<Packet> get packets => _onPacket.stream;
+
+  /// One disconnect notification, including local close (#113).
   Stream<void> get done => _onDone.stream;
 
+  /// Starts consumption once. Starting after closure is a no-op.
   void start() {
-    if (_started) return;
+    if (_started || _closed) return;
     _started = true;
-    _socket.setOption(SocketOption.tcpNoDelay, true);
-    utf8.decoder
-        .bind(_socket)
-        .listen(_onChunk, onDone: close, onError: (_) => close());
+    try {
+      _transport.configure();
+      _subscription = _transport.input.listen(
+        _onChunk,
+        onDone: () => unawaited(close()),
+        onError: (Object _) => unawaited(close()),
+      );
+    } catch (_) {
+      unawaited(close());
+    }
   }
 
-  void _onChunk(String chunk) {
+  void _onChunk(List<int> chunk) {
     if (_closed) return;
-    _pieces.add(chunk);
-    _pendingBytes += utf8.encode(chunk).length;
-    if (_pendingBytes > maxFrameBytes) {
-      // A runaway peer: drop the connection rather than buffer forever.
-      close();
-      return;
-    }
-    if (!chunk.contains('\n')) return;
-    // One join + split per batch of completed lines: linear overall (#115).
-    final lines = _pieces.join().split('\n');
-    final tail = lines.removeLast();
-    _pieces
-      ..clear()
-      ..add(tail);
-    _pendingBytes = utf8.encode(tail).length;
-    for (final line in lines) {
-      if (line.isEmpty) continue;
-      try {
-        _onPacket.add(
-          Packet.fromJson(Map<String, dynamic>.from(jsonDecode(line) as Map)),
-        );
-      } catch (_) {
-        // Ignore malformed lines, matching the Swift `try?`.
+    var start = 0;
+    for (var i = 0; i <= chunk.length; i++) {
+      if (i < chunk.length && chunk[i] != 10) continue;
+      final count = i - start;
+      if (_pendingBytes + count > _frameLimit) {
+        unawaited(close());
+        return;
       }
+      if (count > 0) {
+        _tail.add(Uint8List.fromList(chunk.sublist(start, i)));
+        _pendingBytes += count;
+      }
+      if (i == chunk.length) return;
+      final bytes = _tail.takeBytes();
+      _pendingBytes = 0;
+      if (bytes.isNotEmpty) {
+        try {
+          final line = utf8.decode(bytes);
+          _onPacket.add(
+            Packet.fromJson(Map<String, dynamic>.from(jsonDecode(line) as Map)),
+          );
+        } catch (_) {
+          // Ignore malformed lines, matching the Swift try?.
+        }
+      }
+      if (_closed) return;
+      start = i + 1;
     }
   }
 
+  /// Writes only while logically open. Write failure initiates close.
   void send(Packet packet) {
     if (_closed) return;
     try {
-      _socket.write('${jsonEncode(packet.toJson())}\n');
+      _transport.write('${jsonEncode(packet.toJson())}\n');
     } catch (_) {
-      close();
+      unawaited(close());
     }
   }
 
-  /// Idempotent. Emits done exactly once, including on LOCAL closes (#113):
-  /// listeners (PhoneServer, MacLink) learn about every disconnect and can
-  /// drop the dead link instead of keeping ghost phones.
-  Future<void> close() async {
-    if (_closed) return;
+  /// Idempotent logical teardown: clear tail, emit done and stop owned input
+  /// immediately. Returns one shared future for controller shutdown, not output
+  /// drain/cancel completion. Pending/failed transport cleanup is consumed and
+  /// cannot hold logical close open. Socket is destroyed, not gracefully drained.
+  /// Packets already queued before close are not retrospectively retracted.
+  Future<void> close() {
+    if (_closing != null) return _closing!;
+    final completion = Completer<void>();
+    _closing = completion.future;
     _closed = true;
+    _tail.clear();
+    _pendingBytes = 0;
+    _onDone.add(null);
+    final subscription = _subscription;
+    _subscription = null;
+    if (subscription != null) _ignoreCleanup(subscription.cancel);
+    _ignoreCleanup(_transport.close);
     try {
-      await _socket.close();
+      _transport.destroy();
     } catch (_) {}
-    _emitDone();
-    if (!_onPacket.isClosed) await _onPacket.close();
-    if (!_onDone.isClosed) await _onDone.close();
+    Future.wait([_onPacket.close(), _onDone.close()]).then(
+      (_) => completion.complete(),
+      onError: (Object _, StackTrace st) => completion.complete(),
+    );
+    return _closing!;
   }
 
-  void _emitDone() {
-    if (_doneEmitted) return;
-    _doneEmitted = true;
-    _onDone.add(null);
+  void _ignoreCleanup(Future<void> Function() action) {
+    try {
+      unawaited(action().catchError((Object _) {}));
+    } catch (_) {}
   }
 }
