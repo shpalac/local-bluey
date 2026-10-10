@@ -84,6 +84,7 @@ void main() {
     Size? size,
     double textScale = 1.0,
     bool rtl = false,
+    bool scrollToBottom = false,
   }) async {
     if (size != null) {
       tester.view.physicalSize = size;
@@ -118,6 +119,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump();
+    if (scrollToBottom) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -5000));
+      await tester.pump(const Duration(milliseconds: 500));
+    }
     await expectLater(
       find.byType(MaterialApp),
       matchesGoldenFile('goldens/$name'),
@@ -264,10 +269,39 @@ void main() {
     });
   }
 
+  // Scrolled-bottom evidence for the two cases whose initial viewport ends
+  // mid-card: English compact dark 200% and Hebrew dark 200%.
+  for (final v in const [
+    ('compact-dark-200-bottom', false),
+    ('he-dark-200-bottom', true),
+  ]) {
+    testWidgets('onboarding ${v.$1}', (tester) async {
+      if (v.$2) {
+        Strings.uiLanguage = UiLanguage.hebrew;
+        addTearDown(() => Strings.uiLanguage = UiLanguage.english);
+      }
+      await shot(
+        tester,
+        'onboarding-${v.$1}.png',
+        OnboardingScreen(
+          readiness: _fakeReady,
+          onDone: () {},
+          checker: const _AllDeniedChecker(),
+        ),
+        size: const Size(720, 520),
+        dark: true,
+        textScale: 2.0,
+        rtl: v.$2,
+        scrollToBottom: true,
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   // The 200% captures above show the initial scrollable viewport, which can
-  // end mid-card. These assertions are the layout evidence: after scrolling
-  // to the bottom every action is on screen, and nothing overflows
-  // horizontally (a render overflow would be a thrown exception).
+  // end mid-card. These assertions are the layout evidence: each action is
+  // scrolled into view and must then sit fully inside the window, and nothing
+  // may overflow (a render overflow would be a thrown exception).
   for (final v in const [
     ('compact-dark-200', Size(720, 520), true, 2.0, false),
     ('desktop-light-200', Size(1360, 845), false, 2.0, false),
@@ -315,19 +349,23 @@ void main() {
         (w) => w is FilledButton || w is OutlinedButton || w is TextButton,
       );
       expect(buttons, findsWidgets);
-      for (final element in buttons.evaluate()) {
-        final rect = tester.getRect(find.byWidget(element.widget));
-        // Buttons inside the scrollable area that are not at the bottom may
-        // sit above the viewport after the scroll; only the bottom-most
-        // actions must be fully inside the window horizontally.
-        expect(rect.left >= screen.left - 0.5, isTrue, reason: '$rect');
-        expect(rect.right <= screen.right + 0.5, isTrue, reason: '$rect');
+      // Every action must be reachable: scroll each one into view, then it
+      // must be fully inside the window (all four edges).
+      final count = buttons.evaluate().length;
+      for (var i = 0; i < count; i++) {
+        final one = buttons.at(i);
+        await tester.ensureVisible(one);
+        await tester.pump(const Duration(milliseconds: 300));
+        final rect = tester.getRect(one);
+        expect(
+          rect.left >= screen.left - 0.5 &&
+              rect.right <= screen.right + 0.5 &&
+              rect.top >= screen.top - 0.5 &&
+              rect.bottom <= screen.bottom + 0.5,
+          isTrue,
+          reason: 'action $i at $rect is not fully inside $screen',
+        );
       }
-      final bottomMost = buttons
-          .evaluate()
-          .map((e) => tester.getRect(find.byWidget(e.widget)))
-          .reduce((a, b) => a.bottom >= b.bottom ? a : b);
-      expect(bottomMost.bottom <= screen.bottom + 0.5, isTrue);
       expect(tester.takeException(), isNull);
     });
   }
