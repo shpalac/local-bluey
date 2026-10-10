@@ -9,7 +9,10 @@ import '../services/strings.dart';
 
 /// Troubleshooting page with live checks and copyable diagnostics (#85).
 class TroubleshootingScreen extends StatefulWidget {
-  const TroubleshootingScreen({super.key});
+  const TroubleshootingScreen({super.key, this.runChecks});
+
+  /// Fixture seam; production uses the live diagnostics checks.
+  final Future<List<CheckResult>> Function()? runChecks;
 
   @override
   State<TroubleshootingScreen> createState() => _TroubleshootingState();
@@ -25,7 +28,7 @@ class _TroubleshootingState extends State<TroubleshootingScreen> {
   }
 
   Future<void> _run() async {
-    final results = await Diagnostics.run();
+    final results = await (widget.runChecks ?? Diagnostics.run)();
     if (mounted) setState(() => _results = results);
   }
 
