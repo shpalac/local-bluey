@@ -276,4 +276,105 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
   });
+  for (final rtl in [false, true]) {
+    testWidgets(
+      'default native Fix reports returned error ${rtl ? "HE" : "EN"}',
+      (tester) async {
+        Strings.uiLanguage = rtl ? UiLanguage.hebrew : UiLanguage.english;
+        addTearDown(() => Strings.uiLanguage = UiLanguage.system);
+        const channel = MethodChannel('local_bluey/control');
+        final calls = <String>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              calls.add(call.method);
+              if (call.method == 'requestScreenCaptureAccess') return false;
+              expect(call.arguments, {
+                'url': onboardingPermissions[1].settingsUrl,
+              });
+              return "That doesn't look like a web address.";
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(channel, null),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: PermissionRecoveryCard(
+              permission: onboardingPermissions[1],
+              onDismiss: () {},
+            ),
+          ),
+        );
+        await tester.tap(find.text(rtl ? 'תיקון' : 'Fix'));
+        await tester.pumpAndSettle();
+        expect(calls, ['requestScreenCaptureAccess', 'openURL']);
+        expect(
+          find.textContaining(rtl ? 'לא ניתן' : 'Could not'),
+          findsOneWidget,
+        );
+        expect(
+          find.text("That doesn't look like a web address."),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
+  for (final delayedRequest in [false, true]) {
+    testWidgets(
+      'default native Fix disposed during ${delayedRequest ? "request" : "open"}',
+      (tester) async {
+        Strings.uiLanguage = UiLanguage.english;
+        addTearDown(() => Strings.uiLanguage = UiLanguage.system);
+        const channel = MethodChannel('local_bluey/control');
+        final calls = <String>[];
+        final response = Completer<dynamic>();
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, (call) async {
+              calls.add(call.method);
+              if (call.method == 'requestScreenCaptureAccess') {
+                return delayedRequest ? response.future : false;
+              }
+              return response.future;
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(channel, null),
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: PermissionRecoveryCard(
+              permission: onboardingPermissions[1],
+              onDismiss: () {},
+            ),
+          ),
+        );
+        await tester.tap(find.text('Fix'));
+        await tester.pump();
+        expect(
+          calls,
+          delayedRequest
+              ? ['requestScreenCaptureAccess']
+              : ['requestScreenCaptureAccess', 'openURL'],
+        );
+        expect(find.text('Opening settings...'), findsOneWidget);
+        await tester.pumpWidget(const SizedBox());
+        response.complete(
+          delayedRequest ? false : "That doesn't look like a web address.",
+        );
+        await tester.pumpAndSettle();
+        expect(
+          calls,
+          delayedRequest
+              ? ['requestScreenCaptureAccess']
+              : ['requestScreenCaptureAccess', 'openURL'],
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+  }
 }

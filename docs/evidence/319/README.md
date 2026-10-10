@@ -7,3 +7,5 @@ Captured from `test/home_status_cards_test.dart` via CARDS_CAPTURE. The fixture 
 The quoted sentence in the suggestion is synthetic untrusted display data, never an instruction.
 
 This one bounded image exists for PR review and can be dropped before merge if preferred.
+
+Fix also has default native-channel regression fixtures: macOS openURL only accepts http/https and returns an error string for these System Settings URLs. The card now shows generic localized failure for that result rather than silently completing. No native settings-scheme support was added and no successful settings recovery is claimed. Request-before-open ordering and disposal during either delayed native call are covered.

@@ -41,8 +41,17 @@ class _PermissionRecoveryCardState extends State<PermissionRecoveryCard> {
         // Register first so the OS pane contains Bluey's Screen Recording row.
         if (widget.permission.id == 'screen_recording') {
           await NativeControl.requestScreenCaptureAccess();
+          if (!mounted) return;
         }
-        await NativeControl.openURL(widget.permission.settingsUrl);
+        final result = await NativeControl.openURL(
+          widget.permission.settingsUrl,
+        );
+        // The bridge reports failures as strings, not only platform exceptions.
+        // Its current success result is "Opened <host>."; settings schemes
+        // are unsupported. Fail closed on null/unrecognized results too.
+        if (result == null || !result.startsWith('Opened ')) {
+          if (mounted) setState(() => _failed = true);
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _failed = true);
