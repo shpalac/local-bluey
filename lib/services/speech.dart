@@ -18,21 +18,58 @@ import 'settings_store.dart';
 /// Turns the brain's spoken reply into audio: POST {baseUrl}/audio/speech
 /// (OpenAI-compatible TTS) and plays the result on the Mac.
 class SpeechService implements SpeechLike {
-  SpeechService({http.Client? client, AudioPlayer? player})
-    : _client = client ?? http.Client(),
-      _injectedPlayer = player;
+  SpeechService({
+    http.Client? client,
+    AudioPlayer? player,
+    SpeechPlayback? playback,
+    SpeechClipStorage? storage,
+  }) : _client = client ?? http.Client(),
+       _playback = playback ?? _AudioPlayback(player),
+       _storage = storage ?? FileSpeechClipStorage();
 
   final http.Client _client;
 
-  /// Injected in tests; created lazily otherwise so synthesize-only paths
-  /// never touch the platform audio channel.
-  final AudioPlayer? _injectedPlayer;
-  AudioPlayer? _lazyPlayer;
+  final SpeechPlayback _playback;
+  final SpeechClipStorage _storage;
+  int _generation = 0;
+  bool _disposed = false;
+  Future<void>? _disposal;
+  Future<void> _playerTail = Future<void>.value();
+  StreamSubscription<void>? _completion;
+  String? _ownedPath;
+  String? _cleanupProblem;
+
+  /// Most recent cleanup failure; cleanup is best-effort, not guaranteed.
+  String? get cleanupProblem => _cleanupProblem;
+
+  Future<void> _playerOp(Future<void> Function() op) {
+    final next = _playerTail.then((_) => op());
+    _playerTail = next.then<void>((_) {}, onError: (Object _, StackTrace _) {});
+    return next;
+  }
+
+  Future<void> _delete(String path) async {
+    try {
+      await _storage.delete(path);
+    } catch (_) {
+      _cleanupProblem = 'Speech clip cleanup failed.';
+    }
+  }
+
+  Future<void> _release() async {
+    final subscription = _completion;
+    _completion = null;
+    final path = _ownedPath;
+    _ownedPath = null;
+    try {
+      await subscription?.cancel();
+    } finally {
+      if (path != null) await _delete(path);
+    }
+  }
 
   /// Network cap so a stalled TTS server cannot hang a reply (#118).
   static const requestTimeout = Duration(seconds: 60);
-
-  File? _lastTempFile;
 
   /// Requests speech audio for [text]. Returns the raw audio bytes (mp3).
   @override
@@ -82,52 +119,129 @@ class SpeechService implements SpeechLike {
     return bytes;
   }
 
-  /// Plays already-synthesized bytes; pairs with [synthesize] so each answer
-  /// costs exactly one TTS request.
+  /// Latest request wins. Stop/dispose invalidate pending file work; player
+  /// start/stop are ordered so completed stop cannot be followed by old play.
   @override
   Future<void> playBytes(List<int> bytes) async {
-    // Clean up the previous clip: playback can be interrupted by stop() or
-    // a new reply before onPlayerComplete fires, leaking the file (#118).
-    await _deleteLastTempFile();
-    final file = File(
-      '${(await getTemporaryDirectory()).path}/bluey_speech_'
-      '${DateTime.now().millisecondsSinceEpoch}.mp3',
-    );
-    await file.writeAsBytes(bytes, flush: true);
-    _lastTempFile = file;
-    final player = _injectedPlayer ?? (_lazyPlayer ??= AudioPlayer());
-    await player.play(DeviceFileSource(file.path));
-    // Best-effort temp cleanup once playback finishes.
-    unawaited(
-      player.onPlayerComplete.first.then((_) async {
-        if (_lastTempFile?.path == file.path) _lastTempFile = null;
-        try {
-          await file.delete();
-        } catch (_) {}
-      }),
-    );
-  }
-
-  /// Stops any in-flight playback (#91 tray mute).
-  Future<void> stop() async {
-    await _injectedPlayer?.stop();
-    await _lazyPlayer?.stop();
-    await _deleteLastTempFile();
-  }
-
-  Future<void> _deleteLastTempFile() async {
-    final file = _lastTempFile;
-    _lastTempFile = null;
-    if (file == null) return;
+    if (_disposed) throw StateError('SpeechService is disposed');
+    final generation = ++_generation;
+    bool current() => !_disposed && generation == _generation;
+    final snapshot = List<int>.of(bytes);
+    String? path;
     try {
-      if (await file.exists()) await file.delete();
-    } catch (_) {}
+      path = await _storage.resolve();
+      if (!current()) {
+        await _delete(path);
+        return;
+      }
+      await _storage.write(path, snapshot);
+      if (!current()) {
+        await _delete(path);
+        return;
+      }
+      final clip = path;
+      await _playerOp(() async {
+        if (!current()) {
+          await _delete(clip);
+          return;
+        }
+        try {
+          await _playback.stop();
+        } finally {
+          await _release();
+        }
+        if (!current()) {
+          await _delete(clip);
+          return;
+        }
+        _ownedPath = clip;
+        // Listen before play: some clients complete during the play await.
+        try {
+          _completion = _playback
+              .completed(clip)
+              .listen(
+                (_) {
+                  if (_ownedPath != clip) return;
+                  unawaited(
+                    _playerOp(() async {
+                      if (_ownedPath == clip) {
+                        try {
+                          await _playback.stop();
+                        } finally {
+                          await _release();
+                        }
+                      }
+                    }).catchError((Object _) {
+                      _cleanupProblem = 'Speech completion cleanup failed.';
+                    }),
+                  );
+                },
+                onError: (Object _) {
+                  unawaited(
+                    _playerOp(() async {
+                      if (_ownedPath == clip) {
+                        try {
+                          await _playback.stop();
+                        } finally {
+                          await _release();
+                        }
+                      }
+                    }).catchError((Object _) {
+                      _cleanupProblem = 'Speech completion cleanup failed.';
+                    }),
+                  );
+                },
+              );
+          await _playback.play(clip);
+          if (!current()) {
+            await _playback.stop();
+            await _release();
+          }
+        } catch (_) {
+          try {
+            await _playback.stop();
+          } finally {
+            await _release();
+          }
+          rethrow;
+        }
+      });
+    } catch (_) {
+      if (path != null) await _delete(path);
+      rethrow;
+    }
   }
 
-  /// Releases the audio player. Call when the app shuts down.
-  Future<void> dispose() async {
-    await _injectedPlayer?.dispose();
-    await _lazyPlayer?.dispose();
+  /// Invalidates pending startup immediately and drains older player startup.
+  Future<void> stop() {
+    if (_disposed) return _disposal ?? _playerTail;
+    ++_generation;
+    return _playerOp(() async {
+      try {
+        await _playback.stop();
+      } finally {
+        await _release();
+      }
+    });
+  }
+
+  /// Terminal disposal; pending file work can only clean its own stale clip.
+  Future<void> dispose() {
+    if (_disposed) return _disposal!;
+    _disposed = true;
+    ++_generation;
+    _client.close();
+    return _disposal = _playerOp(() async {
+      try {
+        await _playback.stop();
+      } finally {
+        try {
+          await _release();
+        } finally {
+          await _playback.dispose();
+        }
+      }
+    });
   }
 }
 
@@ -139,4 +253,100 @@ class SpeechException implements Exception {
   final String message;
   @override
   String toString() => message;
+}
+
+/// Playback boundary; fixtures never open a platform audio channel.
+abstract interface class SpeechPlayback {
+  /// Completion events for the currently started clip.
+  Stream<void> completed(String path);
+
+  /// Starts one file; completion may occur before this future settles.
+  Future<void> play(String path);
+
+  /// Stops current playback.
+  Future<void> stop();
+
+  /// Releases resources permanently.
+  Future<void> dispose();
+}
+
+class _AudioPlayback implements SpeechPlayback {
+  _AudioPlayback(this._injected);
+  AudioPlayer? _injected;
+  AudioPlayer? _player;
+  String? _path;
+  @override
+  Stream<void> completed(String path) {
+    // A player identity is never reused for a replacement clip. Native late
+    // events from the old player cannot enter the new clip's stream.
+    _path = path;
+    _player = _injected ?? AudioPlayer();
+    _injected = null;
+    return _player!.onPlayerComplete;
+  }
+
+  @override
+  Future<void> play(String path) {
+    if (path != _path) throw StateError('Unowned speech clip');
+    return _player!.play(DeviceFileSource(path));
+  }
+
+  @override
+  Future<void> stop() async {
+    final player = _player;
+    _player = null;
+    _path = null;
+    if (player == null) return;
+    try {
+      await player.stop();
+    } finally {
+      await player.dispose();
+    }
+  }
+
+  @override
+  Future<void> dispose() async {
+    try {
+      await stop();
+    } finally {
+      await _injected?.dispose();
+      _injected = null;
+    }
+  }
+}
+
+/// Each request resolves a unique owned path before writing.
+abstract interface class SpeechClipStorage {
+  /// Reserves a unique path; no clock-based collision is allowed.
+  Future<String> resolve();
+
+  /// Writes one reserved clip.
+  Future<void> write(String path, List<int> bytes);
+
+  /// Removes a clip, throwing when cleanup fails.
+  Future<void> delete(String path);
+}
+
+/// Production temp-file storage, using unique directories rather than clocks.
+class FileSpeechClipStorage implements SpeechClipStorage {
+  @override
+  Future<String> resolve() async {
+    final dir = await (await getTemporaryDirectory()).createTemp(
+      'bluey_speech_',
+    );
+    return '${dir.path}/clip.mp3';
+  }
+
+  @override
+  Future<void> write(String path, List<int> bytes) async {
+    await File(path).writeAsBytes(bytes, flush: true);
+  }
+
+  @override
+  Future<void> delete(String path) async {
+    final file = File(path);
+    if (await file.exists()) await file.delete();
+    final dir = file.parent;
+    if (await dir.exists()) await dir.delete();
+  }
 }
