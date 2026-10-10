@@ -86,10 +86,24 @@ void main() {
       },
     );
 
+    // Real timers, not microtask yields: starting a capture does real file
+    // I/O (temp dir sweep) that needs wall-clock time on a slow runner.
     Future<void> pump() async {
-      for (var i = 0; i < 20; i++) {
-        await Future<void>.delayed(Duration.zero);
+      for (var i = 0; i < 10; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
       }
+    }
+
+    /// Waits until window [i] has been requested, then returns it.
+    Future<Completer<void>> window(int i) async {
+      final deadline = DateTime.now().add(const Duration(seconds: 10));
+      while (windows.length <= i) {
+        if (DateTime.now().isAfter(deadline)) {
+          throw StateError('window $i was never requested');
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      return windows[i];
     }
 
     int leftover() => tmp
@@ -128,7 +142,7 @@ void main() {
       service.onWake = () => wakes++;
       await service.start();
       await pump();
-      windows.first.complete();
+      (await window(0)).complete();
       await pump();
       expect(wakes, 1);
       expect(leftover(), 1); // only the next window's open recording
@@ -158,7 +172,7 @@ void main() {
       service.onWake = () => wakes++;
       await service.start();
       await pump();
-      windows.first.complete();
+      (await window(0)).complete();
       await pump();
       final stopping = service.stop();
       gate.complete(0.95);
@@ -179,7 +193,7 @@ void main() {
         service.onWake = () => wakes++;
         await service.start();
         await pump();
-        windows.first.complete();
+        (await window(0)).complete();
         await pump();
         final stopping = service.stop();
         final restarting = service.start();
@@ -190,6 +204,7 @@ void main() {
         expect(wakes, 0);
         expect(service.listening.value, isTrue);
         expect(rec.maxOpen, 1);
+        await window(1);
         expect(windows.length, 2);
         await service.stop();
         expect(rec.open, 0);
@@ -202,7 +217,7 @@ void main() {
       final service = make(spotter);
       await service.start();
       await pump();
-      windows.first.complete();
+      (await window(0)).complete();
       await pump();
       expect(service.listening.value, isFalse);
       expect(service.lastError.value, contains('Wake word stopped'));
@@ -313,7 +328,7 @@ void main() {
       service.onWake = () => wakes++;
       await service.start();
       await pump();
-      windows.first.complete();
+      (await window(0)).complete();
       await pump();
       final stopping = service.stop();
       gate.complete('hey bluey');
@@ -338,7 +353,7 @@ void main() {
       service.onWake = () => wakes++;
       await service.start();
       await pump();
-      windows.first.complete();
+      (await window(0)).complete();
       await pump();
       expect(wakes, 0);
       expect(service.listening.value, isFalse);
@@ -351,7 +366,7 @@ void main() {
       final service = make(_FakeSpotter()..deletes = true);
       await service.start();
       await pump();
-      windows.first.complete();
+      (await window(0)).complete();
       await pump();
       expect(service.listening.value, isTrue);
       expect(service.lastError.value, isNull);
