@@ -62,7 +62,8 @@ void main() {
     late File file;
     late RoutineStore s;
     var writes = 0;
-    var failWrite = false;
+    var failStage = false;
+    var failCommit = false;
 
     String pack(List<Map<String, Object?>> items) => jsonEncode(items);
     Map<String, Object?> item(String name, {Object? enabled}) => {
@@ -76,13 +77,22 @@ void main() {
       tmp = Directory.systemTemp.createTempSync('routines_imp');
       file = File('${tmp.path}/routines.json');
       writes = 0;
-      failWrite = false;
+      failStage = false;
+      failCommit = false;
       s = RoutineStore.forTest(
         file: () async => file,
-        writer: (f, contents) async {
+        stage: (f, contents) async {
           writes++;
-          if (failWrite) throw FileSystemException('disk full', f.path);
+          if (failStage) {
+            // Partial bytes hit the staging file, then the write fails.
+            await f.writeAsString(contents.substring(0, 5));
+            throw FileSystemException('disk full', f.path);
+          }
           await f.writeAsString(contents);
+        },
+        commit: (f, path) async {
+          if (failCommit) throw FileSystemException('rename failed', path);
+          await f.rename(path);
         },
       );
     });
@@ -169,18 +179,44 @@ void main() {
       );
     });
 
-    test('persistence failure leaves memory and disk unchanged', () async {
-      await s.importFrom(pack([item('first')]));
-      final before = file.readAsStringSync();
-      failWrite = true;
-      await expectLater(
-        s.importFrom(pack([item('second')])),
-        throwsA(isA<RoutineImportException>()),
+    for (final mode in ['stage', 'commit']) {
+      test(
+        '$mode failure keeps original bytes, memory, no staging; retry works',
+        () async {
+          await s.importFrom(pack([item('first')]));
+          final before = file.readAsStringSync();
+          failStage = mode == 'stage';
+          failCommit = mode == 'commit';
+          await expectLater(
+            s.importFrom(pack([item('second')])),
+            throwsA(isA<RoutineImportException>()),
+          );
+          expect(s.routines.map((r) => r.name), ['first']);
+          expect(file.readAsStringSync(), before);
+          expect(File('${file.path}.tmp').existsSync(), isFalse);
+          failStage = false;
+          failCommit = false;
+          expect(await s.importFrom(pack([item('second')])), 1);
+          expect(s.routines.map((r) => r.name), ['first', 'second']);
+          expect(jsonDecode(file.readAsStringSync()), hasLength(2));
+          expect(File('${file.path}.tmp').existsSync(), isFalse);
+        },
       );
-      expect(s.routines.map((r) => r.name), ['first']);
-      expect(file.readAsStringSync(), before);
-      failWrite = false;
-      expect(await s.importFrom(pack([item('second')])), 1);
+    }
+
+    test('field limits are exact and enabled null means true', () async {
+      Map<String, Object?> lim(int t, int i) => {
+        'name': 'lim',
+        'trigger': 't' * t,
+        'instructions': 'i' * i,
+      };
+      await expectRejected(jsonEncode([lim(121, 5)]));
+      await expectRejected(jsonEncode([lim(5, 4001)]));
+      s.routines.clear();
+      expect(await s.importFrom(jsonEncode([lim(120, 4000)])), 1);
+      final n = {...item('nullable'), 'enabled': null};
+      expect(await s.importFrom(jsonEncode([n])), 1);
+      expect(s.routines.last.enabled, isTrue);
     });
 
     test('add, remove and export keep their behavior', () async {

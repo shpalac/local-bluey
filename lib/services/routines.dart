@@ -47,19 +47,24 @@ class Routine {
 class RoutineStore {
   RoutineStore._({
     Future<File> Function()? file,
-    Future<void> Function(File file, String contents)? writer,
+    Future<void> Function(File staging, String contents)? stage,
+    Future<void> Function(File staging, String path)? commit,
   }) : _fileProvider = file,
-       _writer = writer ?? ((f, contents) => f.writeAsString(contents));
+       _stage =
+           stage ?? ((f, contents) => f.writeAsString(contents, flush: true)),
+       _commit = commit ?? ((f, path) => f.rename(path));
 
   /// A store over injected storage, for tests.
   @visibleForTesting
   RoutineStore.forTest({
     required Future<File> Function() file,
-    Future<void> Function(File file, String contents)? writer,
-  }) : this._(file: file, writer: writer);
+    Future<void> Function(File staging, String contents)? stage,
+    Future<void> Function(File staging, String path)? commit,
+  }) : this._(file: file, stage: stage, commit: commit);
 
   final Future<File> Function()? _fileProvider;
-  final Future<void> Function(File file, String contents) _writer;
+  final Future<void> Function(File staging, String contents) _stage;
+  final Future<void> Function(File staging, String path) _commit;
 
   /// The shared store.
   static final RoutineStore instance = RoutineStore._();
@@ -188,11 +193,21 @@ class RoutineStore {
     return incoming.length;
   }
 
+  /// Writes [list] to a same-directory staging file, then atomically
+  /// replaces routines.json. A failure at either step leaves the original
+  /// file untouched and removes the staging file.
   Future<void> _write(List<Routine> list) async {
-    await _writer(
-      await _file(),
-      jsonEncode(list.map((r) => r.toJson()).toList()),
-    );
+    final target = await _file();
+    final staging = File('${target.path}.tmp');
+    try {
+      await _stage(staging, jsonEncode(list.map((r) => r.toJson()).toList()));
+      await _commit(staging, target.path);
+    } catch (_) {
+      try {
+        if (staging.existsSync()) staging.deleteSync();
+      } catch (_) {}
+      rethrow;
+    }
   }
 
   static List<Routine> _parsePack(String json) {
