@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'audio_capture.dart';
@@ -117,7 +118,29 @@ class PhoneAudioReceiver {
 
   /// Handles one `holdAudio` payload without throwing.
   void handle(String encoded) {
-    unawaited(_handle(encoded));
+    final run = _handle(encoded);
+    late final Future<void> tracked;
+    // One tracked future that never errors: the original failure is reported
+    // once to the zone, exactly as an unawaited call would, and tracking is
+    // removed either way.
+    tracked = run.then<void>(
+      (_) => _inFlight.remove(tracked),
+      onError: (Object e, StackTrace st) {
+        _inFlight.remove(tracked);
+        Zone.current.handleUncaughtError(e, st);
+      },
+    );
+    _inFlight.add(tracked);
+  }
+
+  final _inFlight = <Future<void>>{};
+
+  /// Completes when every handled payload has finished (test seam).
+  @visibleForTesting
+  Future<void> get idle async {
+    while (_inFlight.isNotEmpty) {
+      await Future.wait(_inFlight.toList());
+    }
   }
 
   Future<void> _handle(String encoded) async {

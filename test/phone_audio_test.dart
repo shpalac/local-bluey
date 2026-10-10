@@ -157,12 +157,17 @@ void main() {
       processed = [];
     });
 
-    Future<void> feed(PhoneAudioReceiver r, String payload) async {
+    Future<void> feed(
+      PhoneAudioReceiver r,
+      String payload, {
+      bool settle = true,
+    }) async {
       await runZonedGuarded(() async {
         final stream = StreamController<String>();
         stream.stream.listen(r.handle);
         stream.add(payload);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
+        if (settle) await r.idle;
         await stream.close();
       }, (e, _) => uncaught.add(e));
     }
@@ -225,6 +230,7 @@ void main() {
     test('a receiver disposed during staging neither runs nor leaks', () async {
       var active = true;
       final release = Completer<void>();
+      final entered = Completer<void>();
       final r = receiver(
         isActive: () => active,
         stage: (e) async {
@@ -232,19 +238,39 @@ void main() {
             e,
             tempDir: () async => dir,
           );
+          entered.complete();
           await release.future;
           return file;
         },
       );
-      await feed(r, base64Encode(_m4a(64)));
+      await feed(r, base64Encode(_m4a(64)), settle: false);
+      await entered.future;
       expect(dir.listSync(), hasLength(1), reason: 'staged and held');
       active = false;
       release.complete();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await r.idle;
       expect(processed, isEmpty);
       expect(bubbles, isEmpty);
       expect(dir.listSync(), isEmpty);
     });
+
+    test(
+      'a throwing refusal callback is reported once and tracking settles',
+      () async {
+        final r = PhoneAudioReceiver(
+          process: (f) async {},
+          onRejected: (_) => throw StateError('callback'),
+          stage: (e) => PhoneAudioIntake.stage(e, tempDir: () async => dir),
+        );
+        await feed(r, '%%%');
+        expect(uncaught, hasLength(1), reason: 'one report, not duplicated');
+        await r.idle.timeout(const Duration(seconds: 2));
+        expect(dir.listSync(), isEmpty);
+        // The receiver stays usable afterwards.
+        await feed(r, base64Encode(_m4a(64)));
+        expect(uncaught, hasLength(1));
+      },
+    );
 
     test('a disposed receiver shows no bubble for a refusal', () async {
       await feed(receiver(isActive: () => false), '%%%');
