@@ -23,22 +23,39 @@ class PerfStorageException implements Exception {
 /// (transcription), thinking (brain roundtrip) and acting (tool execution).
 /// Samples persist to perf.jsonl for baseline tracking over time.
 class PerfMonitor {
-  PerfMonitor._({Future<File> Function()? file, DateTime Function()? clock})
-    : _fileProvider = file,
-      _now = clock ?? DateTime.now;
+  PerfMonitor._({
+    Future<File> Function()? file,
+    DateTime Function()? clock,
+    Future<void> Function(File file, String line)? appendLine,
+    Future<void> Function(File file)? deleteFile,
+  }) : _fileProvider = file,
+       _now = clock ?? DateTime.now,
+       _appendLine =
+           appendLine ??
+           ((f, line) => f.writeAsString(line, mode: FileMode.append)),
+       _deleteFile = deleteFile ?? ((f) => f.delete());
 
   /// A monitor with injected storage and clock, for tests.
   @visibleForTesting
   PerfMonitor.forTest({
     required Future<File> Function() file,
     DateTime Function()? clock,
-  }) : this._(file: file, clock: clock);
+    Future<void> Function(File file, String line)? appendLine,
+    Future<void> Function(File file)? deleteFile,
+  }) : this._(
+         file: file,
+         clock: clock,
+         appendLine: appendLine,
+         deleteFile: deleteFile,
+       );
 
   /// The app-wide instance.
   static final PerfMonitor instance = PerfMonitor._();
 
   final Future<File> Function()? _fileProvider;
   final DateTime Function() _now;
+  final Future<void> Function(File file, String line) _appendLine;
+  final Future<void> Function(File file) _deleteFile;
   final Map<String, List<int>> _samplesMs = {};
 
   /// Bumped by every [clear]. A measurement that started in an older
@@ -100,7 +117,7 @@ class PerfMonitor {
     final deletion = _enqueue(() async {
       try {
         final file = await _file();
-        if (await file.exists()) await file.delete();
+        if (await file.exists()) await _deleteFile(file);
         lastStorageError.value = null;
       } catch (e) {
         lastStorageError.value = 'PerfMonitor clear failed: $e';
@@ -149,9 +166,9 @@ class PerfMonitor {
     // this append was queued wins.
     if (generation != _generation) return;
     try {
-      await (await _file()).writeAsString(
+      await _appendLine(
+        await _file(),
         '${jsonEncode({'stage': stage, 'ms': ms, 'at': _now().toIso8601String()})}\n',
-        mode: FileMode.append,
       );
       lastStorageError.value = null;
     } catch (e) {

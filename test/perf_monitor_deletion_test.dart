@@ -11,8 +11,10 @@ void main() {
   late Directory tmp;
   late File store;
   late PerfMonitor monitor;
-  Completer<void>? fileGate;
-  var fileCalls = 0;
+  Completer<void>? writeGate;
+  var writesEntered = 0;
+  var deletesEntered = 0;
+  var lookupFails = false;
   var tick = DateTime(2026, 1, 1);
   var failDelete = false;
 
@@ -20,18 +22,28 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     tmp = Directory.systemTemp.createTempSync('perf_del');
     store = File('${tmp.path}/perf.jsonl');
-    fileGate = null;
-    fileCalls = 0;
+    writeGate = null;
+    writesEntered = 0;
+    deletesEntered = 0;
+    lookupFails = false;
     tick = DateTime(2026, 1, 1);
     failDelete = false;
     monitor = PerfMonitor.forTest(
       clock: () => tick,
       file: () async {
-        fileCalls++;
-        if (failDelete) throw StateError('disk busy');
-        final gate = fileGate;
-        if (gate != null) await gate.future;
+        if (lookupFails) throw StateError('no documents dir');
         return store;
+      },
+      appendLine: (f, line) async {
+        writesEntered++;
+        final gate = writeGate;
+        if (gate != null) await gate.future;
+        await f.writeAsString(line, mode: FileMode.append);
+      },
+      deleteFile: (f) async {
+        deletesEntered++;
+        if (failDelete) throw FileSystemException('disk busy', f.path);
+        await f.delete();
       },
     );
   });
@@ -79,13 +91,16 @@ void main() {
   });
 
   test('clear during a queued append wins', () async {
-    fileGate = Completer<void>();
+    writeGate = Completer<void>();
     await monitor.measure('q', () async {});
-    await until(() => fileCalls == 1); // append entered, blocked on the file
+    await until(() => writesEntered == 1); // writeAsString entered, blocked
     final clearing = monitor.clear();
-    fileGate!.complete();
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(deletesEntered, 0); // deletion waits behind the entered write
+    writeGate!.complete();
     await clearing;
     await monitor.flush();
+    expect(deletesEntered, 1);
     expect(store.existsSync(), isFalse);
     expect(monitor.medians(), isEmpty);
   });
@@ -134,6 +149,7 @@ void main() {
       failDelete = true;
       await expectLater(monitor.clear(), throwsA(isA<PerfStorageException>()));
       expect(store.readAsLinesSync(), hasLength(1)); // bytes retained
+      expect(deletesEntered, 1); // File.delete itself was entered and failed
       expect(monitor.lastStorageError.value, contains('clear failed'));
       expect(monitor.medians(), isEmpty);
       expect(monitor.overlayEnabled.value, isFalse);
@@ -164,6 +180,14 @@ void main() {
     expect(monitor.medians().keys, ['fresh']);
     expect(store.readAsStringSync(), contains('"fresh"'));
     expect(store.readAsStringSync(), isNot(contains('"old"')));
+  });
+
+  test('storage lookup failure on clear is reported too', () async {
+    lookupFails = true;
+    await expectLater(monitor.clear(), throwsA(isA<PerfStorageException>()));
+    expect(deletesEntered, 0);
+    lookupFails = false;
+    await monitor.clear();
   });
 
   test('medians come from the injected clock', () async {
