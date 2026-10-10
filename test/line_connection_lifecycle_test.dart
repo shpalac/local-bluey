@@ -280,7 +280,6 @@ void main() {
         final t = FakeTransport(), release = Completer<void>();
         t.drain = () => release.future;
         final c = LineConnection.withTransport(t);
-        c.start();
         var completed = false;
         unawaited(c.close().then((_) => completed = true));
         clock.flushMicrotasks();
