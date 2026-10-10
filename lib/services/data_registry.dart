@@ -7,6 +7,7 @@ import 'hold_key_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'action_log.dart';
+import 'biometric_lock.dart';
 import 'characters.dart';
 import 'conversation.dart';
 import 'egress_monitor.dart';
@@ -115,8 +116,7 @@ class DataRegistry {
       where: 'SharedPreferences (lock.enabled)',
       retentionEn: 'Kept until you delete it',
       retentionHe: 'נשמר עד שמוחקים',
-      clear: () async =>
-          (await SharedPreferences.getInstance()).remove('lock.enabled'),
+      clear: () => BiometricLock.instance.clearPreference(),
     ),
     DataStoreInfo(
       id: 'notify_prefs',

@@ -18,6 +18,32 @@ class _AppLockTileState extends State<AppLockTile> {
   BiometricLock get _lock => widget.lock ?? BiometricLock.instance;
   bool _saving = false;
   AuthResult? _result;
+  BiometricLock? _listening;
+
+  void _sync() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _listening = _lock..addListener(_sync);
+  }
+
+  @override
+  void didUpdateWidget(AppLockTile old) {
+    super.didUpdateWidget(old);
+    if (_listening != _lock) {
+      _listening?.removeListener(_sync);
+      _listening = _lock..addListener(_sync);
+    }
+  }
+
+  @override
+  void dispose() {
+    _listening?.removeListener(_sync);
+    super.dispose();
+  }
 
   Future<void> _change(bool value) async {
     if (_saving) return;
