@@ -65,12 +65,16 @@ class AudioCapture {
     RecorderDriver? driver,
     Duration? maxDuration,
     Future<Directory> Function()? tempDirProvider,
+    Future<void> Function(File)? deleteFile,
   }) : _driver = driver ?? AudioRecorderDriver(),
        maxDuration = maxDuration ?? const Duration(minutes: 2),
-       _tempDirProvider = tempDirProvider ?? getTemporaryDirectory;
+       _tempDirProvider = tempDirProvider ?? getTemporaryDirectory,
+       _deleteFile = deleteFile ?? _deleteOwnedFile;
 
   final RecorderDriver _driver;
   final Future<Directory> Function() _tempDirProvider;
+  final Future<void> Function(File) _deleteFile;
+  final Set<String> _cleanupFiles = {};
 
   /// Hard cap on one hold-to-talk recording (#117).
   final Duration maxDuration;
@@ -92,7 +96,8 @@ class AudioCapture {
 
   /// Whether an entered capture or failed driver cleanup is still owned.
   /// A successful driver disposal alone does not prove capture stop.
-  bool get cleanupPending => _candidate || _uncertain || _disposeFailed;
+  bool get cleanupPending =>
+      _candidate || _uncertain || _disposeFailed || _cleanupFiles.isNotEmpty;
 
   /// Whether the last driver disposal attempt failed.
   bool get disposeFailed => _disposeFailed;
@@ -107,6 +112,7 @@ class AudioCapture {
   Future<void> start() async {
     if (_disposed) throw StateError('Audio capture is disposed');
     if (_uncertain ||
+        _cleanupFiles.isNotEmpty ||
         _stopOp != null ||
         _pendingFile != null ||
         _stopError != null) {
@@ -145,7 +151,10 @@ class AudioCapture {
   // Both the cap and release share one native stop. Errors are retained for
   // the release caller, never thrown from an unawaited timer future.
   void _beginStop() {
-    if ((!_recording && !_candidate) || _stopOp != null) return;
+    if ((!_recording && !_candidate && _cleanupFiles.isEmpty) ||
+        _stopOp != null) {
+      return;
+    }
     _maxTimer?.cancel();
     _maxTimer = null;
     _recording = false;
@@ -155,22 +164,43 @@ class AudioCapture {
 
   Future<CaptureLifecycleException?> _finishStop(int session) async {
     try {
-      final path = await _driver.stop();
-      if (session == _session) {
-        _candidate = false;
-        _uncertain = false;
-        _stopError = null;
-        if (path != null) _pendingFile = File(path);
+      if (_candidate) {
+        final wasUncertain = _uncertain;
+        final path = await _driver.stop();
+        if (session == _session) {
+          _candidate = false;
+          _uncertain = false;
+          if (path != null) _pendingFile = File(path);
+          // Successful-null cleanup still owns the known entered candidate.
+          // A failed candidate is never silently left for a fresh-start sweep.
+          if (_path != null &&
+              (path == null || (wasUncertain && path != _path))) {
+            _cleanupFiles.add(_path!);
+          }
+        }
       }
+      await _cleanupOwnedFiles();
+      if (session == _session) _stopError = null;
     } catch (_) {
       if (session == _session) {
-        _uncertain = true;
+        if (_candidate) _uncertain = true;
         _stopError = CaptureLifecycleException();
       }
-      // Retain candidate/path ownership. Failed native stop is not erasure.
       return CaptureLifecycleException();
     }
     return null;
+  }
+
+  static Future<void> _deleteOwnedFile(File file) async {
+    if (await file.exists()) await file.delete();
+  }
+
+  Future<void> _cleanupOwnedFiles() async {
+    for (final path in _cleanupFiles.toList()) {
+      await _deleteFile(File(path));
+      // Remove only after successful file operation.
+      _cleanupFiles.remove(path);
+    }
   }
 
   /// Stops and delivers this session's file exactly once, joining an in-flight
@@ -235,7 +265,7 @@ class AudioCapture {
   Future<void> dispose() {
     final pending = _disposeOp;
     if (pending != null) return pending;
-    if (_disposed && !_disposeFailed && !_uncertain) {
+    if (_disposed && !_disposeFailed && !_uncertain && _cleanupFiles.isEmpty) {
       return Future<void>.value();
     }
     _disposed = true;
@@ -258,7 +288,8 @@ class AudioCapture {
     var failed = false;
     try {
       final file = await _stop(closing: true);
-      await deleteQuietly(file);
+      if (file != null) _cleanupFiles.add(file.path);
+      await _cleanupOwnedFiles();
     } catch (_) {
       failed = true;
     }

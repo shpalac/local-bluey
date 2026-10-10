@@ -232,6 +232,74 @@ void main() {
     },
   );
 
+  test('successful-null recovery retains exact candidate on deletion failure until explicit retry', () async {
+    final dir = await Directory.systemTemp.createTemp('capture-delete-');
+    final driver = FakeDriver()
+      ..startFailsAfterOpen = true
+      ..stopGate = Completer<String?>();
+    final deleted = <String>[];
+    var failDelete = true;
+    final capture = AudioCapture(
+      driver: driver,
+      tempDirProvider: () async => dir,
+      deleteFile: (file) async {
+        deleted.add(file.path);
+        if (failDelete) throw FileSystemException('private path');
+        if (await file.exists()) await file.delete();
+      },
+    );
+    await expectLater(
+      capture.start(),
+      throwsA(isA<CaptureLifecycleException>()),
+    );
+    final candidate = await File(capture.debugPath!).writeAsString('synthetic');
+    final recovery = expectLater(
+      capture.stop(),
+      throwsA(isA<CaptureLifecycleException>()),
+    );
+    driver.stopGate!.complete(null);
+    await recovery;
+    expect(capture.cleanupPending, true);
+    expect(await candidate.exists(), true);
+    await expectLater(capture.start(), throwsStateError);
+    expect(deleted, [candidate.path]);
+    failDelete = false;
+    expect(await capture.stop(), null);
+    expect(driver.stopCalls, 1); // File-only retry does not repeat native stop.
+    expect(deleted, [candidate.path, candidate.path]);
+    expect(capture.cleanupPending, false);
+    expect(await candidate.exists(), false);
+    await capture.dispose();
+    await dir.delete();
+  });
+
+  test(
+    'closing delete failure retains file and still attempts driver dispose',
+    () async {
+      final driver = FakeDriver();
+      var failDelete = true;
+      final capture = AudioCapture(
+        driver: driver,
+        tempDirProvider: () async => EmptyTempDirectory(),
+        deleteFile: (_) async {
+          if (failDelete) throw StateError('delete');
+        },
+      );
+      await capture.start();
+      await expectLater(
+        capture.dispose(),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      expect(capture.cleanupPending, true);
+      expect(driver.disposeCalls, 1);
+      failDelete = false;
+      await capture.dispose();
+      expect(capture.cleanupPending, false);
+      expect(driver.disposeCalls, 1);
+      expect(driver.stopCalls, 1);
+    },
+  );
+
   test('temp failure before driver entry is not native uncertainty', () async {
     final driver = FakeDriver();
     var fail = true;
@@ -319,6 +387,7 @@ void main() {
         driver: driver,
         maxDuration: const Duration(seconds: 1),
         tempDirProvider: () async => EmptyTempDirectory(),
+        deleteFile: (_) async {},
       );
       capture.start();
       time.flushMicrotasks();
@@ -369,6 +438,7 @@ void main() {
         driver: driver,
         maxDuration: const Duration(seconds: 1),
         tempDirProvider: () async => EmptyTempDirectory(),
+        deleteFile: (_) async {},
       );
       capture.start();
       time.flushMicrotasks();

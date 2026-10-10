@@ -401,19 +401,61 @@ void main() {
       expect(leftover(), 0);
     });
 
-    test('stop-error returned file is still deleted', () async {
-      rec.failStop = true;
-      final service = make(_FakeSpotter());
-      await service.start();
-      await until(() => rec.open == 1, 'recording open');
-      (await window(0)).complete();
-      await until(
-        () => !service.listening.value && service.lastError.value != null,
-        'stop failure reported',
+    for (final staysOpen in [false, true]) {
+      test(
+        'failed stop ${staysOpen ? 'stays open' : 'closes then throws'} retains exact file until actual cleanup',
+        () async {
+          rec.failStop = true;
+          rec.failStopStaysOpen = staysOpen;
+          final capture = AudioCapture(
+            driver: rec,
+            tempDirProvider: () async => tmp,
+          );
+          final spotter = _FakeSpotter();
+          final transcriber = _FakeTranscriber();
+          final service = WakeWordService(
+            spotter: spotter,
+            transcription: transcriber,
+            capture: capture,
+            windowDelay: (_) {
+              final c = Completer<void>();
+              windows.add(c);
+              return c.future;
+            },
+          );
+          await service.start();
+          await until(() => rec.open == 1, 'recording open');
+          final candidate = File(capture.debugPath!);
+          (await window(0)).complete();
+          await until(
+            () => !service.listening.value && service.lastError.value != null,
+            'stop failure reported',
+          );
+          expect(service.lastError.value, contains('Wake word stopped'));
+          expect(spotter.calls, 0);
+          expect(transcriber.calls, 0);
+          expect(rec.open, staysOpen ? 1 : 0);
+          // The service's actual current driver retry closes the after-close case.
+          expect(capture.cleanupPending, staysOpen);
+          expect(await candidate.exists(), staysOpen);
+          if (staysOpen) {
+            await expectLater(capture.start(), throwsStateError);
+            rec.failStop = false;
+            final recovered = await capture.stop();
+            expect(recovered?.path, candidate.path);
+            await AudioCapture.deleteQuietly(recovered);
+          }
+          expect(capture.cleanupPending, false);
+          expect(rec.open, 0);
+          expect(await candidate.exists(), false);
+          expect(leftover(), 0);
+          rec.failStop = false;
+          await capture.start();
+          await capture.dispose();
+          expect(leftover(), 0);
+        },
       );
-      expect(service.lastError.value, contains('Wake word stopped'));
-      expect(leftover(), 0);
-    });
+    }
 
     test('stop while settings load never reaches the transcriber', () async {
       final entered = Completer<void>();
@@ -459,6 +501,7 @@ class _FakeRecorder implements RecorderDriver {
   int startCalls = 0;
   int permissionCalls = 0;
   bool failStop = false;
+  bool failStopStaysOpen = false;
   int open = 0;
   int maxOpen = 0;
   String? _path;
@@ -488,6 +531,9 @@ class _FakeRecorder implements RecorderDriver {
   @override
   Future<String?> stop() async {
     if (_path == null) return null;
+    if (failStop && failStopStaysOpen) {
+      throw StateError('stop failed while open');
+    }
     open--;
     final path = _path;
     _path = null;
