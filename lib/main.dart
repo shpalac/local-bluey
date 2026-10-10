@@ -11,6 +11,7 @@ import 'link/mac_link.dart' show DiscoveredMac, MacLink;
 import 'link/models.dart';
 import 'link/phone_server.dart';
 import 'services/audio_capture.dart';
+import 'services/key_recording_intent.dart';
 import 'services/brain_host.dart';
 import 'services/host_reload_controller.dart';
 import 'ui/host_reload_notice.dart';
@@ -141,8 +142,14 @@ class _MacHomeState extends State<MacHome>
     settings: HoldKeySettings.instance,
     supported: Platform.isMacOS,
     onStart: _onKeyHoldStart,
-    onSend: _onHoldEnd,
+    onSend: _onKeyHoldSend,
     onCancel: _onKeyHoldCancel,
+  );
+
+  late final KeyRecordingIntent _keyRecording = KeyRecordingIntent(
+    capture: _capture,
+    deliver: _processUtterance,
+    allowed: () => mounted && !_safety.killed,
   );
 
   BlueyStatus _status = BlueyStatus.listening;
@@ -164,6 +171,7 @@ class _MacHomeState extends State<MacHome>
       }
     });
     _checkTrust();
+    _keyRecording.addListener(_onKeyRecordingChanged);
     HoldKeySettings.instance.addListener(_syncHoldKey);
     HoldKeySettings.instance.load().then((_) => _syncHoldKey());
     ScreenWatch.instance.addListener(_syncWatchTray);
@@ -183,6 +191,7 @@ class _MacHomeState extends State<MacHome>
     _safety.frontAppProvider = () => _tools.lastFrontApp;
     _safety.onConfirm = _confirmAction;
     _safety.onKill(() {
+      unawaited(_onKeyHoldCancel());
       setState(() => _bubble = 'Stopped.');
       BrainHost.brain.value?.reset();
     });
@@ -431,28 +440,50 @@ class _MacHomeState extends State<MacHome>
   /// The global hold-to-talk key was held long enough (#228). Same flow as
   /// the face gesture; wakes first when asleep and respects the kill switch.
   Future<void> _onKeyHoldStart() async {
-    if (_safety.killed) return;
+    if (!mounted || _safety.killed) return;
     if (!_awake) _setAwake(true);
-    setState(() {
-      _face.value = FaceState(mood: Mood.listening);
-      _bubble = 'Listening…';
-    });
-    if (await _capture.hasPermission()) {
-      await _capture.start();
-    } else {
-      setState(() => _bubble = 'No microphone permission.');
+    await _runKeyIntent(_keyRecording.start);
+  }
+
+  /// Key release has its own intent; ordinary face release is unchanged.
+  Future<void> _onKeyHoldSend() => _runKeyIntent(_keyRecording.send);
+
+  /// Esc/reset/kill invalidates key permission/start before ordered cleanup.
+  Future<void> _onKeyHoldCancel() => _runKeyIntent(_keyRecording.cancel);
+
+  Future<void> _runKeyIntent(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (_) {
+      // Owner publishes only current safe errors; stale effects stay contained.
     }
   }
 
-  /// Esc, another key, or a reset ended the key hold: drop the audio.
-  Future<void> _onKeyHoldCancel() async {
-    final file = await _capture.stop();
-    if (file != null && await file.exists()) await file.delete();
-    if (!mounted) return;
+  void _onKeyRecordingChanged() {
+    if (!mounted || _safety.killed) return;
     setState(() {
-      _bubble = null;
+      _bubble = switch (_keyRecording.status) {
+        KeyRecordingStatus.pending => 'Waiting for microphone…',
+        KeyRecordingStatus.listening => 'Listening…',
+        KeyRecordingStatus.denied => 'No microphone permission.',
+        KeyRecordingStatus.empty => Strings.t(
+          "I didn't catch that - hold and speak a little longer.",
+          'לא הצלחתי לשמוע - החזיקו ודברו מעט יותר.',
+        ),
+        KeyRecordingStatus.failed =>
+          'Could not finish key recording. Try again.',
+        KeyRecordingStatus.uncertain =>
+          'Key recording cleanup could not be verified.',
+        KeyRecordingStatus.idle => null,
+      };
       _face.value = FaceState(mood: _awake ? Mood.listening : Mood.sleepy);
     });
+  }
+
+  Future<void> _disposeKeyCapture() async {
+    await _keyRecording.closeCapture();
+    // Keep unresolved ownership inspectable; capture disposal is still attempted.
+    if (!_keyRecording.cleanupPending) _keyRecording.dispose();
   }
 
   Future<void> _onHoldEnd() async {
@@ -516,6 +547,7 @@ class _MacHomeState extends State<MacHome>
   @override
   void dispose() {
     _hostReload.dispose();
+    _keyRecording.removeListener(_onKeyRecordingChanged);
     _tutorial.removeListener(_onTutorialChanged);
     WidgetsBinding.instance.removeObserver(this);
     trayManager.removeListener(this);
@@ -526,7 +558,7 @@ class _MacHomeState extends State<MacHome>
     unawaited(_holdKey.dispose());
     _server.stop();
     _receipts.dispose();
-    _capture.dispose();
+    unawaited(_disposeKeyCapture());
     _speech.dispose();
     super.dispose();
   }
