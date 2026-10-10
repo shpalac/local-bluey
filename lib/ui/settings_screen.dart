@@ -872,25 +872,61 @@ class _HapticsTile extends StatefulWidget {
 }
 
 class _HapticsTileState extends State<_HapticsTile> {
-  bool _enabled = RemoteHaptics.instance.enabled;
+  late final RemoteHaptics _haptics;
+  bool _saving = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    RemoteHaptics.instance.load().then((_) {
-      if (mounted) setState(() => _enabled = RemoteHaptics.instance.enabled);
+    _haptics = RemoteHaptics.current;
+    _haptics.addListener(_refresh);
+    _load();
+  }
+
+  void _refresh() {
+    if (mounted) setState(() => _error = null);
+  }
+
+  Future<void> _load() async {
+    try {
+      await _haptics.load();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not load haptics. Please retry.');
+      }
+    }
+  }
+
+  Future<void> _toggle(bool value) async {
+    if (_saving) return;
+    setState(() {
+      _saving = true;
+      _error = null;
     });
+    try {
+      await _haptics.setEnabled(value);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Could not update haptics. Please retry.');
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _haptics.removeListener(_refresh);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => SwitchListTile(
     secondary: const Icon(Icons.vibration),
     title: const Text('Haptics'),
-    subtitle: const Text('Touch feedback on hold, answers, and connect.'),
-    value: _enabled,
-    onChanged: (value) {
-      setState(() => _enabled = value);
-      RemoteHaptics.instance.setEnabled(value);
-    },
+    subtitle: Text(_error ?? 'Touch feedback on hold, answers, and connect.'),
+    value: _haptics.enabled,
+    onChanged: _saving ? null : _toggle,
   );
 }
