@@ -246,12 +246,49 @@ class Diagnostics {
     status: CheckStatus.unknown,
   );
 
-  /// Runs every check; tests inject fakes via [overrides] (#85).
+  static CheckResult _unknownFor(String id) {
+    final (en, he) = switch (id) {
+      'provider' => (
+        'Brain HTTP reachability (not model readiness)',
+        'נגישות HTTP של המוח (לא מוכנות מודל)',
+      ),
+      'pairing' => ('Phone pairing', 'צימוד טלפון'),
+      'linux_display' => (
+        'Desktop portal (screen access)',
+        'פורטל שולחן העבודה (גישה למסך)',
+      ),
+      'linux_keyring' => ('Keyring (secret-tool)', 'צרור מפתחות (secret-tool)'),
+      'linux_discovery' => ('Network discovery (Avahi)', 'גילוי רשת (Avahi)'),
+      'linux_audio' => ('Audio pipeline (GStreamer)', 'צינור שמע (GStreamer)'),
+      _ => ('Additional diagnostic check', 'בדיקת אבחון נוספת'),
+    };
+    return CheckResult(
+      id: id,
+      titleEn: en,
+      titleHe: he,
+      status: CheckStatus.unknown,
+    );
+  }
+
+  /// Runs sequential checks with one result per key, in insertion order (#85).
+  /// Each check has a five-second default deadline (including the provider's
+  /// four-second transport budget). Throws/timeouts/mismatched ids become
+  /// unknown for the actual key with trusted built-in or generic metadata.
+  /// Late success/errors are discarded, not underlying process/network abort.
+  /// Tests inject offline checks via [overrides]. Timeout must be positive.
   static Future<List<CheckResult>> run({
     Map<String, Check>? overrides,
+    Duration checkTimeout = const Duration(seconds: 5),
     bool Function()? isLinux,
     Future<bool> Function(String)? which,
   }) async {
+    if (checkTimeout <= Duration.zero) {
+      throw ArgumentError.value(
+        checkTimeout,
+        'checkTimeout',
+        'Must be positive',
+      );
+    }
     final checks = <String, Check>{
       'provider': providerReachable,
       'pairing': () async => _pairingUnknown,
@@ -262,11 +299,19 @@ class Diagnostics {
     ).forEach((id, check) => checks[id] = check);
     overrides?.forEach((id, check) => checks[id] = check);
     final results = <CheckResult>[];
-    for (final check in checks.values) {
+    for (final entry in checks.entries) {
+      final unknown = _unknownFor(entry.key);
       try {
-        results.add(await check());
+        final result = await entry
+            .value()
+            .then<CheckResult>(
+              (result) => result,
+              onError: (Object _) => unknown,
+            )
+            .timeout(checkTimeout, onTimeout: () => unknown);
+        results.add(result.id == entry.key ? result : unknown);
       } catch (_) {
-        results.add(_pairingUnknown);
+        results.add(unknown);
       }
     }
     return results;
