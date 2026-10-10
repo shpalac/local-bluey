@@ -221,6 +221,46 @@ void main() {
     );
   });
 
+  testWidgets('#363: clear updates the tile and drops a stale enable', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({'lock.enabled': true});
+    final auth = _Auth();
+    final lock = BiometricLock.forTesting(authenticator: auth);
+    await lock.load();
+    await tester.pumpWidget(_app(Scaffold(body: AppLockTile(lock: lock))));
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    await tester.runAsync(lock.clearPreference);
+    await tester.pump();
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    expect(
+      (await SharedPreferences.getInstance()).containsKey('lock.enabled'),
+      isFalse,
+    );
+    // Entered enable, then clear, then old success released.
+    auth.pending = Completer<AuthResult>();
+    await tester.tap(find.byType(Switch));
+    await tester.pump();
+    await tester.runAsync(lock.clearPreference);
+    auth.pending!.complete(AuthResult.success);
+    await tester.pumpAndSettle();
+    expect(lock.enabled, isFalse);
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    expect(
+      (await SharedPreferences.getInstance()).containsKey('lock.enabled'),
+      isFalse,
+    );
+    // Fresh enable needs a new successful authentication.
+    auth.pending = null;
+    auth.result = AuthResult.success;
+    await tester.tap(find.byType(Switch));
+    await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+    await tester.pumpAndSettle();
+    expect(auth.calls, 2);
+    expect(lock.enabled, isTrue);
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+  });
+
   // CI opt-in captures rendered pixels, not DOM/text approximations.
   // Run with --dart-define=LOCK_CAPTURE_DIR=build/lock-captures, upload PNGs,
   // and inspect them before claiming English/Hebrew visual acceptance.

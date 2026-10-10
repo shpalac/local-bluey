@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
@@ -88,6 +90,134 @@ void main() {
       expect(await adapter.authenticate(reason: 'fixture'), AuthResult.error);
     },
   );
+
+  group('#363 explicit preference clear', () {
+    test('clear removes storage and cached state and notifies', () async {
+      SharedPreferences.setMockInitialValues({'lock.enabled': true});
+      final lock = BiometricLock.forTesting(
+        authenticator: _FakeAuth(AuthResult.success),
+      );
+      await lock.load();
+      expect(lock.enabled, isTrue);
+      var notified = 0;
+      lock.addListener(() => notified++);
+      await lock.clearPreference();
+      expect(lock.enabled, isFalse);
+      expect(notified, 1);
+      expect(
+        (await SharedPreferences.getInstance()).containsKey('lock.enabled'),
+        isFalse,
+      );
+    });
+
+    test(
+      'an enable authentication entered before clear is discarded',
+      () async {
+        final auth = _HeldAuth();
+        final lock = BiometricLock.forTesting(authenticator: auth);
+        final pending = lock.setEnabled(true);
+        await Future<void>.delayed(Duration.zero);
+        expect(auth.entered, isTrue);
+        await lock.clearPreference();
+        auth.release.complete(AuthResult.success);
+        expect(await pending, isNot(AuthResult.success));
+        expect(lock.enabled, isFalse);
+        expect(
+          (await SharedPreferences.getInstance()).containsKey('lock.enabled'),
+          isFalse,
+        );
+        // A fresh enable needs fresh authentication and works.
+        final fresh = _HeldAuth();
+        final lock2 = BiometricLock.forTesting(authenticator: fresh);
+        final again = lock2.setEnabled(true);
+        await Future<void>.delayed(Duration.zero);
+        expect(lock2.enabled, isFalse);
+        fresh.release.complete(AuthResult.success);
+        expect(await again, AuthResult.success);
+        expect(lock2.enabled, isTrue);
+      },
+    );
+
+    test('clear is ordered after a write already entered', () async {
+      final write = Completer<bool>();
+      var removed = false;
+      final order = <String>[];
+      final lock = BiometricLock.forTesting(
+        authenticator: _FakeAuth(AuthResult.success),
+        write: (v) {
+          order.add('write');
+          return write.future;
+        },
+        remove: () async {
+          order.add('remove');
+          removed = true;
+          return true;
+        },
+      );
+      final enable = lock.setEnabled(true);
+      await Future<void>.delayed(Duration.zero);
+      final clear = lock.clearPreference();
+      await Future<void>.delayed(Duration.zero);
+      expect(removed, isFalse, reason: 'removal waits for the entered write');
+      write.complete(true);
+      await enable;
+      await clear;
+      expect(order, ['write', 'remove']);
+      expect(lock.enabled, isFalse);
+    });
+
+    test('a write queued after clear is dropped', () async {
+      final write = Completer<bool>();
+      final lock = BiometricLock.forTesting(
+        authenticator: _FakeAuth(AuthResult.success),
+        enabled: true,
+        write: (v) => write.future,
+      );
+      final first = lock.setEnabled(true);
+      await Future<void>.delayed(Duration.zero);
+      final disable = lock.setEnabled(false);
+      await Future<void>.delayed(Duration.zero);
+      final clear = lock.clearPreference();
+      write.complete(true);
+      await first;
+      expect(await disable, AuthResult.success);
+      await clear;
+      expect(lock.enabled, isFalse);
+    });
+
+    test('removal failure reaches the caller and retry works', () async {
+      var fail = true;
+      final lock = BiometricLock.forTesting(
+        authenticator: _FakeAuth(AuthResult.success),
+        enabled: true,
+        remove: () async => !fail,
+      );
+      await expectLater(lock.clearPreference(), throwsStateError);
+      expect(lock.enabled, isTrue, reason: 'cache still matches storage');
+      fail = false;
+      await lock.clearPreference();
+      expect(lock.enabled, isFalse);
+    });
+
+    test('failed authentication does not disable an enabled lock', () async {
+      final lock = BiometricLock.forTesting(
+        authenticator: _FakeAuth(AuthResult.failed),
+        enabled: true,
+      );
+      expect(await lock.requireAuth(reason: 'x'), AuthResult.failed);
+      expect(lock.enabled, isTrue);
+    });
+  });
+}
+
+class _HeldAuth implements Authenticator {
+  final release = Completer<AuthResult>();
+  bool entered = false;
+  @override
+  Future<AuthResult> authenticate({required String reason}) {
+    entered = true;
+    return release.future;
+  }
 }
 
 class _PlatformAuth extends LocalAuthentication {
