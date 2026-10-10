@@ -40,6 +40,11 @@ class SettingsScreen extends StatefulWidget {
   static Future<Object> Function(String field, Future<Object> Function() read)?
   debugReadField;
 
+  /// Holds an entered setter future to verify Save/clear exclusion.
+  @visibleForTesting
+  static Future<void> Function(String field, Future<void> Function() write)?
+  debugWriteField;
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -57,6 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   BrainBackend _backend = BrainSettings.defaults.backend;
   bool _loaded = false;
   bool _deleting = false;
+  bool _saving = false;
   int _loadGeneration = 0;
   bool _localOnly = false;
   UiLanguage _uiLanguage = Strings.uiLanguage;
@@ -229,44 +235,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ttsVoice: _ttsVoice.text.trim().isEmpty ? 'alloy' : _ttsVoice.text.trim(),
   );
 
+  Future<void> _writeField(String name, Future<void> Function() write) =>
+      SettingsScreen.debugWriteField?.call(name, write) ?? write();
+
   Future<void> _save() async {
-    if (_deleting ||
+    if (_saving ||
+        _deleting ||
         !_loaded ||
         _pendingFields.isNotEmpty ||
         _failedFields.isNotEmpty) {
       return;
     }
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _saving = true);
     try {
-      await SettingsStore.save(_current());
-    } catch (e) {
-      // #132: a failed save (e.g. locked keychain) must not pop silently.
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not save settings: $e')));
+      try {
+        await SettingsStore.save(_current());
+      } catch (e) {
+        // #132: a failed save (e.g. locked keychain) must not pop silently.
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not save settings: $e')),
+          );
+        }
+        return;
       }
-      return;
+      if (_deleting ||
+          _pendingFields.isNotEmpty ||
+          _failedFields.isNotEmpty ||
+          !mounted) {
+        return;
+      }
+      await _writeField('gate', () => _gate.setEnabled(_safetyEnabled));
+      if (!_safetyEnabled && _gatePause != null) {
+        await _writeField('pause', () => _gate.pauseFor(_gatePause!));
+      }
+      await _writeField(
+        'allowlist',
+        () => _gate.setAllowlist(
+          _allowlist.text
+              .split(',')
+              .map((e) => e.trim().toLowerCase())
+              .where((e) => e.isNotEmpty)
+              .toSet(),
+        ),
+      );
+      await _writeField(
+        'overlay',
+        () => PerfMonitor.instance.setOverlayEnabled(_perfOverlay),
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save settings. Please retry.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-    if (_deleting ||
-        _pendingFields.isNotEmpty ||
-        _failedFields.isNotEmpty ||
-        !mounted) {
-      return;
-    }
-    await _gate.setEnabled(_safetyEnabled);
-    if (!_safetyEnabled && _gatePause != null) {
-      await _gate.pauseFor(_gatePause!);
-    }
-    await _gate.setAllowlist(
-      _allowlist.text
-          .split(',')
-          .map((e) => e.trim().toLowerCase())
-          .where((e) => e.isNotEmpty)
-          .toSet(),
-    );
-    await PerfMonitor.instance.setOverlayEnabled(_perfOverlay);
-    if (mounted) Navigator.of(context).pop(true);
   }
 
   Future<void> _test() async {
@@ -698,6 +727,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: const InputDecoration(labelText: 'TTS voice'),
             ),
             DataPrivacySection(
+              externalBusy: _saving,
               onCleared: _onDataCleared,
               onBusyChanged: (busy) {
                 if (mounted) setState(() => _deleting = busy);
@@ -708,7 +738,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 FilledButton(
                   onPressed:
-                      _deleting ||
+                      _saving ||
+                          _deleting ||
                           _pendingFields.isNotEmpty ||
                           _failedFields.isNotEmpty
                       ? null

@@ -26,6 +26,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await PerfMonitor.instance.clear();
     SettingsScreen.debugReadField = null;
+    SettingsScreen.debugWriteField = null;
     secrets = {'brain.apiKey': 'old-secret'};
     failDelete = false;
     SharedPreferences.setMockInitialValues({
@@ -53,6 +54,7 @@ void main() {
   });
   tearDown(() async {
     SettingsScreen.debugReadField = null;
+    SettingsScreen.debugWriteField = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -400,4 +402,72 @@ void main() {
       isTrue,
     );
   });
+  for (final field in ['gate', 'pause', 'allowlist', 'overlay']) {
+    testWidgets(
+      'entered $field setter excludes clear and delete-all until save settles',
+      (tester) async {
+        await open(tester);
+        if (field == 'pause') {
+          await tester.tap(switchFor('Safety gate'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Pause 15 min'));
+          await tester.pumpAndSettle();
+        }
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        SettingsScreen.debugWriteField = (name, write) async {
+          if (name == field) {
+            final operation = write();
+            entered.complete();
+            await release.future;
+            await operation;
+            throw StateError('synthetic-write-failure');
+          }
+          return write();
+        };
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Save').hitTestable(),
+        );
+        await tester.pumpAndSettle();
+        expect(entered.isCompleted, isTrue);
+        for (final tile in tester.widgetList<ListTile>(find.byType(ListTile))) {
+          if (tile.trailing is IconButton) {
+            expect((tile.trailing as IconButton).onPressed, isNull);
+          }
+        }
+        expect(
+          tester
+              .widget<OutlinedButton>(
+                find.widgetWithText(OutlinedButton, 'Delete all local data'),
+              )
+              .onPressed,
+          isNull,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'))
+              .onPressed,
+          isNull,
+        );
+        release.complete();
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Could not save settings. Please retry.'),
+          findsOneWidget,
+        );
+        SettingsScreen.debugWriteField = null;
+        await clearStore(
+          tester,
+          field == 'overlay'
+              ? 'Performance samples and overlay preference'
+              : 'Safety gate toggle and app allowlist',
+        );
+        await save(tester);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('safety.enabled'), isTrue);
+        expect(prefs.getString('safety.appAllowlist'), '');
+        expect(prefs.getBool('perf_overlay_enabled'), isFalse);
+      },
+    );
+  }
 }
