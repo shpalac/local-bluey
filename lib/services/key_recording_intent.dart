@@ -47,6 +47,8 @@ class KeyRecordingIntent extends ChangeNotifier {
   final bool Function() _allowed;
   final Future<void> Function(File) _delete;
   Future<void>? _tail;
+  Future<void>? _close;
+  bool _closeFailed = false;
   int _session = 0;
   bool _ended = true, _disposed = false;
   bool _captureOwned = false;
@@ -183,6 +185,26 @@ class KeyRecordingIntent extends ChangeNotifier {
       await _cleanup();
       _publish(session, KeyRecordingStatus.idle);
     });
+  }
+
+  /// Whether close encountered cleanup or capture disposal uncertainty.
+  bool get closeFailed => _closeFailed;
+
+  /// Shared close path: always attempts capture disposal exactly once, even
+  /// when intent cleanup fails. Disposal is not verified stop or file erasure.
+  Future<void> closeCapture() => _close ??= _finishClose();
+
+  Future<void> _finishClose() async {
+    try {
+      await disposeIntent();
+    } catch (_) {
+      _closeFailed = true;
+    }
+    try {
+      await _capture.dispose();
+    } catch (_) {
+      _closeFailed = true;
+    }
   }
 
   /// Stops owned effects before caller disposes the shared capture.

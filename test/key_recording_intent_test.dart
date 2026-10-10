@@ -8,7 +8,7 @@ import 'package:local_bluey/services/key_recording_intent.dart';
 class Driver implements RecorderDriver {
   String? hold, fail, path;
   bool permission = true, on = false, partialStart = false;
-  int starts = 0, stops = 0;
+  int starts = 0, stops = 0, disposals = 0;
   final entered = Completer<void>(), release = Completer<void>();
   Future<void> stage(String name) async {
     if (hold == name) {
@@ -49,6 +49,8 @@ class Driver implements RecorderDriver {
 
   @override
   Future<void> dispose() async {
+    disposals++;
+    if (fail == 'dispose') throw StateError('private dispose');
     on = false;
   }
 }
@@ -266,6 +268,58 @@ void main() {
       },
     );
   }
+  for (final failure in [
+    'partial-start',
+    'stop',
+    'delete',
+    'dispose',
+    'permission',
+    'start',
+  ]) {
+    test(
+      'same main close helper attempts driver disposal once after $failure',
+      () async {
+        final f = Fixture();
+        await f.init();
+        addTearDown(f.finish);
+        Future<void>? started;
+        if (failure == 'partial-start') {
+          f.driver.partialStart = true;
+          await expectLater(
+            f.owner.start(),
+            throwsA(isA<KeyRecordingException>()),
+          );
+        } else if (failure == 'permission' || failure == 'start') {
+          f.driver.hold = failure;
+          started = f.owner.start();
+          await f.driver.entered.future;
+        } else {
+          await f.owner.start();
+          if (failure == 'stop') f.driver.fail = 'stop';
+          if (failure == 'delete') f.deleteFail = true;
+          if (failure == 'dispose') f.driver.fail = 'dispose';
+        }
+        final close = f.owner.closeCapture(), again = f.owner.closeCapture();
+        expect(identical(close, again), true);
+        if (started != null) {
+          f.driver.release.complete();
+          await started;
+        }
+        await Future.wait([close, again]);
+        expect(f.driver.disposals, 1);
+        expect(
+          f.owner.closeFailed,
+          ['partial-start', 'stop', 'delete', 'dispose'].contains(failure),
+        );
+        if (['partial-start', 'stop', 'delete'].contains(failure)) {
+          expect(f.owner.cleanupPending, true);
+        }
+        expect(f.delivered, isEmpty);
+        await f.owner.closeCapture();
+        expect(f.driver.disposals, 1);
+      },
+    );
+  }
   test(
     'failed delete retains exact file until explicit cancel retry',
     () async {
@@ -326,6 +380,7 @@ void main() {
     expect(source, contains('onSend: _onKeyHoldSend'));
     expect(source, contains('Future<void> _onHoldEnd() async'));
     expect(source, contains('unawaited(_disposeKeyCapture())'));
+    expect(source, contains('await _keyRecording.closeCapture();'));
     expect(source, contains('allowed: () => mounted && !_safety.killed'));
   });
 }

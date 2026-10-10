@@ -481,17 +481,9 @@ class _MacHomeState extends State<MacHome>
   }
 
   Future<void> _disposeKeyCapture() async {
-    try {
-      await _keyRecording.disposeIntent();
-    } catch (_) {
-      return;
-    } // Do not claim or discard unresolved cleanup.
-    _keyRecording.dispose();
-    try {
-      await _capture.dispose();
-    } catch (_) {
-      // Native dispose uncertainty is contained, not a successful-stop claim.
-    }
+    await _keyRecording.closeCapture();
+    // Keep unresolved ownership inspectable; capture disposal is still attempted.
+    if (!_keyRecording.cleanupPending) _keyRecording.dispose();
   }
 
   Future<void> _onHoldEnd() async {
