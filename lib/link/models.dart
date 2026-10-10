@@ -21,10 +21,10 @@ class FaceState {
   double talk;
 
   factory FaceState.fromJson(Map<String, dynamic> json) => FaceState(
-    gazeX: (json['gazeX'] as num?)?.toDouble() ?? 0,
-    gazeY: (json['gazeY'] as num?)?.toDouble() ?? 0,
+    gazeX: _wireNumber(json['gazeX'], -1, 1) ?? 0,
+    gazeY: _wireNumber(json['gazeY'], -1, 1) ?? 0,
     mood: Mood.values.asNameMap()[json['mood'] as String?] ?? Mood.listening,
-    talk: (json['talk'] as num?)?.toDouble() ?? 0,
+    talk: _wireNumber(json['talk'], 0, 1) ?? 0,
   );
 
   Map<String, dynamic> toJson() => {
@@ -83,7 +83,7 @@ class Packet {
         ? null
         : FaceState.fromJson(Map<String, dynamic>.from(json['face'] as Map)),
     hello: json['hello'] as String?,
-    volume: (json['volume'] as num?)?.toDouble(),
+    volume: _wireNumber(json['volume'], 0, 1),
     command: json['command'] as String?,
     audio: json['audio'] as String?,
     speech: json['speech'] as int?,
@@ -107,4 +107,15 @@ class Packet {
     if (image != null) map['image'] = image;
     return map;
   }
+}
+
+// Wire-only validation; local mutable constructors and serialization unchanged.
+double? _wireNumber(Object? value, double lower, double upper) {
+  if (value == null) return null;
+  if (value is! num) throw const FormatException('Invalid numeric state.');
+  final number = value.toDouble();
+  if (!number.isFinite || number < lower || number > upper) {
+    throw const FormatException('Invalid numeric state.');
+  }
+  return number;
 }
