@@ -65,9 +65,17 @@ moment Bluey starts doing something you didn't mean.
 
 ## Privacy controls
 
-- **Local-only mode** (Settings): refuses any provider that would send data
-  off this Mac, and redacts sensitive text (passwords, card numbers, tokens)
-  from screenshots before the brain sees them.
+- **Local-only mode** (Settings): refuses any brain, transcription or speech
+  endpoint that is not on this machine (loopback addresses only). The toggle
+  itself does not edit screenshots or text.
+- **Screen-text scrubbing** (separate from the toggle): before screen text
+  reaches the brain, email addresses, 16-digit card-shaped numbers and
+  9-digit numbers are replaced with `[redacted]`. Passwords and tokens are
+  not recognised as such, and images are never edited. If the text matches
+  one of those patterns, the screenshot and any zoom crop of that screen are
+  withheld instead. A zoom crop is also withheld when its text could not be
+  checked. This is pattern matching and can miss secrets; see the README
+  privacy section for the exact limits.
 - **Data-egress report**: every outbound request is counted, per endpoint,
   so you can see exactly what left the machine.
 - **Action log**: a persistent record of what Bluey did.
