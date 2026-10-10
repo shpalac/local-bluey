@@ -13,6 +13,8 @@ void main() {
   late PerfMonitor monitor;
   Completer<void>? fileGate;
   var fileCalls = 0;
+  var tick = DateTime(2026, 1, 1);
+  var failDelete = false;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -20,9 +22,13 @@ void main() {
     store = File('${tmp.path}/perf.jsonl');
     fileGate = null;
     fileCalls = 0;
+    tick = DateTime(2026, 1, 1);
+    failDelete = false;
     monitor = PerfMonitor.forTest(
+      clock: () => tick,
       file: () async {
         fileCalls++;
+        if (failDelete) throw StateError('disk busy');
         final gate = fileGate;
         if (gate != null) await gate.future;
         return store;
@@ -117,5 +123,57 @@ void main() {
     await bad.flush();
     expect(bad.lastStorageError.value, contains('write failed'));
     expect(bad.medians().keys, ['x']);
+  });
+
+  test(
+    'failed delete reaches the caller, keeps bytes, retry succeeds',
+    () async {
+      await monitor.measure('a', () async {});
+      await monitor.flush();
+      expect(lines(), 1);
+      failDelete = true;
+      await expectLater(monitor.clear(), throwsA(isA<PerfStorageException>()));
+      expect(store.readAsLinesSync(), hasLength(1)); // bytes retained
+      expect(monitor.lastStorageError.value, contains('clear failed'));
+      expect(monitor.medians(), isEmpty);
+      expect(monitor.overlayEnabled.value, isFalse);
+      failDelete = false;
+      await monitor.clear(); // queue is still alive; retry works
+      expect(store.existsSync(), isFalse);
+      expect(monitor.lastStorageError.value, isNull);
+      await monitor.measure('b', () async {});
+      await monitor.flush();
+      expect(lines(), 1);
+    },
+  );
+
+  test('a measurement that starts after clear begins is kept', () async {
+    await monitor.measure('old', () async {});
+    final clearing = monitor.clear(); // generation already bumped
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    final fresh = monitor.measure('fresh', () async {
+      entered.complete();
+      await release.future;
+    });
+    await entered.future;
+    release.complete();
+    await fresh;
+    await clearing;
+    await monitor.flush();
+    expect(monitor.medians().keys, ['fresh']);
+    expect(store.readAsStringSync(), contains('"fresh"'));
+    expect(store.readAsStringSync(), isNot(contains('"old"')));
+  });
+
+  test('medians come from the injected clock', () async {
+    for (final ms in [10, 50, 30]) {
+      await monitor.measure('s', () async {
+        tick = tick.add(Duration(milliseconds: ms));
+      });
+    }
+    expect(monitor.medians(), {'s': 30});
+    await monitor.flush();
+    expect(lines(), 3);
   });
 }

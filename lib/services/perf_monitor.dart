@@ -6,6 +6,19 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Thrown by [PerfMonitor.clear] when the stored file could not be removed.
+/// The message is generic; details stay in [PerfMonitor.lastStorageError].
+class PerfStorageException implements Exception {
+  /// Creates the exception with a generic [message].
+  const PerfStorageException(this.message);
+
+  /// Safe, user-presentable description.
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 /// Measures the pipeline's working points (#37): idle, listening
 /// (transcription), thinking (brain roundtrip) and acting (tool execution).
 /// Samples persist to perf.jsonl for baseline tracking over time.
@@ -83,6 +96,7 @@ class PerfMonitor {
     _generation++;
     _samplesMs.clear();
     overlayEnabled.value = false;
+    // The queue itself stays alive on failure; the caller still sees it.
     final deletion = _enqueue(() async {
       try {
         final file = await _file();
@@ -91,6 +105,7 @@ class PerfMonitor {
       } catch (e) {
         lastStorageError.value = 'PerfMonitor clear failed: $e';
         debugPrint('PerfMonitor clear failed: $e');
+        throw const PerfStorageException('Performance data was not deleted');
       }
     });
     await (await SharedPreferences.getInstance()).remove(_kOverlay);
