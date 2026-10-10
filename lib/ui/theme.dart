@@ -87,25 +87,115 @@ class AppTheme {
   );
 }
 
+/// Safe storage failure from an appearance read, write or explicit clear.
+class ThemeStorageException implements Exception {
+  /// No raw storage details are included.
+  const ThemeStorageException();
+
+  @override
+  String toString() => 'Appearance preference could not be updated.';
+}
+
 /// System-following theme with a persisted manual override (#87).
 class ThemeController extends ChangeNotifier {
-  ThemeController._();
+  ThemeController._({
+    Future<String?> Function()? read,
+    Future<bool> Function(String)? write,
+    Future<bool> Function()? remove,
+  }) : _read =
+           read ??
+           (() async =>
+               (await SharedPreferences.getInstance()).getString(_kMode)),
+       _write =
+           write ??
+           ((value) async => (await SharedPreferences.getInstance()).setString(
+             _kMode,
+             value,
+           )),
+       _remove =
+           remove ??
+           (() async => (await SharedPreferences.getInstance()).remove(_kMode));
+
+  /// Isolated actual-storage-entry seams for synthetic tests.
+  @visibleForTesting
+  ThemeController.forTest({
+    required Future<String?> Function() read,
+    required Future<bool> Function(String) write,
+    required Future<bool> Function() remove,
+  }) : this._(read: read, write: write, remove: remove);
+
+  /// App-wide appearance owner.
   static final ThemeController instance = ThemeController._();
-
   static const _kMode = 'theme.mode';
-
+  final Future<String?> Function() _read;
+  final Future<bool> Function(String) _write;
+  final Future<bool> Function() _remove;
+  Future<void> _io = Future<void>.value();
+  int _generation = 0;
+  bool _disposed = false;
   ThemeMode _mode = ThemeMode.system;
+
+  /// Last successfully persisted mode, or successfully loaded preference.
   ThemeMode get mode => _mode;
 
-  Future<void> load() async {
-    final v = (await SharedPreferences.getInstance()).getString(_kMode);
-    _mode = ThemeMode.values.asNameMap()[v] ?? ThemeMode.system;
+  void _publish(ThemeMode mode, int generation) {
+    if (_disposed || generation != _generation) return;
+    _mode = mode;
     notifyListeners();
   }
 
-  Future<void> setMode(ThemeMode mode) async {
-    _mode = mode;
-    await (await SharedPreferences.getInstance()).setString(_kMode, mode.name);
-    notifyListeners();
+  Future<void> _enqueue(Future<void> Function(int generation) action) {
+    final generation = ++_generation;
+    final next = _io.then((_) async {
+      try {
+        await action(generation);
+      } catch (_) {
+        // An older successful write may have reached storage before a newer
+        // failed mutation. Reconcile only the current owner, never publish a
+        // stale operation's proposed value or raw error.
+        if (!_disposed && generation == _generation) {
+          try {
+            final stored = await _read();
+            _publish(
+              ThemeMode.values.asNameMap()[stored] ?? ThemeMode.system,
+              generation,
+            );
+          } catch (_) {}
+        }
+        throw const ThemeStorageException();
+      }
+    });
+    _io = next.catchError((_) {});
+    return next;
+  }
+
+  /// Loads in the same storage order; superseded reads cannot publish.
+  Future<void> load() => _enqueue((generation) async {
+    final stored = await _read();
+    _publish(
+      ThemeMode.values.asNameMap()[stored] ?? ThemeMode.system,
+      generation,
+    );
+  });
+
+  /// Publishes only after storage reports success. Later intents own state.
+  Future<void> setMode(ThemeMode mode) => _enqueue((generation) async {
+    if (generation != _generation) return;
+    if (!await _write(mode.name)) throw const ThemeStorageException();
+    _publish(mode, generation);
+  });
+
+  /// Explicit registry deletion, ordered after entered writes. The active
+  /// override resets to System only when removal succeeds.
+  Future<void> clear() => _enqueue((generation) async {
+    if (!await _remove()) throw const ThemeStorageException();
+    _publish(ThemeMode.system, generation);
+  });
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _generation++;
+    super.dispose();
   }
 }
