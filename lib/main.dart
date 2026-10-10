@@ -48,6 +48,8 @@ import 'ui/onboarding_screen.dart';
 import 'ui/theme.dart';
 import 'services/appearance_startup.dart';
 import 'services/character_startup.dart';
+import 'services/language_startup.dart';
+import 'ui/language_startup_notice.dart';
 import 'ui/character_startup_notice.dart';
 import 'ui/appearance_startup_notice.dart';
 import 'ui/settings_screen.dart';
@@ -64,7 +66,8 @@ import 'services/native_control.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Strings.load();
+  final language = LanguageStartup();
+  await language.reload();
   await EgressMonitor.instance.load();
   await ActionLog.instance.load();
   await RoutineStore.instance.load();
@@ -82,6 +85,7 @@ void main() async {
       home: homeForProfile(profile),
       appearance: appearance,
       character: character,
+      language: language,
     ),
   );
 }
@@ -103,11 +107,13 @@ class LocalBlueyApp extends StatefulWidget {
     required this.home,
     this.appearance,
     this.character,
+    this.language,
   });
 
   final Widget home;
   final AppearanceStartup? appearance;
   final CharacterStartup? character;
+  final LanguageStartup? language;
 
   @override
   State<LocalBlueyApp> createState() => _LocalBlueyAppState();
@@ -117,6 +123,9 @@ class _LocalBlueyAppState extends State<LocalBlueyApp> {
   @override
   void didUpdateWidget(LocalBlueyApp oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.language, widget.language)) {
+      oldWidget.language?.dispose();
+    }
     if (!identical(oldWidget.character, widget.character)) {
       oldWidget.character?.dispose();
     }
@@ -127,6 +136,7 @@ class _LocalBlueyAppState extends State<LocalBlueyApp> {
 
   @override
   void dispose() {
+    widget.language?.dispose();
     widget.character?.dispose();
     widget.appearance?.dispose();
     super.dispose();
@@ -135,7 +145,10 @@ class _LocalBlueyAppState extends State<LocalBlueyApp> {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: ThemeController.instance,
+      listenable: Listenable.merge([
+        ThemeController.instance,
+        Strings.preferences,
+      ]),
       builder: (context, _) => MaterialApp(
         title: 'Local Bluey',
         debugShowCheckedModeBanner: false,
@@ -150,6 +163,13 @@ class _LocalBlueyAppState extends State<LocalBlueyApp> {
           // Always-visible watch indicator on every route (#212).
           child: Column(
             children: [
+              if (widget.language != null)
+                SafeArea(
+                  bottom: false,
+                  child: Material(
+                    child: LanguageStartupNotice(controller: widget.language!),
+                  ),
+                ),
               if (widget.character != null)
                 SafeArea(
                   bottom: false,
