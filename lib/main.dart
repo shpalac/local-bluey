@@ -47,6 +47,8 @@ import 'ui/lock_gate.dart';
 import 'ui/onboarding_screen.dart';
 import 'ui/theme.dart';
 import 'services/appearance_startup.dart';
+import 'services/character_startup.dart';
+import 'ui/character_startup_notice.dart';
 import 'ui/appearance_startup_notice.dart';
 import 'ui/settings_screen.dart';
 import 'ui/unsupported_screen.dart';
@@ -66,7 +68,8 @@ void main() async {
   await EgressMonitor.instance.load();
   await ActionLog.instance.load();
   await RoutineStore.instance.load();
-  await CharacterStore.instance.load();
+  final character = CharacterStartup();
+  await character.reload();
   await BiometricLock.instance.load();
   final appearance = AppearanceStartup();
   await appearance.reload();
@@ -74,7 +77,13 @@ void main() async {
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
   }
-  runApp(LocalBlueyApp(home: homeForProfile(profile), appearance: appearance));
+  runApp(
+    LocalBlueyApp(
+      home: homeForProfile(profile),
+      appearance: appearance,
+      character: character,
+    ),
+  );
 }
 
 /// Picks the home screen from the support matrix (#84): unsupported
@@ -89,10 +98,16 @@ Widget homeForProfile(PlatformProfile profile) => switch (profile.role) {
 };
 
 class LocalBlueyApp extends StatefulWidget {
-  const LocalBlueyApp({super.key, required this.home, this.appearance});
+  const LocalBlueyApp({
+    super.key,
+    required this.home,
+    this.appearance,
+    this.character,
+  });
 
   final Widget home;
   final AppearanceStartup? appearance;
+  final CharacterStartup? character;
 
   @override
   State<LocalBlueyApp> createState() => _LocalBlueyAppState();
@@ -102,6 +117,9 @@ class _LocalBlueyAppState extends State<LocalBlueyApp> {
   @override
   void didUpdateWidget(LocalBlueyApp oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.character, widget.character)) {
+      oldWidget.character?.dispose();
+    }
     if (!identical(oldWidget.appearance, widget.appearance)) {
       oldWidget.appearance?.dispose();
     }
@@ -109,6 +127,7 @@ class _LocalBlueyAppState extends State<LocalBlueyApp> {
 
   @override
   void dispose() {
+    widget.character?.dispose();
     widget.appearance?.dispose();
     super.dispose();
   }
@@ -131,6 +150,15 @@ class _LocalBlueyAppState extends State<LocalBlueyApp> {
           // Always-visible watch indicator on every route (#212).
           child: Column(
             children: [
+              if (widget.character != null)
+                SafeArea(
+                  bottom: false,
+                  child: Material(
+                    child: CharacterStartupNotice(
+                      controller: widget.character!,
+                    ),
+                  ),
+                ),
               if (widget.appearance != null)
                 SafeArea(
                   bottom: false,
