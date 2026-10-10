@@ -38,7 +38,20 @@ void main() {
 
     test('user guide says the toggle does not edit screenshots', () {
       expect(guide, contains('does not edit screenshots'));
-      expect(guide, contains('images are never edited'));
+      expect(guide, contains('never edit pixels'));
+    });
+
+    test('scrubbing claims are scoped and watching gap is stated', () {
+      expect(guide, contains('look-at-screen and zoom tools'));
+      expect(guide, contains('Screen watching is not covered'));
+      expect(guide, contains('issues/351'));
+    });
+
+    test('site page no longer claims screenshots are withheld entirely', () {
+      final site = File('docs/index.html').readAsStringSync();
+      expect(site, isNot(contains('withheld entirely')));
+      expect(site, contains('not a'));
+      expect(site, contains('guarantee'));
     });
 
     test('user guide and README state the pattern limits', () {
