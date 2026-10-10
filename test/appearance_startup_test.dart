@@ -7,6 +7,87 @@ import 'package:local_bluey/ui/theme.dart';
 import 'package:local_bluey/services/appearance_startup.dart';
 
 void main() {
+  test(
+    'immediate scheduled disposal performs no mutation notification or entry',
+    () async {
+      var reads = 0, notices = 0;
+      final c = AppearanceStartup(
+        reload: () async {
+          reads++;
+        },
+      );
+      c.addListener(() => notices++);
+      final work = c.reload();
+      c.dispose();
+      c.dispose();
+      await work;
+      expect(c.loading, false);
+      expect(c.failed, false);
+      expect(notices, 0);
+      expect(reads, 0);
+      await c.retry();
+      await c.reload();
+      expect(reads, 0);
+    },
+  );
+  for (final fail in [false, true]) {
+    for (final disposeEntered in [false, true]) {
+      test(
+        'queued latest actual read fail=$fail disposed=$disposeEntered joins and settles',
+        () async {
+          var reads = 0, notices = 0, held = false;
+          final entered = Completer<void>(), release = Completer<void>();
+          Future<String?> read() async {
+            reads++;
+            if (held) {
+              if (!entered.isCompleted) entered.complete();
+              await release.future;
+              if (fail) throw StateError('private');
+            }
+            return 'dark';
+          }
+
+          final owner = ThemeController.forTest(
+            read: read,
+            write: (_) async => true,
+            remove: () async => true,
+          );
+          await owner.load();
+          final c = AppearanceStartup(reload: owner.load);
+          c.addListener(() => notices++);
+          held = true;
+          final beforeReads = reads;
+          final obsolete = c.reload(), latest = c.reload(), retry = c.retry();
+          expect(retry, same(latest));
+          await entered.future;
+          expect(notices, 1);
+          expect(reads, beforeReads + 1);
+          expect(c.loading, true);
+          var settled = false;
+          retry.then((_) => settled = true);
+          await Future<void>.value();
+          expect(settled, false);
+          if (disposeEntered) c.dispose();
+          final beforeNotices = notices;
+          release.complete();
+          await Future.wait([obsolete, latest, retry]);
+          expect(settled, true);
+          if (disposeEntered) {
+            expect(notices, beforeNotices);
+            expect(c.failed, false);
+          } else {
+            expect(c.loading, false);
+            expect(c.failed, fail);
+            expect(notices, 2);
+          }
+          expect(owner.mode, ThemeMode.dark);
+          c.dispose();
+          owner.dispose();
+        },
+      );
+    }
+  }
+
   for (final mode in ['light', 'dark', null]) {
     test(
       'actual theme failed read preserves $mode mode until fresh explicit retry',
