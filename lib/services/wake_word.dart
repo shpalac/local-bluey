@@ -28,7 +28,9 @@ class WakeWordService {
     AudioCapture? capture,
     TranscriberLike? transcription,
     this.wakePhrase = 'hey bluey',
+    Future<void> Function(Duration)? windowDelay,
   }) : _capture = capture ?? AudioCapture(),
+       _windowDelay = windowDelay ?? Future<void>.delayed,
        // Private field, public named parameter: no initializing formal.
        // ignore: prefer_initializing_formals
        _transcription = transcription;
@@ -42,9 +44,10 @@ class WakeWordService {
   static const scoreThreshold = 0.6;
 
   /// The on-device spotter; null while #79 is unshipped (service stays
-  /// dormant).
+  /// dormant: no recorder is started without an engine).
   final WakeWordSpotter? spotter;
   final AudioCapture _capture;
+  final Future<void> Function(Duration) _windowDelay;
 
   /// Injected transcriber (tests); when null the provider is resolved from
   /// the saved STT settings per window, like the request runner (#196).
@@ -55,7 +58,23 @@ class WakeWordService {
 
   /// Whether the service is currently listening; the UI binds to this.
   final ValueNotifier<bool> listening = ValueNotifier(false);
+
+  /// Last failure (permission, recorder, scoring), or null. Cleared by the
+  /// next [start]; a failure leaves the service stopped and retryable.
+  final ValueNotifier<String?> lastError = ValueNotifier(null);
+
   bool _running = false;
+
+  /// Bumped by every start and stop. Work from an older generation is
+  /// stale: it may clean up its files but never wakes or touches notifiers.
+  int _generation = 0;
+  Future<void>? _loopFuture;
+
+  /// Test seam: runs right after the STT settings load, before the
+  /// generation is re-checked and the transcriber is invoked.
+  @visibleForTesting
+  Future<void> Function()? debugAfterSettingsLoad;
+  Completer<void>? _cancelWindow;
 
   /// Called when the wake phrase is confirmed - main wires this to the same
   /// path as hold-to-talk.
@@ -69,32 +88,100 @@ class WakeWordService {
   static Future<void> setEnabled(bool value) async =>
       (await SharedPreferences.getInstance()).setBool(_kEnabled, value);
 
-  /// Starts listening; a no-op without a spotter (#79) or permission.
+  /// Starts listening. Does nothing without a spotter engine (#79), when
+  /// disabled, or without permission; permission and recorder problems are
+  /// reported through [lastError]. A restart waits for the old loop to end,
+  /// so at most one loop ever owns the recorder.
   Future<void> start() async {
     if (_running) return;
-    if (!await isEnabled()) return;
-    if (!await _capture.hasPermission()) return;
+    final gen = ++_generation;
+    lastError.value = null;
+    if (spotter == null) return;
+    await _loopFuture;
+    if (gen != _generation) return;
+    try {
+      if (!await isEnabled()) return;
+      if (gen != _generation) return;
+      if (!await _capture.hasPermission()) {
+        if (gen == _generation) {
+          lastError.value = 'Microphone permission is off';
+        }
+        return;
+      }
+    } on Object catch (e) {
+      if (gen == _generation) {
+        lastError.value = 'Wake word could not start: $e';
+      }
+      return;
+    }
+    if (gen != _generation) return;
     _running = true;
     listening.value = true;
-    unawaited(_loop());
+    _loopFuture = _loop(gen);
   }
 
-  /// Stops listening and releases the capture.
+  /// Stops listening: closes an open recording, suppresses any score or
+  /// confirmation still in flight, and waits until the loop has ended.
   Future<void> stop() async {
+    _generation++;
     _running = false;
     listening.value = false;
+    final cancel = _cancelWindow;
+    if (cancel != null && !cancel.isCompleted) cancel.complete();
+    await _loopFuture;
   }
 
-  Future<void> _loop() async {
-    while (_running) {
-      await _capture.start();
-      await Future<void>.delayed(windowDuration);
-      final file = await _capture.stop();
-      if (file == null || !_running) continue;
+  Future<void> _loop(int gen) async {
+    bool current() => _running && gen == _generation;
+    try {
+      while (current()) {
+        // Registered before start so a stop during start cancels the window.
+        final cancel = _cancelWindow = Completer<void>();
+        await _capture.start();
+        Object? windowError;
+        StackTrace? windowTrace;
+        if (current()) {
+          try {
+            await Future.any<void>([
+              _windowDelay(windowDuration),
+              cancel.future,
+            ]);
+          } on Object catch (e, st) {
+            windowError = e;
+            windowTrace = st;
+          }
+        }
+        // Whatever happened above, the open recording is closed and its file
+        // is owned (scored or deleted) here, including on error paths.
+        File? file;
+        try {
+          file = await _capture.stop();
+        } on Object catch (e, st) {
+          windowError ??= e;
+          windowTrace ??= st;
+        }
+        try {
+          if (windowError == null && file != null && current()) {
+            await _scoreAndMaybeWake(file, gen: gen);
+          }
+        } finally {
+          await AudioCapture.deleteQuietly(file);
+        }
+        if (windowError != null) {
+          Error.throwWithStackTrace(windowError, windowTrace!);
+        }
+      }
+    } on Object catch (e) {
+      if (gen == _generation) lastError.value = 'Wake word stopped: $e';
+    } finally {
       try {
-        await _scoreAndMaybeWake(file);
-      } finally {
-        if (file.existsSync()) file.deleteSync();
+        await AudioCapture.deleteQuietly(await _capture.stop());
+      } on Object catch (_) {
+        // The recorder is already gone; nothing left to close.
+      }
+      if (gen == _generation) {
+        _running = false;
+        listening.value = false;
       }
     }
   }
@@ -103,15 +190,18 @@ class WakeWordService {
   /// Scores one recorded window; true when it triggered a wake.
   Future<bool> scoreAndMaybeWake(File file) => _scoreAndMaybeWake(file);
 
-  Future<bool> _scoreAndMaybeWake(File file) async {
+  Future<bool> _scoreAndMaybeWake(File file, {int? gen}) async {
     final engine = spotter;
     if (engine == null) return false; // no engine bundled; stay dormant
-    if (await engine.score(file) < scoreThreshold) return false;
+    bool stale() => gen != null && (gen != _generation || !_running);
+    if (await engine.score(file) < scoreThreshold || stale()) return false;
 
     // The spotter already fired on-device. Confirm via transcription only
     // when that stays on this machine (an injected transcriber, or a local
     // endpoint); otherwise trust the spotter and never upload the audio.
     final stt = await SttSettings.load();
+    await debugAfterSettingsLoad?.call();
+    if (stale()) return false;
     final endpoint = stt.baseUrl;
     final canConfirmLocally =
         _transcription != null ||
@@ -119,8 +209,9 @@ class WakeWordService {
     if (canConfirmLocally) {
       final text = await (_transcription ?? SttProviders.create(stt))
           .transcribe(file, stt);
-      if (!text.toLowerCase().contains(wakePhrase)) return false;
+      if (stale() || !text.toLowerCase().contains(wakePhrase)) return false;
     }
+    if (stale()) return false;
     onWake?.call();
     return true;
   }
