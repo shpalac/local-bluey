@@ -34,7 +34,7 @@ void main() {
     licenseNotice: license,
   );
 
-  ModelStore store({
+  ModelStore build({
     Stream<List<int>> Function(ModelAsset, int)? source,
     Map<String, List<int>>? files,
   }) => ModelStore(
@@ -51,6 +51,18 @@ void main() {
         },
   );
 
+  ModelStore? current;
+
+  /// One live store per folder: building a new one retires the previous one,
+  /// like an app restart.
+  ModelStore store({
+    Stream<List<int>> Function(ModelAsset, int)? source,
+    Map<String, List<int>>? files,
+  }) {
+    current?.dispose();
+    return current = build(source: source, files: files);
+  }
+
   setUp(() {
     dir = Directory.systemTemp.createTempSync('model_store_test');
     bytes = List.generate(300, (i) => i % 251);
@@ -58,7 +70,11 @@ void main() {
     free = 1 << 30;
     served = [];
   });
-  tearDown(() => dir.deleteSync(recursive: true));
+  tearDown(() {
+    current?.dispose();
+    current = null;
+    dir.deleteSync(recursive: true);
+  });
 
   group('manifest', () {
     test('parses the supported version', () {
@@ -280,44 +296,137 @@ void main() {
   });
 
   group('concurrency and lease safety', () {
-    test('deleteAll during a gated install is not undone by it', () async {
-      final gate = Completer<void>();
+    List<File> filesUnder(Directory d) => d.existsSync()
+        ? d.listSync(recursive: true).whereType<File>().toList()
+        : <File>[];
+
+    test('deleteAll while install awaits freeSpace leaves no files', () async {
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      final s = ModelStore(
+        root: dir,
+        acceptedFormats: const {'gguf'},
+        acceptedBackends: const {'fake'},
+        freeSpace: () async {
+          entered.complete();
+          await release.future;
+          return free;
+        },
+        downloader: (a, offset) async* {
+          yield bytes.sublist(offset);
+        },
+      );
+      current = s;
+      final install = s.install(asset);
+      await entered.future;
+      await s.deleteAll();
+      release.complete();
+      expect(await install, ModelInstallResult.cancelled);
+      expect(await s.activeAsset(), isNull);
+      expect(filesUnder(dir), isEmpty);
+    });
+
+    test('deleteAll while the transfer is entered removes its part', () async {
+      final entered = Completer<void>();
+      final release = Completer<void>();
       final s = store(
         source: (a, offset) async* {
-          await gate.future;
+          entered.complete();
+          await release.future;
           yield bytes.sublist(offset);
         },
       );
       final install = s.install(asset);
-      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await entered.future;
       await s.deleteAll();
-      gate.complete();
+      release.complete();
       expect(await install, ModelInstallResult.cancelled);
-      expect(await s.activeAsset(), isNull);
-      expect(
-        Directory('${dir.path}/assets').listSync().whereType<File>(),
-        isEmpty,
-      );
-      expect(File('${dir.path}/selection.json').existsSync(), isFalse);
+      expect(filesUnder(dir), isEmpty);
     });
 
-    test('removeActive during a gated install of another asset wins', () async {
+    test('deleteAll while hashing waits for nothing and wins', () async {
       final s = store();
-      expect(await s.install(asset), ModelInstallResult.activated);
-      final other = List<int>.generate(200, (i) => (i * 7) % 251);
-      final gate = Completer<void>();
-      final slow = store(
-        source: (a, offset) async* {
-          await gate.future;
-          yield other.sublist(offset);
-        },
+      final first = s.install(asset);
+      await Future<void>.delayed(Duration.zero);
+      await s.deleteAll();
+      final result = await first;
+      // Either the delete beat the commit (cancelled/interrupted) or the
+      // install had already committed and the delete removed it afterwards.
+      expect(await s.activeAsset(), isNull);
+      expect(filesUnder(dir), isEmpty);
+      expect(result, isNotNull);
+    });
+
+    test(
+      'simultaneous installs of one asset share a single transfer',
+      () async {
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        var transfers = 0;
+        final s = store(
+          source: (a, offset) async* {
+            transfers++;
+            entered.complete();
+            await release.future;
+            yield bytes.sublist(offset);
+          },
+        );
+        final one = s.install(asset);
+        await entered.future;
+        final two = s.install(asset);
+        release.complete();
+        expect(await one, ModelInstallResult.activated);
+        expect(await two, ModelInstallResult.activated);
+        expect(transfers, 1);
+        final lease = (await s.acquire())!;
+        expect(File(lease.path).readAsBytesSync(), bytes);
+        await lease.release();
+      },
+    );
+
+    test(
+      'removeActive during an entered install of another asset wins',
+      () async {
+        final other = List<int>.generate(200, (i) => (i * 7) % 251);
+        final otherAsset = make(other, rev: '2');
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        final s = store(
+          source: (a, offset) async* {
+            if (a.sha256Hex == otherAsset.sha256Hex) {
+              entered.complete();
+              await release.future;
+              yield other.sublist(offset);
+            } else {
+              yield bytes.sublist(offset);
+            }
+          },
+        );
+        expect(await s.install(asset), ModelInstallResult.activated);
+        final install = s.install(otherAsset);
+        await entered.future;
+        await s.removeActive();
+        release.complete();
+        expect(await install, ModelInstallResult.cancelled);
+        expect(await s.activeAsset(), isNull);
+      },
+    );
+
+    test('a second live store on one folder is rejected', () async {
+      final first = store();
+      await first.install(asset);
+      final lease = (await first.acquire())!;
+      expect(
+        () => ModelStore(
+          root: dir,
+          freeSpace: () async => free,
+          downloader: (a, o) => const Stream.empty(),
+        ),
+        throwsStateError,
       );
-      final install = slow.install(make(other, rev: '2'));
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      await slow.removeActive();
-      gate.complete();
-      expect(await install, ModelInstallResult.cancelled);
-      expect(await slow.activeAsset(), isNull);
+      // The first owner and its lease are untouched.
+      expect(File(lease.path).existsSync(), isTrue);
+      await lease.release();
     });
 
     test('acquire is atomic with a concurrent removeActive', () async {

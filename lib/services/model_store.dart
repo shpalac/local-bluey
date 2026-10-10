@@ -215,6 +215,13 @@ class ModelStore {
     this.acceptedFormats = const {},
     this.acceptedBackends = const {},
   }) {
+    final existing = _live[_rootKey];
+    if (existing != null) {
+      throw StateError(
+        'A ModelStore is already live on ${root.path}; dispose it first. '
+        'One owner per folder keeps leases and deletion consistent.',
+      );
+    }
     _live[_rootKey] = this;
   }
 
@@ -240,6 +247,8 @@ class ModelStore {
   final Map<String, int> _leases = {};
   final Set<String> _pendingDelete = {};
   int _generation = 0;
+  int _deleteEpoch = 0;
+  final Map<String, Future<ModelInstallResult>> _inflight = {};
   Future<void> _tail = Future<void>.value();
 
   static final Map<String, ModelStore> _live = {};
@@ -298,26 +307,76 @@ class ModelStore {
         !acceptedBackends.contains(asset.backend)) {
       return ModelInstallResult.incompatible;
     }
+    final name = asset.fileName;
+    // The same file name in the same delete epoch shares one transfer, so two
+    // callers never append to one part file or race a rename.
+    final key = '$name@$_deleteEpoch';
+    final running = _inflight[key];
+    if (running != null) return running;
+    final run = _stage(asset, cancel);
+    _inflight[key] = run;
+    return run.whenComplete(() {
+      if (identical(_inflight[key], run)) _inflight.remove(key);
+    });
+  }
+
+  Future<ModelInstallResult> _stage(
+    ModelAsset asset,
+    ModelCancelToken? cancel,
+  ) async {
     final generation = _generation;
+    final epoch = _deleteEpoch;
+    bool stale() => generation != _generation;
+    // Part files are owned by their delete epoch. A delete bumps the epoch,
+    // so an older install can only touch (and must remove) its own file.
+    final part = File('${_partial.path}/${asset.fileName}.e$epoch.part');
+    try {
+      return await _transfer(asset, cancel, part, stale);
+    } finally {
+      if (epoch != _deleteEpoch) {
+        try {
+          if (part.existsSync()) await part.delete();
+        } on Object {
+          // Best effort; the delete that outran us already removed the folder.
+        }
+      }
+    }
+  }
+
+  Future<ModelInstallResult> _transfer(
+    ModelAsset asset,
+    ModelCancelToken? cancel,
+    File part,
+    bool Function() stale,
+  ) async {
     final current = await activeAsset();
     if (current != null && current.fileName == asset.fileName) {
       return ModelInstallResult.alreadyActive;
     }
-    bool stale() => generation != _generation;
+    if (stale()) return ModelInstallResult.cancelled;
     await _partial.create(recursive: true);
     await _assets.create(recursive: true);
     if (stale()) return ModelInstallResult.cancelled;
-    final part = File('${_partial.path}/${asset.fileName}.part');
     var have = part.existsSync() ? part.lengthSync() : 0;
     if (have > asset.bytes) {
       await part.delete();
       have = 0;
     }
-    if (await freeSpace() < asset.bytes - have) {
+    final room = await freeSpace();
+    // Completed deletion wins over everything staged before it.
+    if (stale()) return ModelInstallResult.cancelled;
+    if (room < asset.bytes - have) {
       return ModelInstallResult.insufficientSpace;
     }
     if (have < asset.bytes) {
-      final sink = part.openWrite(mode: FileMode.append);
+      IOSink sink;
+      try {
+        sink = part.openWrite(mode: FileMode.append);
+      } on Object {
+        return stale()
+            ? ModelInstallResult.cancelled
+            : ModelInstallResult.interrupted;
+      }
       try {
         await for (final chunk in downloader(asset, have)) {
           if ((cancel?.isCancelled ?? false) || stale()) {
@@ -333,7 +392,9 @@ class ModelStore {
         } on Object {
           // Already failed; the partial stays for a later resume.
         }
-        return ModelInstallResult.interrupted;
+        return stale()
+            ? ModelInstallResult.cancelled
+            : ModelInstallResult.interrupted;
       }
       if ((cancel?.isCancelled ?? false) || stale()) {
         return ModelInstallResult.cancelled;
@@ -460,6 +521,7 @@ class ModelStore {
   /// are removed on release. A deleted selection is never resurrected.
   Future<void> deleteAll() {
     _generation++;
+    _deleteEpoch++;
     return _run(() async {
       if (_selection.existsSync()) await _selection.delete();
       final tmp = File('${root.path}/selection.json.tmp');
