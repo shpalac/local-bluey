@@ -7,7 +7,7 @@ import 'package:local_bluey/services/key_recording_intent.dart';
 
 class Driver implements RecorderDriver {
   String? hold, fail, path;
-  bool permission = true, on = false;
+  bool permission = true, on = false, partialStart = false;
   int starts = 0, stops = 0;
   final entered = Completer<void>(), release = Completer<void>();
   Future<void> stage(String name) async {
@@ -29,6 +29,11 @@ class Driver implements RecorderDriver {
   Future<void> start(String p) async {
     starts++;
     path = p;
+    if (partialStart) {
+      on = true;
+      File(p).writeAsStringSync('partial');
+      throw StateError('private partial start');
+    }
     await stage('start');
     File(p).writeAsStringSync('synthetic');
     on = true;
@@ -211,6 +216,56 @@ void main() {
       expect(f.owner.cleanupPending, false);
     },
   );
+  for (final failure in ['partial-start', 'stop']) {
+    test(
+      '$failure uncertainty survives blocked fresh start send cancel dispose with no delivery',
+      () async {
+        final f = Fixture();
+        await f.init();
+        addTearDown(f.finish);
+        if (failure == 'partial-start') {
+          f.driver.partialStart = true;
+          await expectLater(
+            f.owner.start(),
+            throwsA(isA<KeyRecordingException>()),
+          );
+        } else {
+          await f.owner.start();
+          f.driver.fail = 'stop';
+          await expectLater(
+            f.owner.send(),
+            throwsA(isA<KeyRecordingException>()),
+          );
+        }
+        expect(f.driver.on, true);
+        final stops = f.driver.stops;
+        final starts = f.driver.starts;
+        f.driver.fail = null;
+        f.driver.partialStart = false;
+        await expectLater(
+          f.owner.start(),
+          throwsA(isA<KeyRecordingException>()),
+        );
+        await expectLater(
+          f.owner.send(),
+          throwsA(isA<KeyRecordingException>()),
+        );
+        await expectLater(
+          f.owner.cancel(),
+          throwsA(isA<KeyRecordingException>()),
+        );
+        await expectLater(
+          f.owner.disposeIntent(),
+          throwsA(isA<KeyRecordingException>()),
+        );
+        expect(f.owner.cleanupPending, true);
+        expect(f.driver.starts, starts);
+        expect(f.driver.stops, stops);
+        expect(f.delivered, isEmpty);
+        expect(f.driver.on, true);
+      },
+    );
+  }
   test(
     'failed delete retains exact file until explicit cancel retry',
     () async {

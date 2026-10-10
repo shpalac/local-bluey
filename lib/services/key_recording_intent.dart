@@ -58,7 +58,8 @@ class KeyRecordingIntent extends ChangeNotifier {
   KeyRecordingStatus get status => _status;
 
   /// Unresolved entered capture stop or file deletion is retained for retry.
-  bool get cleanupPending => _captureOwned || _pendingFile != null;
+  bool get cleanupPending =>
+      _captureUncertain || _captureOwned || _pendingFile != null;
 
   bool _current(int session) => !_disposed && session == _session && _allowed();
   void _publish(int session, KeyRecordingStatus value) {
@@ -97,6 +98,7 @@ class KeyRecordingIntent extends ChangeNotifier {
   }
 
   Future<File?> _stopOwned() async {
+    if (_captureUncertain) throw const KeyRecordingException();
     if (!_captureOwned) return null;
     File? file;
     try {

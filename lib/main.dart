@@ -463,7 +463,7 @@ class _MacHomeState extends State<MacHome>
     if (!mounted || _safety.killed) return;
     setState(() {
       _bubble = switch (_keyRecording.status) {
-        KeyRecordingStatus.pending ||
+        KeyRecordingStatus.pending => 'Waiting for microphone…',
         KeyRecordingStatus.listening => 'Listening…',
         KeyRecordingStatus.denied => 'No microphone permission.',
         KeyRecordingStatus.empty => Strings.t(

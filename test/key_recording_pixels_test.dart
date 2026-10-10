@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -13,8 +14,13 @@ import 'package:local_bluey/services/key_recording_intent.dart';
 class Driver implements RecorderDriver {
   bool fail = true;
   bool startFail = false;
+  Completer<void>? entered, release;
   @override
   Future<bool> hasPermission() async {
+    if (entered != null) {
+      entered!.complete();
+      await release!.future;
+    }
     if (fail) throw StateError('private permission');
     return true;
   }
@@ -79,7 +85,7 @@ void main() {
                       'Could not finish key recording. Try again.',
                     KeyRecordingStatus.uncertain =>
                       'Key recording cleanup could not be verified.',
-                    KeyRecordingStatus.pending ||
+                    KeyRecordingStatus.pending => 'Waiting for microphone…',
                     KeyRecordingStatus.listening => 'Listening…',
                     _ => null,
                   },
@@ -115,12 +121,18 @@ void main() {
       expect(find.textContaining('private'), findsNothing);
       await shot('failure');
       driver.fail = false;
+      driver.entered = Completer<void>();
+      driver.release = Completer<void>();
       late Future<void> work;
       await t.runAsync(() async {
         work = owner.start();
       });
       await t.pump();
+      expect(driver.entered!.isCompleted, true);
+      expect(find.text('Waiting for microphone…'), findsOneWidget);
       await shot('pending');
+      driver.release!.complete();
+      driver.entered = null;
       await t.runAsync(() async {
         await work;
       });
