@@ -295,15 +295,12 @@ void main() {
       defaults(c);
     },
   );
-  test('main load and controller sync callers stay excluded and unchanged', () {
+  test('main caller containment keeps preference owner separate', () {
     final source = File('lib/main.dart').readAsStringSync();
+    expect(source, contains('unawaited(_holdKeyCaller.loadAndSync());'));
     expect(
       source,
-      contains('HoldKeySettings.instance.load().then((_) => _syncHoldKey());'),
-    );
-    expect(
-      source,
-      contains('void _syncHoldKey() => unawaited(_holdKey.sync());'),
+      contains('void _syncHoldKey() => unawaited(_holdKeyCaller.sync());'),
     );
   });
 }

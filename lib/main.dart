@@ -35,6 +35,8 @@ import 'services/phone_audio.dart';
 import 'services/phone_reply.dart';
 import 'services/request_runner.dart';
 import 'services/hold_key_controller.dart';
+import 'services/hold_key_caller.dart';
+import 'ui/hold_key_caller_notice.dart';
 import 'services/speak_receipts.dart';
 import 'services/speech.dart';
 import 'services/tool_executor.dart';
@@ -146,6 +148,11 @@ class _MacHomeState extends State<MacHome>
     onCancel: _onKeyHoldCancel,
   );
 
+  late final _holdKeyCaller = HoldKeyCaller(
+    settings: HoldKeySettings.instance,
+    controller: _holdKey,
+  );
+
   late final KeyRecordingIntent _keyRecording = KeyRecordingIntent(
     capture: _capture,
     deliver: _processUtterance,
@@ -173,7 +180,7 @@ class _MacHomeState extends State<MacHome>
     _checkTrust();
     _keyRecording.addListener(_onKeyRecordingChanged);
     HoldKeySettings.instance.addListener(_syncHoldKey);
-    HoldKeySettings.instance.load().then((_) => _syncHoldKey());
+    unawaited(_holdKeyCaller.loadAndSync());
     ScreenWatch.instance.addListener(_syncWatchTray);
     ScreenWatch.instance.addListener(_syncWatchDriver);
     unawaited(_hostReload.reload());
@@ -435,7 +442,7 @@ class _MacHomeState extends State<MacHome>
     _server.broadcast(Packet(command: awake ? 'wake' : 'sleep'));
   }
 
-  void _syncHoldKey() => unawaited(_holdKey.sync());
+  void _syncHoldKey() => unawaited(_holdKeyCaller.sync());
 
   /// The global hold-to-talk key was held long enough (#228). Same flow as
   /// the face gesture; wakes first when asleep and respects the kill switch.
@@ -555,7 +562,8 @@ class _MacHomeState extends State<MacHome>
     ScreenWatch.instance.removeListener(_syncWatchDriver);
     _watchDriver?.stop();
     HoldKeySettings.instance.removeListener(_syncHoldKey);
-    unawaited(_holdKey.dispose());
+    unawaited(_holdKeyCaller.close());
+    _holdKeyCaller.dispose();
     _server.stop();
     _receipts.dispose();
     unawaited(_disposeKeyCapture());
@@ -571,6 +579,7 @@ class _MacHomeState extends State<MacHome>
           child: Column(
             children: [
               HostReloadNotice(controller: _hostReload),
+              HoldKeyCallerNotice(caller: _holdKeyCaller),
               Expanded(
                 child: OnboardingScreen(
                   onPlan: (plan) => _tutorial.configure(
@@ -750,6 +759,7 @@ class _MacHomeState extends State<MacHome>
         mainAxisSize: MainAxisSize.min,
         children: [
           HostReloadNotice(controller: _hostReload),
+          HoldKeyCallerNotice(caller: _holdKeyCaller),
           ValueListenableBuilder<String?>(
             valueListenable: BrainHost.refusedReason,
             builder: (context, refused, _) {
