@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/audio_capture.dart';
+import 'package:local_bluey/services/request_interfaces.dart';
+import 'package:local_bluey/services/stt.dart';
 import 'package:local_bluey/services/wake_word.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -224,6 +226,127 @@ void main() {
       expect(rec.open, 0);
     });
 
+    test('stop during capture.start ends without waiting a window', () async {
+      rec.startGate = Completer<void>();
+      final service = make(_FakeSpotter());
+      var wakes = 0;
+      service.onWake = () => wakes++;
+      await service.start();
+      await pump();
+      final stopping = service.stop();
+      rec.startGate!.complete();
+      await stopping.timeout(const Duration(seconds: 2));
+      expect(windows, isEmpty);
+      expect(wakes, 0);
+      expect(rec.open, 0);
+      expect(service.listening.value, isFalse);
+      expect(leftover(), 0);
+    });
+
+    test('a window delay that throws still cleans up the recording', () async {
+      final service = WakeWordService(
+        spotter: _FakeSpotter(),
+        capture: AudioCapture(driver: rec, tempDirProvider: () async => tmp),
+        windowDelay: (_) => Future<void>.error(StateError('timer failed')),
+      );
+      await service.start();
+      await pump();
+      expect(service.listening.value, isFalse);
+      expect(service.lastError.value, contains('Wake word stopped'));
+      expect(rec.open, 0);
+      expect(leftover(), 0);
+    });
+
+    test('permission check finishing after stop writes no error', () async {
+      rec.permissionGate = Completer<bool>();
+      rec.permissionError = StateError('late denial');
+      final service = make(_FakeSpotter());
+      final starting = service.start();
+      await pump();
+      await service.stop();
+      rec.permissionGate!.complete(true);
+      await starting;
+      expect(service.lastError.value, isNull);
+      expect(service.listening.value, isFalse);
+      expect(rec.starts, 0);
+    });
+
+    test(
+      'permission denial from an old start never hits a newer one',
+      () async {
+        rec.permissionGate = Completer<bool>();
+        rec.permission = false;
+        final service = make(_FakeSpotter());
+        final first = service.start();
+        await pump();
+        await service.stop();
+        final second = service.start();
+        rec.permissionGate!.complete(false);
+        await first;
+        await second;
+        // Both calls were denied; only the newest generation may report.
+        expect(service.lastError.value, contains('permission'));
+        final firstOnly = make(_FakeSpotter());
+        rec.permissionGate = Completer<bool>();
+        final a = firstOnly.start();
+        await pump();
+        await firstOnly.stop();
+        rec.permissionGate!.complete(false);
+        await a;
+        expect(firstOnly.lastError.value, isNull);
+      },
+    );
+
+    test('stop during local confirmation suppresses the wake', () async {
+      final gate = Completer<String>();
+      final service = WakeWordService(
+        spotter: _FakeSpotter(),
+        transcription: _FakeTranscriber(gate: gate),
+        capture: AudioCapture(driver: rec, tempDirProvider: () async => tmp),
+        windowDelay: (_) {
+          final c = Completer<void>();
+          windows.add(c);
+          return c.future;
+        },
+      );
+      var wakes = 0;
+      service.onWake = () => wakes++;
+      await service.start();
+      await pump();
+      windows.first.complete();
+      await pump();
+      final stopping = service.stop();
+      gate.complete('hey bluey');
+      await stopping;
+      expect(wakes, 0);
+      expect(rec.open, 0);
+      expect(leftover(), 0);
+    });
+
+    test('transcriber exception stops safely and deletes the file', () async {
+      final service = WakeWordService(
+        spotter: _FakeSpotter(),
+        transcription: _FakeTranscriber(fail: true),
+        capture: AudioCapture(driver: rec, tempDirProvider: () async => tmp),
+        windowDelay: (_) {
+          final c = Completer<void>();
+          windows.add(c);
+          return c.future;
+        },
+      );
+      var wakes = 0;
+      service.onWake = () => wakes++;
+      await service.start();
+      await pump();
+      windows.first.complete();
+      await pump();
+      expect(wakes, 0);
+      expect(service.listening.value, isFalse);
+      expect(service.lastError.value, contains('Wake word stopped'));
+      expect(rec.open, 0);
+      expect(leftover(), 0);
+    });
+
     test('cleanup tolerates a window the spotter already removed', () async {
       final service = make(_FakeSpotter()..deletes = true);
       await service.start();
@@ -241,15 +364,26 @@ void main() {
 class _FakeRecorder implements RecorderDriver {
   bool permission = true;
   bool failStart = false;
+  Completer<void>? startGate;
+  Completer<bool>? permissionGate;
+  Object? permissionError;
   int starts = 0;
   int open = 0;
   int maxOpen = 0;
   String? _path;
 
   @override
-  Future<bool> hasPermission() async => permission;
+  Future<bool> hasPermission() async {
+    final gate = permissionGate;
+    if (gate != null) await gate.future;
+    if (permissionError != null) throw permissionError!;
+    return permission;
+  }
+
   @override
   Future<void> start(String path) async {
+    final gate = startGate;
+    if (gate != null) await gate.future;
     if (failStart) throw StateError('recorder busy');
     starts++;
     open++;
@@ -269,6 +403,17 @@ class _FakeRecorder implements RecorderDriver {
 
   @override
   Future<void> dispose() async {}
+}
+
+class _FakeTranscriber implements TranscriberLike {
+  _FakeTranscriber({this.gate, this.fail = false});
+  final Completer<String>? gate;
+  final bool fail;
+  @override
+  Future<String> transcribe(File audio, SttSettings settings) async {
+    if (fail) throw StateError('transcriber crashed');
+    return gate != null ? gate!.future : 'hey bluey';
+  }
 }
 
 class _GatedSpotter extends WakeWordSpotter {

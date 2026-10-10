@@ -98,11 +98,15 @@ class WakeWordService {
       if (!await isEnabled()) return;
       if (gen != _generation) return;
       if (!await _capture.hasPermission()) {
-        lastError.value = 'Microphone permission is off';
+        if (gen == _generation) {
+          lastError.value = 'Microphone permission is off';
+        }
         return;
       }
     } on Object catch (e) {
-      lastError.value = 'Wake word could not start: $e';
+      if (gen == _generation) {
+        lastError.value = 'Wake word could not start: $e';
+      }
       return;
     }
     if (gen != _generation) return;
@@ -126,22 +130,47 @@ class WakeWordService {
     bool current() => _running && gen == _generation;
     try {
       while (current()) {
-        await _capture.start();
+        // Registered before start so a stop during start cancels the window.
         final cancel = _cancelWindow = Completer<void>();
-        await Future.any<void>([_windowDelay(windowDuration), cancel.future]);
-        final file = await _capture.stop();
+        await _capture.start();
+        Object? windowError;
+        StackTrace? windowTrace;
+        if (current()) {
+          try {
+            await Future.any<void>([
+              _windowDelay(windowDuration),
+              cancel.future,
+            ]);
+          } on Object catch (e, st) {
+            windowError = e;
+            windowTrace = st;
+          }
+        }
+        // Whatever happened above, the open recording is closed and its file
+        // is owned (scored or deleted) here, including on error paths.
+        File? file;
         try {
-          if (file == null || !current()) continue;
-          await _scoreAndMaybeWake(file, gen: gen);
+          file = await _capture.stop();
+        } on Object catch (e, st) {
+          windowError ??= e;
+          windowTrace ??= st;
+        }
+        try {
+          if (windowError == null && file != null && current()) {
+            await _scoreAndMaybeWake(file, gen: gen);
+          }
         } finally {
           await AudioCapture.deleteQuietly(file);
+        }
+        if (windowError != null) {
+          Error.throwWithStackTrace(windowError, windowTrace!);
         }
       }
     } on Object catch (e) {
       if (gen == _generation) lastError.value = 'Wake word stopped: $e';
     } finally {
       try {
-        await _capture.stop();
+        await AudioCapture.deleteQuietly(await _capture.stop());
       } on Object catch (_) {
         // The recorder is already gone; nothing left to close.
       }
