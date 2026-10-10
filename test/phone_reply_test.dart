@@ -555,15 +555,22 @@ void main() {
   });
 
   test(
-    'many stopped and replaced clips release subscriptions and files',
+    'many entered clips: replaced or stopped, every waiter settles',
     () async {
       for (var i = 0; i < 12; i++) {
         receiver.handle(say('s$i', audio: _audio()));
-        if (i.isEven) receiver.handle(Packet(command: 'stopSpeech'));
+        await settle();
+        expect(world.sessions, hasLength(i + 1), reason: 'entered session');
+        expect(receiver.liveWaiters, 1, reason: 'one live waiter at a time');
+        if (i.isOdd) {
+          receiver.handle(Packet(command: 'stopSpeech'));
+          await settle();
+          expect(receiver.liveWaiters, 0);
+        }
       }
-      await settle();
       receiver.handle(Packet(command: 'stopSpeech'));
       await settle();
+      expect(receiver.liveWaiters, 0);
       for (final s in world.sessions) {
         expect(s.controller.hasListener, isFalse);
         expect(s.disposed, isTrue);

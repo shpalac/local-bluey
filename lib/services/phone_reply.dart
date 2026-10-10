@@ -130,6 +130,11 @@ class PhoneReplyReceiver {
   bool _disposed = false;
   bool _notifierClosed = false;
   final _stuck = <_Clip>[];
+  int _waiters = 0;
+
+  /// Completion waiters not yet settled (test seam).
+  @visibleForTesting
+  int get liveWaiters => _waiters;
 
   /// Number of clips with unreleased resources (unconfirmed stop, failed
   /// dispose/cancel or failed delete), retried on the next release. Not an
@@ -272,6 +277,7 @@ class PhoneReplyReceiver {
   /// Natural completion of [clip]: receipt only for the current, started
   /// reply, then evidence-based cleanup whatever the receipt send does.
   Future<void> _awaitCompletion(_Clip clip) async {
+    _waiters++;
     try {
       final natural = await clip.finished.future;
       // Cancelled: the clip was already retired; no receipt, nothing queued.
@@ -287,6 +293,8 @@ class PhoneReplyReceiver {
     } catch (e) {
       debugPrint('PhoneReplyReceiver: $e');
       _enqueue(() => _settle(clip));
+    } finally {
+      _waiters--;
     }
   }
 
