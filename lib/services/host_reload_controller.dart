@@ -12,6 +12,8 @@ class HostReloadController extends ChangeNotifier {
   bool _disposed = false;
   bool _failed = false;
   bool _loading = false;
+  bool _notifying = false, _notifierDisposed = false;
+  Future<void>? _pending;
 
   /// A current caller failed. No raw error or provider readiness claim.
   bool get failed => _failed;
@@ -20,11 +22,34 @@ class HostReloadController extends ChangeNotifier {
   bool get loading => _loading;
 
   /// Every startup/settings/delete-all invocation takes latest ownership.
-  Future<void> reload() async {
-    if (_disposed) return;
+  Future<void> reload() {
+    if (_disposed) return Future<void>.value();
     final generation = ++_generation;
+    final op = Future<void>.microtask(() => _run(generation));
+    _pending = op;
+    op.then((_) {
+      if (identical(_pending, op)) _pending = null;
+    });
+    return op;
+  }
+
+  void _publish() {
+    _notifying = true;
+    try {
+      notifyListeners();
+    } finally {
+      _notifying = false;
+      if (_disposed && !_notifierDisposed) {
+        _notifierDisposed = true;
+        super.dispose();
+      }
+    }
+  }
+
+  Future<void> _run(int generation) async {
+    if (_disposed || generation != _generation) return;
     _loading = true;
-    notifyListeners();
+    _publish();
     if (_disposed || generation != _generation) return;
     var failed = false;
     try {
@@ -35,19 +60,23 @@ class HostReloadController extends ChangeNotifier {
     if (_disposed || generation != _generation) return;
     _failed = failed;
     _loading = false;
-    notifyListeners();
+    _publish();
   }
 
   /// Explicit retries coalesce while the current caller is entered.
-  Future<void> retry() async {
-    if (_disposed || _loading) return;
-    await reload();
+  Future<void> retry() {
+    if (_disposed) return Future<void>.value();
+    return _pending ?? reload();
   }
 
   @override
   void dispose() {
+    if (_disposed) return;
     _disposed = true;
     _generation++;
-    super.dispose();
+    if (!_notifying && !_notifierDisposed) {
+      _notifierDisposed = true;
+      super.dispose();
+    }
   }
 }

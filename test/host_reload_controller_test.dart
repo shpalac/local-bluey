@@ -117,12 +117,20 @@ void main() {
     c.addListener(() => notifications++);
     final work = c.reload();
     await entered.future;
-    await Future.wait([c.retry(), c.retry()]);
+    final retry1 = c.retry(), retry2 = c.retry();
+    expect(retry1, same(work));
+    expect(retry2, same(work));
+    var settled = 0;
+    retry1.then((_) => settled++);
+    retry2.then((_) => settled++);
+    await Future<void>.value();
+    expect(settled, 0);
     expect(calls, 1);
     c.dispose();
     final before = notifications;
     release.complete();
-    await work;
+    await Future.wait([work, retry1, retry2]);
+    expect(settled, 2);
     expect(notifications, before);
     await c.retry();
     expect(calls, 1);
@@ -149,6 +157,124 @@ void main() {
       c.dispose();
     },
   );
+  test(
+    'dispose before scheduled entry prevents all notification and reload',
+    () async {
+      var calls = 0, notifications = 0;
+      final c = HostReloadController(
+        reload: () async {
+          calls++;
+        },
+      );
+      c.addListener(() => notifications++);
+      final work = c.reload();
+      c.dispose();
+      await work;
+      expect(calls, 0);
+      expect(notifications, 0);
+    },
+  );
+  for (final stage in ['load', 'refusal']) {
+    for (final fail in [false, true]) {
+      test('actual host $stage retry joins until release fail=$fail', () async {
+        final entered = Completer<void>(), release = Completer<void>();
+        var calls = 0;
+        final host = BrainHostState(
+          load: () async {
+            if (stage == 'load') {
+              calls++;
+              entered.complete();
+              await release.future;
+              if (fail) throw StateError('private');
+            }
+            return const BrainSettings(
+              backend: BrainBackend.ollama,
+              baseUrl: 'http://localhost:11434',
+              model: 'synthetic',
+            );
+          },
+          refusal: (_) async {
+            if (stage == 'refusal') {
+              calls++;
+              entered.complete();
+              await release.future;
+              if (fail) throw StateError('private');
+            }
+            return null;
+          },
+          build: (_) => Brain(provider: FakeProvider()),
+        );
+        final c = HostReloadController(reload: host.reload);
+        Future<void>? reentrant;
+        c.addListener(() {
+          if (c.loading) reentrant = c.retry();
+        });
+        final work = c.reload();
+        await entered.future;
+        final a = c.retry(), b = c.retry();
+        expect(a, same(work));
+        expect(b, same(work));
+        expect(reentrant, same(work));
+        var settled = 0;
+        a.then((_) => settled++);
+        b.then((_) => settled++);
+        await Future<void>.value();
+        expect(settled, 0);
+        expect(calls, 1);
+        release.complete();
+        await Future.wait([work, a, b]);
+        expect(settled, 2);
+        expect(c.loading, false);
+        expect(c.failed, fail);
+        c.dispose();
+        host.brain.dispose();
+        host.refusedReason.dispose();
+        host.remoteActive.dispose();
+      });
+    }
+  }
+  for (final phase in ['loading', 'success', 'failure']) {
+    test(
+      'reentrant disposal during $phase is safe and blocks later entry',
+      () async {
+        var calls = 0, notifications = 0;
+        final c = HostReloadController(
+          reload: () async {
+            calls++;
+            if (phase == 'failure') throw StateError('private');
+          },
+        );
+        c.addListener(() {
+          notifications++;
+          if (phase == 'loading' || !c.loading) {
+            c.dispose();
+            c.dispose();
+          }
+        });
+        await c.reload();
+        final before = notifications;
+        await c.retry();
+        await c.reload();
+        c.dispose();
+        expect(notifications, before);
+        expect(calls, phase == 'loading' ? 0 : 1);
+      },
+    );
+  }
+  for (final sync in [false, true]) {
+    test('sync=$sync failure retry observes settled status', () async {
+      final c = HostReloadController(
+        reload: () {
+          if (sync) throw StateError('private');
+          return Future.error(StateError('private'));
+        },
+      );
+      await c.retry();
+      expect(c.failed, true);
+      expect(c.loading, false);
+      c.dispose();
+    });
+  }
   test(
     'actual Mac source wiring routes five callers and both rendered routes',
     () {
