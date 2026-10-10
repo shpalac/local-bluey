@@ -25,20 +25,23 @@ class _FakeSpotter extends WakeWordSpotter {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  late Directory scoreTmp;
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    scoreTmp = Directory.systemTemp.createTempSync('ww_score');
+  });
+  tearDown(() => scoreTmp.deleteSync(recursive: true));
 
   test('dormant without a spotter engine', () async {
     final service = WakeWordService(spotter: null);
-    final file = await File('${Directory.systemTemp.path}/ww_test.m4a')
-        .create();
+    final file = await File('${scoreTmp.path}/ww_test.m4a').create();
     expect(await service.scoreAndMaybeWake(file), isFalse);
   });
 
   test('below threshold never confirms', () async {
     final spotter = _FakeSpotter()..value = 0.2;
     final service = WakeWordService(spotter: spotter);
-    final file = await File('${Directory.systemTemp.path}/ww_test2.m4a')
-        .create();
+    final file = await File('${scoreTmp.path}/ww_test2.m4a').create();
     expect(await service.scoreAndMaybeWake(file), isFalse);
     expect(spotter.calls, 1);
   });
@@ -51,8 +54,7 @@ void main() {
     final service = WakeWordService(spotter: spotter);
     var woke = false;
     service.onWake = () => woke = true;
-    final file = await File('${Directory.systemTemp.path}/ww_test3.m4a')
-        .create();
+    final file = await File('${scoreTmp.path}/ww_test3.m4a').create();
     expect(await service.scoreAndMaybeWake(file), isTrue);
     expect(woke, isTrue);
   });
@@ -67,23 +69,63 @@ void main() {
     late Directory tmp;
     late _FakeRecorder rec;
     late List<Completer<void>> windows;
+    late List<WakeWordService> services;
+    late List<AudioCapture> captures;
+    late List<void Function()> releases;
 
     setUp(() {
       tmp = Directory.systemTemp.createTempSync('ww_life');
       rec = _FakeRecorder();
       windows = [];
+      services = [];
+      captures = [];
+      releases = [];
       SharedPreferences.setMockInitialValues({'wake_word.enabled': true});
     });
-    tearDown(() => tmp.deleteSync(recursive: true));
+    tearDown(() async {
+      // Release injected stages even if an assertion fails, then join every
+      // actual lifecycle before removing its isolated files.
+      rec.startGate?.completeIfPending();
+      rec.stopGate?.completeIfPending();
+      rec.permissionGate?.completeIfPending(true);
+      rec.failStop = false;
+      for (final release in releases) {
+        release();
+      }
+      for (final service in services) {
+        await service.stop();
+      }
+      for (final capture in captures) {
+        await capture.dispose();
+      }
+      tmp.deleteSync(recursive: true);
+    });
 
-    WakeWordService make(WakeWordSpotter? spotter) => WakeWordService(
-      spotter: spotter,
-      capture: AudioCapture(driver: rec, tempDirProvider: () async => tmp),
-      windowDelay: (_) {
-        final c = Completer<void>();
-        windows.add(c);
-        return c.future;
-      },
+    AudioCapture capture() {
+      final value = AudioCapture(driver: rec, tempDirProvider: () async => tmp);
+      captures.add(value);
+      return value;
+    }
+
+    WakeWordService track(WakeWordService service) {
+      services.add(service);
+      return service;
+    }
+
+    WakeWordService make(
+      WakeWordSpotter? spotter, {
+      TranscriberLike? transcription,
+    }) => track(
+      WakeWordService(
+        spotter: spotter,
+        transcription: transcription,
+        capture: capture(),
+        windowDelay: (_) {
+          final c = Completer<void>();
+          windows.add(c);
+          return c.future;
+        },
+      ),
     );
 
     /// Polls an observable state (entered stage) instead of pumping time.
@@ -176,6 +218,7 @@ void main() {
 
     test('stop during scoring suppresses the late wake', () async {
       final gate = Completer<double>();
+      releases.add(() => gate.completeIfPending(0));
       final spotter = _GatedSpotter(gate);
       final service = make(spotter);
       var wakes = 0;
@@ -197,6 +240,7 @@ void main() {
       'stop then immediate restart runs one loop, old work is stale',
       () async {
         final gate = Completer<double>();
+        releases.add(() => gate.completeIfPending(0));
         final spotter = _GatedSpotter(gate);
         final service = make(spotter);
         var wakes = 0;
@@ -232,6 +276,7 @@ void main() {
         () => !service.listening.value && service.lastError.value != null,
         'score failure',
       );
+      await service.stop();
       expect(service.listening.value, isFalse);
       expect(service.lastError.value, contains('Wake word stopped'));
       expect(rec.open, 0);
@@ -244,18 +289,61 @@ void main() {
       await service.stop();
     });
 
-    test('recorder start failure is reported, not thrown', () async {
-      rec.failStart = true;
-      final service = make(_FakeSpotter());
-      await service.start();
-      await until(
-        () => service.lastError.value != null,
-        'start failure reported',
+    for (final partialOpen in [false, true]) {
+      test(
+        'start failure ${partialOpen ? 'after open' : 'before open'} reports before cleanup, then settles',
+        () async {
+          rec.failStart = true;
+          rec.failStartAfterOpen = partialOpen;
+          rec.stopEntered = Completer<void>();
+          rec.stopGate = Completer<void>();
+          final spotter = _FakeSpotter();
+          final transcriber = _FakeTranscriber();
+          final service = make(spotter, transcription: transcriber);
+          var wakes = 0;
+          service.onWake = () => wakes++;
+          await service.start();
+          await rec.stopEntered!.future;
+          expect(service.lastError.value, contains('Wake word stopped'));
+          expect(service.listening.value, isTrue);
+          expect(rec.open, partialOpen ? 1 : 0);
+          expect(leftover(), partialOpen ? 1 : 0);
+          final candidate = captures.single.debugPath!;
+          expect(File(candidate).existsSync(), partialOpen);
+          expect(spotter.calls, 0);
+          expect(transcriber.calls, 0);
+          final stopping = service.stop();
+          var stopped = false;
+          stopping.then((_) => stopped = true);
+          await Future<void>.value();
+          expect(stopped, isFalse);
+          expect(rec.startCalls, 1);
+          rec.failStart = false;
+          rec.stopGate!.complete();
+          await stopping;
+          expect(stopped, isTrue);
+          expect(File(candidate).existsSync(), isFalse);
+          expect(captures.single.cleanupPending, isFalse);
+          expect(service.listening.value, isFalse);
+          expect(rec.open, 0);
+          expect(leftover(), 0);
+          await service.start();
+          await window(0);
+          expect(rec.open, 1);
+          expect(rec.maxOpen, 1);
+          expect(leftover(), 1);
+          expect(service.lastError.value, isNull);
+          expect(service.listening.value, isTrue);
+          expect(wakes, 0);
+          expect(spotter.calls, 0);
+          expect(transcriber.calls, 0);
+          await service.stop();
+          expect(service.listening.value, isFalse);
+          expect(rec.open, 0);
+          expect(leftover(), 0);
+        },
       );
-      expect(service.listening.value, isFalse);
-      expect(service.lastError.value, isNotNull);
-      expect(rec.open, 0);
-    });
+    }
 
     test('stop during capture.start ends without waiting a window', () async {
       rec.startGate = Completer<void>();
@@ -274,22 +362,43 @@ void main() {
       expect(leftover(), 0);
     });
 
-    test('a window delay that throws still cleans up the recording', () async {
-      final service = WakeWordService(
-        spotter: _FakeSpotter(),
-        capture: AudioCapture(driver: rec, tempDirProvider: () async => tmp),
-        windowDelay: (_) => Future<void>.error(StateError('timer failed')),
-      );
-      await service.start();
-      await until(
-        () => service.lastError.value != null,
-        'window error reported',
-      );
-      expect(service.listening.value, isFalse);
-      expect(service.lastError.value, contains('Wake word stopped'));
-      expect(rec.open, 0);
-      expect(leftover(), 0);
-    });
+    test(
+      'window error awaits entered cleanup and settles before assertions',
+      () async {
+        rec.stopEntered = Completer<void>();
+        rec.stopGate = Completer<void>();
+        final spotter = _FakeSpotter();
+        final transcriber = _FakeTranscriber();
+        final service = track(
+          WakeWordService(
+            spotter: spotter,
+            transcription: transcriber,
+            capture: capture(),
+            windowDelay: (_) => Future<void>.error(StateError('timer failed')),
+          ),
+        );
+        await service.start();
+        await rec.stopEntered!.future;
+        expect(service.listening.value, isTrue);
+        expect(service.lastError.value, isNull);
+        expect(rec.open, 1);
+        expect(leftover(), 1);
+        expect(spotter.calls, 0);
+        expect(transcriber.calls, 0);
+        rec.stopGate!.complete();
+        await until(
+          () => service.lastError.value != null,
+          'window error reported',
+        );
+        await service.stop();
+        expect(service.listening.value, isFalse);
+        expect(service.lastError.value, contains('Wake word stopped'));
+        expect(rec.open, 0);
+        expect(leftover(), 0);
+        expect(spotter.calls, 0);
+        expect(transcriber.calls, 0);
+      },
+    );
 
     test('permission check finishing after stop writes no error', () async {
       rec.permissionGate = Completer<bool>();
@@ -333,16 +442,19 @@ void main() {
 
     test('stop during local confirmation suppresses the wake', () async {
       final gate = Completer<String>();
+      releases.add(() => gate.completeIfPending(''));
       final transcriber = _FakeTranscriber(gate: gate);
-      final service = WakeWordService(
-        spotter: _FakeSpotter(),
-        transcription: transcriber,
-        capture: AudioCapture(driver: rec, tempDirProvider: () async => tmp),
-        windowDelay: (_) {
-          final c = Completer<void>();
-          windows.add(c);
-          return c.future;
-        },
+      final service = track(
+        WakeWordService(
+          spotter: _FakeSpotter(),
+          transcription: transcriber,
+          capture: capture(),
+          windowDelay: (_) {
+            final c = Completer<void>();
+            windows.add(c);
+            return c.future;
+          },
+        ),
       );
       var wakes = 0;
       service.onWake = () => wakes++;
@@ -359,15 +471,17 @@ void main() {
     });
 
     test('transcriber exception stops safely and deletes the file', () async {
-      final service = WakeWordService(
-        spotter: _FakeSpotter(),
-        transcription: _FakeTranscriber(fail: true),
-        capture: AudioCapture(driver: rec, tempDirProvider: () async => tmp),
-        windowDelay: (_) {
-          final c = Completer<void>();
-          windows.add(c);
-          return c.future;
-        },
+      final service = track(
+        WakeWordService(
+          spotter: _FakeSpotter(),
+          transcription: _FakeTranscriber(fail: true),
+          capture: capture(),
+          windowDelay: (_) {
+            final c = Completer<void>();
+            windows.add(c);
+            return c.future;
+          },
+        ),
       );
       var wakes = 0;
       service.onWake = () => wakes++;
@@ -379,6 +493,7 @@ void main() {
         'transcriber failure',
       );
       expect(wakes, 0);
+      await service.stop();
       expect(service.listening.value, isFalse);
       expect(service.lastError.value, contains('Wake word stopped'));
       expect(rec.open, 0);
@@ -411,17 +526,20 @@ void main() {
             driver: rec,
             tempDirProvider: () async => tmp,
           );
+          captures.add(capture);
           final spotter = _FakeSpotter();
           final transcriber = _FakeTranscriber();
-          final service = WakeWordService(
-            spotter: spotter,
-            transcription: transcriber,
-            capture: capture,
-            windowDelay: (_) {
-              final c = Completer<void>();
-              windows.add(c);
-              return c.future;
-            },
+          final service = track(
+            WakeWordService(
+              spotter: spotter,
+              transcription: transcriber,
+              capture: capture,
+              windowDelay: (_) {
+                final c = Completer<void>();
+                windows.add(c);
+                return c.future;
+              },
+            ),
           );
           await service.start();
           await until(() => rec.open == 1, 'recording open');
@@ -431,6 +549,7 @@ void main() {
             () => !service.listening.value && service.lastError.value != null,
             'stop failure reported',
           );
+          await service.stop();
           expect(service.lastError.value, contains('Wake word stopped'));
           expect(spotter.calls, 0);
           expect(transcriber.calls, 0);
@@ -460,16 +579,19 @@ void main() {
     test('stop while settings load never reaches the transcriber', () async {
       final entered = Completer<void>();
       final release = Completer<void>();
+      releases.add(release.completeIfPending);
       final transcriber = _FakeTranscriber();
-      final service = WakeWordService(
-        spotter: _FakeSpotter(),
-        transcription: transcriber,
-        capture: AudioCapture(driver: rec, tempDirProvider: () async => tmp),
-        windowDelay: (_) {
-          final c = Completer<void>();
-          windows.add(c);
-          return c.future;
-        },
+      final service = track(
+        WakeWordService(
+          spotter: _FakeSpotter(),
+          transcription: transcriber,
+          capture: capture(),
+          windowDelay: (_) {
+            final c = Completer<void>();
+            windows.add(c);
+            return c.future;
+          },
+        ),
       );
       service.debugAfterSettingsLoad = () async {
         entered.complete();
@@ -494,6 +616,9 @@ void main() {
 class _FakeRecorder implements RecorderDriver {
   bool permission = true;
   bool failStart = false;
+  bool failStartAfterOpen = false;
+  Completer<void>? stopEntered;
+  Completer<void>? stopGate;
   Completer<void>? startGate;
   Completer<bool>? permissionGate;
   Object? permissionError;
@@ -520,16 +645,19 @@ class _FakeRecorder implements RecorderDriver {
     startCalls++;
     final gate = startGate;
     if (gate != null) await gate.future;
-    if (failStart) throw StateError('recorder busy');
+    if (failStart && !failStartAfterOpen) throw StateError('recorder busy');
     starts++;
     open++;
     if (open > maxOpen) maxOpen = open;
     _path = path;
     File(path).writeAsBytesSync([1, 2, 3]);
+    if (failStart) throw StateError('recorder busy after open');
   }
 
   @override
   Future<String?> stop() async {
+    stopEntered?.completeIfPending();
+    await stopGate?.future;
     if (_path == null) return null;
     if (failStop && failStopStaysOpen) {
       throw StateError('stop failed while open');
@@ -566,5 +694,11 @@ class _GatedSpotter extends WakeWordSpotter {
   Future<double> score(File audioWindow) {
     calls++;
     return gate.future;
+  }
+}
+
+extension<T> on Completer<T> {
+  void completeIfPending([FutureOr<T>? value]) {
+    if (!isCompleted) complete(value);
   }
 }
