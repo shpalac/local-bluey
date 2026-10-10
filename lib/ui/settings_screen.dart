@@ -35,6 +35,10 @@ class SettingsScreen extends StatefulWidget {
   @visibleForTesting
   static Future<String> Function(BrainSettings settings)? debugTestChat;
 
+  /// Counts or holds actual test-connection egress entry in widget fixtures.
+  @visibleForTesting
+  static Future<void> Function(String url)? debugRecordTestEgress;
+
   /// Holds actual safety/perf/privacy read results for deterministic widget tests.
   @visibleForTesting
   static Future<Object> Function(String field, Future<Object> Function() read)?
@@ -75,6 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _languageFormRevision = 0;
   bool _testing = false;
   String? _testResult;
+  bool _testPrivacyFailed = false;
   ConnectionFailure? _testFailure;
   bool _detecting = false;
   String? _detectResult;
@@ -393,22 +398,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _test() async {
     final settings = _current();
     final url = settings.baseUrl;
-    // #132: a connection test is egress too - honor Local-only and log it.
-    if (_localOnly && !PrivacyGuard.isLocalUrl(url)) {
-      setState(
-        () => _testResult = 'Blocked by Local-only mode: $url is not local.',
-      );
-      return;
-    }
-    try {
-      await EgressMonitor.instance.record(url, 'settings-test', 0);
-    } catch (_) {}
     setState(() {
       _testing = true;
+      _testPrivacyFailed = false;
       _testResult = null;
       _testFailure = null;
     });
     try {
+      // Verify source preference before egress recording or provider effects.
+      final localOnly = await PrivacyGuard.isLocalOnly();
+      if (!mounted) return;
+      if (localOnly && !PrivacyGuard.isLocalUrl(url)) {
+        setState(
+          () => _testResult = 'Blocked by Local-only mode: $url is not local.',
+        );
+        return;
+      }
+      try {
+        await (SettingsScreen.debugRecordTestEgress?.call(url) ??
+            EgressMonitor.instance.record(url, 'settings-test', 0));
+      } catch (_) {}
+      // Recording yields: recheck before invoking a provider after fresh intent.
+      final currentLocalOnly = await PrivacyGuard.isLocalOnly();
+      if (!mounted) return;
+      if (currentLocalOnly && !PrivacyGuard.isLocalUrl(url)) {
+        setState(
+          () => _testResult = 'Blocked by Local-only mode: $url is not local.',
+        );
+        return;
+      }
       final override = SettingsScreen.debugTestChat;
       final reply = override != null
           ? await override(settings)
@@ -416,6 +434,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               LlmMessage('user', 'Say "ok" and nothing else.'),
             ]);
       if (mounted) setState(() => _testResult = 'Connected: ${reply.trim()}');
+    } on PrivacyStorageException {
+      if (mounted) {
+        setState(() {
+          _testFailure = null;
+          _testPrivacyFailed = true;
+          _testResult = 'Could not verify local-only mode. Please retry.';
+        });
+      }
     } catch (e) {
       // #239: plain message with the real host:port; raw text under Details.
       final failure = describeConnectionFailure(e, url);
@@ -852,11 +878,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      _testFailure == null
+                      _testFailure == null && !_testPrivacyFailed
                           ? Icons.check_circle_outline
                           : Icons.error_outline,
                       size: 18,
-                      color: _testFailure == null
+                      color: _testFailure == null && !_testPrivacyFailed
                           ? Colors.greenAccent
                           : Colors.redAccent,
                     ),
@@ -867,7 +893,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ? _testResult!
                             : 'Failed: ${_testResult!}',
                         style: TextStyle(
-                          color: _testFailure == null
+                          color: _testFailure == null && !_testPrivacyFailed
                               ? Colors.greenAccent
                               : Colors.redAccent,
                         ),
