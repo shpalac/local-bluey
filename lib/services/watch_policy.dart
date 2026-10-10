@@ -81,7 +81,8 @@ class WatchPolicy {
     'חלון פרטי', // Hebrew Safari
   ];
 
-  static String _norm(String name) {
+  /// Canonical app identity for consent and policy comparisons.
+  static String normalize(String name) {
     var n = name.trim().toLowerCase();
     if (n.endsWith('.app')) n = n.substring(0, n.length - 4);
     return n;
@@ -96,7 +97,7 @@ class WatchPolicy {
   static Future<void> addToAllowlist(String app) async {
     final prefs = await SharedPreferences.getInstance();
     final list = [...?prefs.getStringList(_kAllowlist)];
-    final n = _norm(app);
+    final n = normalize(app);
     if (n.isEmpty || list.contains(n)) return;
     list.add(n);
     await prefs.setStringList(_kAllowlist, list);
@@ -105,7 +106,7 @@ class WatchPolicy {
   /// Removes [app] from the user allowlist.
   static Future<void> removeFromAllowlist(String app) async {
     final prefs = await SharedPreferences.getInstance();
-    final list = [...?prefs.getStringList(_kAllowlist)]..remove(_norm(app));
+    final list = [...?prefs.getStringList(_kAllowlist)]..remove(normalize(app));
     await prefs.setStringList(_kAllowlist, list);
   }
 
@@ -118,7 +119,7 @@ class WatchPolicy {
   static Future<void> addToUserDenylist(String app) async {
     final prefs = await SharedPreferences.getInstance();
     final list = [...?prefs.getStringList(_kUserDenylist)];
-    final n = _norm(app);
+    final n = normalize(app);
     if (n.isEmpty || list.contains(n)) return;
     list.add(n);
     await prefs.setStringList(_kUserDenylist, list);
@@ -145,14 +146,18 @@ class WatchPolicy {
     required String frontApp,
     String? windowTitle,
     bool locked = false,
+    List<String>? allowedApps,
+    List<String>? deniedApps,
   }) async {
     if (locked) return WatchVerdict.locked;
     if (_isPrivateWindow(windowTitle)) return WatchVerdict.privateWindow;
-    final app = _norm(frontApp);
+    final app = normalize(frontApp);
     if (_isHardDenied(app, windowTitle)) return WatchVerdict.hardDenied;
-    final userDeny = (await userDenylist()).map(_norm).toSet();
+    final userDeny = (deniedApps ?? await userDenylist())
+        .map(normalize)
+        .toSet();
     if (userDeny.contains(app)) return WatchVerdict.hardDenied;
-    final allowed = (await allowlist()).map(_norm).toSet();
+    final allowed = (allowedApps ?? await allowlist()).map(normalize).toSet();
     return allowed.contains(app)
         ? WatchVerdict.allow
         : WatchVerdict.notAllowlisted;

@@ -20,8 +20,31 @@ class ScreenWatch extends ChangeNotifier {
 
   /// An isolated instance for tests (injectable clock).
   @visibleForTesting
-  factory ScreenWatch.forTesting({Clock? clock}) =>
-      ScreenWatch._().._clockOverride = clock;
+  factory ScreenWatch.forTesting({
+    Clock? clock,
+    Future<bool> Function()? localOnly,
+    Future<List<String>> Function()? allowlist,
+    Future<List<String>> Function()? denylist,
+  }) => ScreenWatch._()
+    .._clockOverride = clock
+    .._localOnly = localOnly ?? PrivacyGuard.isLocalOnly
+    .._allowlist = allowlist ?? WatchPolicy.allowlist
+    .._denylist = denylist ?? WatchPolicy.userDenylist;
+
+  Future<bool> Function() _localOnly = PrivacyGuard.isLocalOnly;
+  Future<List<String>> Function() _allowlist = WatchPolicy.allowlist;
+  Future<List<String>> Function() _denylist = WatchPolicy.userDenylist;
+  bool _starting = false;
+  bool _disposed = false;
+  Set<String> _sessionApps = {};
+  Set<String> _sessionDeny = {};
+  Set<String> _normalized(List<String> apps) =>
+      apps.map(WatchPolicy.normalize).toSet();
+
+  /// Binds the scope and length before presenting the consent dialog.
+  Future<WatchConsent> prepareConsent({
+    Duration length = defaultSessionLength,
+  }) async => WatchConsent(length, _normalized(await _allowlist()));
 
   Clock? _clockOverride;
   Clock get _clock => _clockOverride ?? clock;
@@ -72,36 +95,89 @@ class ScreenWatch extends ChangeNotifier {
   Future<String?> start({
     Duration length = defaultSessionLength,
     required bool consentConfirmed,
+    WatchConsent? consent,
   }) async {
+    if (_disposed || _active || _starting) {
+      return 'A watching session is already active or starting.';
+    }
     if (!consentConfirmed) {
       return 'Watching needs your explicit go-ahead for each session.';
     }
-    if (!await PrivacyGuard.isLocalOnly()) {
-      return 'Watching works in local-only mode only - '
-          'turn local-only on first.';
-    }
-    if ((await WatchPolicy.allowlist()).isEmpty) {
-      return 'Pick at least one app to watch before starting.';
-    }
-    _active = true;
-    _endsAt = _clock.now().add(length);
-    _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (remaining <= Duration.zero) {
-        stop();
-      } else {
-        notifyListeners();
+    _starting = true;
+    final gen = _generation;
+    try {
+      if (!await _localOnly()) {
+        return 'Watching works in local-only mode only - turn local-only on first.';
       }
-    });
-    notifyListeners();
-    return null;
+      final apps = _normalized(await _allowlist());
+      final denied = _normalized(await _denylist());
+      if (gen != _generation || _disposed) {
+        return 'Watching start was cancelled.';
+      }
+      if (apps.isEmpty) {
+        return 'Pick at least one app to watch before starting.';
+      }
+      if (consent != null &&
+          (consent.length != length || !setEquals(consent.apps, apps))) {
+        return 'Watching scope changed. Review a new consent dialog.';
+      }
+      if (length <= Duration.zero) return 'Choose a positive session length.';
+      if (!setEquals(apps, _normalized(await _allowlist()))) {
+        return 'Watching scope changed. Review a new consent dialog.';
+      }
+      if (!await _localOnly() || gen != _generation || _disposed) {
+        return 'Watching start was cancelled or local-only changed.';
+      }
+      _sessionApps = Set.of(consent?.apps ?? apps);
+      _sessionDeny = denied;
+      _active = true;
+      _endsAt = _clock.now().add(length);
+      _ticker?.cancel();
+      _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (remaining <= Duration.zero) {
+          stop();
+        } else {
+          notifyListeners();
+        }
+      });
+      notifyListeners();
+      return null;
+    } finally {
+      _starting = false;
+    }
+  }
+
+  Future<bool> _sessionValid() async {
+    if (!_active || _disposed) return false;
+    final gen = _generation;
+    try {
+      final apps = _normalized(await _allowlist());
+      final denied = _normalized(await _denylist());
+      final local = await _localOnly();
+      if (gen != _generation || !_active) return false;
+      // Stop on tighter policy; additions never broaden this session.
+      if (!local ||
+          !apps.containsAll(_sessionApps) ||
+          denied
+              .difference(_sessionDeny)
+              .intersection(_sessionApps)
+              .isNotEmpty ||
+          remaining <= Duration.zero) {
+        stop();
+        return false;
+      }
+    } catch (_) {
+      if (gen == _generation && _active) stop();
+      return false;
+    }
+    return true;
   }
 
   /// One-tap stop / kill switch (#212). Synchronous: flips state, bumps the
   /// generation so in-flight ops drop their results, and fires every
   /// registered cancel listener before returning - well under one second.
   void stop() {
-    if (!_active && _cancelListeners.isEmpty) return;
+    if (!_active && !_starting && _cancelListeners.isEmpty) return;
     _active = false;
     _endsAt = null;
     _ticker?.cancel();
@@ -129,11 +205,13 @@ class ScreenWatch extends ChangeNotifier {
     String? windowTitle,
     bool locked = false,
   }) async {
-    if (!_active) return WatchVerdict.notAllowlisted;
+    if (!await _sessionValid()) return WatchVerdict.notAllowlisted;
     return WatchPolicy.verdict(
       frontApp: frontApp,
       windowTitle: windowTitle,
       locked: locked,
+      allowedApps: _sessionApps.toList(),
+      deniedApps: _sessionDeny.toList(),
     );
   }
 
@@ -165,6 +243,7 @@ class ScreenWatch extends ChangeNotifier {
       return null;
     }
     final result = await operation();
+    if (!await _sessionValid()) return null;
     return gen == _generation ? result : null;
   }
 
@@ -176,7 +255,19 @@ class ScreenWatch extends ChangeNotifier {
 
   @override
   void dispose() {
-    _ticker?.cancel();
+    stop();
+    _disposed = true;
     super.dispose();
   }
+}
+
+/// Immutable scope shown for one consent dialog, including its duration.
+class WatchConsent {
+  WatchConsent(this.length, Set<String> apps) : apps = Set.unmodifiable(apps);
+
+  /// The duration the user reviewed.
+  final Duration length;
+
+  /// The canonical apps the user reviewed.
+  final Set<String> apps;
 }
