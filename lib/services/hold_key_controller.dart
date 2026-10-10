@@ -173,6 +173,26 @@ class HoldKeySettings extends ChangeNotifier {
   }
 }
 
+/// Callback observation state, never native recording readiness.
+enum HoldKeyActionStatus { dispatched, completed, failed }
+
+/// Safe latest dispatched callback result without raw exception details.
+class HoldKeyActionResult {
+  /// Identifies the action and observation status.
+  const HoldKeyActionResult(this.action, this.status);
+
+  /// Dispatched recorder action, not a confirmed native recording state.
+  final HoldKeyAction action;
+
+  /// Whether the callback is pending, completed or failed.
+  final HoldKeyActionStatus status;
+
+  /// Generic failure text; no endpoint, path or plugin details.
+  String? get error => status == HoldKeyActionStatus.failed
+      ? 'Hold-key action could not be completed. Try again.'
+      : null;
+}
+
 /// Starts and stops the listener to match [HoldKeySettings] and turns its
 /// actions into recorder calls.
 class HoldKeyController {
@@ -214,6 +234,9 @@ class HoldKeyController {
   )
   _createBridge;
 
+  /// Current observed action result, cleared on changed desired state/disposal.
+  final ValueNotifier<HoldKeyActionResult?> actionResult = ValueNotifier(null);
+  int _actionRevision = 0;
   HoldKeyBridge? _bridge;
   HoldKey? _runningKey;
   int? _runningThreshold;
@@ -257,6 +280,8 @@ class HoldKeyController {
       _desired = desired;
       _generation++;
       _active = false;
+      _actionRevision++;
+      actionResult.value = null;
     }
     final generation = _generation;
     final next = _enqueue(() => _transition(generation, desired));
@@ -343,6 +368,8 @@ class HoldKeyController {
     _disposed = true;
     _generation++;
     _active = false;
+    _actionRevision++;
+    actionResult.value = null;
     return _enqueue(_stop);
   }
 
@@ -365,7 +392,43 @@ class HoldKeyController {
     // Fake/native bridges may not emit reset cancellation themselves.
     if (_recording) {
       _recording = false;
-      onCancel();
+      _dispatch(bridge, HoldKeyAction.cancel, onCancel);
+    }
+  }
+
+  void _dispatch(
+    HoldKeyBridge bridge,
+    HoldKeyAction action,
+    Future<void> Function() callback,
+  ) {
+    final revision = ++_actionRevision;
+    final generation = _generation;
+    final desired = _snapshot;
+    bool current() =>
+        !_disposed &&
+        revision == _actionRevision &&
+        generation == _generation &&
+        desired == _snapshot &&
+        (identical(_bridge, bridge) ||
+            (_bridge == null && action == HoldKeyAction.cancel));
+    void publish(HoldKeyActionStatus status) {
+      if (current()) actionResult.value = HoldKeyActionResult(action, status);
+    }
+
+    publish(HoldKeyActionStatus.dispatched);
+    // A result listener can synchronously replace/dispose the owner.
+    if (action != HoldKeyAction.cancel && !current()) return;
+    // Invoke immediately to preserve existing action delivery/timing. Observe all
+    // completions, including old or disposed failures, without retrying effects.
+    try {
+      final result = callback();
+      result.then(
+        (_) => publish(HoldKeyActionStatus.completed),
+        onError: (Object _, StackTrace _) =>
+            publish(HoldKeyActionStatus.failed),
+      );
+    } catch (_) {
+      publish(HoldKeyActionStatus.failed);
     }
   }
 
@@ -373,19 +436,19 @@ class HoldKeyController {
     if (!identical(_bridge, bridge)) return;
     if (action == HoldKeyAction.cancel && _recording) {
       _recording = false;
-      onCancel();
+      _dispatch(bridge, HoldKeyAction.cancel, onCancel);
       return;
     }
     if (!_active || _disposed || _desired != _snapshot) return;
     switch (action) {
       case HoldKeyAction.start:
         _recording = true;
-        onStart();
+        _dispatch(bridge, action, onStart);
       case HoldKeyAction.send:
         _recording = false;
-        onSend();
+        _dispatch(bridge, action, onSend);
       case HoldKeyAction.cancel:
-        onCancel();
+        _dispatch(bridge, HoldKeyAction.cancel, onCancel);
       case HoldKeyAction.none:
         break;
     }
