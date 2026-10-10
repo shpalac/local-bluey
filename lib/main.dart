@@ -31,6 +31,7 @@ import 'services/haptics.dart';
 import 'services/host_control.dart';
 import 'services/onboarding_checks.dart';
 import 'services/support_matrix.dart';
+import 'services/phone_audio.dart';
 import 'services/request_runner.dart';
 import 'services/hold_key_controller.dart';
 import 'services/speak_receipts.dart';
@@ -392,26 +393,26 @@ class _MacHomeState extends State<MacHome>
       setState(() => _awake = packet.command == 'wake');
     }
     if (packet.command == 'holdAudio' && packet.audio != null) {
-      _onPhoneAudio(base64Decode(packet.audio!));
+      unawaited(_onPhoneAudio(packet.audio!));
     }
   }
 
   /// Phone-side hold-to-talk audio rides the link; same pipeline as the
   /// Mac's own mic.
-  Future<void> _onPhoneAudio(List<int> bytes) async {
-    final dir = await getTemporaryDirectory();
-    // getTemporaryDirectory() only *names* the directory; it does not create
-    // it, and on macOS nothing else does either. Writing straight into it threw
-    // PathNotFoundException and dropped the utterance, so hold-to-talk from
-    // the phone never reached the transcriber (#254).
-    await dir.create(recursive: true);
-    final file = File(
-      '${dir.path}/bluey_phone_'
-      '${DateTime.now().millisecondsSinceEpoch}.m4a',
-    );
-    await file.writeAsBytes(bytes, flush: true);
-    setState(() => _face.value = FaceState(mood: Mood.thinking));
-    await _processUtterance(file);
+  Future<void> _onPhoneAudio(String encoded) async {
+    final File file;
+    try {
+      file = await PhoneAudioIntake.stage(encoded);
+    } on PhoneAudioException catch (e) {
+      _applyBubble(e.message);
+      return;
+    }
+    if (mounted) setState(() => _face.value = FaceState(mood: Mood.thinking));
+    try {
+      await _processUtterance(file);
+    } catch (e) {
+      debugPrint('Phone request failed: $e');
+    }
   }
 
   void _setAwake(bool awake) {

@@ -58,6 +58,7 @@ class RequestRunner {
     this.stepTimeout = const Duration(seconds: 60),
     this.jobTimeout = const Duration(minutes: 3),
     this.maxToolSteps = 5,
+    this.maxQueued = 2,
     DateTime Function()? now,
     Future<void> Function(File)? deleteRecording,
   }) : _deleteRecording = deleteRecording ?? AudioCapture.deleteQuietly,
@@ -128,12 +129,74 @@ class RequestRunner {
   /// whatever the per-step timeouts allow.
   final Duration jobTimeout;
 
+  /// How many utterances may wait behind the active run (#366). A request
+  /// beyond this is rejected with a bubble and its recording deleted.
+  final int maxQueued;
+
   /// Whether the companion is awake; decides the face reset after a run.
   bool awake = true;
 
+  bool _busy = false;
+  final _waiting = <_Waiting>[];
+
+  /// Utterances currently queued behind the active run.
+  int get queuedCount => _waiting.length;
+
   /// Process one recorded utterance. Deletes the recording when finished -
   /// voice files must not pile up in temp storage (#116).
+  ///
+  /// One run at a time (#366): overlapping utterances from the Mac mic, the
+  /// hold key and the phone queue behind the active run (up to [maxQueued]);
+  /// further ones are rejected. A Stop (kill or generation bump) discards
+  /// everything that was queued before it instead of running it late.
   Future<void> process(File file) async {
+    if (_busy) {
+      if (_waiting.length >= maxQueued) {
+        hooks.bubble('Busy - try again in a moment.');
+        await _deleteRecording(file);
+        return;
+      }
+      final waiting = _Waiting(safety.generation);
+      _waiting.add(waiting);
+      if (!await waiting.turn.future) {
+        hooks.bubble('Stopped.');
+        await _deleteRecording(file);
+        return;
+      }
+    } else {
+      _busy = true;
+    }
+    try {
+      await _run(file);
+    } finally {
+      _handOff();
+      // With another utterance starting, leave the shared face/status to it
+      // instead of reporting idle during live work.
+      if (!_busy) {
+        final face = FaceState(mood: awake ? Mood.listening : Mood.sleepy);
+        hooks
+          ..face(face)
+          ..status(BlueyStatus.listening)
+          ..sendFace(face);
+      }
+    }
+  }
+
+  /// Starts the next still-valid queued utterance, dropping stopped ones.
+  void _handOff() {
+    while (_waiting.isNotEmpty) {
+      final next = _waiting.removeAt(0);
+      if (safety.killed || safety.generation != next.generation) {
+        next.turn.complete(false);
+        continue;
+      }
+      next.turn.complete(true); // _busy stays true for the next run
+      return;
+    }
+    _busy = false;
+  }
+
+  Future<void> _run(File file) async {
     hooks
       ..face(FaceState(mood: Mood.thinking))
       ..status(BlueyStatus.thinking);
@@ -316,15 +379,16 @@ class RequestRunner {
     } finally {
       finished = true;
       await _deleteRecording(file); // #116
-      final face = FaceState(mood: awake ? Mood.listening : Mood.sleepy);
-      hooks
-        ..face(face)
-        ..status(BlueyStatus.listening)
-        ..sendFace(face);
     }
   }
 }
 
 class _RunStopped implements Exception {
   const _RunStopped();
+}
+
+class _Waiting {
+  _Waiting(this.generation);
+  final int generation;
+  final turn = Completer<bool>();
 }

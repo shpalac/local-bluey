@@ -785,4 +785,98 @@ void main() {
       );
     }
   }
+
+  group('#366 one active request', () {
+    test('overlapping utterances run one at a time, in order', () async {
+      final deleted = <String>[];
+      final (runner, brain, _, _, _, transcriber, hooks, conversation) = _rig(
+        deleteRecording: (f) async => deleted.add(f.path),
+      );
+      final order = <String>[];
+      var n = 0;
+      transcriber.onTranscribe = () async => order.add('stt${++n}');
+      brain.asking = Completer<BrainReply>();
+      final first = runner.process(File('a.m4a'));
+      await brain.askEntered.future;
+      brain.replies.add(const BrainReply(spoken: 'second reply'));
+      final second = runner.process(File('b.m4a'));
+      await Future<void>.delayed(Duration.zero);
+      expect(runner.queuedCount, 1);
+      expect(order, ['stt1'], reason: 'second must not start yet');
+      expect(
+        hooks.statuses.where((s) => s == BlueyStatus.listening),
+        isEmpty,
+        reason: 'no idle status while a queued run is about to start',
+      );
+      final gate = brain.asking!;
+      brain.asking = null;
+      gate.complete(const BrainReply(spoken: 'first reply'));
+      await Future.wait([first, second]);
+      expect(order, ['stt1', 'stt2']);
+      expect(conversation.map((c) => c.join(':')), [
+        'user:hello there',
+        'bluey:first reply',
+        'user:hello there',
+        'bluey:second reply',
+      ]);
+      expect(deleted, ['a.m4a', 'b.m4a']);
+      expect(hooks.statuses.last, BlueyStatus.listening);
+      expect(runner.queuedCount, 0);
+    });
+
+    test('beyond the queue cap a request is rejected and cleaned up', () async {
+      final deleted = <String>[];
+      final (runner, brain, _, _, _, _, hooks, _) = _rig(
+        deleteRecording: (f) async => deleted.add(f.path),
+      );
+      brain.asking = Completer<BrainReply>();
+      final running = runner.process(File('a.m4a'));
+      await brain.askEntered.future;
+      brain.replies.addAll([
+        const BrainReply(spoken: 'q1'),
+        const BrainReply(spoken: 'q2'),
+      ]);
+      final q1 = runner.process(File('b.m4a'));
+      final q2 = runner.process(File('c.m4a'));
+      await runner.process(File('d.m4a'));
+      expect(hooks.bubbles, contains('Busy - try again in a moment.'));
+      expect(deleted, ['d.m4a']);
+      expect(runner.queuedCount, 2);
+      final gate = brain.asking!;
+      brain.asking = null;
+      gate.complete(const BrainReply(spoken: 'done'));
+      await Future.wait([running, q1, q2]);
+      expect(deleted, ['d.m4a', 'a.m4a', 'b.m4a', 'c.m4a']);
+    });
+
+    test('Stop discards queued requests instead of running them', () async {
+      final deleted = <String>[];
+      final (runner, brain, gate, _, _, transcriber, hooks, conversation) =
+          _rig(deleteRecording: (f) async => deleted.add(f.path));
+      var stt = 0;
+      transcriber.onTranscribe = () async => stt++;
+      brain.asking = Completer<BrainReply>();
+      final running = runner.process(File('a.m4a'));
+      await brain.askEntered.future;
+      final queued = runner.process(File('b.m4a'));
+      await Future<void>.delayed(Duration.zero);
+      expect(runner.queuedCount, 1);
+      gate.killed = true;
+      gate.generation++;
+      brain.asking!.complete(const BrainReply(spoken: 'late'));
+      await Future.wait([running, queued]);
+      expect(stt, 1, reason: 'queued request never reached the transcriber');
+      expect(brain.lastAsked, 'hello there');
+      expect(conversation.where((c) => c[0] == 'bluey'), isEmpty);
+      expect(hooks.bubbles.where((b) => b == 'Stopped.').length, 2);
+      expect(deleted, ['a.m4a', 'b.m4a']);
+      expect(runner.queuedCount, 0);
+      // The runner is usable again after Stop + resume.
+      gate.killed = false;
+      brain.asking = null;
+      brain.replies.add(const BrainReply(spoken: 'back'));
+      await runner.process(File('c.m4a'));
+      expect(conversation.last, ['bluey', 'back']);
+    });
+  });
 }
