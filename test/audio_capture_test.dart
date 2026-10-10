@@ -10,6 +10,11 @@ class FakeDriver implements RecorderDriver {
   Completer<void>? startGate;
   int startCalls = 0;
   int stopCalls = 0;
+  int disposeCalls = 0;
+  bool startFailsAfterOpen = false;
+  bool stopFails = false;
+  bool disposeFails = false;
+  Completer<void>? disposeGate;
   Completer<String?>? stopGate;
 
   @override
@@ -21,6 +26,7 @@ class FakeDriver implements RecorderDriver {
     final gate = startGate;
     if (gate != null) await gate.future;
     recording = true;
+    if (startFailsAfterOpen) throw StateError('private native start detail');
   }
 
   @override
@@ -29,12 +35,17 @@ class FakeDriver implements RecorderDriver {
     final result = stopGate == null
         ? '/tmp/fake_capture.m4a'
         : await stopGate!.future;
+    if (stopFails) throw StateError('private native stop detail');
     recording = false;
     return result;
   }
 
   @override
-  Future<void> dispose() async {}
+  Future<void> dispose() async {
+    disposeCalls++;
+    if (disposeGate != null) await disposeGate!.future;
+    if (disposeFails) throw StateError('private native disposal detail');
+  }
 }
 
 class EmptyTempDirectory implements Directory {
@@ -50,6 +61,220 @@ class EmptyTempDirectory implements Directory {
 }
 
 void main() {
+  AudioCapture makeCapture(FakeDriver driver) => AudioCapture(
+    driver: driver,
+    tempDirProvider: () async => EmptyTempDirectory(),
+  );
+
+  test(
+    'partial start owns candidate, safe typed error, successful cleanup only',
+    () async {
+      final driver = FakeDriver()..startFailsAfterOpen = true;
+      final capture = makeCapture(driver);
+      await expectLater(
+        capture.start(),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      expect(driver.recording, true);
+      expect(capture.cleanupPending, true);
+      expect(capture.isRecording, false);
+      final path = capture.debugPath;
+      await expectLater(capture.start(), throwsStateError);
+      expect(driver.startCalls, 1);
+      expect(capture.debugPath, path);
+      await capture.stop();
+      expect(driver.stopCalls, 1);
+      expect(capture.cleanupPending, false);
+      driver.startFailsAfterOpen = false;
+      await capture.start();
+      await capture.dispose();
+    },
+  );
+
+  test(
+    'gated entered partial start joins stop and all failed stop callers',
+    () async {
+      final driver = FakeDriver()
+        ..startGate = Completer<void>()
+        ..startFailsAfterOpen = true
+        ..stopGate = Completer<String?>();
+      final capture = makeCapture(driver);
+      final starting = expectLater(
+        capture.start(),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      final first = expectLater(
+        capture.stop(),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      final second = expectLater(
+        capture.stop(),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      expect(driver.stopCalls, 0);
+      driver.startGate!.complete();
+      await starting;
+      await Future<void>.delayed(Duration.zero);
+      expect(driver.stopCalls, 1);
+      driver.stopGate!.completeError(StateError('private stop detail'));
+      await Future.wait([first, second]);
+      expect(driver.recording, true);
+      expect(capture.cleanupPending, true);
+      await expectLater(capture.start(), throwsStateError);
+      driver.stopGate = null;
+      driver.stopFails = true;
+      await expectLater(
+        capture.stop(),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      expect(capture.cleanupPending, true);
+      driver.stopFails = false;
+      await capture.stop();
+      expect(capture.cleanupPending, false);
+      await capture.dispose();
+    },
+  );
+
+  test('dispose joins partial start and attempts driver disposal after failed stop', () async {
+    final driver = FakeDriver()
+      ..startGate = Completer<void>()
+      ..startFailsAfterOpen = true
+      ..stopFails = true;
+    final capture = makeCapture(driver);
+    final starting = expectLater(
+      capture.start(),
+      throwsA(isA<CaptureLifecycleException>()),
+    );
+    final closeA = capture.dispose();
+    final closeB = capture.dispose();
+    expect(identical(closeA, closeB), true);
+    final closing = expectLater(
+      closeA,
+      throwsA(isA<CaptureLifecycleException>()),
+    );
+    driver.startGate!.complete();
+    await starting;
+    await closing;
+    expect(driver.stopCalls, 1);
+    expect(driver.disposeCalls, 1);
+    expect(driver.recording, true); // Dispose success is not proof of stop.
+    expect(capture.cleanupPending, true);
+    await expectLater(
+      capture.dispose(),
+      throwsA(isA<CaptureLifecycleException>()),
+    );
+    expect(
+      driver.disposeCalls,
+      1,
+    ); // Completed driver disposal stays exact-once.
+    driver.stopFails = false;
+    await capture.dispose();
+    expect(capture.cleanupPending, false);
+    expect(driver.disposeCalls, 1);
+    await expectLater(capture.start(), throwsStateError);
+  });
+
+  test(
+    'dispose failure retained safe and explicitly retryable once per attempt',
+    () async {
+      final driver = FakeDriver()
+        ..disposeFails = true
+        ..disposeGate = Completer<void>();
+      final capture = makeCapture(driver);
+      await capture.start();
+      final a = capture.dispose();
+      final b = capture.dispose();
+      expect(identical(a, b), true);
+      final failure = expectLater(
+        a,
+        throwsA(
+          isA<CaptureLifecycleException>().having(
+            (e) => e.message,
+            'generic',
+            isNot(contains('private')),
+          ),
+        ),
+      );
+      await Future<void>.delayed(Duration.zero);
+      driver.disposeGate!.complete();
+      await failure;
+      expect(capture.disposeFailed, true);
+      expect(capture.cleanupPending, true);
+      expect(driver.recording, false);
+      await expectLater(capture.start(), throwsStateError);
+      driver.disposeFails = false;
+      await capture.dispose();
+      expect(capture.disposeFailed, false);
+      expect(capture.cleanupPending, false);
+      await capture.dispose();
+      expect(driver.disposeCalls, 2);
+    },
+  );
+
+  test(
+    'entered release joined by dispose does not publish post-close file',
+    () async {
+      final dir = await Directory.systemTemp.createTemp('capture-close-');
+      final file = await File('${dir.path}/finished.m4a')
+          .writeAsString('synthetic');
+      final driver = FakeDriver()..stopGate = Completer<String?>();
+      final capture = makeCapture(driver);
+      await capture.start();
+      final release = capture.stop();
+      final close = capture.dispose();
+      driver.stopGate!.complete(file.path);
+      expect(await release, null);
+      await close;
+      expect(driver.stopCalls, 1);
+      expect(driver.disposeCalls, 1);
+      expect(await file.exists(), false); // Synthetic temp file only.
+      await dir.delete();
+    },
+  );
+
+  test('temp failure before driver entry is not native uncertainty', () async {
+    final driver = FakeDriver();
+    var fail = true;
+    final capture = AudioCapture(
+      driver: driver,
+      tempDirProvider: () async {
+        if (fail) throw StateError('temp directory unavailable');
+        return EmptyTempDirectory();
+      },
+    );
+    await expectLater(capture.start(), throwsStateError);
+    expect(driver.startCalls, 0);
+    expect(capture.cleanupPending, false);
+    expect(await capture.stop(), null);
+    expect(driver.stopCalls, 0);
+    fail = false;
+    await capture.start();
+    await capture.dispose();
+  });
+
+  test(
+    'successful current driver null cleanup clears partial-start uncertainty',
+    () async {
+      final driver = FakeDriver()
+        ..startFailsAfterOpen = true
+        ..stopGate = Completer<String?>();
+      final capture = makeCapture(driver);
+      await expectLater(
+        capture.start(),
+        throwsA(isA<CaptureLifecycleException>()),
+      );
+      final stopping = capture.stop();
+      expect(capture.cleanupPending, true);
+      driver.stopGate!.complete(null);
+      expect(await stopping, null);
+      expect(driver.stopCalls, 1);
+      expect(capture.cleanupPending, false);
+      expect(await capture.stop(), null);
+      expect(driver.stopCalls, 1); // Wrapper null itself did not do cleanup.
+      await capture.dispose();
+    },
+  );
+
   test(
     'stop during an in-flight start still stops the recorder (#117)',
     () async {
@@ -158,6 +383,15 @@ void main() {
       time.flushMicrotasks();
       expect(error, isA<StateError>());
       driver.stopGate = null;
+      var blocked = false;
+      capture.start().catchError((Object _) {
+        blocked = true;
+      });
+      time.flushMicrotasks();
+      expect(blocked, true);
+      expect(driver.startCalls, 1);
+      capture.stop(); // Explicit current successful driver cleanup resolves uncertainty.
+      time.flushMicrotasks();
       capture.start();
       time.flushMicrotasks();
       expect(driver.startCalls, 2);
