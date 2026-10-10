@@ -5,6 +5,13 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
+/// Safe capture lifecycle uncertainty without native details.
+class CaptureLifecycleException extends StateError {
+  /// Creates a generic retained capture failure.
+  CaptureLifecycleException()
+    : super('Audio capture cleanup could not be verified.');
+}
+
 /// Thin wrapper over the platform recorder so the capture state machine is
 /// testable without a microphone (#117).
 abstract class RecorderDriver {
@@ -15,6 +22,8 @@ abstract class RecorderDriver {
   Future<void> start(String path);
 
   /// Stops and returns the recorded path, or null when nothing recorded.
+  /// Success (including null) confirms stop under this injected contract.
+  /// Failure may leave capture open. Plugin behavior needs native validation.
   Future<String?> stop();
 
   /// Releases the recorder.
@@ -56,25 +65,43 @@ class AudioCapture {
     RecorderDriver? driver,
     Duration? maxDuration,
     Future<Directory> Function()? tempDirProvider,
+    Future<void> Function(File)? deleteFile,
   }) : _driver = driver ?? AudioRecorderDriver(),
        maxDuration = maxDuration ?? const Duration(minutes: 2),
-       _tempDirProvider = tempDirProvider ?? getTemporaryDirectory;
+       _tempDirProvider = tempDirProvider ?? getTemporaryDirectory,
+       _deleteFile = deleteFile ?? _deleteOwnedFile;
 
   final RecorderDriver _driver;
   final Future<Directory> Function() _tempDirProvider;
+  final Future<void> Function(File) _deleteFile;
+  final Set<String> _cleanupFiles = {};
+  Future<void>? _cleanupOp;
 
   /// Hard cap on one hold-to-talk recording (#117).
   final Duration maxDuration;
 
   bool _recording = false;
+  bool _candidate = false;
+  bool _uncertain = false;
+  bool _disposeFailed = false;
+  bool _driverDisposed = false;
+  Future<void>? _disposeOp;
   Future<void>? _startOp;
   Timer? _maxTimer;
   String? _path;
   File? _pendingFile;
-  Future<void>? _stopOp;
+  Future<CaptureLifecycleException?>? _stopOp;
   Object? _stopError;
   int _session = 0;
   bool _disposed = false;
+
+  /// Whether an entered capture or failed driver cleanup is still owned.
+  /// A successful driver disposal alone does not prove capture stop.
+  bool get cleanupPending =>
+      _candidate || _uncertain || _disposeFailed || _cleanupFiles.isNotEmpty;
+
+  /// Whether the last driver disposal attempt failed.
+  bool get disposeFailed => _disposeFailed;
 
   /// Whether a capture is currently open.
   bool get isRecording => _recording;
@@ -85,7 +112,11 @@ class AudioCapture {
   /// Starts a capture into a fresh temp .m4a (AAC-LC 16 kHz).
   Future<void> start() async {
     if (_disposed) throw StateError('Audio capture is disposed');
-    if (_stopOp != null || _pendingFile != null || _stopError != null) {
+    if (_uncertain ||
+        _cleanupFiles.isNotEmpty ||
+        _stopOp != null ||
+        _pendingFile != null ||
+        _stopError != null) {
       throw StateError('Release the previous capture before starting another');
     }
     if (_recording || _startOp != null) return;
@@ -104,7 +135,13 @@ class AudioCapture {
     await sweepStaleRecordings(tempDir: dir);
     _path =
         '${dir.path}/bluey_hold_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    await _driver.start(_path!);
+    _candidate = true;
+    try {
+      await _driver.start(_path!);
+    } catch (_) {
+      _uncertain = true;
+      throw CaptureLifecycleException();
+    }
     _recording = true;
     if (_disposed || session != _session) return;
     _maxTimer = Timer(maxDuration, () {
@@ -115,7 +152,10 @@ class AudioCapture {
   // Both the cap and release share one native stop. Errors are retained for
   // the release caller, never thrown from an unawaited timer future.
   void _beginStop() {
-    if (!_recording || _stopOp != null) return;
+    if ((!_recording && !_candidate && _cleanupFiles.isEmpty) ||
+        _stopOp != null) {
+      return;
+    }
     _maxTimer?.cancel();
     _maxTimer = null;
     _recording = false;
@@ -123,43 +163,90 @@ class AudioCapture {
     _stopOp = _finishStop(session);
   }
 
-  Future<void> _finishStop(int session) async {
+  Future<CaptureLifecycleException?> _finishStop(int session) async {
     try {
-      final path = await _driver.stop();
-      if (!_disposed && session == _session && path != null) {
-        _pendingFile = File(path);
+      if (_candidate) {
+        final wasUncertain = _uncertain;
+        final path = await _driver.stop();
+        if (session == _session) {
+          _candidate = false;
+          _uncertain = false;
+          if (path != null) _pendingFile = File(path);
+          // Successful-null cleanup still owns the known entered candidate.
+          // A failed candidate is never silently left for a fresh-start sweep.
+          if (_path != null &&
+              (path == null || (wasUncertain && path != _path))) {
+            _cleanupFiles.add(_path!);
+          }
+        }
       }
-    } catch (error) {
-      if (!_disposed && session == _session) _stopError = error;
-      // The native stop failed, so nobody will receive this file: drop it
-      // now rather than leaving it for the next start's sweep.
-      try {
-        if (_path != null) File(_path!).deleteSync();
-      } catch (_) {}
+      await _cleanupOwnedFiles();
+      if (session == _session) _stopError = null;
+    } catch (_) {
+      if (session == _session) {
+        if (_candidate) _uncertain = true;
+        _stopError = CaptureLifecycleException();
+      }
+      return CaptureLifecycleException();
+    }
+    return null;
+  }
+
+  static Future<void> _deleteOwnedFile(File file) async {
+    if (await file.exists()) await file.delete();
+  }
+
+  Future<void> _cleanupOwnedFiles() {
+    final pending = _cleanupOp;
+    if (pending != null) return pending;
+    final op = _deleteCleanupFiles();
+    _cleanupOp = op;
+    op.then(
+      (_) {
+        _cleanupOp = null;
+      },
+      onError: (Object _, StackTrace _) {
+        _cleanupOp = null;
+      },
+    );
+    return op;
+  }
+
+  Future<void> _deleteCleanupFiles() async {
+    for (final path in _cleanupFiles.toList()) {
+      await _deleteFile(File(path));
+      // Remove only after successful file operation.
+      _cleanupFiles.remove(path);
     }
   }
 
   /// Stops and delivers this session's file exactly once, joining an in-flight
   /// start or capped stop. A new start is rejected until release consumes the
   /// previous session, so one hold cannot receive another hold's recording.
-  Future<File?> stop() async {
+  Future<File?> stop() => _stop();
+
+  Future<File?> _stop({bool closing = false}) async {
     final startOp = _startOp;
     if (startOp != null) {
       try {
         await startOp;
       } catch (_) {
-        // Start failed; nothing to stop.
+        // A failed entered start can still own an open driver candidate.
       }
     }
     _beginStop();
     final stopOp = _stopOp;
-    if (stopOp != null) await stopOp;
+    final failure = stopOp == null ? null : await stopOp;
     // Only the first release owns the completed session. Another release
     // must not consume state created by a subsequent start.
+    if (failure != null) {
+      if (identical(stopOp, _stopOp)) _stopOp = null;
+      throw failure; // Every joiner observes failure, never false idle/null.
+    }
+    if (_disposed && !closing) return null; // Closing owns post-close files.
     if (!identical(stopOp, _stopOp)) return null;
     _stopOp = null;
     final error = _stopError;
-    _stopError = null;
     if (error != null) throw error;
     final pending = _pendingFile;
     _pendingFile = null;
@@ -189,20 +276,51 @@ class AudioCapture {
     } catch (_) {}
   }
 
-  /// Stops any open capture and releases the driver.
-  Future<void> dispose() async {
+  /// Joins entered capture effects and always attempts driver release.
+  /// Failure is typed, retained, and explicitly retryable. Successful driver
+  /// release alone is never evidence that a failed stop succeeded.
+  Future<void> dispose() {
+    final pending = _disposeOp;
+    if (pending != null) return pending;
+    if (_disposed && !_disposeFailed && !_uncertain && _cleanupFiles.isEmpty) {
+      return Future<void>.value();
+    }
+    _disposed = true;
+    final op = _disposeCapture();
+    _disposeOp = op;
+    op.then(
+      (_) {
+        _disposeOp = null;
+      },
+      onError: (Object _, StackTrace _) {
+        _disposeOp = null;
+      },
+    );
+    return op;
+  }
+
+  Future<void> _disposeCapture() async {
     _maxTimer?.cancel();
     _maxTimer = null;
-    if (_disposed) return;
-    _disposed = true;
+    var failed = false;
     try {
-      await stop();
-    } finally {
-      _session++;
-      _pendingFile = null;
-      _stopError = null;
-      await _driver.dispose();
+      final file = await _stop(closing: true);
+      if (file != null) _cleanupFiles.add(file.path);
+      await _cleanupOwnedFiles();
+    } catch (_) {
+      failed = true;
     }
+    if (!_driverDisposed) {
+      try {
+        await _driver.dispose();
+        _driverDisposed = true;
+        _disposeFailed = false;
+      } catch (_) {
+        _disposeFailed = true;
+        failed = true;
+      }
+    }
+    if (failed) throw CaptureLifecycleException();
   }
 
   @visibleForTesting
