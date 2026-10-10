@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../services/watch_suggestions.dart';
+import '../services/strings.dart';
 
-/// Quiet, read-only suggestion card (#214): shows why the watcher spoke
-/// up and the on-screen evidence behind it. Two exits - dismiss, or
-/// "never for this app". It does nothing else; that is the point.
+/// Quiet read-only suggestion: quoted evidence is data, never instructions.
 class WatchSuggestionCard extends StatelessWidget {
   const WatchSuggestionCard({
     super.key,
@@ -13,27 +12,57 @@ class WatchSuggestionCard extends StatelessWidget {
     required this.onNeverForApp,
   });
 
+  /// Display-only suggestion.
   final WatchSuggestion suggestion;
-  final VoidCallback onDismiss;
-  final VoidCallback onNeverForApp;
 
+  /// Dismisses this suggestion.
+  final VoidCallback onDismiss;
+
+  /// Saves the user's explicit per-app suppression choice.
+  final VoidCallback onNeverForApp;
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Card(
       color: scheme.surfaceContainerHighest,
-      child: ListTile(
-        leading: Icon(Icons.visibility_outlined, color: scheme.primary),
-        title: Text(suggestion.reason),
-        subtitle: Text(suggestion.evidence),
-        trailing: Wrap(
-          spacing: 8,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextButton(
-              onPressed: onNeverForApp,
-              child: Text('Never for ${suggestion.app}'),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.visibility_outlined, color: scheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    suggestion.localReason,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
             ),
-            TextButton(onPressed: onDismiss, child: const Text('Dismiss')),
+            const SizedBox(height: 8),
+            Text(suggestion.localEvidence),
+            Wrap(
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: onNeverForApp,
+                  child: Text(
+                    Strings.t(
+                      'Never for ${suggestion.app}',
+                      'לעולם לא עבור ${suggestion.app}',
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: onDismiss,
+                  child: Text(Strings.t('Dismiss', 'סגירה')),
+                ),
+              ],
+            ),
           ],
         ),
       ),

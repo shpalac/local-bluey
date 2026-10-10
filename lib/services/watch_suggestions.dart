@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'watch_context.dart';
+import 'strings.dart';
 import 'watch_policy.dart';
 import 'watch_pipeline.dart';
 
@@ -16,7 +17,31 @@ class WatchSuggestion {
     required this.evidence,
     required this.app,
     required this.at,
+    this.observedDetail,
+    this.repeatCount,
   });
+
+  /// Original quoted screen data, never translated or interpreted.
+  final String? observedDetail;
+
+  /// Count used only for owned localized evidence framing.
+  final int? repeatCount;
+
+  /// Localizes only the built-in reason; unknown caller reasons remain data.
+  String get localReason => observedDetail == null
+      ? reason
+      : Strings.t(
+          'This keeps showing up on your screen',
+          'זה מופיע שוב ושוב על המסך שלך',
+        );
+
+  /// Localized framing around unchanged untrusted screen content.
+  String get localEvidence => observedDetail == null || repeatCount == null
+      ? evidence
+      : Strings.t(
+          '"$observedDetail" in $app ($repeatCount times this session)',
+          '"$observedDetail" ב-$app ($repeatCount פעמים בסשן הזה)',
+        );
 
   /// Why this is worth the interruption, in plain language.
   final String reason;
@@ -172,6 +197,8 @@ class WatchSuggestions {
           '"${event.detail}" in $displayApp '
           '($count times this session)',
       app: displayApp,
+      observedDetail: event.detail,
+      repeatCount: count,
       at: _clock.now(),
     );
     _controller.add(suggestion);

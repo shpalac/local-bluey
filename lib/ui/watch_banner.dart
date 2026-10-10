@@ -38,37 +38,59 @@ class WatchBanner extends StatelessWidget {
                         color: Theme.of(context).colorScheme.errorContainer,
                         borderRadius: BorderRadius.circular(24),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                      child: Wrap(
+                        spacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Icon(
-                            Icons.fiber_manual_record,
-                            size: 12,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            Strings.t(
-                              'Watching ${_mmss(ScreenWatch.instance.remaining)}',
-                              'צופה ${_mmss(ScreenWatch.instance.remaining)}',
+                          Semantics(
+                            container: true,
+                            label: Strings.t(
+                              'Screen watching is active',
+                              'צפייה במסך פעילה',
                             ),
-                            style: Theme.of(context).textTheme.labelLarge,
-                          ),
-                          const SizedBox(width: 8),
-                          InkWell(
-                            onTap: ScreenWatch.instance.stop,
-                            borderRadius: BorderRadius.circular(16),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
+                            child: ExcludeSemantics(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.fiber_manual_record,
+                                    size: 12,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      Strings.t(
+                                        'Watching ${_mmss(ScreenWatch.instance.remaining)}',
+                                        'צופה ${_mmss(ScreenWatch.instance.remaining)}',
+                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelLarge,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: Text(
-                                Strings.t('Stop', 'עצירה'),
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
-                                  fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Semantics(
+                            container: true,
+                            label: Strings.t(
+                              'Stop screen watching',
+                              'עצירת צפייה במסך',
+                            ),
+                            button: true,
+                            onTap: ScreenWatch.instance.stop,
+                            child: ExcludeSemantics(
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  foregroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .error,
                                 ),
+                                onPressed: ScreenWatch.instance.stop,
+                                child: Text(Strings.t('Stop', 'עצירה')),
                               ),
                             ),
                           ),
@@ -85,7 +107,7 @@ class WatchBanner extends StatelessWidget {
   }
 
   static String _mmss(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final m = d.inMinutes.toString().padLeft(2, '0');
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
   }
