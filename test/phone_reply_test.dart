@@ -84,8 +84,17 @@ void main() {
     delete: delete,
   );
 
-  Future<void> settle() =>
-      Future<void>.delayed(const Duration(milliseconds: 30));
+  // Waits for the receiver to go idle; a deliberately held operation never
+  // does, so the wait is bounded and the held state is what gets asserted.
+  Future<void> settle() async {
+    await Future<void>.delayed(Duration.zero);
+    await receiver.idle.timeout(
+      const Duration(milliseconds: 400),
+      onTimeout: () {},
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+
   List<String> receipts() => sent
       .map(
         (p) =>

@@ -117,6 +117,18 @@ class PhoneReplyReceiver {
     if (cleanupPending.value != count) cleanupPending.value = count;
   }
 
+  /// Completes when no queued operation is pending (test seam). Follow-up
+  /// work scheduled by a finished operation is awaited too.
+  @visibleForTesting
+  Future<void> get idle async {
+    Future<void> last;
+    do {
+      last = _ops;
+      await last;
+      await Future<void>.delayed(Duration.zero);
+    } while (!identical(last, _ops));
+  }
+
   /// Handles one packet from the Mac without throwing.
   void handle(Packet packet) {
     try {
