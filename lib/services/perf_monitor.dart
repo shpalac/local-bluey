@@ -10,12 +10,52 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// (transcription), thinking (brain roundtrip) and acting (tool execution).
 /// Samples persist to perf.jsonl for baseline tracking over time.
 class PerfMonitor {
-  PerfMonitor._();
+  PerfMonitor._({Future<File> Function()? file, DateTime Function()? clock})
+    : _fileProvider = file,
+      _now = clock ?? DateTime.now;
+
+  /// A monitor with injected storage and clock, for tests.
+  @visibleForTesting
+  PerfMonitor.forTest({
+    required Future<File> Function() file,
+    DateTime Function()? clock,
+  }) : this._(file: file, clock: clock);
 
   /// The app-wide instance.
   static final PerfMonitor instance = PerfMonitor._();
 
+  final Future<File> Function()? _fileProvider;
+  final DateTime Function() _now;
   final Map<String, List<int>> _samplesMs = {};
+
+  /// Bumped by every [clear]. A measurement that started in an older
+  /// generation neither records a sample nor writes to disk, so pre-clear
+  /// work can never restore deleted data. Measurements that start after
+  /// [clear] begins belong to the new generation and are accepted.
+  int _generation = 0;
+
+  /// All file writes and deletions run one at a time, in order.
+  Future<void> _io = Future<void>.value();
+
+  /// Last storage failure from an append or a delete, or null. Cleared by the
+  /// next successful write or delete.
+  final ValueNotifier<String?> lastStorageError = ValueNotifier(null);
+
+  /// Completes when every write and deletion queued so far has settled.
+  Future<void> flush() async {
+    Future<void> seen;
+    do {
+      seen = _io;
+      await seen;
+    } while (!identical(seen, _io));
+  }
+
+  Future<void> _enqueue(Future<void> Function() op) {
+    final next = _io.then((_) => op());
+    // Errors are handled inside each op; this keeps the chain alive anyway.
+    _io = next.catchError((_) {});
+    return next;
+  }
 
   static const _kOverlay = 'perf_overlay_enabled';
 
@@ -36,27 +76,38 @@ class PerfMonitor {
     await (await SharedPreferences.getInstance()).setBool(_kOverlay, value);
   }
 
-  /// Deletes samples and resets the overlay preference (#83).
+  /// Deletes samples and resets the overlay preference (#83). Work started
+  /// before this call cannot persist afterward; the returned future completes
+  /// once the file deletion (queued behind earlier writes) has settled.
   Future<void> clear() async {
+    _generation++;
     _samplesMs.clear();
     overlayEnabled.value = false;
+    final deletion = _enqueue(() async {
+      try {
+        final file = await _file();
+        if (await file.exists()) await file.delete();
+        lastStorageError.value = null;
+      } catch (e) {
+        lastStorageError.value = 'PerfMonitor clear failed: $e';
+        debugPrint('PerfMonitor clear failed: $e');
+      }
+    });
     await (await SharedPreferences.getInstance()).remove(_kOverlay);
-    try {
-      final file = await _file();
-      if (await file.exists()) await file.delete();
-    } catch (e) {
-      debugPrint('PerfMonitor clear failed: $e');
-    }
+    await deletion;
   }
 
   Future<T> measure<T>(String stage, Future<T> Function() work) async {
-    final start = DateTime.now();
+    final generation = _generation;
+    final start = _now();
     try {
       return await work();
     } finally {
-      final ms = DateTime.now().difference(start).inMilliseconds;
-      _samplesMs.putIfAbsent(stage, () => []).add(ms);
-      unawaited(_append(stage, ms));
+      if (generation == _generation) {
+        final ms = _now().difference(start).inMilliseconds;
+        _samplesMs.putIfAbsent(stage, () => []).add(ms);
+        unawaited(_append(stage, ms, generation));
+      }
     }
   }
 
@@ -70,15 +121,27 @@ class PerfMonitor {
     return sorted[sorted.length ~/ 2];
   }
 
-  Future<File> _file() async =>
-      File('${(await getApplicationDocumentsDirectory()).path}/perf.jsonl');
+  Future<File> _file() async => _fileProvider != null
+      ? _fileProvider()
+      : File('${(await getApplicationDocumentsDirectory()).path}/perf.jsonl');
 
-  Future<void> _append(String stage, int ms) async {
+  Future<void> _append(
+    String stage,
+    int ms,
+    int generation,
+  ) => _enqueue(() async {
+    // Re-checked when the write actually runs: a clear that arrived while
+    // this append was queued wins.
+    if (generation != _generation) return;
     try {
       await (await _file()).writeAsString(
-        '${jsonEncode({'stage': stage, 'ms': ms, 'at': DateTime.now().toIso8601String()})}\n',
+        '${jsonEncode({'stage': stage, 'ms': ms, 'at': _now().toIso8601String()})}\n',
         mode: FileMode.append,
       );
-    } catch (_) {}
-  }
+      lastStorageError.value = null;
+    } catch (e) {
+      lastStorageError.value = 'PerfMonitor write failed: $e';
+      debugPrint('PerfMonitor write failed: $e');
+    }
+  });
 }
