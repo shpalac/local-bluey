@@ -2,8 +2,22 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:local_bluey/services/audio_capture.dart';
 import 'package:local_bluey/services/key_recording_intent.dart';
+
+class _SynchronousTemp implements Directory {
+  _SynchronousTemp(this.path);
+  @override
+  final String path;
+  @override
+  Stream<FileSystemEntity> list({
+    bool recursive = false,
+    bool followLinks = true,
+  }) => const Stream.empty();
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 class Driver implements RecorderDriver {
   String? hold, fail, path;
@@ -750,4 +764,103 @@ void main() {
     await f.owner.start();
     expect(f.driver.starts, 2);
   });
+  test(
+    'disposed before recovery zero effects and retained capture uncertainty',
+    () async {
+      final f = Fixture();
+      await f.init();
+      addTearDown(f.finish);
+      f.driver.partialStart = true;
+      await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+      await expectLater(
+        f.owner.disposeIntent(),
+        throwsA(isA<KeyRecordingException>()),
+      );
+      final starts = f.driver.starts,
+          stops = f.driver.stops,
+          disposals = f.driver.disposals;
+      final exact = f.driver.path!;
+      var notices = 0;
+      f.owner.addListener(() => notices++);
+      await f.owner.recover();
+      await f.owner.start();
+      await f.owner.send();
+      expect(f.driver.starts, starts);
+      expect(f.driver.stops, stops);
+      expect(f.driver.disposals, disposals);
+      expect(File(exact).existsSync(), true);
+      expect(f.delivered, isEmpty);
+      expect(notices, 0);
+      expect(f.owner.cleanupPending, true);
+    },
+  );
+  for (final recoveryFirst in [false, true]) {
+    test(
+      'key held cap send recovery exact owner recoveryFirst=$recoveryFirst',
+      () {
+        final dir = Directory.systemTemp.createTempSync('key-cap-recovery-');
+        final delivered = <String>[], deleted = <String>[];
+        fakeAsync((async) {
+          final driver = Driver()..hold = 'stop';
+          final capture = AudioCapture(
+            driver: driver,
+            maxDuration: const Duration(seconds: 1),
+            tempDirProvider: () async => _SynchronousTemp(dir.path),
+            deleteFile: (file) async {
+              deleted.add(file.path);
+              if (file.existsSync()) file.deleteSync();
+            },
+          );
+          final owner = KeyRecordingIntent(
+            capture: capture,
+            deliver: (file) async {
+              delivered.add(file.path);
+              if (file.existsSync()) file.deleteSync();
+            },
+            delete: (file) async {
+              deleted.add(file.path);
+              if (file.existsSync()) file.deleteSync();
+            },
+          );
+          owner.start();
+          async.flushMicrotasks();
+          expect(driver.starts, 1);
+          final exact = driver.path!;
+          async.elapse(const Duration(seconds: 1));
+          async.flushMicrotasks();
+          expect(driver.entered.isCompleted, true);
+          expect(driver.stops, 1);
+          Future<void> send, recover;
+          if (recoveryFirst) {
+            recover = owner.recover();
+            send = owner.send();
+          } else {
+            send = owner.send();
+            recover = owner.recover();
+          }
+          var sent = false, recovered = false;
+          send.then((_) => sent = true);
+          recover.then((_) => recovered = true);
+          async.flushMicrotasks();
+          expect(sent, false);
+          expect(recovered, false);
+          driver.release.complete();
+          async.flushMicrotasks();
+          expect(sent, true);
+          expect(recovered, true);
+          expect(driver.stops, 1);
+          expect(delivered, recoveryFirst ? isEmpty : [exact]);
+          expect(deleted, recoveryFirst ? [exact] : isEmpty);
+          expect(File(exact).existsSync(), false);
+          expect(owner.cleanupPending, false);
+          owner.disposeIntent();
+          async.flushMicrotasks();
+          owner.dispose();
+          capture.dispose();
+          async.flushMicrotasks();
+        });
+        dir.deleteSync(recursive: true);
+      },
+    );
+  }
 }

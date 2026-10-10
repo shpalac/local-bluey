@@ -256,8 +256,10 @@ class KeyRecordingIntent extends ChangeNotifier {
     }
   }
 
-  /// Stops owned effects before caller disposes the shared capture.
-  /// Repeating dispose explicitly retries retained stop/delete uncertainty.
+  /// Attempts owned cleanup before caller closes the shared capture.
+  /// Repeated dispose can retry separately key-owned file deletion only.
+  /// Capture cleanup uncertainty stays retained; disposed owners cannot
+  /// recover or revive. [closeCapture] still attempts shared disposal.
   Future<void> disposeIntent() {
     _disposed = true;
     _ended = true;
