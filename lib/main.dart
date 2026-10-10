@@ -771,7 +771,7 @@ class _IosHomeState extends State<IosHome> {
   @override
   void initState() {
     super.initState();
-    unawaited(RemoteHaptics.instance.load());
+    unawaited(RemoteHaptics.instance.loadForStartup());
     _link = MacLink(deviceName: SupportMatrix.deviceName());
     _link.faces.listen((face) {
       if (mounted) setState(() => _face = face);

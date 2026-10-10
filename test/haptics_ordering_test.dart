@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/haptics.dart';
@@ -267,6 +268,34 @@ void main() {
       fail = false;
       await c.load();
       expect(c.enabled, isFalse);
+      c.dispose();
+    },
+  );
+  test(
+    'production startup consumes read failure and explicit retry recovers',
+    () async {
+      var fail = true;
+      final c = RemoteHaptics.forTest(
+        read: () async {
+          if (fail) throw StateError('private startup detail');
+          return false;
+        },
+        write: (value) async => true,
+        remove: () async => true,
+      );
+      await c.loadForStartup();
+      expect(c.enabled, isTrue);
+      fail = false;
+      await c.load();
+      expect(c.enabled, isFalse);
+      expect(
+        File('lib/main.dart').readAsStringSync(),
+        contains('unawaited(RemoteHaptics.instance.loadForStartup());'),
+      );
+      expect(
+        File('lib/main.dart').readAsStringSync(),
+        isNot(contains('unawaited(RemoteHaptics.instance.load());')),
+      );
       c.dispose();
     },
   );

@@ -131,6 +131,16 @@ class RemoteHaptics extends ChangeNotifier {
     return next;
   }
 
+  /// Startup is best effort: retain the last honest/default state on a read
+  /// failure, consume the async error and permit a later explicit load retry.
+  Future<void> loadForStartup() async {
+    try {
+      await load();
+    } on HapticsStorageException {
+      // No raw storage details or optimistic preference change.
+    }
+  }
+
   /// Ordered load, with superseded publication rejected.
   Future<void> load() => _enqueue((generation) async {
     _publish(await _read() ?? true, generation);
