@@ -129,18 +129,19 @@ class _LocalBlueyAppState extends State<LocalBlueyApp> {
               ? TextDirection.rtl
               : TextDirection.ltr,
           // Always-visible watch indicator on every route (#212).
-          child: WatchBanner(
-            child: Column(
-              children: [
-                if (widget.appearance != null)
-                  Material(
+          child: Column(
+            children: [
+              if (widget.appearance != null)
+                SafeArea(
+                  bottom: false,
+                  child: Material(
                     child: AppearanceStartupNotice(
                       controller: widget.appearance!,
                     ),
                   ),
-                Expanded(child: child!),
-              ],
-            ),
+                ),
+              Expanded(child: WatchBanner(child: child!)),
+            ],
           ),
         ),
         home: widget.home,

@@ -31,7 +31,7 @@ class AppearanceStartup extends ChangeNotifier {
   Future<void> reload() {
     if (_disposed) return Future<void>.value();
     final generation = ++_generation;
-    final op = _run(generation);
+    final op = Future<void>.microtask(() => _run(generation));
     _pending = op;
     op.then((_) {
       if (identical(_pending, op)) _pending = null;

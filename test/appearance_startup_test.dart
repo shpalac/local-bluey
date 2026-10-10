@@ -145,6 +145,36 @@ void main() {
       c.dispose();
     });
   }
+  test(
+    'reentrant loading retry joins installed owner with one actual read',
+    () async {
+      var reads = 0;
+      final gate = Completer<void>();
+      final theme = ThemeController.forTest(
+        read: () async {
+          reads++;
+          await gate.future;
+          return 'dark';
+        },
+        write: (_) async => true,
+        remove: () async => true,
+      );
+      final c = AppearanceStartup(reload: theme.load);
+      Future<void>? joined;
+      c.addListener(() {
+        if (c.loading) joined = c.retry();
+      });
+      final op = c.reload();
+      await Future<void>.delayed(Duration.zero);
+      expect(identical(op, joined), true);
+      expect(reads, 1);
+      gate.complete();
+      await op;
+      expect(reads, 1);
+      c.dispose();
+      theme.dispose();
+    },
+  );
   test('reentrant caller disposal prevents not-yet-entered load', () async {
     var reads = 0;
     final c = AppearanceStartup(
