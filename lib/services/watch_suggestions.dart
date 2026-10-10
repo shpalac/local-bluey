@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'watch_context.dart';
+import 'watch_policy.dart';
 import 'watch_pipeline.dart';
 
 /// A read-only, screen-aware suggestion (#214). It never does anything:
@@ -37,7 +38,16 @@ class WatchSuggestion {
 /// it is quoted as evidence and shown; nothing in this layer can hand it
 /// to a tool or treat it as an instruction.
 class WatchSuggestions {
-  WatchSuggestions({Clock? clock}) : _clockOverride = clock;
+  WatchSuggestions({
+    Clock? clock,
+    Future<Set<String>> Function()? readNeverApps,
+  }) : _clockOverride = clock,
+       _readNeverApps = readNeverApps ?? neverApps;
+
+  final Future<Set<String>> Function() _readNeverApps;
+  int _generation = 0;
+  bool _disposed = false;
+  Future<void>? _disposal;
 
   final Clock? _clockOverride;
   Clock get _clock => _clockOverride ?? clock;
@@ -60,13 +70,26 @@ class WatchSuggestions {
 
   int _shownThisSession = 0;
   DateTime? _lastShownAt;
-  final Map<String, int> _repeatedSummaries = {};
+
+  /// Maximum retained repetition keys, evicted in first-in order.
+  static const maxRepeatedKeys = 64;
+
+  /// Maximum retained detail code units. Oversized events stay silent rather
+  /// than merging distinct truncated prefixes into a false repeated trigger.
+  static const maxDetailLength = 512;
+
+  /// Maximum retained app display/identity code units.
+  static const maxAppLength = 128;
+  final Map<(String, String), int> _repeatedSummaries = {};
+
+  /// Number of retained keys, exposed for deterministic bounded-state tests.
+  int get retainedKeyCount => _repeatedSummaries.length;
 
   /// Apps the user said "never" to.
   static Future<Set<String>> neverApps() async =>
       ((await SharedPreferences.getInstance()).getStringList(_kNeverApps) ??
               const [])
-          .map((a) => a.toLowerCase())
+          .map(WatchPolicy.normalize)
           .toSet();
 
   /// Persists a per-app "never suggest" choice.
@@ -81,6 +104,8 @@ class WatchSuggestions {
 
   /// Session lifecycle: counters reset with each new session.
   void resetSession() {
+    if (_disposed) return;
+    _generation++;
     _shownThisSession = 0;
     _lastShownAt = null;
     _repeatedSummaries.clear();
@@ -88,15 +113,34 @@ class WatchSuggestions {
 
   /// Feeds one event. Returns the suggestion if one was emitted.
   Future<WatchSuggestion?> onEvent(WatchEvent event) async {
-    final context = WatchContext.infer([event]);
+    if (_disposed) return null;
+    final gen = _generation;
+    final displayApp = event.app.trim();
+    final app = WatchPolicy.normalize(event.app);
+    final detail = event.detail.trim();
+    if (event.app.length > maxAppLength ||
+        event.detail.length > maxDetailLength) {
+      return null;
+    }
+    final canonical = WatchEvent(
+      kind: event.kind,
+      at: event.at,
+      app: app,
+      detail: detail,
+    );
+    final context = WatchContext.infer([canonical]);
     if (context == null || context.confidence < WatchContext.confidentEnough) {
       return null;
     }
-    if (await neverApps().then(
-      (apps) => apps.contains(context.app.toLowerCase()),
-    )) {
-      return null;
+    final Set<String> never;
+    try {
+      never = await _readNeverApps();
+    } catch (_) {
+      if (_disposed || gen != _generation) return null;
+      rethrow;
     }
+    if (_disposed || gen != _generation) return null;
+    if (never.map(WatchPolicy.normalize).contains(app)) return null;
     if (_shownThisSession >= maxPerSession) return null;
     final lastShown = _lastShownAt;
     if (lastShown != null && _clock.now().difference(lastShown) < minGap) {
@@ -105,10 +149,14 @@ class WatchSuggestions {
 
     // Trigger (first slice): the same problem text keeps showing up on
     // screen - e.g. a repeated terminal error or a form re-entered.
-    if (event.kind != WatchEventKind.visionCall || event.detail.isEmpty) {
+    if (event.kind != WatchEventKind.visionCall || detail.isEmpty) {
       return null;
     }
-    final normalized = event.detail.trim().toLowerCase();
+    final normalized = (app, detail.toLowerCase());
+    if (!_repeatedSummaries.containsKey(normalized) &&
+        _repeatedSummaries.length >= maxRepeatedKeys) {
+      _repeatedSummaries.remove(_repeatedSummaries.keys.first);
+    }
     final count = (_repeatedSummaries[normalized] ?? 0) + 1;
     _repeatedSummaries[normalized] = count;
     if (count < repeatTriggerCount) return null;
@@ -116,14 +164,14 @@ class WatchSuggestions {
 
     _shownThisSession++;
     _lastShownAt = _clock.now();
-    // The evidence is quoted verbatim as DATA. It is displayed to the
+    // The bounded evidence is quoted as DATA. It is displayed to the
     // user exactly because screen text can lie; nothing here acts on it.
     final suggestion = WatchSuggestion(
       reason: 'This keeps showing up on your screen',
       evidence:
-          '"${event.detail}" in ${event.app} '
+          '"${event.detail}" in $displayApp '
           '($count times this session)',
-      app: event.app,
+      app: displayApp,
       at: _clock.now(),
     );
     _controller.add(suggestion);
@@ -131,5 +179,11 @@ class WatchSuggestions {
   }
 
   /// Closes the suggestion stream.
-  Future<void> dispose() => _controller.close();
+  Future<void> dispose() {
+    if (_disposed) return _disposal!;
+    _disposed = true;
+    _generation++;
+    _repeatedSummaries.clear();
+    return _disposal = _controller.close();
+  }
 }
