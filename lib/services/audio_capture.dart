@@ -75,6 +75,7 @@ class AudioCapture {
   final Future<Directory> Function() _tempDirProvider;
   final Future<void> Function(File) _deleteFile;
   final Set<String> _cleanupFiles = {};
+  Future<void>? _cleanupOp;
 
   /// Hard cap on one hold-to-talk recording (#117).
   final Duration maxDuration;
@@ -195,7 +196,23 @@ class AudioCapture {
     if (await file.exists()) await file.delete();
   }
 
-  Future<void> _cleanupOwnedFiles() async {
+  Future<void> _cleanupOwnedFiles() {
+    final pending = _cleanupOp;
+    if (pending != null) return pending;
+    final op = _deleteCleanupFiles();
+    _cleanupOp = op;
+    op.then(
+      (_) {
+        _cleanupOp = null;
+      },
+      onError: (Object _, StackTrace _) {
+        _cleanupOp = null;
+      },
+    );
+    return op;
+  }
+
+  Future<void> _deleteCleanupFiles() async {
     for (final path in _cleanupFiles.toList()) {
       await _deleteFile(File(path));
       // Remove only after successful file operation.

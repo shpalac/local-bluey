@@ -300,6 +300,62 @@ void main() {
     },
   );
 
+  for (final fail in [false, true]) {
+    test(
+      'entered closing delete joins stop and repeated dispose failure=$fail',
+      () async {
+        final driver = FakeDriver();
+        final entered = Completer<void>();
+        final gate = Completer<void>();
+        final paths = <String>[];
+        var failDelete = fail;
+        final capture = AudioCapture(
+          driver: driver,
+          tempDirProvider: () async => EmptyTempDirectory(),
+          deleteFile: (file) async {
+            paths.add(file.path);
+            if (!entered.isCompleted) entered.complete();
+            await gate.future;
+            if (failDelete) throw StateError('private deletion detail');
+          },
+        );
+        await capture.start();
+        final close = capture.dispose();
+        final closeResult = fail
+            ? expectLater(close, throwsA(isA<CaptureLifecycleException>()))
+            : close;
+        await entered.future;
+        expect(identical(close, capture.dispose()), true);
+        final a = capture.stop();
+        final b = capture.stop();
+        final releaseResults = fail
+            ? Future.wait([
+                expectLater(a, throwsA(isA<CaptureLifecycleException>())),
+                expectLater(b, throwsA(isA<CaptureLifecycleException>())),
+              ])
+            : Future.wait([a, b]);
+        await Future<void>.delayed(Duration.zero);
+        expect(paths, ['/tmp/fake_capture.m4a']);
+        expect(driver.stopCalls, 1);
+        gate.complete();
+        await closeResult;
+        await releaseResults;
+        expect(driver.disposeCalls, 1);
+        expect(capture.cleanupPending, fail);
+        if (fail) {
+          failDelete = false;
+          await Future.wait([capture.dispose(), capture.stop()]);
+          expect(paths, ['/tmp/fake_capture.m4a', '/tmp/fake_capture.m4a']);
+        }
+        expect(capture.cleanupPending, false);
+        expect(driver.stopCalls, 1);
+        expect(driver.disposeCalls, 1);
+        await capture.dispose();
+        expect(paths.length, fail ? 2 : 1);
+      },
+    );
+  }
+
   test('temp failure before driver entry is not native uncertainty', () async {
     final driver = FakeDriver();
     var fail = true;
