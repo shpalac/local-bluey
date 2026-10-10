@@ -78,17 +78,7 @@ class DataRegistry {
       where: 'SharedPreferences (holdkey.*)',
       retentionEn: 'Kept until you delete it',
       retentionHe: 'נשמר עד שמוחקים',
-      clear: () async {
-        final prefs = await SharedPreferences.getInstance();
-        for (final key in [
-          'holdkey.enabled',
-          'holdkey.key',
-          'holdkey.thresholdMs',
-        ]) {
-          await prefs.remove(key);
-        }
-        await HoldKeySettings.instance.load();
-      },
+      clear: () => HoldKeySettings.instance.clear(),
     ),
     DataStoreInfo(
       id: 'model_store',
