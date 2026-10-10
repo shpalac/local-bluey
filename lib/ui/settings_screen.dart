@@ -65,6 +65,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _saving = false;
   int _loadGeneration = 0;
   bool _localOnly = false;
+  bool _privacyUncertain = true;
+  late final LocalOnlyPreferences _privacyOwner;
+  int _privacyWriteGeneration = 0;
   UiLanguage _uiLanguage = Strings.uiLanguage;
   String _speechLanguage = Strings.speechLanguage;
   late final LanguagePreferences _languageOwner;
@@ -84,6 +87,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _privacyOwner = PrivacyGuard.preferences;
+    _privacyOwner.addListener(_refreshPrivacy);
     _languageOwner = Strings.preferences;
     _languageOwner.addListener(_refreshLanguage);
     _reloadFields('privacy');
@@ -125,6 +130,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _perfOverlay = value as bool;
           } else {
             _localOnly = value as bool;
+            _privacyUncertain = false;
           }
         });
       }
@@ -163,6 +169,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  void _refreshPrivacy() {
+    if (!mounted) return;
+    setState(() {
+      _privacyUncertain = _privacyOwner.value == null;
+      if (!_privacyUncertain) {
+        _localOnly = _privacyOwner.value!;
+        _failedFields.remove('privacy');
+      }
+    });
+  }
+
+  Future<void> _changePrivacy(bool value) async {
+    final generation = ++_privacyWriteGeneration;
+    _fieldGenerations['privacy'] = (_fieldGenerations['privacy'] ?? 0) + 1;
+    _pendingFields.remove('privacy');
+    var failed = false;
+    try {
+      await PrivacyGuard.setLocalOnly(value);
+    } catch (_) {
+      failed = true;
+    }
+    if (!mounted || generation != _privacyWriteGeneration) return;
+    _refreshPrivacy();
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    if (failed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not update local-only mode. Please retry.'),
+        ),
+      );
+    }
+  }
+
   void _refreshLanguage() {
     if (!mounted) return;
     setState(() {
@@ -198,6 +237,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _onDataCleared(String? storeId) async {
     if (!mounted) return;
+    if (storeId == 'privacy') _privacyWriteGeneration++;
     if (storeId == 'language') {
       _languageGeneration++;
       setState(() {
@@ -210,7 +250,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (storeId == 'safety' || storeId == 'perf' || storeId == 'privacy') {
       // Drop the form's unsaved values before reading the cleared source.
       setState(() {
-        if (storeId == 'safety') {
+        if (storeId == 'privacy') {
+          _privacyUncertain = _privacyOwner.value == null;
+          if (!_privacyUncertain) _localOnly = _privacyOwner.value!;
+        } else if (storeId == 'safety') {
           _allowlist.clear();
           _safetyEnabled = true;
           _gatePause = null;
@@ -252,6 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    _privacyOwner.removeListener(_refreshPrivacy);
     _languageOwner.removeListener(_refreshLanguage);
     _baseUrl.dispose();
     _model.dispose();
@@ -615,14 +659,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 24),
             SwitchListTile(
               title: const Text('Local-only mode'),
-              subtitle: const Text(
-                'Refuse providers that send data off this Mac',
+              subtitle: Text(
+                _privacyUncertain
+                    ? 'Local-only preference is unverified. Please retry.'
+                    : 'Refuse providers that send data off this Mac',
               ),
               value: _localOnly,
-              onChanged: (v) async {
-                setState(() => _localOnly = v);
-                await PrivacyGuard.setLocalOnly(v);
-              },
+              onChanged: _changePrivacy,
             ),
             SwitchListTile(
               title: const Text('Safety gate'),

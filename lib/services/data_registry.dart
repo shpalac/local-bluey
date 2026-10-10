@@ -14,6 +14,7 @@ import 'conversation.dart';
 import 'egress_monitor.dart';
 import 'model_store.dart';
 import 'perf_monitor.dart';
+import 'privacy_guard.dart';
 import 'routines.dart';
 import 'settings_store.dart';
 import 'safety_gate.dart';
@@ -288,10 +289,7 @@ class DataRegistry {
       where: 'SharedPreferences',
       retentionEn: 'Kept until you delete it',
       retentionHe: 'נשמר עד שמוחקים',
-      clear: () async {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('privacy.localOnly');
-      },
+      clear: PrivacyGuard.clearLocalOnly,
     ),
     DataStoreInfo(
       id: 'watch_policy',

@@ -17,13 +17,25 @@ class PrivacyGuard {
   static Future<bool> isLocalOnly() async {
     final override = debugLocalOnlyOverride;
     if (override != null) return override;
-    return (await SharedPreferences.getInstance()).getBool(_kLocalOnly) ??
-        false;
+    return preferences.read();
   }
 
-  /// Persists the local-only setting.
-  static Future<void> setLocalOnly(bool value) async =>
-      (await SharedPreferences.getInstance()).setBool(_kLocalOnly, value);
+  /// Shared preference owner, independent of URL/redaction policy.
+  static final _preferences = LocalOnlyPreferences();
+
+  /// Isolated actual storage owner for fixtures.
+  @visibleForTesting
+  static LocalOnlyPreferences? debugPreferences;
+
+  /// Active owner used by registry and Settings.
+  static LocalOnlyPreferences get preferences =>
+      debugPreferences ?? _preferences;
+
+  /// Persists before reporting a successful local-only choice.
+  static Future<void> setLocalOnly(bool value) => preferences.set(value);
+
+  /// Explicit ordered registry deletion, default false after success.
+  static Future<void> clearLocalOnly() => preferences.clear();
 
   /// True when [url] points at this machine (#121).
   ///
@@ -92,5 +104,113 @@ class PrivacyGuard {
       out = out.replaceAllMapped(pattern, (m) => '[redacted]');
     }
     return out;
+  }
+}
+
+/// Safe storage uncertainty. Never implies that remote calls are allowed.
+class PrivacyStorageException implements Exception {
+  /// Creates a generic preference failure.
+  const PrivacyStorageException();
+  @override
+  String toString() =>
+      'Local-only preference could not be verified or updated.';
+}
+
+/// Orders actual preference reads, writes and explicit deletion.
+class LocalOnlyPreferences extends ChangeNotifier {
+  /// Uses preferences by default or injected actual operations for tests.
+  LocalOnlyPreferences({
+    Future<bool?> Function()? read,
+    Future<bool> Function(bool)? write,
+    Future<bool> Function()? remove,
+  }) : _read =
+           read ??
+           (() async => (await SharedPreferences.getInstance()).getBool(
+             PrivacyGuard._kLocalOnly,
+           )),
+       _write =
+           write ??
+           ((value) async => (await SharedPreferences.getInstance()).setBool(
+             PrivacyGuard._kLocalOnly,
+             value,
+           )),
+       _remove =
+           remove ??
+           (() async => (await SharedPreferences.getInstance()).remove(
+             PrivacyGuard._kLocalOnly,
+           ));
+
+  final Future<bool?> Function() _read;
+  final Future<bool> Function(bool) _write;
+  final Future<bool> Function() _remove;
+  Future<void>? _tail;
+  int _revision = 0;
+  int _clearEpoch = 0;
+  bool? _value;
+
+  /// Last verified preference, null if not yet verified or read failed.
+  bool? get value => _value;
+
+  void _publish(bool? value, int revision) {
+    if (revision != _revision) return;
+    _value = value;
+    notifyListeners();
+  }
+
+  Future<T> _enqueue<T>(
+    Future<T> Function(int) action, {
+    bool mutation = true,
+  }) {
+    final revision = mutation ? ++_revision : _revision;
+    final next = (_tail ?? Future<void>.value()).then((_) async {
+      try {
+        return await action(revision);
+      } catch (_) {
+        if (revision == _revision) {
+          try {
+            _publish(await _read() ?? false, revision);
+          } catch (_) {
+            _publish(null, revision);
+          }
+        }
+        throw const PrivacyStorageException();
+      }
+    });
+    final settled = next.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    _tail = settled;
+    settled.then((_) {
+      if (identical(_tail, settled)) _tail = null;
+    });
+    return next;
+  }
+
+  /// Fresh source read; superseded or failed reads never fabricate OFF.
+  Future<bool> read() => _enqueue((revision) async {
+    final value = await _read() ?? false;
+    if (revision != _revision) throw const PrivacyStorageException();
+    _publish(value, revision);
+    return value;
+  }, mutation: false);
+
+  /// Persists and reconciles actual state before success publication.
+  Future<void> set(bool value) {
+    final epoch = _clearEpoch;
+    return _enqueue((revision) async {
+      if (epoch != _clearEpoch) return;
+      if (!await _write(value)) throw const PrivacyStorageException();
+      _publish(await _read() ?? false, revision);
+    });
+  }
+
+  /// Orders removal behind entered writes; invalidates older queued choices.
+  Future<void> clear() {
+    _clearEpoch++;
+    return _enqueue((revision) async {
+      if (!await _remove()) throw const PrivacyStorageException();
+      _publish(await _read() ?? false, revision);
+    });
   }
 }
