@@ -241,6 +241,35 @@ void main() {
       c.dispose();
     },
   );
+  test(
+    'throwing read reports safe error and explicit retry recovers',
+    () async {
+      var fail = true;
+      final c = RemoteHaptics.forTest(
+        read: () async {
+          if (fail) throw StateError('private sentinel');
+          return false;
+        },
+        write: (value) async => true,
+        remove: () async => true,
+      );
+      await expectLater(
+        c.load(),
+        throwsA(
+          isA<HapticsStorageException>().having(
+            (e) => e.toString(),
+            'safe',
+            isNot(contains('private sentinel')),
+          ),
+        ),
+      );
+      expect(c.enabled, isTrue);
+      fail = false;
+      await c.load();
+      expect(c.enabled, isFalse);
+      c.dispose();
+    },
+  );
 }
 
 class Counting implements Haptics {
