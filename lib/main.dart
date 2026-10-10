@@ -755,7 +755,7 @@ class _IosHomeState extends State<IosHome> {
   late final MacLink _link;
   final _capture = AudioCapture();
   late final _reply = PhoneReplyReceiver(
-    player: AudioplayersReplyPlayer(),
+    createSession: AudioplayersReplySession.new,
     send: (packet) => _link.send(packet),
     showText: (text) {
       if (mounted) setState(() => _bubble = text);
