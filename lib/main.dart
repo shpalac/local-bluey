@@ -4,11 +4,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
-
-import 'package:path_provider/path_provider.dart';
 
 import 'link/mac_link.dart' show DiscoveredMac, MacLink;
 import 'link/models.dart';
@@ -32,6 +29,7 @@ import 'services/host_control.dart';
 import 'services/onboarding_checks.dart';
 import 'services/support_matrix.dart';
 import 'services/phone_audio.dart';
+import 'services/phone_reply.dart';
 import 'services/request_runner.dart';
 import 'services/hold_key_controller.dart';
 import 'services/speak_receipts.dart';
@@ -756,16 +754,30 @@ class IosHome extends StatefulWidget {
 class _IosHomeState extends State<IosHome> {
   late final MacLink _link;
   final _capture = AudioCapture();
-  final _player = AudioPlayer();
+  late final _reply = PhoneReplyReceiver(
+    createSession: AudioplayersReplySession.new,
+    send: (packet) => _link.send(packet),
+    showText: (text) {
+      if (!mounted) return;
+      setState(() {
+        _replyText = text;
+        _bubble = ReplyBubble.compose(text, _cleanupPending);
+      });
+    },
+    isActive: () => mounted,
+  );
   FaceState _face = FaceState(mood: Mood.sleepy);
   bool _connected = false;
   bool _awake = false;
   String? _bubble;
+  String? _replyText;
+  bool _cleanupPending = false;
 
   @override
   void initState() {
     super.initState();
     unawaited(RemoteHaptics.instance.loadForStartup());
+    _reply.cleanupPending.addListener(_onReplyCleanup);
     _link = MacLink(deviceName: SupportMatrix.deviceName());
     _link.faces.listen((face) {
       if (mounted) setState(() => _face = face);
@@ -779,36 +791,32 @@ class _IosHomeState extends State<IosHome> {
         ),
       );
     });
-    _link.packets.listen((packet) async {
+    _link.packets.listen((packet) {
       if (packet.command == 'say' && packet.text != null) {
-        setState(() => _bubble = packet.text);
         unawaited(RemoteHaptics.instance.fire(RemoteHapticEvent.answer));
-        if (packet.audio != null) {
-          final bytes = base64Decode(packet.audio!);
-          final file = File(
-            '${(await getTemporaryDirectory()).path}/bluey_say_'
-            '${DateTime.now().millisecondsSinceEpoch}.mp3',
-          );
-          await file.writeAsBytes(bytes, flush: true);
-          // Receipts: playback start + completion (#87).
-          _link.send(Packet(command: 'playing', speech: packet.speech));
-          await _player.play(DeviceFileSource(file.path));
-          await _player.onPlayerComplete.first;
-          _link.send(Packet(command: 'done', speech: packet.speech));
-        } else {
-          // Text-only reply: display is the receipt (#87).
-          _link.send(Packet(command: 'done', speech: packet.speech));
-        }
       }
+      _reply.handle(packet);
     });
     _link.start();
+  }
+
+  /// Adds or removes the short safe note; the latest answer is preserved.
+  void _onReplyCleanup() {
+    if (!mounted) return;
+    final now = _reply.cleanupPending.value > 0;
+    if (now == _cleanupPending) return;
+    setState(() {
+      _bubble = ReplyBubble.next(_bubble, _replyText, _cleanupPending, now);
+      _cleanupPending = now;
+    });
   }
 
   @override
   void dispose() {
     _link.stop();
     _capture.dispose();
-    _player.dispose();
+    _reply.cleanupPending.removeListener(_onReplyCleanup);
+    unawaited(_reply.dispose());
     super.dispose();
   }
 
