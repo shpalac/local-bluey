@@ -24,9 +24,17 @@ void main() {
 
   test('#85: a throwing check reports unknown, never a false pass', () async {
     final results = await Diagnostics.run(
-      overrides: {'boom': () async => throw StateError('x')},
+      isLinux: () => false,
+      overrides: {
+        'provider': () async => _r('provider', CheckStatus.unknown),
+        'boom': () async => throw StateError('x'),
+      },
     );
     expect(results.every((r) => r.status != CheckStatus.pass), isTrue);
+    expect(
+      results.singleWhere((r) => r.id == 'boom').status,
+      CheckStatus.unknown,
+    );
   });
 
   test('#85: diagnostics report redacts keys', () {
