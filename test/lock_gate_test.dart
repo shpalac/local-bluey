@@ -7,6 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/biometric_lock.dart';
+import 'package:local_bluey/services/data_registry.dart';
 import 'package:local_bluey/services/strings.dart';
 import 'package:local_bluey/ui/app_lock_tile.dart';
 import 'package:local_bluey/ui/data_privacy_section.dart';
@@ -401,5 +402,98 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+  }
+
+  // Rendered state of the #363 registry clear route: failure snackbar with the
+  // switch still on, then recovery with the switch off. Synthetic prefs only.
+  for (final language in [UiLanguage.english, UiLanguage.hebrew]) {
+    testWidgets('capture #363 clear route ${language.name}', (tester) async {
+      if (captureDir.isEmpty) return;
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      Strings.uiLanguage = language;
+      const fontPath = String.fromEnvironment(
+        'LOCK_CAPTURE_FONT',
+        defaultValue: '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+      );
+      await tester.runAsync(() async {
+        final data = await File(fontPath).readAsBytes();
+        final loader = FontLoader('Roboto')
+          ..addFont(Future.value(ByteData.sublistView(data)));
+        await loader.load();
+        final icons = FontLoader('MaterialIcons')
+          ..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
+        await icons.load();
+      });
+      SharedPreferences.setMockInitialValues({'lock.enabled': true});
+      final lock = BiometricLock.instance;
+      lock.debugAuthenticator = _Auth()..result = AuthResult.success;
+      await tester.runAsync(lock.load);
+      var fail = true;
+      lock.debugStorage(
+        remove: () async {
+          if (fail) throw StateError('synthetic removal failure');
+          return (await SharedPreferences.getInstance()).remove('lock.enabled');
+        },
+      );
+      final key = GlobalKey();
+      await tester.pumpWidget(
+        RepaintBoundary(
+          key: key,
+          child: _app(
+            Scaffold(
+              body: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    AppLockTile(lock: lock),
+                    const DataPrivacySection(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      Future<void> shot(String name) async {
+        await tester.ensureVisible(find.byType(Switch));
+        await tester.pump();
+        final boundary =
+            key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+        await tester.runAsync(() async {
+          final image = await boundary.toImage(pixelRatio: 1);
+          final bytes = (await image.toByteData(
+            format: ui.ImageByteFormat.png,
+          ))!;
+          await Directory(captureDir).create(recursive: true);
+          await File('$captureDir/${language.name}-clear-$name.png')
+              .writeAsBytes(bytes.buffer.asUint8List());
+          image.dispose();
+        });
+      }
+
+      final store = DataRegistry.stores.firstWhere(
+        (s) => s.id == 'app_lock_pref',
+      );
+      final row = find.widgetWithText(
+        ListTile,
+        Strings.t(store.whatEn, store.whatHe),
+      );
+      final clear = find.descendant(of: row, matching: find.byType(IconButton));
+      await tester.ensureVisible(clear);
+      await tester.tap(clear);
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      await shot('failed');
+      fail = false;
+      await tester.pump(const Duration(seconds: 5));
+      await tester.tap(clear);
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      await shot('recovered');
+      lock.debugStorage();
+      await tester.runAsync(lock.clearPreference);
+    });
   }
 }

@@ -185,29 +185,77 @@ void main() {
       expect(lock.enabled, isFalse);
     });
 
-    test('removal failure reaches the caller and retry works', () async {
-      var fail = true;
+    test(
+      'entered removal retains the real preference until it fails',
+      () async {
+        SharedPreferences.setMockInitialValues({'lock.enabled': true});
+        final release = Completer<void>();
+        var entered = false;
+        var fail = true;
+        final lock = BiometricLock.forTesting(
+          authenticator: _FakeAuth(AuthResult.success),
+        );
+        await lock.load();
+        lock.debugStorage(
+          remove: () async {
+            entered = true;
+            await release.future;
+            if (fail) throw StateError('secret path /private/prefs.plist');
+            return (await SharedPreferences.getInstance()).remove(
+              'lock.enabled',
+            );
+          },
+        );
+        final first = lock.clearPreference();
+        final outcome = expectLater(
+          first,
+          throwsA(
+            isA<AppLockClearException>().having(
+              (e) => e.toString(),
+              'message',
+              isNot(contains('secret')),
+            ),
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+        expect(entered, isTrue);
+        expect(lock.enabled, isTrue, reason: 'unchanged while removal is held');
+        expect(
+          (await SharedPreferences.getInstance()).getBool('lock.enabled'),
+          isTrue,
+        );
+        release.complete();
+        await outcome;
+        expect(lock.enabled, isTrue, reason: 'cache still matches storage');
+        expect(
+          (await SharedPreferences.getInstance()).getBool('lock.enabled'),
+          isTrue,
+          reason: 'preference retained after failed removal',
+        );
+        fail = false; // retry on the same service and queue
+        await lock.clearPreference();
+        expect(lock.enabled, isFalse);
+        expect(
+          (await SharedPreferences.getInstance()).containsKey('lock.enabled'),
+          isFalse,
+        );
+      },
+    );
+
+    test('a false-return removal is a failure and retry works', () async {
+      var ok = false;
       final lock = BiometricLock.forTesting(
         authenticator: _FakeAuth(AuthResult.success),
         enabled: true,
-        remove: () async {
-          if (fail) throw StateError('secret path /private/prefs.plist');
-          return true;
-        },
+        remove: () async => ok,
       );
       await expectLater(
         lock.clearPreference(),
-        throwsA(
-          isA<AppLockClearException>().having(
-            (e) => e.toString(),
-            'message',
-            isNot(contains('secret')),
-          ),
-        ),
+        throwsA(isA<AppLockClearException>()),
       );
-      expect(lock.enabled, isTrue, reason: 'cache still matches storage');
-      fail = false;
-      await lock.clearPreference(); // queue still usable
+      expect(lock.enabled, isTrue);
+      ok = true;
+      await lock.clearPreference();
       expect(lock.enabled, isFalse);
     });
 
