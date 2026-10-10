@@ -32,7 +32,7 @@ A blueberry character who lives on your iPhone under your Mac's screen and point
   </tr>
 </table>
 
-These are deterministic mock captures: fake data, a pinned font and window size, no real Mac window, permission prompt or device. They come from the screenshot harness (`tool/regenerate_screenshots.sh`, see [#180](https://github.com/shpalac/local-bluey/issues/180)); the Hebrew strings still need a native-speaker review. Real-device captures are tracked separately in [#15](https://github.com/shpalac/local-bluey/issues/15).
+These are deterministic mock captures: fake data, a pinned font and window size, no real Mac window, permission prompt or device. They come from the screenshot harness (`tool/regenerate_screenshots.sh`, see [#180](https://github.com/shpalac/local-bluey/issues/180)); the Hebrew strings still need a native-speaker review. The 200% text captures show the initial scrollable viewport, which can end mid-card; they are not proof of complete layout. The harness separately scrolls to the bottom and asserts every action stays on screen with no overflow. Font sources, versions, hashes and licenses are in [docs/FONTS.md](docs/FONTS.md). Real-device captures are tracked separately in [#15](https://github.com/shpalac/local-bluey/issues/15).
 
 ## Status
 

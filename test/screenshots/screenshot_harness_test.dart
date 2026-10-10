@@ -264,6 +264,74 @@ void main() {
     });
   }
 
+  // The 200% captures above show the initial scrollable viewport, which can
+  // end mid-card. These assertions are the layout evidence: after scrolling
+  // to the bottom every action is on screen, and nothing overflows
+  // horizontally (a render overflow would be a thrown exception).
+  for (final v in const [
+    ('compact-dark-200', Size(720, 520), true, 2.0, false),
+    ('desktop-light-200', Size(1360, 845), false, 2.0, false),
+    ('he-dark-200', Size(720, 520), true, 2.0, true),
+  ]) {
+    testWidgets('onboarding ${v.$1} actions stay reachable', (tester) async {
+      if (v.$5) {
+        Strings.uiLanguage = UiLanguage.hebrew;
+        addTearDown(() => Strings.uiLanguage = UiLanguage.english);
+      }
+      tester.view.physicalSize = v.$2;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: withFonts(v.$3 ? AppTheme.dark() : AppTheme.light()),
+          builder: (context, app) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(v.$4)),
+            child: Directionality(
+              textDirection: v.$5 ? TextDirection.rtl : TextDirection.ltr,
+              child: app!,
+            ),
+          ),
+          home: OnboardingScreen(
+            readiness: _fakeReady,
+            onDone: () {},
+            checker: const _AllDeniedChecker(),
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 200)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+      final scrollables = find.byType(Scrollable);
+      if (scrollables.evaluate().isNotEmpty) {
+        await tester.drag(scrollables.first, const Offset(0, -5000));
+        await tester.pump(const Duration(milliseconds: 500));
+      }
+      final screen = Offset.zero & v.$2;
+      final buttons = find.byWidgetPredicate(
+        (w) => w is FilledButton || w is OutlinedButton || w is TextButton,
+      );
+      expect(buttons, findsWidgets);
+      for (final element in buttons.evaluate()) {
+        final rect = tester.getRect(find.byWidget(element.widget));
+        // Buttons inside the scrollable area that are not at the bottom may
+        // sit above the viewport after the scroll; only the bottom-most
+        // actions must be fully inside the window horizontally.
+        expect(rect.left >= screen.left - 0.5, isTrue, reason: '$rect');
+        expect(rect.right <= screen.right + 0.5, isTrue, reason: '$rect');
+      }
+      final bottomMost = buttons
+          .evaluate()
+          .map((e) => tester.getRect(find.byWidget(e.widget)))
+          .reduce((a, b) => a.bottom >= b.bottom ? a : b);
+      expect(bottomMost.bottom <= screen.bottom + 0.5, isTrue);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('settings default', (tester) async {
     await shot(tester, 'settings-default-light.png', const SettingsScreen());
   });
