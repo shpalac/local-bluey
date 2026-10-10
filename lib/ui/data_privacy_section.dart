@@ -7,13 +7,21 @@ import '../services/strings.dart';
 /// retention and a clear button, plus a guarded delete-all that returns the
 /// app to first-run state.
 class DataPrivacySection extends StatefulWidget {
-  const DataPrivacySection({super.key, this.onCleared, this.onBusyChanged});
+  const DataPrivacySection({
+    super.key,
+    this.onCleared,
+    this.onBusyChanged,
+    this.externalBusy = false,
+  });
 
   /// Notify the owning form after successful deletion, never on failure.
   final Future<void> Function(String? storeId)? onCleared;
 
   /// Prevent saves while deletion or its form reset is in progress.
   final void Function(bool busy)? onBusyChanged;
+
+  /// Excludes clear/delete-all while the owning form is saving.
+  final bool externalBusy;
 
   @override
   State<DataPrivacySection> createState() => _DataPrivacySectionState();
@@ -23,6 +31,7 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
   bool _busy = false;
 
   Future<void> _clearStore(DataStoreInfo store) async {
+    if (_busy || widget.externalBusy) return;
     setState(() => _busy = true);
     widget.onBusyChanged?.call(true);
     try {
@@ -48,6 +57,7 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
   }
 
   Future<void> _deleteAll() async {
+    if (_busy || widget.externalBusy) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -73,7 +83,8 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
         ],
       ),
     );
-    if (confirmed != true || !mounted) return;
+    if (confirmed != true || !mounted || widget.externalBusy) return;
+    if (_busy || widget.externalBusy) return;
     setState(() => _busy = true);
     widget.onBusyChanged?.call(true);
     try {
@@ -131,7 +142,9 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
             trailing: IconButton(
               tooltip: Strings.t('Clear', 'נקה'),
               icon: const Icon(Icons.delete_outline),
-              onPressed: _busy ? null : () => _clearStore(store),
+              onPressed: _busy || widget.externalBusy
+                  ? null
+                  : () => _clearStore(store),
             ),
           ),
         const SizedBox(height: 12),
@@ -143,7 +156,7 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
           ),
           child: OutlinedButton.icon(
             style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: _busy ? null : _deleteAll,
+            onPressed: _busy || widget.externalBusy ? null : _deleteAll,
             icon: const Icon(Icons.delete_forever),
             label: Text(
               Strings.t('Delete all local data', 'מחק את כל הנתונים המקומיים'),

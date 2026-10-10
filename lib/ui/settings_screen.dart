@@ -35,6 +35,16 @@ class SettingsScreen extends StatefulWidget {
   @visibleForTesting
   static Future<String> Function(BrainSettings settings)? debugTestChat;
 
+  /// Holds actual safety/perf/privacy read results for deterministic widget tests.
+  @visibleForTesting
+  static Future<Object> Function(String field, Future<Object> Function() read)?
+  debugReadField;
+
+  /// Holds an entered setter future to verify Save/clear exclusion.
+  @visibleForTesting
+  static Future<void> Function(String field, Future<void> Function() write)?
+  debugWriteField;
+
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
@@ -52,6 +62,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   BrainBackend _backend = BrainSettings.defaults.backend;
   bool _loaded = false;
   bool _deleting = false;
+  bool _saving = false;
   int _loadGeneration = 0;
   bool _localOnly = false;
   UiLanguage _uiLanguage = Strings.uiLanguage;
@@ -70,19 +81,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    PrivacyGuard.isLocalOnly().then((v) {
-      if (mounted) setState(() => _localOnly = v);
-    });
-    _gate.allowlist().then((v) {
-      if (mounted) setState(() => _allowlist.text = v.join(', '));
-    });
-    _gate.isEnabled().then((v) {
-      if (mounted) setState(() => _safetyEnabled = v);
-    });
-    PerfMonitor.instance.isOverlayEnabled().then((v) {
-      if (mounted) setState(() => _perfOverlay = v);
-    });
+    _reloadFields('privacy');
+    _reloadFields('safety');
+    _reloadFields('perf');
     _loadSettings();
+  }
+
+  final _fieldGenerations = <String, int>{};
+  final _pendingFields = <String>{};
+  final _failedFields = <String>{};
+
+  Future<Object> _readField(String name, Future<Object> Function() read) =>
+      SettingsScreen.debugReadField?.call(name, read) ?? read();
+
+  Future<void> _reloadFields(String store) async {
+    final generation = (_fieldGenerations[store] ?? 0) + 1;
+    _fieldGenerations[store] = generation;
+    _pendingFields.add(store);
+    _failedFields.remove(store);
+    try {
+      if (store == 'safety') {
+        final apps = await _readField('allowlist', () => _gate.allowlist());
+        if (!mounted || _fieldGenerations[store] != generation) return;
+        final enabled = await _readField('gate', () => _gate.isEnabled());
+        if (!mounted || _fieldGenerations[store] != generation) return;
+        setState(() {
+          _allowlist.text = (apps as Set<String>).join(', ');
+          _safetyEnabled = enabled as bool;
+          _gatePause = null;
+        });
+      } else {
+        final value = store == 'perf'
+            ? await _readField('overlay', PerfMonitor.instance.isOverlayEnabled)
+            : await _readField('localOnly', PrivacyGuard.isLocalOnly);
+        if (!mounted || _fieldGenerations[store] != generation) return;
+        setState(() {
+          if (store == 'perf') {
+            _perfOverlay = value as bool;
+          } else {
+            _localOnly = value as bool;
+          }
+        });
+      }
+    } catch (_) {
+      if (!mounted || _fieldGenerations[store] != generation) return;
+      _failedFields.add(store);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not reload settings. Clear the store again to retry.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted && _fieldGenerations[store] == generation) {
+        setState(() => _pendingFields.remove(store));
+      }
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -104,6 +159,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _onDataCleared(String? storeId) async {
+    if (!mounted) return;
+    if (storeId == 'safety' || storeId == 'perf' || storeId == 'privacy') {
+      // Drop the form's unsaved values before reading the cleared source.
+      setState(() {
+        if (storeId == 'safety') {
+          _allowlist.clear();
+          _safetyEnabled = true;
+          _gatePause = null;
+        } else if (storeId == 'perf') {
+          _perfOverlay = false;
+        } else {
+          _localOnly = false;
+        }
+      });
+      await _reloadFields(storeId!);
+      return;
+    }
     if (storeId != null && storeId != 'settings') return;
     _loadGeneration++; // Reject any stale initial load before resetting.
     for (final controller in [
@@ -119,6 +191,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       controller.clear();
     }
     if (storeId == null) {
+      for (final store in ['safety', 'perf', 'privacy']) {
+        _fieldGenerations[store] = (_fieldGenerations[store] ?? 0) + 1;
+      }
+      _allowlist.clear();
+      _gatePause = null;
       widget.onDeleteAll?.call();
       if (mounted) Navigator.of(context).pop(false);
       return;
@@ -158,33 +235,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ttsVoice: _ttsVoice.text.trim().isEmpty ? 'alloy' : _ttsVoice.text.trim(),
   );
 
+  Future<void> _writeField(String name, Future<void> Function() write) =>
+      SettingsScreen.debugWriteField?.call(name, write) ?? write();
+
   Future<void> _save() async {
-    if (_deleting || !_loaded) return;
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    try {
-      await SettingsStore.save(_current());
-    } catch (e) {
-      // #132: a failed save (e.g. locked keychain) must not pop silently.
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Could not save settings: $e')));
-      }
+    if (_saving ||
+        _deleting ||
+        !_loaded ||
+        _pendingFields.isNotEmpty ||
+        _failedFields.isNotEmpty) {
       return;
     }
-    await _gate.setEnabled(_safetyEnabled);
-    if (!_safetyEnabled && _gatePause != null) {
-      await _gate.pauseFor(_gatePause!);
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _saving = true);
+    try {
+      try {
+        await SettingsStore.save(_current());
+      } catch (e) {
+        // #132: a failed save (e.g. locked keychain) must not pop silently.
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not save settings: $e')),
+          );
+        }
+        return;
+      }
+      if (_deleting ||
+          _pendingFields.isNotEmpty ||
+          _failedFields.isNotEmpty ||
+          !mounted) {
+        return;
+      }
+      await _writeField('gate', () => _gate.setEnabled(_safetyEnabled));
+      if (!_safetyEnabled && _gatePause != null) {
+        await _writeField('pause', () => _gate.pauseFor(_gatePause!));
+      }
+      await _writeField(
+        'allowlist',
+        () => _gate.setAllowlist(
+          _allowlist.text
+              .split(',')
+              .map((e) => e.trim().toLowerCase())
+              .where((e) => e.isNotEmpty)
+              .toSet(),
+        ),
+      );
+      await _writeField(
+        'overlay',
+        () => PerfMonitor.instance.setOverlayEnabled(_perfOverlay),
+      );
+      if (mounted) Navigator.of(context).pop(true);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not save settings. Please retry.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
-    await _gate.setAllowlist(
-      _allowlist.text
-          .split(',')
-          .map((e) => e.trim().toLowerCase())
-          .where((e) => e.isNotEmpty)
-          .toSet(),
-    );
-    await PerfMonitor.instance.setOverlayEnabled(_perfOverlay);
-    if (mounted) Navigator.of(context).pop(true);
   }
 
   Future<void> _test() async {
@@ -237,6 +348,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
       return;
     }
+    final generation = _fieldGenerations['safety'];
     final choice = await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -263,7 +375,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-    if (!mounted) return;
+    if (!mounted || _fieldGenerations['safety'] != generation) return;
     if (choice == 'off' || choice == 'pause') {
       setState(() {
         _safetyEnabled = false;
@@ -615,6 +727,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               decoration: const InputDecoration(labelText: 'TTS voice'),
             ),
             DataPrivacySection(
+              externalBusy: _saving,
               onCleared: _onDataCleared,
               onBusyChanged: (busy) {
                 if (mounted) setState(() => _deleting = busy);
@@ -624,7 +737,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Row(
               children: [
                 FilledButton(
-                  onPressed: _deleting ? null : _save,
+                  onPressed:
+                      _saving ||
+                          _deleting ||
+                          _pendingFields.isNotEmpty ||
+                          _failedFields.isNotEmpty
+                      ? null
+                      : _save,
                   child: const Text('Save'),
                 ),
                 const SizedBox(width: 12),

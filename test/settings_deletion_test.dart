@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/ui/settings_screen.dart';
 import 'package:local_bluey/services/data_registry.dart';
+import 'package:local_bluey/services/perf_monitor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -21,6 +23,10 @@ void main() {
           const MethodChannel('plugins.flutter.io/path_provider'),
           (call) async => temp.path,
         );
+    SharedPreferences.setMockInitialValues({});
+    await PerfMonitor.instance.clear();
+    SettingsScreen.debugReadField = null;
+    SettingsScreen.debugWriteField = null;
     secrets = {'brain.apiKey': 'old-secret'};
     failDelete = false;
     SharedPreferences.setMockInitialValues({
@@ -47,6 +53,8 @@ void main() {
         });
   });
   tearDown(() async {
+    SettingsScreen.debugReadField = null;
+    SettingsScreen.debugWriteField = null;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -177,4 +185,289 @@ void main() {
       expect(keyController.text, 'old-secret');
     },
   );
+  Future<void> clearStore(WidgetTester tester, String title) async {
+    final tile = find.widgetWithText(ListTile, title);
+    await tester.runAsync(() async {
+      tester
+          .widget<IconButton>(
+            find.descendant(of: tile, matching: find.byType(IconButton)),
+          )
+          .onPressed!();
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+    });
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 150)),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Finder switchFor(String title) => find.descendant(
+    of: find.widgetWithText(SwitchListTile, title),
+    matching: find.byType(Switch),
+  );
+
+  Future<void> save(WidgetTester tester) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await tester.pump(const Duration(seconds: 5));
+    await tester.tap(find.widgetWithText(FilledButton, 'Save').hitTestable());
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('safety clear drops allowlist and preserves unrelated edits', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('safety.appAllowlist', 'safari,notes');
+    await prefs.setBool('safety.enabled', false);
+    await open(tester);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Base URL'),
+      'http://fresh.local/v1',
+    );
+    await clearStore(tester, 'Safety gate toggle and app allowlist');
+    expect(tester.widget<Switch>(switchFor('Safety gate')).value, isTrue);
+    expect(find.text('safari, notes'), findsNothing);
+    await save(tester);
+    expect(prefs.getString('safety.appAllowlist'), '');
+    expect(prefs.getBool('safety.enabled'), isTrue);
+    expect(prefs.getString('brain.baseUrl'), 'http://fresh.local/v1');
+  });
+
+  testWidgets('unsaved pause is dropped by safety clear', (tester) async {
+    await open(tester);
+    await tester.tap(switchFor('Safety gate'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pause 15 min'));
+    await tester.pumpAndSettle();
+    await clearStore(tester, 'Safety gate toggle and app allowlist');
+    expect(tester.widget<Switch>(switchFor('Safety gate')).value, isTrue);
+    await save(tester);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getBool('safety.enabled'), isTrue);
+    expect(prefs.getInt('safety.resumeAtMs'), isNull);
+  });
+
+  testWidgets('perf clear keeps overlay off after save', (tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('perf_overlay_enabled', true);
+    await open(tester);
+    await clearStore(tester, 'Performance samples and overlay preference');
+    expect(prefs.getBool('perf_overlay_enabled'), isNull);
+    expect(find.text('perf cleared'), findsOneWidget);
+    expect(find.textContaining('Could not delete local data'), findsNothing);
+    await save(tester);
+    expect(prefs.getBool('perf_overlay_enabled'), isFalse);
+  });
+
+  for (final field in ['allowlist', 'gate', 'overlay', 'localOnly']) {
+    testWidgets('entered old $field initial read cannot restore after clear', (
+      tester,
+    ) async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('safety.appAllowlist', 'safari');
+      await prefs.setBool('safety.enabled', false);
+      await prefs.setBool('perf_overlay_enabled', true);
+      await prefs.setBool('privacy.localOnly', true);
+      final release = Completer<void>();
+      final entered = Completer<void>();
+      var first = true;
+      SettingsScreen.debugReadField = (name, read) async {
+        final result = await read();
+        if (name == field && first) {
+          first = false;
+          entered.complete();
+          await release.future;
+        }
+        return result;
+      };
+      await open(tester);
+      expect(entered.isCompleted, isTrue);
+      final title = field == 'overlay'
+          ? 'Performance samples and overlay preference'
+          : field == 'localOnly'
+          ? 'Local-only mode toggle'
+          : 'Safety gate toggle and app allowlist';
+      await clearStore(tester, title);
+      release.complete();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 150)),
+      );
+      await tester.pumpAndSettle();
+      if (field == 'allowlist' || field == 'gate') {
+        expect(find.text('safari'), findsNothing);
+        expect(tester.widget<Switch>(switchFor('Safety gate')).value, isTrue);
+      }
+      await save(tester);
+      if (field == 'overlay') {
+        expect(prefs.getBool('perf_overlay_enabled'), isFalse);
+      }
+      if (field == 'allowlist') {
+        expect(prefs.getString('safety.appAllowlist'), '');
+      }
+      if (field == 'gate') expect(prefs.getBool('safety.enabled'), isTrue);
+      if (field == 'localOnly') {
+        expect(prefs.getBool('privacy.localOnly'), isNull);
+      }
+    });
+  }
+
+  testWidgets(
+    'entered reload disables Save, failure requires explicit recovery',
+    (tester) async {
+      await open(tester);
+      final release = Completer<void>();
+      var fail = true;
+      SettingsScreen.debugReadField = (name, read) async {
+        if (name == 'overlay' && fail) {
+          await release.future;
+          throw StateError('private-storage-detail');
+        }
+        return read();
+      };
+      final tile = find.widgetWithText(
+        ListTile,
+        'Performance samples and overlay preference',
+      );
+      await tester.runAsync(() async {
+        tester
+            .widget<IconButton>(
+              find.descendant(of: tile, matching: find.byType(IconButton)),
+            )
+            .onPressed!();
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+      });
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'))
+            .onPressed,
+        isNull,
+      );
+      release.complete();
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 150)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Could not reload settings.'), findsOneWidget);
+      expect(find.textContaining('private-storage-detail'), findsNothing);
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'))
+            .onPressed,
+        isNull,
+      );
+      fail = false;
+      await clearStore(tester, 'Performance samples and overlay preference');
+      expect(
+        tester
+            .widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'))
+            .onPressed,
+        isNotNull,
+      );
+      await save(tester);
+    },
+  );
+  testWidgets('new allowlist and pause after clear are saved normally', (
+    tester,
+  ) async {
+    await open(tester);
+    await clearStore(tester, 'Safety gate toggle and app allowlist');
+    await tester.enterText(
+      find.widgetWithText(
+        TextFormField,
+        'App allowlist (comma separated, empty = all)',
+      ),
+      'fresh, notes',
+    );
+    await tester.tap(switchFor('Safety gate'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pause 15 min'));
+    await tester.pumpAndSettle();
+    await save(tester);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString('safety.appAllowlist'), 'fresh,notes');
+    expect(prefs.getBool('safety.enabled'), isFalse);
+    expect(prefs.getInt('safety.resumeAtMs'), isNotNull);
+  });
+
+  testWidgets('new overlay choice after clear is saved normally', (
+    tester,
+  ) async {
+    await open(tester);
+    await clearStore(tester, 'Performance samples and overlay preference');
+    await tester.tap(switchFor('Performance overlay'));
+    await save(tester);
+    expect(
+      (await SharedPreferences.getInstance()).getBool('perf_overlay_enabled'),
+      isTrue,
+    );
+  });
+  for (final field in ['gate', 'pause', 'allowlist', 'overlay']) {
+    testWidgets(
+      'entered $field setter excludes clear and delete-all until save settles',
+      (tester) async {
+        await open(tester);
+        if (field == 'pause') {
+          await tester.tap(switchFor('Safety gate'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Pause 15 min'));
+          await tester.pumpAndSettle();
+        }
+        final entered = Completer<void>();
+        final release = Completer<void>();
+        SettingsScreen.debugWriteField = (name, write) async {
+          if (name == field) {
+            final operation = write();
+            entered.complete();
+            await release.future;
+            await operation;
+            throw StateError('synthetic-write-failure');
+          }
+          return write();
+        };
+        await tester.tap(
+          find.widgetWithText(FilledButton, 'Save').hitTestable(),
+        );
+        await tester.pumpAndSettle();
+        expect(entered.isCompleted, isTrue);
+        for (final tile in tester.widgetList<ListTile>(find.byType(ListTile))) {
+          if (tile.trailing is IconButton) {
+            expect((tile.trailing as IconButton).onPressed, isNull);
+          }
+        }
+        expect(
+          tester
+              .widget<OutlinedButton>(
+                find.widgetWithText(OutlinedButton, 'Delete all local data'),
+              )
+              .onPressed,
+          isNull,
+        );
+        expect(
+          tester
+              .widget<FilledButton>(find.widgetWithText(FilledButton, 'Save'))
+              .onPressed,
+          isNull,
+        );
+        release.complete();
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Could not save settings. Please retry.'),
+          findsOneWidget,
+        );
+        SettingsScreen.debugWriteField = null;
+        await clearStore(
+          tester,
+          field == 'overlay'
+              ? 'Performance samples and overlay preference'
+              : 'Safety gate toggle and app allowlist',
+        );
+        await save(tester);
+        final prefs = await SharedPreferences.getInstance();
+        expect(prefs.getBool('safety.enabled'), isTrue);
+        expect(prefs.getString('safety.appAllowlist'), '');
+        expect(prefs.getBool('perf_overlay_enabled'), isFalse);
+      },
+    );
+  }
 }
