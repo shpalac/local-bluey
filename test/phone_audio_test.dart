@@ -157,12 +157,17 @@ void main() {
       processed = [];
     });
 
-    Future<void> feed(PhoneAudioReceiver r, String payload) async {
+    Future<void> feed(
+      PhoneAudioReceiver r,
+      String payload, {
+      bool settle = true,
+    }) async {
       await runZonedGuarded(() async {
         final stream = StreamController<String>();
         stream.stream.listen(r.handle);
         stream.add(payload);
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(Duration.zero);
+        if (settle) await r.idle;
         await stream.close();
       }, (e, _) => uncaught.add(e));
     }
@@ -236,11 +241,14 @@ void main() {
           return file;
         },
       );
-      await feed(r, base64Encode(_m4a(64)));
+      await feed(r, base64Encode(_m4a(64)), settle: false);
+      for (var i = 0; i < 500 && dir.listSync().isEmpty; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
       expect(dir.listSync(), hasLength(1), reason: 'staged and held');
       active = false;
       release.complete();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      await r.idle;
       expect(processed, isEmpty);
       expect(bubbles, isEmpty);
       expect(dir.listSync(), isEmpty);
