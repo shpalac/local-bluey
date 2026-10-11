@@ -194,7 +194,7 @@ void main() {
         ),
       );
       expect(s, isNot(contains('_speech.dispose();')));
-      expect(s, contains('unawaited(_speech.stop());'));
+      expect(s, contains('unawaited(_speechMute.mute());'));
     },
   );
 }
