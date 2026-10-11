@@ -543,3 +543,7 @@ Verified manager coordination still states both owner questions pending: whether
 ## Keeping the map current
 
 After another related merge, compare the original criterion against current source and exact-head evidence, add its delivery to the ledger, and revise only the affected unmet criterion/disposition. Keep historical failures and proof limits attached to their claims. Manager decides issue disposition; a ready row does not authorize issue closure/status/assignee edits.
+
+### #620 Link adversarial first code slice
+
+[Three new contracts](../test/link_adversarial_contract_test.dart):12malformedtyped/top-level/numeric packets at every byte split recover the next exact Hebrew packet with owned fake transport; closed partial-frame tail cannot complete on a fresh connection; loopback PhoneServer rotates challenges, rejects old-nonce HMAC replay, accepts current-nonce proof then drops a tool command before an allowed wake barrier.28passes(3new plus existing lifecycle/pairing), analyze clean, format274/0changed. No protocol/auth/default/source/SafetyGate change or real remote client. Mock preferences and fabricated key, no Bonjour advertisement/device/secret retention. Framing remains auth-agnostic and malformed lines ignored, not typed caller errors. Not encrypted transport, full replay immunity, multi-client routing, native SafetyGate or all620acceptance proof. Rollback new test/map only, existing lifecycle/pairing remain; issueOPEN/Refs #620.
