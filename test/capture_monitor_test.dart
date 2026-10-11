@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/capture_monitor.dart';
@@ -161,5 +163,201 @@ void main() {
     m.resume();
     m.stop();
     expect(n, greaterThanOrEqualTo(2));
+  });
+
+  group('lifecycle fences', () {
+    Completer<void>? hold;
+    Future<List<String>> heldAllowlist() async {
+      final h = hold;
+      if (h != null) await h.future;
+      return ['safari'];
+    }
+
+    Future<ScreenWatch> heldWatch() async {
+      hold = null;
+      final watch = ScreenWatch.forTesting(allowlist: heldAllowlist);
+      expect(await watch.start(consentConfirmed: true), isNull);
+      addTearDown(watch.stop);
+      return watch;
+    }
+
+    test('external start, stop and expiry notify exactly once each', () async {
+      final watch = ScreenWatch.forTesting();
+      await WatchPolicy.addToAllowlist('Safari');
+      final m = CaptureMonitor(watch: watch);
+      addTearDown(m.dispose);
+      var n = 0;
+      m.addListener(() => n++);
+      expect(await watch.start(consentConfirmed: true), isNull);
+      expect(n, 1);
+      expect(m.indicator, CaptureIndicator.active);
+      watch.stop();
+      expect(n, 2);
+      expect(m.indicator, CaptureIndicator.off);
+      // Paused session ended from outside: one notification, pause forgotten.
+      expect(await watch.start(consentConfirmed: true), isNull);
+      expect(n, 3);
+      expect(m.pause(), isTrue);
+      expect(n, 4);
+      watch.stop();
+      expect(n, 5);
+      expect(m.paused, isFalse);
+      expect(m.indicator, CaptureIndicator.off);
+    });
+
+    test('exact notifications for pause, resume and stop', () async {
+      final watch = await started();
+      final m = CaptureMonitor(watch: watch);
+      addTearDown(m.dispose);
+      var n = 0;
+      m.addListener(() => n++);
+      m.pause();
+      expect(n, 1);
+      m.resume();
+      expect(n, 2);
+      m.stop();
+      expect(n, 3);
+    });
+
+    test('dispose during the gate: the operation never runs', () async {
+      final watch = await heldWatch();
+      final m = CaptureMonitor(watch: watch);
+      hold = Completer<void>();
+      var ran = false;
+      final f = m.runIfAllowed<String>(
+        frontApp: 'Safari',
+        operation: () async {
+          ran = true;
+          return 'frame';
+        },
+      );
+      m.dispose();
+      hold!.complete();
+      expect(await f, isNull);
+      expect(ran, isFalse);
+    });
+
+    test(
+      'stop and restart between the gates: the old request is refused',
+      () async {
+        final watch = await heldWatch();
+        final m = CaptureMonitor(watch: watch);
+        addTearDown(m.dispose);
+        hold = Completer<void>();
+        var ran = false;
+        final f = m.runIfAllowed<String>(
+          frontApp: 'Safari',
+          operation: () async {
+            ran = true;
+            return 'old session frame';
+          },
+        );
+        watch.stop();
+        hold!.complete();
+        hold = null;
+        expect(await watch.start(consentConfirmed: true), isNull);
+        expect(await f, isNull);
+        expect(ran, isFalse);
+        // A new request in the new session works.
+        expect(await run(m, 'Safari'), 'frame');
+      },
+    );
+
+    test(
+      'pause then resume during a held gate still refuses that request',
+      () async {
+        final watch = await heldWatch();
+        final m = CaptureMonitor(watch: watch);
+        addTearDown(m.dispose);
+        hold = Completer<void>();
+        var ran = false;
+        final f = m.runIfAllowed<String>(
+          frontApp: 'Safari',
+          operation: () async {
+            ran = true;
+            return 'frame';
+          },
+        );
+        m.pause();
+        m.resume();
+        hold!.complete();
+        expect(await f, isNull);
+        expect(ran, isFalse);
+      },
+    );
+
+    test('pause during an entered operation drops its result', () async {
+      final watch = await started();
+      final m = CaptureMonitor(watch: watch);
+      addTearDown(m.dispose);
+      final r = await m.runIfAllowed<String>(
+        frontApp: 'Safari',
+        operation: () async {
+          m.pause();
+          return 'frame taken while pausing';
+        },
+      );
+      expect(r, isNull);
+      expect(m.paused, isTrue);
+      expect(await run(m, 'Safari'), isNull);
+    });
+
+    test('lifecycle calls after dispose are safe and attach nothing', () async {
+      final watch = await started();
+      final m = CaptureMonitor(watch: watch);
+      m.dispose();
+      final lock = ValueNotifier<bool>(true);
+      m.attachLock(lock, () => lock.value);
+      lock.value = false;
+      lock.value = true;
+      expect(watch.isActive, isTrue);
+      m.resetRefusals();
+      expect(await run(m, 'Safari'), isNull);
+      // Stopping stays effective after dispose (safe direction).
+      m.stop();
+      expect(watch.isActive, isFalse);
+    });
+
+    test(
+      'a policy change during the gate refuses and counts notAllowed',
+      () async {
+        final watch = await heldWatch();
+        final m = CaptureMonitor(watch: watch);
+        addTearDown(m.dispose);
+        var calls = 0;
+        var ran = false;
+        // Allowlist is fine for the first ask, then the user removes the app.
+        final w2 = ScreenWatch.forTesting(
+          allowlist: () async => calls++ < 2 ? ['safari'] : <String>[],
+        );
+        expect(await w2.start(consentConfirmed: true), isNull);
+        addTearDown(w2.stop);
+        final m2 = CaptureMonitor(watch: w2);
+        addTearDown(m2.dispose);
+        final r = await m2.runIfAllowed<String>(
+          frontApp: 'Safari',
+          operation: () async {
+            ran = true;
+            return 'frame';
+          },
+        );
+        expect(r, isNull);
+        expect(ran, isFalse);
+        expect(m2.refusals[CaptureRefusal.notAllowed], greaterThanOrEqualTo(1));
+      },
+    );
+
+    test('private window in front is refused and counted', () async {
+      final watch = await started();
+      final m = CaptureMonitor(watch: watch);
+      addTearDown(m.dispose);
+      final r = await m.runIfAllowed<String>(
+        frontApp: 'Safari',
+        windowTitle: 'Private Browsing',
+        operation: () async => 'frame',
+      );
+      expect(r, isNull);
+      expect(m.refusals[CaptureRefusal.privateWindow], 1);
+    });
   });
 }

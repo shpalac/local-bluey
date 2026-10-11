@@ -70,6 +70,16 @@ only, so after a restart the indicator is off. The counters are integers; no
 app names, titles or screen content are recorded. It is not wired into the
 app yet and makes no privacy or retention decision.
 
+`runIfAllowed` fences each request by a monitor epoch and the `ScreenWatch`
+generation captured before its first gate: stop, restart, pause, resume or
+dispose in between refuses the request or drops its result. Pausing during a
+running operation drops that result but cannot cancel the operation itself.
+Refusal reasons are best effort: the watch is asked twice, and a denial by the
+second ask is counted as not allowed without a finer reason. After `dispose`,
+`attachLock` and `resetRefusals` do nothing and `stop` still stops without
+notifying. This is partial, unwired groundwork for BLU-007: BLU-001 is not
+resolved and nothing here claims the full issue.
+
 ## Known gaps
 
 Tracked openly rather than claimed as done: Android/Linux ports
