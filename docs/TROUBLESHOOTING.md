@@ -33,10 +33,28 @@ check the provider in Settings."**
 
 **"Voice input is unavailable right now - type your request instead."**
 
-- Cause: the transcription endpoint failed or isn't configured.
-- Fix: Settings > Transcription - check the base URL and model
-  (`whisper-1`-compatible). The connection test covers the brain only;
-  transcription has its own endpoint fields.
+- This text is degraded-mode metadata, not a working typed-request
+  workflow. The current app has no typed-request form wired to dispatch;
+  configuration fields and parsed ask URLs do not submit questions.
+- Voice may fail because saved STT configuration is missing, its endpoint
+  or model is unavailable, or native transcription was selected. Native
+  transcription is still a not-installed placeholder.
+- HTTP STT uses a separate explicit saved endpoint/model/key. First STT
+  load copies saved legacy transcription fields once; it does not use the
+  general brain URL as a missing endpoint. After migration, edits to the
+  current Settings transcription form change only legacy fields, not
+  active STT settings. No supported provider picker or complete active-STT
+  configuration workflow is exposed there today. Do not treat those edits
+  as a verified fix; no manual preference-editing workaround is offered.
+- The connection test covers the brain only. First-success STT readiness
+  checks configuration, not server reachability, credentials, model or
+  language support. A local brain or installed model-store asset alone
+  does not make STT ready.
+- Double-tap the face or choose tray **Ask Bluey** to wake Bluey; neither
+  supplies transcription or a typed question. Voice asking remains
+  unavailable until usable STT configuration and service are available.
+  See [configuration limits](USER_GUIDE.md#transcription-configuration-and-limits)
+  and the [source audit](STT_READINESS_REMAINDER.md).
 
 **"Voice replies are unavailable - answers will appear as text."**
 
