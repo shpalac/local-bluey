@@ -58,6 +58,18 @@ result -> brain -> reply -> TTS (lib/services/tts via provider)
   executed actions, one run id per brain turn (#57). Startup recovery and
   record/load/delete are ordered; unknown/corrupt disk history is not overwritten.
 
+## Pattern miner (BLU-008)
+
+`lib/services/pattern_miner.dart` finds repeated step sequences in a list of
+`ObservedStep`s (an opaque fingerprint, a time and an optional context). It is
+pure Dart: no I/O, no clock, no randomness, nothing kept between calls, and it
+is not wired into the app. A sequence is reported only when it reaches both the
+occurrence and the distinct-UTC-day thresholds, so a burst on one day never
+qualifies. Runs split on a long pause or a context change, sequences never span
+contexts, a shorter sequence with the same counts as a longer one that contains
+it is dropped, and the result order is fixed. Work is bounded to the most recent
+steps. It reads no screen content and makes no suggestion or policy decision.
+
 ## Known gaps
 
 Tracked openly rather than claimed as done: Android/Linux ports
