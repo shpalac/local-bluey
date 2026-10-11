@@ -58,6 +58,18 @@ result -> brain -> reply -> TTS (lib/services/tts via provider)
   executed actions, one run id per brain turn (#57). Startup recovery and
   record/load/delete are ordered; unknown/corrupt disk history is not overwritten.
 
+## Capture monitor (BLU-007)
+
+`lib/services/capture_monitor.dart` sits on top of `ScreenWatch`. It exposes
+an indicator (off, active, paused), pause and resume, refusal counters by
+reason (paused, not allowed, hard denied, private window, locked), an
+immediate `stop`, and `attachLock`, which stops capture when a lock signal
+says locked. It never starts a session: `resume` only lifts a pause inside a
+running session, and ending the session forgets the pause. State is in memory
+only, so after a restart the indicator is off. The counters are integers; no
+app names, titles or screen content are recorded. It is not wired into the
+app yet and makes no privacy or retention decision.
+
 ## Known gaps
 
 Tracked openly rather than claimed as done: Android/Linux ports
