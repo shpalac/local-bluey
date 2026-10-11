@@ -124,6 +124,43 @@ class Fixture {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  for (final allowed in [false, true]) {
+    test('optional recover queued entry gate allowed=$allowed', () async {
+      final f = Fixture();
+      await f.init();
+      addTearDown(f.finish);
+      f.driver.partialStart = true;
+      await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+      f.driver.partialStart = false;
+      if (allowed) {
+        await f.owner.recover(canEnter: () => true);
+        expect(f.driver.stops, 1);
+      } else {
+        await expectLater(
+          f.owner.recover(canEnter: () => false),
+          throwsA(isA<KeyRecordingException>()),
+        );
+        expect(f.driver.stops, 0);
+        expect(f.owner.cleanupPending, true);
+      }
+      expect(f.delivered, isEmpty);
+    });
+  }
+  test('default direct recover queued cleanup under kill preserved', () async {
+    final f = Fixture();
+    await f.init();
+    addTearDown(f.finish);
+    f.driver.partialStart = true;
+    await expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>()));
+    f.driver.partialStart = false;
+    f.owner.addListener(() {
+      if (f.owner.status == KeyRecordingStatus.pending) f.allowed = false;
+    });
+    await f.owner.recover();
+    expect(f.driver.stops, 1);
+    expect(f.owner.cleanupPending, false);
+    expect(f.delivered, isEmpty);
+  });
   for (final stage in ['permission', 'start', 'stop']) {
     for (final end in ['send', 'cancel', 'dispose', 'fresh']) {
       test(

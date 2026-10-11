@@ -149,12 +149,17 @@ class KeyRecordingIntent extends ChangeNotifier {
   /// Concurrent calls join installed completion through stop/file deletion.
   /// Resource cleanup can finish after kill/cancel, but only current allowed
   /// generation publishes. Disposed owners cannot be revived.
-  Future<void> recover() {
+  Future<void> recover({bool Function()? canEnter}) {
     if (_disposed) return Future<void>.value();
     final pending = _recovery;
     if (pending != null) return pending;
     final session = _session;
     final op = _enqueue(session, () async {
+      // Optional caller lifetime gate: queued cancellation is not entry.
+      // Default direct-owner recovery keeps the retained cleanup contract.
+      if (canEnter != null && !canEnter()) {
+        throw const KeyRecordingException();
+      }
       await _cleanup(explicit: true);
       _publish(session, KeyRecordingStatus.idle);
     });
