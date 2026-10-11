@@ -76,7 +76,10 @@ class RetentionTarget {
 /// store declares and deletes only stores the caller classified as
 /// [RetentionClass.activity] or [RetentionClass.cache]. Everything else,
 /// including every unclassified store, is refused and left alone, so the
-/// "delete activity and caches" action cannot touch routines or settings.
+/// "delete activity and caches" action cannot touch them. That guarantee is
+/// conditional: it assumes a trusted caller. A caller that classifies a
+/// routines or settings store as activity or cache can purge it, because this
+/// module makes no classification or product-default choice of its own.
 class RetentionPurger {
   RetentionPurger(Iterable<RetentionTarget> targets)
     : _targets = _index(targets);

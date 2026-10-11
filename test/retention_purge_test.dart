@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:local_bluey/services/data_registry.dart';
 import 'package:local_bluey/services/retention_purge.dart';
 
 class _Fake {
@@ -110,19 +111,59 @@ void main() {
     );
   });
 
-  test('fromRegistry treats an unclassified store as protected', () async {
-    final p = RetentionPurger([
-      RetentionTarget(
-        id: 'x',
-        whatEn: 'x',
-        retentionEn: 'x',
-        cls: RetentionClass.protected,
-        clear: () async => fail('must not be cleared'),
-      ),
-    ]);
-    final r = await p.deleteActivityAndCaches();
-    expect(r.purged, isEmpty);
-    expect(r.ok, isTrue);
+  test(
+    'fromRegistry: missing classification is protected, explicit ones work',
+    () async {
+      final cleared = <String>[];
+      DataStoreInfo store(String id) => DataStoreInfo(
+        id: id,
+        sourceFile: 'lib/services/$id.dart',
+        whatEn: 'what $id',
+        whatHe: 'מה $id',
+        where: 'fake',
+        retentionEn: 'kept $id',
+        retentionHe: 'נשמר $id',
+        clear: () async => cleared.add(id),
+      );
+      final p = RetentionPurger.fromRegistry(
+        [
+          store('a_log'),
+          store('b_cache'),
+          store('c_unlisted'),
+          store('d_prot'),
+        ],
+        classes: {
+          'a_log': RetentionClass.activity,
+          'b_cache': RetentionClass.cache,
+          'd_prot': RetentionClass.protected,
+          'not_in_registry': RetentionClass.activity,
+        },
+      );
+      expect(p.overview.map((r) => r.purgeable), [true, true, false, false]);
+      final r = await p.deleteActivityAndCaches();
+      expect(r.purged, ['a_log', 'b_cache']);
+      expect(cleared, ['a_log', 'b_cache']);
+      final refused = await p.purge([
+        'c_unlisted',
+        'd_prot',
+        'not_in_registry',
+      ]);
+      expect(refused.refused, {
+        'c_unlisted': 'protected',
+        'd_prot': 'protected',
+        'not_in_registry': 'unknown',
+      });
+      expect(cleared, ['a_log', 'b_cache'], reason: 'nothing else cleared');
+    },
+  );
+
+  test('a caller that classifies a store as activity can purge it', () async {
+    // The guarantee is conditional on the caller's classification.
+    final p = RetentionPurger([routines.target, settings.target]);
+    expect((await p.deleteActivityAndCaches()).purged, isEmpty);
+    final misclassified = _Fake('routines', RetentionClass.activity);
+    final p2 = RetentionPurger([misclassified.target]);
+    expect((await p2.purge(['routines'])).purged, ['routines']);
   });
 
   test('empty request does nothing', () async {
