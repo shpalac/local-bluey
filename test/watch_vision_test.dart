@@ -319,4 +319,87 @@ void main() {
       expect(p.calls, isEmpty);
     },
   );
+  test('no image leaves the device without matching verified OCR evidence', () async {
+    final w = await session();
+    final p = Provider();
+    var captures = 0;
+    for (final snap in [
+      verifiedSnapshot(Uint8List.fromList([1, 2]), verified: false),
+      verifiedSnapshot(Uint8List.fromList([1, 2]), text: 'Password: demo'),
+      verifiedSnapshot(Uint8List.fromList([1, 2]), text: 'תעודת זהות 123456789'),
+      verifiedSnapshot(Uint8List.fromList([1, 2]), frontApp: 'Another App'),
+      verifiedSnapshot(Uint8List(0)),
+    ]) {
+      final v = WatchVision(
+        provider: () => p,
+        foreground: () async => (
+          app: 'Editor', title: 'Workspace', locked: false,
+        ),
+        snapshot: () async {
+          captures++;
+          return snap;
+        },
+        watch: w,
+      );
+      expect(await v.describe('Editor', 'Workspace'), isNull);
+    }
+    expect(captures, 5);
+    expect(p.calls, isEmpty);
+  });
+
+  test('unknown or private window never enters capture', () async {
+    final w = await session(), p = Provider();
+    var captures = 0;
+    final v = WatchVision(
+      provider: () => p,
+      foreground: () async => (
+        app: 'Editor', title: 'Workspace', locked: false,
+      ),
+      snapshot: () async {
+        captures++;
+        return verifiedSnapshot(Uint8List.fromList([1, 2]));
+      },
+      watch: w,
+    );
+    for (final title in ['', 'Private Window', 'Sign in', 'חשבון בנק']) {
+      expect(await v.describe('Editor', title), isNull);
+    }
+    expect(captures, 0);
+    expect(p.calls, isEmpty);
+  });
+
+  test('foreground change after capture blocks model egress', () async {
+    final w = await session(), p = Provider();
+    final v = WatchVision(
+      provider: () => p,
+      foreground: () async => (
+        app: 'Editor', title: 'Private Window', locked: false,
+      ),
+      snapshot: () async => verifiedSnapshot(
+        Uint8List.fromList([1, 2]),
+      ),
+      watch: w,
+    );
+    expect(await v.describe('Editor', 'Workspace'), isNull);
+    expect(p.calls, isEmpty);
+  });
+
+  test('model summary containing PII is not returned to the event buffer', () async {
+    final w = await session(), p = Provider();
+    p.text = (_) async => 'The password is abc';
+    final v = WatchVision(
+      provider: () => p,
+      foreground: () async => (
+        app: 'Editor', title: 'Workspace', locked: false,
+      ),
+      snapshot: () async => verifiedSnapshot(
+        Uint8List.fromList([1, 2]),
+      ),
+      watch: w,
+    );
+    expect(await v.describe('Editor', 'Workspace'), isNull);
+    expect(p.calls, hasLength(1));
+  });
+
+
 }
