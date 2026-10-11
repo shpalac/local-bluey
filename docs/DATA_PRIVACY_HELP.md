@@ -38,7 +38,7 @@ Delete all works in two stages:
 
 If any category failed, you see a notice starting "Could not delete local data:" followed by the app's error text. It names the failed category ids, but its exact wording is not fixed, so this page does not quote it.
 
-So a partial failure is not an all-or-nothing rollback. Every category that succeeded, whether it came before or after a failed one, stays cleared. The failed categories keep their data, and the remaining preferences and secure-storage items are not cleared. Press **Delete all local data** again to retry. Nothing retries on its own.
+So a partial failure is not an all-or-nothing rollback. Every category that succeeded, whether it came before or after a failed one, stays cleared. A failed category may be partly changed, because its clear can remove some data before it fails, so its deletion is unconfirmed. The remaining preferences and secure-storage items are not cleared. Press **Delete all local data** again to retry. Nothing retries on its own.
 
 ## Limits
 
