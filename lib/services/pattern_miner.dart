@@ -39,11 +39,21 @@ class PatternCandidate {
   /// On how many distinct UTC days it occurred.
   final int distinctDays;
 
-  /// Stable id for the same context and sequence.
-  String get id => '$context@${sequence.join('>')}';
+  /// Stable, collision-free id for the same context and sequence. Every part
+  /// is length-prefixed, so no choice of characters in a context or
+  /// fingerprint lets two different candidates share an id.
+  String get id => _encode(context, sequence);
 
   @override
   String toString() => 'PatternCandidate($id x$occurrences/${distinctDays}d)';
+}
+
+String _encode(String context, List<String> sequence) {
+  final b = StringBuffer('${context.length}:$context');
+  for (final f in sequence) {
+    b.write('|${f.length}:$f');
+  }
+  return b.toString();
 }
 
 /// Deterministic, pure-Dart repeated-sequence miner (BLU-008).
@@ -52,8 +62,19 @@ class PatternCandidate {
 /// does no I/O and uses no clock or randomness, so the same input always
 /// gives the same output. A sequence is reported only when it reaches both
 /// [minOccurrences] and [minDistinctDays]; anything below stays unreported.
+///
+/// Semantics worth knowing:
+/// - Steps are ordered by time. Steps with an equal time keep their input
+///   order, so equal-time steps with different fingerprints can give a
+///   different result if the caller passes them in a different order.
+/// - Occurrences are counted with overlap: in A, A, A the sequence A>A
+///   occurs twice.
+/// - An occurrence belongs to the UTC day of its first step.
+/// - Bounds: at most [maxInputSteps] valid steps may be passed in (more
+///   throws, nothing is silently dropped); of those only the most recent
+///   [maxSteps] are mined.
 class PatternMiner {
-  const PatternMiner({
+  PatternMiner({
     this.minLength = 2,
     this.maxLength = 5,
     this.minOccurrences = 3,
@@ -61,10 +82,40 @@ class PatternMiner {
     this.maxStepGap = const Duration(minutes: 5),
     this.maxSteps = 5000,
     this.maxFingerprintLength = 128,
-  }) : assert(minLength >= 1),
-       assert(maxLength >= minLength),
-       assert(minOccurrences >= 1),
-       assert(minDistinctDays >= 1);
+    this.maxInputSteps = 50000,
+  }) {
+    void positive(String name, int v) {
+      if (v < 1) throw ArgumentError.value(v, name, 'must be at least 1');
+    }
+
+    positive('minLength', minLength);
+    positive('maxLength', maxLength);
+    positive('minOccurrences', minOccurrences);
+    positive('minDistinctDays', minDistinctDays);
+    positive('maxSteps', maxSteps);
+    positive('maxFingerprintLength', maxFingerprintLength);
+    positive('maxInputSteps', maxInputSteps);
+    if (maxLength < minLength) {
+      throw ArgumentError.value(maxLength, 'maxLength', 'must be >= minLength');
+    }
+    if (maxInputSteps < maxSteps) {
+      throw ArgumentError.value(
+        maxInputSteps,
+        'maxInputSteps',
+        'must be >= maxSteps',
+      );
+    }
+    if (maxStepGap.isNegative) {
+      throw ArgumentError.value(
+        maxStepGap,
+        'maxStepGap',
+        'must not be negative',
+      );
+    }
+  }
+
+  /// Most valid steps accepted per call; one more throws [ArgumentError].
+  final int maxInputSteps;
 
   /// Shortest sequence reported.
   final int minLength;
@@ -81,20 +132,31 @@ class PatternMiner {
   /// A longer pause between two steps ends the current run.
   final Duration maxStepGap;
 
-  /// Only the most recent steps are mined, which bounds the work.
+  /// Only the most recent steps are mined (mining work is bounded by this).
   final int maxSteps;
 
   /// Steps with a longer fingerprint are dropped, never truncated.
   final int maxFingerprintLength;
 
-  /// Mines [steps] (any order). Empty or oversized fingerprints are dropped.
+  /// Mines [steps]. Empty or oversized fingerprints are dropped. Throws
+  /// [ArgumentError] when more than [maxInputSteps] valid steps are given, so
+  /// the recent steps that win are never chosen silently.
   List<PatternCandidate> mine(Iterable<ObservedStep> steps) {
-    final clean = [
-      for (final s in steps)
-        if (s.fingerprint.isNotEmpty &&
-            s.fingerprint.length <= maxFingerprintLength)
-          s,
-    ];
+    final clean = <ObservedStep>[];
+    for (final s in steps) {
+      if (s.fingerprint.isEmpty ||
+          s.fingerprint.length > maxFingerprintLength) {
+        continue;
+      }
+      if (clean.length >= maxInputSteps) {
+        throw ArgumentError.value(
+          steps,
+          'steps',
+          'more than $maxInputSteps valid steps',
+        );
+      }
+      clean.add(s);
+    }
     // Stable sort by time; ties keep input order.
     final indexed = [for (var i = 0; i < clean.length; i++) (i, clean[i])];
     indexed.sort((a, b) {
@@ -124,7 +186,7 @@ class PatternMiner {
       for (var len = minLength; len <= maxLength; len++) {
         for (var i = 0; i + len <= run.length; i++) {
           final seq = [for (var k = i; k < i + len; k++) run[k].fingerprint];
-          final key = '${run.first.context}\u0000${seq.join('\u0001')}';
+          final key = _encode(run.first.context, seq);
           final t = counts.putIfAbsent(
             key,
             () => _Tally(run.first.context, seq),

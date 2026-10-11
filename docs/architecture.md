@@ -67,8 +67,13 @@ is not wired into the app. A sequence is reported only when it reaches both the
 occurrence and the distinct-UTC-day thresholds, so a burst on one day never
 qualifies. Runs split on a long pause or a context change, sequences never span
 contexts, a shorter sequence with the same counts as a longer one that contains
-it is dropped, and the result order is fixed. Work is bounded to the most recent
-steps. It reads no screen content and makes no suggestion or policy decision.
+it is dropped, and the result order is fixed. Steps are ordered by time and
+equal-time steps keep the caller's input order, so that order can change the
+result. Occurrences are counted with overlap and belong to the UTC day of their
+first step. At most `maxInputSteps` valid steps are accepted per call (more
+throws, nothing is dropped silently) and only the most recent `maxSteps` of them
+are mined. Invalid configuration throws. This is partial, unwired groundwork for
+BLU-008: BLU-004/006 are not merged and nothing here claims the full issue. It reads no screen content and makes no suggestion or policy decision.
 
 ## Known gaps
 
