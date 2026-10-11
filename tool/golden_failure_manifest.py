@@ -6,12 +6,14 @@ and fixture provenance remain required: structural PNG checks cannot detect PII.
 """
 import hashlib
 import json
+import os
 from pathlib import Path
 import struct
 import sys
 import zlib
 
 SUFFIXES = ('masterImage', 'testImage', 'isolatedDiff', 'maskedDiff')
+MAX_BASELINES = 64
 MAX_FILES = 84
 MAX_BYTES = 8 * 1024 * 1024
 MAX_TOTAL = 64 * 1024 * 1024
@@ -22,7 +24,7 @@ def png_size(data):
     """Check complete chunk framing and CRCs; not an image decoder."""
     if not data.startswith(b'\x89PNG\r\n\x1a\n'):
         raise ValueError('invalid PNG signature')
-    offset, size, ended, image_data = 8, None, False, False
+    offset, size, ended, image_data, data_ended = 8, None, False, False, False
     while offset < len(data):
         if offset + 12 > len(data):
             raise ValueError('truncated PNG chunk')
@@ -39,12 +41,24 @@ def png_size(data):
             if kind != b'IHDR' or length != 13:
                 raise ValueError('missing PNG header')
             size = struct.unpack('>II', payload[:8])
+            depth, color, compression, filtering, interlace = payload[8:]
+            depths = {0: (1, 2, 4, 8, 16), 2: (8, 16), 3: (1, 2, 4, 8),
+                      4: (8, 16), 6: (8, 16)}
+            if (depth not in depths.get(color, ()) or compression or filtering
+                    or interlace not in (0, 1)):
+                raise ValueError('invalid PNG header fields')
             if not all(size) or size[0] * size[1] > MAX_PIXELS:
                 raise ValueError('invalid PNG dimensions')
         elif kind == b'IHDR':
             raise ValueError('duplicate PNG header')
+        if len(kind) != 4 or not all(65 <= c <= 90 or 97 <= c <= 122 for c in kind):
+            raise ValueError('invalid PNG chunk type')
         if kind == b'IDAT':
+            if data_ended:
+                raise ValueError('noncontiguous PNG image data')
             image_data = True
+        elif image_data:
+            data_ended = True
         if kind == b'IEND':
             if length or end != len(data) or not image_data:
                 raise ValueError('invalid PNG end')
@@ -62,12 +76,27 @@ def inventory(root):
     if any(p.is_symlink() for p in (root, root / 'test',
                                       root / 'test/screenshots', baseline, failures)):
         raise ValueError('symlink directory rejected')
-    keys = {p.stem for p in baseline.glob('*.png') if not p.is_symlink()}
+    keys, entries = set(), 0
+    with os.scandir(baseline) as iterator:
+        for entry in iterator:
+            entries += 1
+            if entries > MAX_BASELINES + 1:
+                raise ValueError('too many baseline entries')
+            if (entry.name.endswith('.png') and not entry.is_symlink()
+                    and entry.is_file(follow_symlinks=False)):
+                keys.add(Path(entry.name).stem)
+                if len(keys) > MAX_BASELINES:
+                    raise ValueError('too many baseline keys')
     if not keys:
         raise ValueError('no baseline keys')
-    files = sorted(failures.iterdir()) if failures.exists() else []
-    if len(files) > MAX_FILES:
-        raise ValueError('too many failure files')
+    files = []
+    if failures.exists():
+        with os.scandir(failures) as iterator:
+            for entry in iterator:
+                if len(files) >= MAX_FILES:
+                    raise ValueError('too many failure files')
+                files.append(Path(entry.path))
+    files.sort()
     names = {f'{key}_{suffix}.png' for key in keys for suffix in SUFFIXES}
     result, total = [], 0
     for path in files:

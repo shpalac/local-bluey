@@ -76,10 +76,59 @@ class InventoryTest(unittest.TestCase):
 
     def test_file_total_count_and_pixel_bounds(self):
         self.path.write_bytes(png())
-        for setting in ['MAX_BYTES', 'MAX_TOTAL', 'MAX_FILES', 'MAX_PIXELS']:
+        for setting in ['MAX_BYTES', 'MAX_TOTAL', 'MAX_FILES', 'MAX_PIXELS', 'MAX_BASELINES']:
             with patch.object(manifest, setting, 0):
                 with self.assertRaises(ValueError):
                     manifest.inventory(self.root)
+
+    def test_invalid_header_fields_and_chunk_order(self):
+        signature = b'\x89PNG\r\n\x1a\n'
+        header = chunk(b'IHDR', struct.pack('>IIBBBBB', 1, 1, 8, 6, 0, 0, 0))
+        data = chunk(b'IDAT', zlib.compress(b'\0\xff\0\0\xff'))
+        end = chunk(b'IEND', b'')
+        invalid = [signature + data + header + end,
+                   signature + header + header + data + end,
+                   signature + header + end,
+                   signature + header + data + chunk(b'tEXt', b'') + data + end]
+        for depth, color, comp, filt, interlace in [(3, 6, 0, 0, 0),
+                (8, 9, 0, 0, 0), (8, 6, 1, 0, 0), (8, 6, 0, 1, 0),
+                (8, 6, 0, 0, 2)]:
+            invalid.append(signature + chunk(b'IHDR', struct.pack(
+                '>IIBBBBB', 1, 1, depth, color, comp, filt, interlace)) + data + end)
+        for value in invalid:
+            self.path.write_bytes(value)
+            with self.assertRaises(ValueError):
+                manifest.inventory(self.root)
+
+    def test_structural_checks_do_not_establish_image_decoding(self):
+        # CRC-valid but undecodable compressed image payload: explicit limit.
+        signature = b'\x89PNG\r\n\x1a\n'
+        self.path.write_bytes(signature + chunk(b'IHDR', struct.pack(
+            '>IIBBBBB', 1, 1, 8, 6, 0, 0, 0)) + chunk(b'IDAT', b'bad-zlib') +
+            chunk(b'IEND', b''))
+        result = manifest.inventory(self.root)
+        self.assertEqual(result['comparison'], 'not-established')
+        self.assertEqual(result['privacy'], 'not-established')
+
+    def test_incremental_directory_limit_stops_before_exhaustion(self):
+        real_scan = manifest.os.scandir
+        class Scan:
+            def __enter__(self):
+                return self
+            def __exit__(self, *args):
+                return False
+            def __iter__(self):
+                for _ in range(2):
+                    yield type('Entry', (), {'path': str(self.path)})()
+                raise AssertionError('enumeration exceeded bound')
+        fake = Scan()
+        fake.path = self.path
+        def scan(path):
+            return fake if path == self.failures else real_scan(path)
+        with patch.object(manifest, 'MAX_FILES', 1), patch.object(
+                manifest.os, 'scandir', side_effect=scan):
+            with self.assertRaises(ValueError):
+                manifest.inventory(self.root)
 
     def test_cli_failure_does_not_echo_private_path_or_bytes(self):
         self.path.write_bytes(b'fabricated-private-content')
