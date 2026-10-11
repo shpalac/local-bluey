@@ -2,7 +2,6 @@ name: README showcase screenshots
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
     branches: [main]
     paths:
       - '.github/workflows/readme-showcase.yml'
@@ -10,22 +9,40 @@ on:
       - 'tool/regenerate_screenshots.sh'
       - 'test/screenshots/**'
       - 'README.md'
+      - '.flutter-version'
+      - 'pubspec.*'
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Commit screenshots to the README branch after rendering
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: readme-showcase-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   render:
-    # Only the trusted same-repository branch; never execute fork PR code with write permissions.
-    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'docs/readme-showcase-redesign') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      source: ${{ steps.source.outputs.sha }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          ref: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || github.head_ref }}
-          persist-credentials: true
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Record immutable source
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Read pinned Flutter version
         run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
@@ -44,15 +61,50 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: bluey-readme-showcase
-          path: docs/screenshots/showcase/*.png
+          path: docs/screenshots/
+          if-no-files-found: error
           retention-days: 30
-      - name: Commit generated screenshots to the PR branch
-        if: ${{ github.event_name == 'pull_request' && github.head_ref == 'docs/readme-showcase-redesign' }}
+
+  publish:
+    needs: render
+    # Only explicit manual dispatch may write to the owner's README branch.
+    # PR rendering uses a read-only token and never creates bot approval loops.
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && github.ref_name == 'docs/readme-showcase-redesign' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.render.outputs.source }}
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: bluey-readme-showcase
+          path: docs/screenshots
+      - name: Publish only if the source branch is still current
+        env:
+          SOURCE_SHA: ${{ needs.render.outputs.source }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch=docs/readme-showcase-redesign
+          git fetch origin "$branch"
+          if [ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_SHA" ]; then
+            echo "Source branch advanced; screenshots retained as an artifact." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add docs/screenshots
-          if ! git diff --cached --quiet; then
-            git commit -m "docs: regenerate deterministic README screenshots"
-            git push origin HEAD:docs/readme-showcase-redesign
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m 'docs: regenerate deterministic README screenshots'
+          # A normal push cannot overwrite work arriving after the comparison.
+          if ! git push origin "HEAD:$branch"; then
+            git fetch origin "$branch"
+            if [ "$(git rev-parse FETCH_HEAD)" != "$SOURCE_SHA" ]; then
+              echo "Concurrent branch update; screenshots retained as an artifact." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            exit 1
           fi
