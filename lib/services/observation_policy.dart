@@ -2,7 +2,13 @@
 ///
 /// This module has no capture side effects and persists no session state.
 /// The caller must obtain OS permissions and explicit user consent separately.
-enum ObservationDecision { allow, denyConsent, denyPermission, denySensitive, denyUnknown }
+enum ObservationDecision {
+  allow,
+  denyConsent,
+  denyPermission,
+  denySensitive,
+  denyUnknown,
+}
 
 enum WindowSensitivity { safe, sensitive, private, unknown }
 
