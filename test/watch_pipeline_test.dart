@@ -50,7 +50,7 @@ void main() {
 
   ({String app, String title, bool locked}) at(
     String app, [
-    String title = '',
+    String title = 'Workspace',
     bool locked = false,
   ]) => (app: app, title: title, locked: locked);
 
