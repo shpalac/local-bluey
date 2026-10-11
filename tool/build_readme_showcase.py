@@ -47,7 +47,11 @@ def banner():
     d.text((75, 214), "A lot of possibilities.", font=font(46, True), fill=WHITE)
     d.text((78, 314), "Local-first AI assistance for your Mac", font=font(27), fill=MUTED)
     d.text((78, 359), "with iPhone and Android companions.", font=font(27), fill=MUTED)
-    # Use the actual shipped cross-platform character icon, not the placeholder Flutter face.\n    icon = Image.open(ROOT / "assets/icons/bluey-mobile.png").convert("RGB")\n    icon.thumbnail((480, 480), Image.Resampling.LANCZOS)\n    image.paste(icon, (875, 120))\n    d.text((900, 628), "SHIPPED APP ICON", font=font(19, True), fill=MUTED)
+    # Use the actual shipped cross-platform character icon, not the placeholder Flutter face.
+    icon = Image.open(ROOT / "assets/icons/bluey-mobile.png").convert("RGB")
+    icon.thumbnail((480, 480), Image.Resampling.LANCZOS)
+    image.paste(icon, (875, 120))
+    d.text((900, 628), "SHIPPED APP ICON", font=font(19, True), fill=MUTED)
     d.text((75, 681), "SHIPPED ICON ARTWORK  •  NOT AN IN-APP SCREENSHOT", font=font(17, True), fill=MUTED)
     image.save(OUT / "hero.png", optimize=True)
 
@@ -56,7 +60,10 @@ def gallery():
     d=ImageDraw.Draw(image)
     d.text((62,48),"See Bluey in action",font=font(52,True),fill=WHITE)
     d.text((65,121),"Screens captured from the project's Flutter test harness",font=font(23),fill=MUTED)
-    items=[\n        ("settings-default-dark.png","Settings · dark"),\n        ("onboarding-start-light.png","Onboarding"),\n        ("settings-default-light.png","Settings · light"),\n        ("onboarding-he-light.png","Hebrew · RTL"),\n    ]
+    items=[
+        ("settings-default-dark.png","Settings · dark"),
+        ("onboarding-start-light.png","Onboarding"),\n        ("settings-default-light.png","Settings · light"),\n        ("onboarding-he-light.png","Hebrew · RTL"),
+    ]
     for i,(src,label) in enumerate(items):
         card(image,d,src,60+(i%2)*710,185+(i//2)*400,670,365,label)
     d.text((65,989),"FLUTTER TEST FIXTURES • NO REAL HARDWARE VALIDATION",font=font(16,True),fill=MUTED)
