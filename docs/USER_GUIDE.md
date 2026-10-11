@@ -23,9 +23,13 @@ anything.
 
 ![Pointing](previews/pointer-comet.gif)
 
-The same actions exist as deep links, so you can wire them into Shortcuts:
-`localbluey://wake`, `localbluey://sleep`, `localbluey://ask?text=...`,
-`localbluey://stop`, `localbluey://mute`, `localbluey://status`.
+The current app parses canonical `localbluey://wake`, `localbluey://sleep`,
+`localbluey://ask?text=...`, `localbluey://stop`, `localbluey://mute` and
+`localbluey://status` identifiers, but does not register or consume/dispatch
+incoming URLs. They are not working Shortcuts or controls. Parsing cannot
+start a microphone, send a question or return an answer. Use the face
+gestures above or tray Ask Bluey to wake. See [parser grammar and platform
+limits](../README.md#os-integration-91).
 
 ## The voice flow, step by step
 
@@ -60,8 +64,13 @@ gate off entirely after a warning.
 
 ## The kill switch
 
-`localbluey://stop` cancels every action in flight immediately. Use it the
-moment Bluey starts doing something you didn't mean.
+Use **Stop** in the Mac tray to engage the safety kill switch and reset
+hold-key intent. It invalidates the request/tool generation and blocks new
+safety-gated actions; it does not physically cancel every entered native or
+network effect. **Resume** in the tray lifts the kill switch. Waking the
+face or phone is not the same as Resume. Screen-watch Stop and speech Mute
+are separate controls. `localbluey://stop` is only a parser example, not a
+working emergency control.
 
 ## Privacy controls
 

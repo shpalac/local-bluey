@@ -155,7 +155,7 @@ class TutorialController extends ChangeNotifier {
   /// Whether the tutorial card should render.
   bool get visible => !_finished;
 
-  /// The real wake event (double tap, tray, deep link).
+  /// Advances the wake step when an in-app caller notifies an awake event.
   void notifyAwake() {
     if (_disposed || _resetting || _finished || _step != TutorialStep.wake) {
       return;
