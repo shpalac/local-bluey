@@ -544,6 +544,10 @@ Verified manager coordination still states both owner questions pending: whether
 
 After another related merge, compare the original criterion against current source and exact-head evidence, add its delivery to the ledger, and revise only the affected unmet criterion/disposition. Keep historical failures and proof limits attached to their claims. Manager decides issue disposition; a ready row does not authorize issue closure/status/assignee edits.
 
+### #627 Capability matrix first code slice
+
+[Eleven new contracts](../test/capability_matrix_contract_test.dart): exact roles/capability sets for Mac/iOS/Android/Linux/Windows/unknown, unknown capability false, immutable shared capability set; all15UnsupportedHostControl methods fail explicitly on iOS/Android/Windows/unknown before native/platform/network calls. Controlled Linux factory environment selects unsupported/X11/Wayland while public SupportMatrix role remains unsupported; constructed bridge is not permission/readiness/platform parity. Fresh capability/support/host/unsupported-widget batch23passes(11new), analyze clean, format274/0changed. No production/matrix policy/default/host implementation changed; native TCC/device/Linux executable readiness not tested. Rollback this test and map section only. Refs #627/issueOPEN/partial acceptance; native/runtime consent gates unchanged.
+
 ### #613 Existing privacy heuristic corpus, first code slice
 
 [Ten new fabricated regression cases](../test/privacy_regression_corpus_test.dart) preserve Hebrew framing with email/card/ID redaction and idempotence, explicit unknown-token non-detection limit, denied titles across normalized app aliases, lock precedence, deny-over-allow and deceptive remote URL rejection.72focusedpasses(10new), analyzer clean, format274/0changed. No SensitiveContentGate/668/main/provider/capture/store/source/default change. Regex/name/title/loopback checks are supplemental heuristics, not allPII/image classification or server-local inference/no-egress proof. No real corpus/secret/user-data/native action. Rollback new test/map only. IssueOPEN/Refs #613; #556 classification and native/runtime-consent gates remain separate.
