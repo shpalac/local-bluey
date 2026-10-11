@@ -32,6 +32,8 @@ import 'services/strings.dart';
 import 'services/biometric_lock.dart';
 import 'services/haptics.dart';
 import 'services/host_control.dart';
+import 'services/trust_observation.dart';
+import 'ui/trust_observation_notice.dart';
 import 'services/onboarding_checks.dart';
 import 'services/support_matrix.dart';
 import 'services/phone_audio.dart';
@@ -220,7 +222,7 @@ class _MacHomeState extends State<MacHome>
   final _server = PhoneServer();
   final _face = ValueNotifier<FaceState>(FaceState(mood: Mood.resting));
   bool _awake = false;
-  bool _trusted = false;
+  final _trust = TrustObservation();
   String? _bubble;
   final _capture = AudioCapture();
   final _receipts = SpeakReceipts();
@@ -269,7 +271,7 @@ class _MacHomeState extends State<MacHome>
         );
       }
     });
-    _checkTrust();
+    unawaited(_trust.check());
     _keyRecording.addListener(_onKeyRecordingChanged);
     _keyCleanup.refreshGuard();
     HoldKeySettings.instance.addListener(_syncHoldKey);
@@ -301,7 +303,10 @@ class _MacHomeState extends State<MacHome>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Returning from System Settings re-checks for revoked grants (#174).
-    if (state == AppLifecycleState.resumed) _recheckPermissions();
+    if (state == AppLifecycleState.resumed) {
+      _recheckPermissions();
+      unawaited(_trust.resume());
+    }
   }
 
   Future<void> _recheckPermissions() async {
@@ -352,9 +357,10 @@ class _MacHomeState extends State<MacHome>
     return approved ?? false;
   }
 
-  Future<void> _checkTrust() async {
-    final trusted = await HostControl.forPlatform().isTrusted();
-    if (mounted) setState(() => _trusted = trusted);
+  Future<void> _openTrustSettings() async {
+    final host = HostControl.forPlatform();
+    await host.askPermission();
+    await host.openAccessibilitySettings();
   }
 
   /// Mirrors the watch session into the menu bar (#212): red countdown
@@ -648,6 +654,7 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void dispose() {
+    _trust.dispose();
     _keyCleanup.dispose();
     _hostReload.dispose();
     _keyRecording.removeListener(_onKeyRecordingChanged);
@@ -679,6 +686,10 @@ class _MacHomeState extends State<MacHome>
                   HostReloadNotice(controller: _hostReload),
                   HoldKeyCallerNotice(caller: _holdKeyCaller),
                   KeyCleanupNotice(caller: _keyCleanup),
+                  TrustObservationNotice(
+                    caller: _trust,
+                    openSettings: _openTrustSettings,
+                  ),
                 ],
               ),
               Expanded(
@@ -881,22 +892,10 @@ class _MacHomeState extends State<MacHome>
               return const SizedBox.shrink();
             },
           ),
-          if (!_trusted)
-            MaterialBanner(
-              content: const Text(
-                'Local Bluey needs Accessibility permission to point and click.',
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    final host = HostControl.forPlatform();
-                    await host.askPermission();
-                    await host.openAccessibilitySettings();
-                  },
-                  child: const Text('Open settings'),
-                ),
-              ],
-            ),
+          TrustObservationNotice(
+            caller: _trust,
+            openSettings: _openTrustSettings,
+          ),
         ],
       ),
     );
