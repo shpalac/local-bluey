@@ -38,7 +38,10 @@ void main() {
         cancelled: true,
       ),
     ]) {
-      expect(ObservationPolicy.evaluate(context), ObservationDecision.denyConsent);
+      expect(
+        ObservationPolicy.evaluate(context),
+        ObservationDecision.denyConsent,
+      );
     }
   });
 
