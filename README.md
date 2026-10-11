@@ -20,7 +20,7 @@ Talk to Bluey, ask about what's on your screen, and let him help with computer t
 
 ---
 
-## ✨ Meet Bluey
+<div align="center">\n  <img src="docs/screenshots/showcase/hero.png" width="100%" alt="Local Bluey showcase featuring real Flutter test screenshots; mock captures, not device photos">\n</div>\n\n## ✨ Meet Bluey
 
 <div align="center">
   <img src="docs/screenshots/face-listening-light.png" width="30%" alt="Bluey listening, light theme">
@@ -88,7 +88,7 @@ Conversation summaries, past-answer search and suggestions, plus **user-defined 
 </tr>
 </table>
 
-## 📸 A closer look
+## 📸 A closer look\n\n<div align="center">\n  <img src="docs/screenshots/showcase/gallery.png" width="100%" alt="Gallery assembled from actual Flutter test screenshot captures">\n</div>\n
 
 <div align="center">
 <table>
@@ -106,7 +106,7 @@ Conversation summaries, past-answer search and suggestions, plus **user-defined 
 <details>
 <summary><strong>About these screenshots and accessibility evidence</strong></summary>
 
-These images are generated from a deterministic screenshot harness using fake data, a pinned font and window size. They do not prove native permissions, device compatibility or full screen layout. The Hebrew strings still need native-speaker review. The harness also captures scrolled views and checks for overflow: [English 200% bottom](docs/screenshots/onboarding-compact-dark-200-bottom.png) · [Hebrew 200% bottom](docs/screenshots/onboarding-he-dark-200-bottom.png). See [font provenance](docs/FONTS.md), [screenshot issue #180](https://github.com/shpalac/local-bluey/issues/180) and [device validation #15](https://github.com/shpalac/local-bluey/issues/15).
+The showcase composites above are generated on GitHub-hosted Ubuntu runners by [the screenshot workflow](.github/workflows/readme-showcase.yml), using only the Flutter screenshot harness outputs; no app UI is fabricated. These images are generated from a deterministic screenshot harness using fake data, a pinned font and window size. They do not prove native permissions, device compatibility or full screen layout. The Hebrew strings still need native-speaker review. The harness also captures scrolled views and checks for overflow: [English 200% bottom](docs/screenshots/onboarding-compact-dark-200-bottom.png) · [Hebrew 200% bottom](docs/screenshots/onboarding-he-dark-200-bottom.png). See [font provenance](docs/FONTS.md), [screenshot issue #180](https://github.com/shpalac/local-bluey/issues/180) and [device validation #15](https://github.com/shpalac/local-bluey/issues/15).
 
 </details>
 
