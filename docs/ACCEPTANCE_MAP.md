@@ -1,12 +1,13 @@
 # Refs-only acceptance map
 
-Current snapshot: main `93702642cb40b22a266845fa39a52a66d3d12b34`, 11 October 2026. Update scope: [#423](https://github.com/shpalac/local-bluey/issues/423). Original [#411](https://github.com/shpalac/local-bluey/issues/411) reconciliation at `975ad4e626c8fef85eba49f1399a23d8965ddeff` is preserved through its delivery ledger, unchanged rows and historical limits. All fifteen delivery issues below were OPEN when checked. This page recommends dispositions; it does not close issues, change ownership, or decide policy.
+Current snapshot: main `3ccb1d94c869dd115e5372993080d95f5746b443`, 11 October 2026. Current update: [#431](https://github.com/shpalac/local-bluey/issues/431), trust/permission rows only. Prior #423 snapshot at `93702642cb40b22a266845fa39a52a66d3d12b34` and its fifteen-row reconciliation are preserved below. Prior update scope: [#423](https://github.com/shpalac/local-bluey/issues/423). Original [#411](https://github.com/shpalac/local-bluey/issues/411) reconciliation at `975ad4e626c8fef85eba49f1399a23d8965ddeff` is preserved through its delivery ledger, unchanged rows and historical limits. The prior fifteen delivery issues were OPEN at the #423 check; new #427/#429 are OPEN at this #431 check. This page recommends dispositions; it does not close issues, change ownership, or decide policy.
 
 ## Reading the evidence
 
 - **Ready for manager disposition** means no unmet original bounded criterion was identified from the current source, committed fixtures/evidence and successful exact-head checks. It is not a closure, native readiness claim, or proof that every app workflow works.
 - **Deferred** names an original criterion that still lacks evidence. Non-goals, native exclusions and broader startup limits are not extra acceptance gates.
-- Independently checked for this reconciliation: live issue bodies/comments, merged PR state/head/merge, required check results, current source and fixture assertions, repository evidence targets, and selected complete visual samples. Historical local test totals and full image-inspection claims remain worker reports unless explicitly verified below. Prior unchanged rows retain the original975ad4e source/fixture review; this update rechecked their live issue criteria/status and resolves all linked targets at current main, with fresh deep source review focused on391 and the staged deliveries. No new native/device run was performed.
+- Prior #423 evidence review (preserved): independently checked for that reconciliation: live issue bodies/comments, merged PR state/head/merge, required check results, current source and fixture assertions, repository evidence targets, and selected complete visual samples. Historical local test totals and full image-inspection claims remain worker reports unless explicitly verified below. Prior unchanged rows retain the original975ad4e source/fixture review; this update rechecked their live issue criteria/status and resolves all linked targets at current main, with fresh deep source review focused on391 and the staged deliveries. No new native/device run was performed.
+- Current #431 review checks only affected #427/#429 live criteria, approvals, exact heads/merges/checks, current source/fixtures, six complete pixel originals and local link targets. Earlier rows and external link validation remain historical #423 evidence, not a fresh whole-map review.
 - Source and test links resolve within the current snapshot; old ledger records remain historical. Evidence READMEs and PNGs are historical artifacts, not live-system proof. Preserve them; use the follow-up references below where they describe a defect since repaired.
 
 ## Disposition summary
@@ -28,6 +29,8 @@ Current snapshot: main `93702642cb40b22a266845fa39a52a66d3d12b34`, 11 October 20
 | [#417](https://github.com/shpalac/local-bluey/issues/417) | Ready for manager disposition | None identified in bounded staged criteria; see coverage below. | Manager reviews disposition; Northbeam maintains this map. |
 | [#419](https://github.com/shpalac/local-bluey/issues/419) | Ready for manager disposition | None identified in bounded staged criteria; see coverage below. | Manager reviews disposition; Northbeam maintains this map. |
 | [#421](https://github.com/shpalac/local-bluey/issues/421) | Ready for manager disposition | None identified in bounded staged criteria; see coverage below. | Manager reviews disposition; Northbeam maintains this map. |
+| [#427](https://github.com/shpalac/local-bluey/issues/427) | Ready for manager disposition | None identified in bounded read-only trust caller criteria; no native/mounted-Mac gate added. | Manager reviews disposition; Northbeam maintains this map. |
+| [#429](https://github.com/shpalac/local-bluey/issues/429) | Ready for manager disposition | None identified in bounded permission caller criteria; persistence/delete fencing explicitly excluded. | Manager reviews disposition; Northbeam maintains this map. |
 
 ## Verified delivery ledger
 
@@ -106,6 +109,19 @@ PR414 remains a historical proposal, not implementation authority. PR416/418/420
   - Approved head: `2b2d1661246b963536ae1a2cd93e13b2cad577b3`
   - Main merge: `93702642cb40b22a266845fa39a52a66d3d12b34`
   - Verified SUCCESS: [static](https://github.com/shpalac/local-bluey/actions/runs/38098700086/job/114349924326) / [test](https://github.com/shpalac/local-bluey/actions/runs/38098700086/job/114349924364) / [linux](https://github.com/shpalac/local-bluey/actions/runs/38098700086/job/114349924476) / [security](https://github.com/shpalac/local-bluey/actions/runs/38098700086/job/114349924498)
+
+### Trust and permission reviewed deliveries
+
+- [PR428](https://github.com/shpalac/local-bluey/pull/428)
+  - Approved head: `24e11a3211e66f0e54d7667d2902dbe7013f1746`
+  - Main merge: `977fa888d76fcf6b08338e3133a0891feec9195e`
+  - Verified SUCCESS: [static](https://github.com/shpalac/local-bluey/actions/runs/38102191747/job/114360233263) / [test](https://github.com/shpalac/local-bluey/actions/runs/38102191747/job/114360233307) / [linux](https://github.com/shpalac/local-bluey/actions/runs/38102191747/job/114360233325) / [security](https://github.com/shpalac/local-bluey/actions/runs/38102191747/job/114360233242)
+- [PR430](https://github.com/shpalac/local-bluey/pull/430)
+  - Approved head: `82554f424ef6c9efeb8063aa67fbb2609a164b59`
+  - Main merge: `3ccb1d94c869dd115e5372993080d95f5746b443`
+  - Verified SUCCESS: [static](https://github.com/shpalac/local-bluey/actions/runs/38104324942/job/114366484205) / [test](https://github.com/shpalac/local-bluey/actions/runs/38104324942/job/114366484000) / [linux](https://github.com/shpalac/local-bluey/actions/runs/38104324942/job/114366484310) / [security](https://github.com/shpalac/local-bluey/actions/runs/38104324942/job/114366484263)
+
+Live required check-run payloads matched each full head SHA; both PRs are MERGED. Manager approval in the corresponding issue Slack threads names these exact heads. No issue mutation follows from this ledger.
 
 ## Criterion reconciliation
 
@@ -270,6 +286,41 @@ PR422 wires [caller](../lib/services/key_cleanup_caller.dart), [localized notice
 ### #413 Historical proposal provenance
 
 [KEY_CAPTURE_RETRY_CONTRACT.md](KEY_CAPTURE_RETRY_CONTRACT.md) remains the reviewed PR414 proposal at57c1220. Its private-session/generic-stop/no-recovery source facts and 16-case proposed matrix were true at that snapshot. They are historical, not current API descriptions or implementation authority. Separately assigned PR416/418/420/422 now implement the identity/cleanup/release/API/action slices. No host restart or driver recreation guarantee was selected. Keep proposal facts/alternatives unchanged; read the current map and source for delivered mechanics.
+
+## Mac trust and permission delivery
+
+### #427 Read-only Accessibility observation
+
+Original selected criteria are in [live #427](https://github.com/shpalac/local-bluey/issues/427), not inferred from the historical audit. PR428 supplies the [actual trust caller](../lib/services/trust_observation.dart), [localized notice](../lib/ui/trust_observation_notice.dart) and [main](../lib/main.dart) routes.
+
+- Actual production default is HostControl.forPlatform().isTrusted. Unknown/loading, current true/false and failed observation remain distinct. Historical lastObservation is not current grant proof during loading/error; even a previous true result still shows failed/unverified notice after a new error.
+- Explicit checks join installed pending completion. Resume before entry joins queued work; during an entered read it requests one sequential fresh successor, bursts coalesce, superseded results/errors do not publish. The same future covers successors; further resumes during a successor can request another fresh read, with one latch and no concurrent probes/unbounded queue. No automatic retry after failure. Pending/lifetime guards precede notifications; queued/entered/reentrant disposal is contained.
+- [17 actual caller/channel fixtures](../test/trust_observation_test.dart) cover actual MacHostControl/NativeControl MethodChannel true/false/null mapping, channel error, sync/async errors with retained prior values, held startup/resume bursts, successive fresh completion, duplicate/reentrant check, queued/entered/terminal disposal and source-only main startup/resume/dispose/both branches. Read/retry/resume sends only isTrusted, never askPermission or Settings.
+- [32 composed notice cases](../test/trust_observation_notice_test.dart) cover unknown/error/denied/pending/recovered/failed-after-grant, disabled retry and explicit taps. Verified denial alone offers unchanged explicit askPermission then openAccessibilitySettings. Actual shared MacNoticeRegion, FaceScreen/OnboardingScreen, host/hold/key notices and recovery card are composed at320/1000,1x/2x, EN/Hebrew RTL, light/dark. [Evidence guide](evidence/issue427/README.md) records full-suite1830/one skip and final49/analyze/format/diff as historical worker execution, separate from independently verified head-matching CI.
+
+Unmet original bounded criterion: none identified. Ready for manager disposition, not closure. Main proof is source-only; actual widgets and mocked channel are synthetic, not mounted MacHome/native permission/device proof. Settings callback's existing errors remain excluded, not newly contained. Watchdog/NativeControl/Swift permission policy and onboarding/tutorial owners were not changed. Original conditional refs-only/native exclusion is preserved, not converted into a new acceptance gate.
+
+### #429 Retained permission-recovery observation
+
+Original selected criteria are in [live #429](https://github.com/shpalac/local-bluey/issues/429). PR430 supplies [caller](../lib/services/permission_observation.dart), [notice](../lib/ui/permission_observation_notice.dart) and same retained watchdog/main routes.
+
+- Actual default is the retained PermissionWatchdog.recheckRevoked. Unknown/loading/current/failed describes recovery observation, not grant readiness. Probe/store failure retains prior list with honest generic unverified status, never fabricated denial/grant/empty current. Explicit successful current read replaces only with actual result.
+- Installed check join covers actual probes and baseline I/O. Fresh resume uses the same sequential latch/completion semantics as trust. Disposal fences queued source entry/late display, not already-entered watchdog writes. No automatic failure retry.
+- [16 actual caller fixtures](../test/permission_observation_test.dart) use controlled PermissionChecker/preferences with actual watchdog: each checker failure, actual store read error, held baseline write completion, sync throw, retained error/fresh result, old failure/resume bursts, original clearBaseline and per-id display dismissal, already-produced delayed list filter, queued/entered/reentrant disposal and source assertions.
+- Main captures selected permission at build; original explicit Fix/Later content and clearBaseline(selected id) effects remain. Caller dismissal only removes display and invalidates older entered list versions. Fresh post-dismiss revocation is still watchdog-controlled; no owner/persistence rewrite. Onboarding recordGranted is unchanged.
+- [32 composed cases](../test/permission_observation_notice_test.dart) use actual caller/watchdog/notice plus independent failed trust, host/hold/key notices, FaceScreen/OnboardingScreen and normal recovery card. Retry/pending/current/retained failure, unchanged Fix/Later, other controls and scrolling are covered across the same compact/regular EN/RTL/scales/themes. [Evidence](evidence/issue429/README.md) records134-file1878/one skip, permission batch599 and final48/analyze/format/diff as prior execution, not a fresh local rerun claim in this map. Head-matching required CI independently succeeded.
+
+Unmet original bounded criterion: none identified. Ready for manager disposition. **Caller display fencing is not deletion fencing:** entered watchdog baseline writes may outlive caller/disposal/delete-all. Main source-only and synthetic composed controls are not mounted Mac/native proof. Ignored recordGranted/clearBaseline futures, Settings reset and raw onboarding/tutorial reads are adjacent unselected boundaries, not silently claimed safe.
+
+### Current startup boundary and visual provenance
+
+[MAC_STARTUP_REMAINDER.md](MAC_STARTUP_REMAINDER.md) preserves historical #425 audit and adds current status: trust/permission suggestions are delivered, not duplicate backlog. Raw onboarding isDone.then and tutorial isDone.then still need manager/shpalac coordination; owner-run/replay/unknown-route choices remain unselected. No #223-227/#247 transfer or source/UI/new test work follows from this docs update.
+
+Reconciliation directly reopened six complete originals: trust [compact EN denied action](evidence/issue427/320-2-en-light-normal-denied-action.png), [compact RTL pending](evidence/issue427/320-2-he-dark-onboard-pending.png), [regular RTL error](evidence/issue427/1000-2-he-dark-normal-error.png); permission [compact EN retained error](evidence/issue429/320-2-en-light-normal-retained-error.png), [compact RTL pending](evidence/issue429/320-2-he-dark-onboard-pending-retained.png), [regular RTL error](evidence/issue429/1000-2-he-dark-normal-error.png). New status text/actions readable with independent body and successive scrolling; not all controls shown at once. Existing compact2x onboarding heading/chip truncation remains unchanged; full prior16-sheet inspections and scroll-tap claims are recorded in guides, not newly repeated here. No native Hebrew-language review claimed.
+
+Historical failures remain intact: PR428 normal-route16 failures used a wrong Dismiss selector, repaired to actual Later, then all32 pixel cases passed; test braces lint fixed before final49. PR430 initial32 expectation failures came from fixture grant-state inconsistency, actual watchdog correctly returned multiple revocations; controlled grants repaired without assertion weakening, all32 pixels and final48 passed. This reconciliation's unsuccessful guessed Slack thread lookup returned thread_not_found; recovered exact root timestamp from live channel and read correct thread, no send to wrong thread. Initial rendered map separated the new rows from the Markdown table with a blank line; repaired before final preview.
+
+Retained remote-provider and hold-key policy, #351/#266/#344 holds, #246 shpalac acceptance and #393 native condition remain separate. Neither row claims permission grant, native recorder readiness, physical erasure, first answer, or post-delete baseline safety. No newly invented device/mounted-Mac gate or paid/recurring run.
 
 ## Conflicts and historical limits
 

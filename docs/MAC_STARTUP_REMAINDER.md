@@ -1,6 +1,21 @@
 # Mac startup remainder
 
-Snapshot: main d9c1d3f6833960826ba5dbeb7d6ca229ab5ee84d, 11 October 2026. Read-only audit for #425 of four MacHome startup callers. No source, fixture, UI, native or permission changes. Prior [acceptance map](ACCEPTANCE_MAP.md) remains delivered, with its limits. This is not a whole-startup readiness claim.
+Historical snapshot: main d9c1d3f6833960826ba5dbeb7d6ca229ab5ee84d, 11 October 2026. Read-only audit for #425 of four MacHome startup callers. No source, fixture, UI, native or permission changes. Prior [acceptance map](ACCEPTANCE_MAP.md) remains delivered, with its limits. This is not a whole-startup readiness claim.
+
+## Current delivery status: 11 October 2026
+
+Current main is `3ccb1d94c869dd115e5372993080d95f5746b443`. This #431 addendum supersedes only the historical trust/permission implementation suggestions below. The original #425 snapshot, source reasoning and failed/unproven interleavings remain unchanged as historical evidence, not current backlog. See [current acceptance map](ACCEPTANCE_MAP.md#mac-trust-and-permission-delivery) for exact reviewed heads, merge commits, successful required checks and criterion reconciliation.
+
+- **Trust caller delivered by PR428 / #427:** actual HostControl.isTrusted default; distinct unknown/loading/verified granted/verified denied/failed observation, historical last value retained without current-grant claim. Startup, explicit retry and resume use the same caller. Verified denial alone offers the unchanged explicit askPermission then openAccessibilitySettings action. Reads never prompt. Unknown/error/pending notice appears independently in both Mac scroll regions.
+- **Permission caller delivered by PR430 / #429:** same retained actual watchdog, unknown/loading/current/failed recovery observation, prior list retained on failure. Main startup/resume/listener/dispose use the caller. Selected recovery permission captured at build, original clearBaseline(id) and Fix/Later effects unchanged; display-only per-id invalidation prevents an older entered result restoring the dismissed id. Genuine fresh revocation still follows watchdog semantics.
+- **Selected completion semantics:** explicit duplicates join one installed completion through actual source work (including permission baseline I/O). Resume before queued entry joins that read. Resume during entered work sets one fresh-successor latch; bursts coalesce, source calls stay sequential and superseded display is not published. The same completion covers successors; another resume during a successor can request one further fresh read. No unbounded queue or automatic failure retry. Pending/lifetime guards precede notification; queued disposal prevents source entry, entered disposal prevents late display, and notifier disposal is reentrant-safe.
+- **Remaining unselected boundaries:** onboarding done-read and tutorial done-read chains below remain raw. Manager/shpalac coordination and unknown-route/owner-run choices are still needed before implementation. Settings reset, onboarding recordGranted, recovery clearBaseline and explicit trust-settings callback errors remain adjacent ignored-future/error boundaries, not repaired by caller observation. Entered watchdog baseline writes can outlive caller/disposal/delete-all: display fencing is not persistence/deletion fencing.
+
+Current [main](../lib/main.dart), [trust caller](../lib/services/trust_observation.dart), [permission caller](../lib/services/permission_observation.dart) and committed [trust](evidence/issue427/README.md)/[permission](evidence/issue429/README.md) evidence were rechecked. Source-only MacHome assertions and synthetic actual-widget/mocked-channel fixtures are not mounted live Mac/device/native permission proof. Six decisive complete EN/RTL compact/regular originals re-opened; readable new notices/actions and independent body, with successive scrolling. Existing compact 2x onboarding heading/chip truncation is unchanged and not fixed by these deliveries. Historical failed fixture attempts remain in the evidence guides.
+
+Live #223-227/#247 remain OPEN assigned shpalac; no transfer. #427/#429 remain OPEN assigned Northbeam: ready recommendations do not close them. #351/#266/#344 holds, retained remote-provider/hold policy, #246 shpalac acceptance and #393 native condition remain separate. No native/mounted-Mac gate is added to the bounded caller criteria, and no paid/device/recurring run is authorized.
+
+## Historical #425 audit (unchanged below)
 
 ## Evidence and ownership
 
