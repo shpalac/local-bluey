@@ -137,6 +137,16 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 20));
   }
 
+  // Wait for observable async state rather than assuming CI scheduling
+  // finishes in the 400ms best-effort idle check used by held-play tests.
+  Future<void> waitFor(bool Function() ready) async {
+    final clock = Stopwatch()..start();
+    while (!ready() && clock.elapsed < const Duration(seconds: 5)) {
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+    }
+    expect(ready(), isTrue, reason: 'async state did not settle within 5s');
+  }
+
   List<String> receipts() => sent
       .map(
         (p) =>
@@ -561,10 +571,12 @@ void main() {
         receiver.handle(say('s$i', audio: _audio()));
         await settle();
         expect(world.sessions, hasLength(i + 1), reason: 'entered session');
+        await waitFor(() => receiver.liveWaiters == 1);
         expect(receiver.liveWaiters, 1, reason: 'one live waiter at a time');
         if (i.isOdd) {
           receiver.handle(Packet(command: 'stopSpeech'));
           await settle();
+          await waitFor(() => receiver.liveWaiters == 0);
           expect(receiver.liveWaiters, 0);
         }
       }
@@ -624,6 +636,7 @@ void main() {
     await settle();
     expect(receiver.cleanupPending.value, 0);
     expect(world.sessions, hasLength(2));
+    await waitFor(() => receipts().length == 2);
     expect(receipts(), ['playing:old', 'playing:again']);
     expect(dir.listSync(), hasLength(1), reason: 'only the live clip remains');
   });
