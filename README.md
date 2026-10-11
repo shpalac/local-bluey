@@ -26,7 +26,12 @@ Talk to Bluey, ask about what's on your screen, and let him help with computer t
 
 ## ✨ Meet Bluey
 
-<div align="center">\n  <img src="assets/icons/bluey-mobile.png" width="260" alt="Actual shipped Bluey character icon used across platforms">\n  <p><sub>Actual shipped character artwork; not an in-app screenshot.</sub></p>\n</div>\n\nBluey is a little blueberry with a big personality and his own on-screen cursor.
+<div align="center">
+  <img src="assets/icons/bluey-mobile.png" width="260" alt="Actual shipped Bluey character icon used across platforms">
+  <p><sub>Actual shipped character artwork; not an in-app screenshot.</sub></p>
+</div>
+
+Bluey is a little blueberry with a big personality and his own on-screen cursor.
 
 1. **Double-tap** his face to wake him.
 2. **Press and hold** to ask a question, then release.
@@ -156,7 +161,7 @@ See the [authoritative platform matrix](docs/SUPPORT.md). The presence of a CI b
 **Local-first is a choice you configure — not a blanket promise that no data leaves the device.**
 
 - **Endpoint control.** Local-only mode rejects non-loopback brain, speech and transcription endpoints. `.local` hosts do not qualify as loopback.
-- **Sensitive content checks.** Screen text uses pattern-based redaction; a matching screenshot is withheld. OCR and regex can miss secrets, so treat screenshot access as sensitive.
+- **Sensitive content checks.** Screen text uses pattern-based redaction; a matching screenshot is withheld. The scrubber recognizes email addresses, 16-digit card numbers and 9-digit numbers; it is not a guarantee and can still miss secrets. Screen watching is not covered by the same tool redaction contract, so treat screenshot access as sensitive.
 - **Human confirmation.** Actions that change the Mac pass through SafetyGate. A global kill switch is available.
 - **Protected credentials.** API keys use `flutter_secure_storage`; macOS/iOS use Keychain.
 - **Local records and deletion.** Conversation history, action history and egress metadata have documented retention/deletion behavior. The egress record is **not** a complete network audit.
