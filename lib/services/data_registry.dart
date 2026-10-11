@@ -14,6 +14,7 @@ import 'conversation.dart';
 import 'egress_monitor.dart';
 import 'model_store.dart';
 import 'perf_monitor.dart';
+import 'permission_watchdog.dart';
 import 'privacy_guard.dart';
 import 'routines.dart';
 import 'settings_store.dart';
@@ -264,12 +265,7 @@ class DataRegistry {
       where: 'SharedPreferences',
       retentionEn: 'Kept until you delete it',
       retentionHe: 'נשמר עד שמוחקים',
-      clear: () async {
-        final prefs = await SharedPreferences.getInstance();
-        for (final key in prefs.getKeys()) {
-          if (key.startsWith('watchdog.granted.')) await prefs.remove(key);
-        }
-      },
+      clear: PermissionWatchdog.clearAllBaselines,
     ),
     DataStoreInfo(
       id: 'privacy',
