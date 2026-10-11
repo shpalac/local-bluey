@@ -115,11 +115,14 @@ void main() {
 
   testWidgets('real preferences write persists done before handoff', (t) async {
     await openSummary(t);
-    await t.runAsync(() async {
-      await t.tap(find.text('Start Bluey'));
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-    });
-    await t.pump();
+    await t.tap(find.text('Start Bluey'));
+    // Observed readiness: wait for the actual preference write to land.
+    for (var i = 0; i < 500 && events.isEmpty; i++) {
+      await t.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 5)),
+      );
+      await t.pump();
+    }
     expect(events, ['plan', 'done']);
     expect(await OnboardingScreen.isDone(), isTrue);
   });
