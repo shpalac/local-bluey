@@ -26,14 +26,7 @@ Talk to Bluey, ask about what's on your screen, and let him help with computer t
 
 ## ✨ Meet Bluey
 
-<div align="center">
-  <img src="docs/screenshots/face-listening-light.png" width="30%" alt="Bluey listening, light theme">
-  <img src="docs/screenshots/face-thinking-light.png" width="30%" alt="Bluey thinking">
-  <img src="docs/screenshots/face-answer-short-light.png" width="30%" alt="Bluey replying">
-  <p><sub>Listening · Thinking · Answering</sub></p>
-</div>
-
-Bluey is a little blueberry with a big personality and his own on-screen cursor.
+<div align="center">\n  <img src="assets/icons/bluey-mobile.png" width="260" alt="Actual shipped Bluey character icon used across platforms">\n  <p><sub>Actual shipped character artwork; not an in-app screenshot.</sub></p>\n</div>\n\nBluey is a little blueberry with a big personality and his own on-screen cursor.
 
 1. **Double-tap** his face to wake him.
 2. **Press and hold** to ask a question, then release.
@@ -115,7 +108,7 @@ Conversation summaries, past-answer search and suggestions, plus **user-defined 
 <details>
 <summary><strong>About these screenshots and accessibility evidence</strong></summary>
 
-The showcase composites above are generated on GitHub-hosted Ubuntu runners by [the screenshot workflow](.github/workflows/readme-showcase.yml), using only the Flutter screenshot harness outputs; no app UI is fabricated. These images are generated from a deterministic screenshot harness using fake data, a pinned font and window size. They do not prove native permissions, device compatibility or full screen layout. The Hebrew strings still need native-speaker review. The harness also captures scrolled views and checks for overflow: [English 200% bottom](docs/screenshots/onboarding-compact-dark-200-bottom.png) · [Hebrew 200% bottom](docs/screenshots/onboarding-he-dark-200-bottom.png). See [font provenance](docs/FONTS.md), [screenshot issue #180](https://github.com/shpalac/local-bluey/issues/180) and [device validation #15](https://github.com/shpalac/local-bluey/issues/15).
+The hero features the actual shipped Bluey app icon, not the current simplified Flutter FaceScreen. The gallery contains test-rendered settings/onboarding views. The current Flutter FaceScreen still needs visual parity work before its images should be advertised as product screenshots. The showcase composites above are generated on GitHub-hosted Ubuntu runners by [the screenshot workflow](.github/workflows/readme-showcase.yml), using only the Flutter screenshot harness outputs; no app UI is fabricated. These images are generated from a deterministic screenshot harness using fake data, a pinned font and window size. They do not prove native permissions, device compatibility or full screen layout. The Hebrew strings still need native-speaker review. The harness also captures scrolled views and checks for overflow: [English 200% bottom](docs/screenshots/onboarding-compact-dark-200-bottom.png) · [Hebrew 200% bottom](docs/screenshots/onboarding-he-dark-200-bottom.png). See [font provenance](docs/FONTS.md), [screenshot issue #180](https://github.com/shpalac/local-bluey/issues/180) and [device validation #15](https://github.com/shpalac/local-bluey/issues/15).
 
 </details>
 
