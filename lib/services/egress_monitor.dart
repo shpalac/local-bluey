@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'privacy_guard.dart';
 import 'settings_store.dart';
 
-/// One outbound transmission: where it went, what kind of data, how much.
+/// Caller-supplied metadata, not a transmission or remote-delivery receipt.
 class EgressEntry {
   EgressEntry({
     required this.host,
@@ -15,16 +15,18 @@ class EgressEntry {
     DateTime? at,
   }) : at = at ?? DateTime.now();
 
-  /// The destination host (no path, no payload).
+  /// Parsed URL host from record; not DNS or socket-destination evidence.
   final String host;
 
-  /// brain | transcription | tts
+  /// Caller label, not an enforced content-category list.
   final String kind;
 
-  /// Bytes transmitted.
+  /// Caller amount, despite the historical field name: brain JSON String.length,
+  /// TTS input String.length, STT input-file bytes, or0 for caller checks.
+  /// Mixed units, not request/wire bytes; record normalizes negative values.
   final int bytes;
 
-  /// When it happened (defaults to now).
+  /// Record-site time, not send/receive completion (defaults to now).
   final DateTime at;
 
   /// Serializes for the on-disk log.
@@ -89,7 +91,10 @@ class _FileEgressStorage implements EgressStorage {
   }
 }
 
-/// Bounded retained metadata, not proof that all historical egress is known.
+/// Bounded retained metadata from selected record sites, not all HTTP.
+/// Brain nonstream records follow responses; audio/check records precede sends.
+/// Concrete brain streams and Diagnostics have no record site. Missing rows
+/// are not no traffic; present rows are not successful delivery or readiness.
 class EgressMonitor {
   EgressMonitor({EgressStorage? storage, DateTime Function()? now})
     : _storage = storage ?? _FileEgressStorage(),
@@ -168,7 +173,9 @@ class EgressMonitor {
     }
   }
 
-  /// Records metadata only after loading history, then persists in order.
+  /// Captures host/label/amount/time at the caller site, then loads and writes
+  /// through the ordered queue. Unavailable/incomplete recovery skips writes.
+  /// Most callers do not await this; request completion is not a flush barrier.
   Future<void> record(String url, String kind, int bytes) {
     // Never use an unparsed URL as a host: it may contain a path or secret.
     final host = Uri.tryParse(url)?.host;
@@ -211,7 +218,10 @@ class EgressMonitor {
     }
   });
 
-  /// "what was sent, where, when" - one line per destination.
+  /// Groups retained rows by host, summing caller amounts with mixed units.
+  /// The historical output label "bytes" is not a uniform network-byte total.
+  /// Calls are rows, not unique requests; configured/supplied metadata is not
+  /// a credential-safe export or complete capture guarantee.
   String report() {
     _prune();
     final warning = !historyAvailable
@@ -236,8 +246,10 @@ class EgressMonitor {
             .join('\n');
   }
 
-  /// Offline self-test: every configured endpoint must resolve to this
-  /// machine, and the log must show no remote host.
+  /// Checks legacy BrainSettings URLs (transcription/TTS fall back to brain)
+  /// and retained host labels using loopback-only classification, without DNS
+  /// or a canned request. Does not inspect active SttSettings/native readiness.
+  /// Unknown history warns; empty problems is not offline/no-egress proof.
   Future<List<String>> offlineSelfTest(BrainSettings settings) async {
     await load();
     _prune();
