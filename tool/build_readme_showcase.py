@@ -62,7 +62,9 @@ def gallery():
     d.text((65,121),"Screens captured from the project's Flutter test harness",font=font(23),fill=MUTED)
     items=[
         ("settings-default-dark.png","Settings · dark"),
-        ("onboarding-start-light.png","Onboarding"),\n        ("settings-default-light.png","Settings · light"),\n        ("onboarding-he-light.png","Hebrew · RTL"),
+        ("onboarding-start-light.png","Onboarding"),
+        ("settings-default-light.png","Settings · light"),
+        ("onboarding-he-light.png","Hebrew · RTL"),
     ]
     for i,(src,label) in enumerate(items):
         card(image,d,src,60+(i%2)*710,185+(i//2)*400,670,365,label)
