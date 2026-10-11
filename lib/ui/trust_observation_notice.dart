@@ -6,7 +6,7 @@ import '../services/strings.dart';
 import '../services/trust_observation.dart';
 
 /// Independent status checks; only verified denial offers the explicit action.
-class TrustObservationNotice extends StatelessWidget {
+class TrustObservationNotice extends StatefulWidget {
   const TrustObservationNotice({
     super.key,
     required this.caller,
@@ -16,14 +16,47 @@ class TrustObservationNotice extends StatelessWidget {
   final Future<void> Function() openSettings;
 
   @override
+  State<TrustObservationNotice> createState() => _TrustObservationNoticeState();
+}
+
+class _TrustObservationNoticeState extends State<TrustObservationNotice> {
+  Future<void>? _pending;
+  bool _failed = false;
+
+  Future<void> _open() {
+    if (!mounted || widget.caller.status != TrustObservationStatus.denied) {
+      return Future<void>.value();
+    }
+    final pending = _pending;
+    if (pending != null) return pending;
+    final done = Completer<void>();
+    _pending = done.future;
+    final action = widget.openSettings;
+    setState(() => _failed = false);
+    scheduleMicrotask(() async {
+      if (mounted && widget.caller.status == TrustObservationStatus.denied) {
+        try {
+          await action();
+        } catch (_) {
+          if (mounted) _failed = true;
+        }
+      }
+      _pending = null;
+      if (mounted) setState(() {});
+      done.complete();
+    });
+    return done.future;
+  }
+
+  @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: caller,
+    listenable: widget.caller,
     builder: (context, _) {
-      if (caller.status == TrustObservationStatus.granted) {
+      if (widget.caller.status == TrustObservationStatus.granted) {
         return const SizedBox.shrink();
       }
-      final denied = caller.status == TrustObservationStatus.denied;
-      final text = switch (caller.status) {
+      final denied = widget.caller.status == TrustObservationStatus.denied;
+      final text = switch (widget.caller.status) {
         TrustObservationStatus.denied => Strings.t(
           'Local Bluey needs Accessibility permission to point and click.',
           'לבלואי נדרשת הרשאת נגישות כדי להצביע וללחוץ.',
@@ -43,20 +76,51 @@ class TrustObservationNotice extends StatelessWidget {
       };
       return MaterialBanner(
         forceActionsBelow: MediaQuery.sizeOf(context).width < 600,
-        content: Text(text),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(text),
+            if (denied && _pending != null)
+              Text(
+                Strings.t(
+                  'Opening Accessibility settings. Permission is not verified.',
+                  'פותח את הגדרות הנגישות. ההרשאה לא אומתה.',
+                ),
+              ),
+            if (denied && _failed)
+              Text(
+                Strings.t(
+                  'Could not open Accessibility settings. Try again explicitly.',
+                  'לא ניתן לפתוח את הגדרות הנגישות. אפשר לנסות שוב.',
+                ),
+              ),
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: caller.loading ? null : () => unawaited(caller.check()),
+            onPressed: widget.caller.loading
+                ? null
+                : () => unawaited(widget.caller.check()),
             child: Text(
-              caller.loading
+              widget.caller.loading
                   ? Strings.t('Checking...', 'בודק...')
                   : Strings.t('Check status', 'בדיקת מצב'),
             ),
           ),
           if (denied)
             TextButton(
-              onPressed: () => unawaited(openSettings()),
-              child: Text(Strings.t('Open settings', 'פתיחת הגדרות')),
+              onPressed: _pending != null ? null : () => unawaited(_open()),
+              child: Text(
+                _pending != null
+                    ? Strings.t('Opening...', 'פותח...')
+                    : _failed
+                    ? Strings.t(
+                        'Retry opening settings',
+                        'ניסיון חוזר לפתיחת הגדרות',
+                      )
+                    : Strings.t('Open settings', 'פתיחת הגדרות'),
+              ),
             ),
         ],
       );
