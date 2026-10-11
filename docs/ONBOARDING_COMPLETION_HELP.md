@@ -8,7 +8,7 @@ You reach **Setup summary** after the last permission step, or earlier with **Fi
 
 - One row per permission. A granted permission says "Available." A permission that is not granted says what stays off, for example "Bluey cannot click or type for you."
 - A line says you can change any of these later in System Settings, and that Bluey tells you when a missing permission blocks something.
-- A first-request area. While Bluey checks your chat model and speech setup it says "Checking your chat model and speech setup...". Then it either shows a suggested first request to ask by holding the face, or "Not ready for a spoken question yet" with the specific issues and, where it applies, an **Open Settings** button.
+- A first-request area. While Bluey checks your chat model endpoint and speech-to-text configuration it says "Checking your chat model and speech setup...". Then it either shows a suggested first request to ask by holding the face, or "Not ready for a spoken question yet" with the specific issues and, where it applies, an **Open Settings** button.
 - If pointing is not available, a note says the tutorial will skip pointing for now.
 
 **Start Bluey** stays disabled and reads "Checking..." until that check has finished. **Back to setup** returns to the permission steps and is disabled while a save is running.
@@ -28,9 +28,9 @@ If the save fails, you stay on the summary and see "Could not save setup. Tap St
 The saved flag only records that you pressed **Start Bluey** and the save worked. It is not:
 
 - a permission grant. Permissions are checked live when the summary opens; a "Not enabled" permission stays off after you start.
-- a check that your chat model endpoint or speech-to-text works. That check happens when the summary opens and only shapes the suggested first request.
+- a test that speech-to-text works. When the summary opens, Bluey probes the chat model endpoint only. For speech-to-text it only reads the saved configuration: a non-empty HTTP base address, or the native kind, counts as ready. That does not check reachability, credentials, model, language or native capability, and it runs no recognition. The native option is a placeholder that is not qualified. These checks only shape the suggested first request.
 - the tutorial. The tutorial has its own saved flag and its own skip and replay. See the [first-steps tutorial help](TUTORIAL_HELP.md).
-- a promise about the network. The Local network permission has no check here; macOS asks for it when your iPhone first looks for this Mac.
+- a promise about the network. The Local network permission has no check here. The screen text only says macOS may ask for it when your iPhone first looks for this Mac; that prompt was not verified.
 
 Permissions you chose to set up later stay recorded as "later" and are kept apart from the step-reviewed progress, so moving through steps never counts as a grant.
 
