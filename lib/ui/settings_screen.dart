@@ -25,7 +25,10 @@ import 'watch_screen.dart';
 /// Provider picker + connection details for the brain. The API key is stored
 /// in the Keychain, never in plain preferences.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, this.onDeleteAll});
+  const SettingsScreen({super.key, this.onDeleteAll, this.tutorial});
+
+  /// Tutorial owner used by the replay tile; defaults to the app-wide one.
+  final TutorialController? tutorial;
 
   /// Return the app to onboarding after all local data has been removed.
   final VoidCallback? onDeleteAll;
@@ -756,18 +759,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'https://github.com/shpalac/local-bluey/blob/main/docs/USER_GUIDE.md',
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.school_outlined),
-              title: const Text('Replay first-steps tutorial'),
-              subtitle: const Text('Wake, ask, point - the guided demo.'),
-              onTap: () {
-                TutorialController.instance.reset();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Tutorial will show on the main screen.'),
-                  ),
-                );
-              },
+            _TutorialReplayTile(
+              controller: widget.tutorial ?? TutorialController.instance,
             ),
             ListTile(
               leading: const Icon(Icons.visibility_outlined),
@@ -1045,5 +1038,72 @@ class _HapticsTileState extends State<_HapticsTile> {
     subtitle: Text(_error ?? 'Touch feedback on hold, answers, and connect.'),
     value: _haptics.enabled,
     onChanged: _saving ? null : _toggle,
+  );
+}
+
+/// Replays the first-steps tutorial and reports only the settled result.
+class _TutorialReplayTile extends StatefulWidget {
+  const _TutorialReplayTile({required this.controller});
+
+  final TutorialController controller;
+
+  @override
+  State<_TutorialReplayTile> createState() => _TutorialReplayTileState();
+}
+
+class _TutorialReplayTileState extends State<_TutorialReplayTile> {
+  Future<void>? _attempt;
+  bool _pending = false;
+  bool _failed = false;
+
+  Future<void> _replay() {
+    final active = _attempt;
+    if (active != null) return active;
+    setState(() {
+      _pending = true;
+      _failed = false;
+    });
+    final attempt = _run();
+    _attempt = attempt;
+    return attempt;
+  }
+
+  Future<void> _run() async {
+    var ok = true;
+    try {
+      await widget.controller.reset();
+    } catch (_) {
+      ok = false;
+    }
+    _attempt = null;
+    if (!mounted) return;
+    setState(() {
+      _pending = false;
+      _failed = !ok;
+    });
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? 'Tutorial will show on the main screen.'
+              : 'Could not reset the tutorial. Try again.',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: const Icon(Icons.school_outlined),
+    title: const Text('Replay first-steps tutorial'),
+    subtitle: Text(
+      _pending
+          ? 'Resetting...'
+          : _failed
+          ? 'Could not reset the tutorial. Tap to retry.'
+          : 'Wake, ask, point - the guided demo.',
+    ),
+    onTap: _replay,
   );
 }
