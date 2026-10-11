@@ -8,7 +8,7 @@ App lock is off by default. Nothing is locked until you turn it on.
 
 When app lock is on, two things sit behind device authentication:
 
-- the iPhone remote screen (the phone client home), and
+- the phone remote screen (the phone client home; the source maps both iOS and Android to the phone client), and
 - Bluey Settings, opened from the Mac onboarding screen or from the settings icon on the Mac home screen.
 
 Other screens, network traffic and stored data are not locked or encrypted by this switch. It is a screen gate, not a security guarantee beyond those gated screens.
