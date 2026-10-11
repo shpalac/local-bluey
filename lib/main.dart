@@ -48,6 +48,8 @@ import 'services/speak_receipts.dart';
 import 'services/speech.dart';
 import 'services/speech_disposal_caller.dart';
 import 'services/speech_mute_caller.dart';
+import 'services/window_action_caller.dart';
+import 'ui/window_action_notice.dart';
 import 'ui/speech_mute_notice.dart';
 import 'services/tool_executor.dart';
 import 'ui/face_screen.dart';
@@ -232,6 +234,7 @@ class _MacHomeState extends State<MacHome>
   final _capture = AudioCapture();
   final _receipts = SpeakReceipts();
   final _speech = SpeechService();
+  final _windowAction = WindowActionCaller();
   late final _speechDisposal = SpeechDisposalCaller(owner: _speech);
   late final _speechMute = SpeechMuteCaller(
     owner: _speech,
@@ -469,18 +472,16 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void onTrayIconMouseDown() {
-    windowManager.show();
-    windowManager.focus();
+    unawaited(_windowAction.request(WindowIntent.show));
   }
 
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
     switch (menuItem.key) {
       case 'show':
-        windowManager.show();
-        windowManager.focus();
+        unawaited(_windowAction.request(WindowIntent.show));
       case 'hide':
-        windowManager.hide();
+        unawaited(_windowAction.request(WindowIntent.hide));
       case 'ask':
         // Tray quick action (#91): same wake path as the face gesture.
         setState(() => _awake = true);
@@ -663,6 +664,7 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void dispose() {
+    _windowAction.dispose();
     _speechMute.dispose();
     _permissions.removeListener(_onPermissionsChanged);
     _permissions.dispose();
@@ -696,6 +698,7 @@ class _MacHomeState extends State<MacHome>
             children: [
               MacNoticeRegion(
                 children: [
+                  WindowActionNotice(caller: _windowAction),
                   SpeechMuteNotice(caller: _speechMute),
                   HostReloadNotice(controller: _hostReload),
                   HoldKeyCallerNotice(caller: _holdKeyCaller),
@@ -908,6 +911,7 @@ class _MacHomeState extends State<MacHome>
               return const SizedBox.shrink();
             },
           ),
+          WindowActionNotice(caller: _windowAction),
           SpeechMuteNotice(caller: _speechMute),
           PermissionObservationNotice(caller: _permissions),
           TrustObservationNotice(
