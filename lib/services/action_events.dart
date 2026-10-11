@@ -63,13 +63,28 @@ class ActionEventNormalizer {
     this.debounce = const Duration(seconds: 2),
     this.sessionGap = const Duration(minutes: 10),
     this.maxEvents = 200,
-  });
+  }) {
+    if (debounce.isNegative) {
+      throw ArgumentError.value(debounce, 'debounce', 'must not be negative');
+    }
+    if (sessionGap.isNegative) {
+      throw ArgumentError.value(
+        sessionGap,
+        'sessionGap',
+        'must not be negative',
+      );
+    }
+    if (maxEvents < 1) {
+      throw ArgumentError.value(maxEvents, 'maxEvents', 'must be at least 1');
+    }
+  }
 
   /// Current allowlist decision for an app name. A throwing callback drops
   /// the event (fail closed).
   final bool Function(String app) isAppAllowed;
 
-  /// Same kind for the same app inside this window is one event.
+  /// Same kind for the same app inside this window is one event, even when
+  /// events for other apps or kinds arrive in between (per-key debounce).
   final Duration debounce;
 
   /// Silence longer than this starts a new session.
@@ -90,7 +105,12 @@ class ActionEventNormalizer {
   int _sequence = 0;
   int _session = 0;
   DateTime? _lastAt;
-  ({ActionEventKind kind, String app, DateTime at})? _lastAccepted;
+  bool _ended = false;
+
+  /// Last accepted time per (kind, app). Bounded: entries older than the
+  /// debounce window are pruned on every accepted event, and the map is
+  /// emptied by [endSession] and [clear].
+  final Map<(ActionEventKind, String), DateTime> _lastByKey = {};
 
   /// Independent snapshot of the retained events.
   List<ActionEvent> get events => List.unmodifiable(_events);
@@ -100,7 +120,10 @@ class ActionEventNormalizer {
 
   /// Maps one source event, or returns null when it is dropped: empty or
   /// oversized app, app not allowed, a timestamp that goes backwards, or a
-  /// duplicate inside the debounce window.
+  /// duplicate (same kind and app) inside the debounce window.
+  ///
+  /// Calling [endSession] and then sending an event after a long gap still
+  /// advances the session only once.
   ActionEvent? normalize(WatchEvent source) {
     final app = source.app;
     if (app.isEmpty || app.length > WatchPipeline.maxAppLength) return null;
@@ -118,14 +141,13 @@ class ActionEventNormalizer {
       WatchEventKind.meaningfulChange => ActionEventKind.screenChanged,
       WatchEventKind.visionCall => ActionEventKind.screenDescribed,
     };
-    final prev = _lastAccepted;
-    if (prev != null &&
-        prev.kind == kind &&
-        prev.app == app &&
-        source.at.difference(prev.at) < debounce) {
-      return null;
+    final prev = _lastByKey[(kind, app)];
+    if (prev != null && source.at.difference(prev) < debounce) return null;
+    // After endSession the session already advanced; do not advance twice.
+    if (!_ended && last != null && source.at.difference(last) > sessionGap) {
+      _session++;
     }
-    if (last != null && source.at.difference(last) > sessionGap) _session++;
+    _ended = false;
     final event = ActionEvent(
       sequence: _sequence++,
       sessionId: _session,
@@ -135,7 +157,8 @@ class ActionEventNormalizer {
       confidence: confidenceByKind[kind]!,
     );
     _lastAt = source.at;
-    _lastAccepted = (kind: kind, app: app, at: source.at);
+    _lastByKey.removeWhere((_, at) => source.at.difference(at) >= debounce);
+    _lastByKey[(kind, app)] = source.at;
     _events.add(event);
     if (_events.length > maxEvents) _events.removeAt(0);
     return event;
@@ -145,7 +168,8 @@ class ActionEventNormalizer {
   /// event starts a new session and is never debounced against older ones.
   void endSession() {
     _session++;
-    _lastAccepted = null;
+    _ended = true;
+    _lastByKey.clear();
   }
 
   /// Forgets every retained event and starts over, as after a restart.
@@ -154,7 +178,8 @@ class ActionEventNormalizer {
     _sequence = 0;
     _session = 0;
     _lastAt = null;
-    _lastAccepted = null;
+    _ended = false;
+    _lastByKey.clear();
   }
 
   /// Normalizes a source stream. Cancelling the returned subscription stops

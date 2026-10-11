@@ -119,6 +119,66 @@ void main() {
     expect(n.sessionId, 1);
   });
 
+  test(
+    'interleaved same kind and app inside the window is still collapsed',
+    () {
+      final n = _n();
+      n.normalize(_w(WatchEventKind.appSwitch, 'notes', 0));
+      n.normalize(_w(WatchEventKind.meaningfulChange, 'notes', 0));
+      final again = n.normalize(_w(WatchEventKind.appSwitch, 'notes', 1));
+      expect(again, isNull);
+      expect(n.events, hasLength(2));
+      // Outside the window it is accepted again.
+      expect(n.normalize(_w(WatchEventKind.appSwitch, 'notes', 5)), isNotNull);
+    },
+  );
+
+  test('endSession then a long gap advances the session only once', () {
+    final n = _n();
+    n.normalize(_w(WatchEventKind.appSwitch, 'notes', 0));
+    n.endSession();
+    final next = n.normalize(_w(WatchEventKind.appSwitch, 'notes', 3000));
+    expect(next!.sessionId, 1);
+    final later = n.normalize(_w(WatchEventKind.appSwitch, 'safari', 3001));
+    expect(later!.sessionId, 1);
+  });
+
+  test('invalid configuration is rejected at runtime', () {
+    bool allow(String a) => true;
+    expect(
+      () => ActionEventNormalizer(
+        isAppAllowed: allow,
+        debounce: const Duration(seconds: -1),
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => ActionEventNormalizer(
+        isAppAllowed: allow,
+        sessionGap: const Duration(seconds: -1),
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => ActionEventNormalizer(isAppAllowed: allow, maxEvents: 0),
+      throwsArgumentError,
+    );
+    expect(
+      () => ActionEventNormalizer(isAppAllowed: allow, maxEvents: -5),
+      throwsArgumentError,
+    );
+    // Zero is a valid boundary for both durations.
+    expect(
+      ActionEventNormalizer(
+        isAppAllowed: allow,
+        debounce: Duration.zero,
+        sessionGap: Duration.zero,
+        maxEvents: 1,
+      ).events,
+      isEmpty,
+    );
+  });
+
   test('retained events are capped and the snapshot is immutable', () {
     final n = _n(max: 3);
     for (var i = 0; i < 5; i++) {
