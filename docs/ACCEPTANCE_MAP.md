@@ -543,3 +543,7 @@ Verified manager coordination still states both owner questions pending: whether
 ## Keeping the map current
 
 After another related merge, compare the original criterion against current source and exact-head evidence, add its delivery to the ledger, and revise only the affected unmet criterion/disposition. Keep historical failures and proof limits attached to their claims. Manager decides issue disposition; a ready row does not authorize issue closure/status/assignee edits.
+
+### #616 ScreenWatch bounded state-model first code slice
+
+[Five new fixtures](../test/screen_watch_state_model_test.dart) compare active/remaining state across3bounded start/denied/duplicate/stop/expiry sequences with an injected clock; entered old operation completion after stop+freshsession is discarded while current result succeeds; active policy-read error stops and prevents operation, restart still requires fresh consent.25focusedpasses(5new), analyzer clean, format274/0changed. No ScreenWatch/request/BrainHost/672/main/668/source/privacy-default change, no capture/provider/store/native calls. Generation invalidation is not transport cancellation or undo. No crash/restart persistence/full state-space/full616acceptance claim. Rollback newtest/map only, existing lifecycle/consent contracts remain. Refs #616/issueOPEN/native-runtime consent gates unchanged.
