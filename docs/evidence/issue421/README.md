@@ -13,7 +13,7 @@ no-entry, transferred external output with newer legacy recording, capture-owned
 and separately key-owned deletion, disposed owner zero effects, normal live
 recording ineligibility, and no automatic guard-change recovery.
 
-`key_cleanup_notice_test.dart` has 32 composed cases: 320/1000 logical-pixel widths,
+`key_cleanup_notice_test.dart` has 32 composed matrix cases plus one rendered resume regression: 320/1000 logical-pixel widths,
 900 height, 1x/2x text scale, English/Hebrew RTL, light/dark, and both branches.
 The normal fixture uses actual FaceScreen with an independent request bubble;
 onboarding uses actual OnboardingScreen with injected permission checks and mock
@@ -53,7 +53,7 @@ All output is synthetic; no captured user audio or private provider errors.
 
 Validation: analyzer clean, format 229 files unchanged, diff whitespace clean.
 All 130 test files passed in four non-overlapping sequential file batches:
-674 passed/1 skipped, 518 passed, 257 passed, 331 passed = 1780 passed/1 skipped.
+674 passed/1 skipped, 518 passed, 258 passed, 331 passed = 1781 passed/1 skipped.
 Earlier parallel runs shared build output and were discarded after native asset
 manifest collision; interrupted partial batches were not counted as passes.
 Current-head CI remains required before merge. Refs #421 and #391 only; issue
@@ -71,3 +71,9 @@ allowed-again caller re-enables the explicit action without automatic retry.
 22 caller + 53 direct key + 32 composed cases pass; default direct-owner and
 entered-cleanup regressions are included. Full passing counts above are reruns
 after these repairs, not carryover from the earlier 1772 result.
+
+Manager CHANGES #422 also found actual tray resume reset was non-notifying.
+Main now refreshes only the cleanup guard immediately after the existing reset;
+source regression asserts that ordering. The actual rendered notice is disabled
+under kill, enabled after resume-refresh with zero new effects, then performs
+cleanup only on an explicit tap. All 130 files rerun after this repair.

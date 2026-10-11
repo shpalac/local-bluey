@@ -36,6 +36,67 @@ class _Checker extends PermissionChecker {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  testWidgets(
+    'killed rendered action resumes without cleanup until explicit tap',
+    (tester) async {
+      final f = Fixture();
+      await tester.runAsync(f.init);
+      final c = KeyCleanupCaller(owner: f.owner, allowed: () => f.allowed);
+      addTearDown(() async {
+        c.dispose();
+        await tester.runAsync(f.finish);
+      });
+      f.driver.partialStart = true;
+      await tester.runAsync(
+        () =>
+            expectLater(f.owner.start(), throwsA(isA<KeyRecordingException>())),
+      );
+      f.driver.partialStart = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: KeyCleanupNotice(caller: c)),
+        ),
+      );
+      f.allowed = false;
+      c.refreshGuard();
+      await tester.pump();
+      expect(
+        tester
+            .widget<TextButton>(
+              find.widgetWithText(TextButton, 'Retry cleanup'),
+            )
+            .onPressed,
+        isNull,
+      );
+      f.allowed = true;
+      c.refreshGuard();
+      await tester.pump();
+      expect(
+        tester
+            .widget<TextButton>(
+              find.widgetWithText(TextButton, 'Retry cleanup'),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      expect(f.driver.stops, 0);
+      expect(f.driver.starts, 1);
+      expect(f.delivered, isEmpty);
+      await tester.tap(find.text('Retry cleanup'));
+      for (var i = 0; i < 8 && c.visible; i++) {
+        await tester.pump();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+      }
+      await tester.pumpAndSettle();
+      expect(c.visible, false);
+      expect(f.driver.stops, 1);
+      expect(f.driver.starts, 1);
+      expect(f.delivered, isEmpty);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
   for (final width in [320.0, 1000.0]) {
     for (final scale in [1.0, 2.0]) {
       for (final hebrew in [false, true]) {

@@ -338,6 +338,10 @@ void main() {
     final s = File('lib/main.dart').readAsStringSync();
     expect('KeyCleanupNotice(caller: _keyCleanup)'.allMatches(s).length, 2);
     expect(s, contains('_keyCleanup.dispose();'));
+    expect(
+      s,
+      matches(RegExp(r'_safety\.reset\(\);\s*_keyCleanup\.refreshGuard\(\);')),
+    );
     expect(s, contains('owner: _keyRecording'));
     expect(s, contains('allowed: () => mounted && !_safety.killed'));
   });

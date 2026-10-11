@@ -488,6 +488,7 @@ class _MacHomeState extends State<MacHome>
         _holdKey.reset();
       case 'resume':
         _safety.reset();
+        _keyCleanup.refreshGuard();
       case 'quit':
         exit(0);
     }
