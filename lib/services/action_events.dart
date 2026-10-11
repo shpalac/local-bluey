@@ -129,6 +129,11 @@ class ActionEventNormalizer {
   /// Current session id.
   int get sessionId => _session;
 
+  /// Timestamps must be monotonic across sessions too: [endSession] starts
+  /// a new session but keeps the last accepted time, so an event older than
+  /// the last accepted one is dropped even in a new session (a clock that
+  /// goes backwards never reorders the stream).
+  ///
   /// Maps one source event, or returns null when it is dropped: empty or
   /// oversized app, app not allowed, a timestamp that goes backwards, or a
   /// duplicate (same kind and app) inside the debounce window.

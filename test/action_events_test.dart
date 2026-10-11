@@ -204,6 +204,21 @@ void main() {
     expect(n.debounceKeyCount, 1);
   });
 
+  test('timestamps stay monotonic across endSession', () {
+    final n = _n();
+    n.normalize(_w(WatchEventKind.appSwitch, 'notes', 100));
+    n.endSession();
+    // Older than the last accepted event: dropped even in the new session.
+    expect(n.normalize(_w(WatchEventKind.appSwitch, 'safari', 50)), isNull);
+    expect(n.sessionId, 1);
+    // Equal or newer is accepted and belongs to the new session.
+    final ok = n.normalize(_w(WatchEventKind.appSwitch, 'safari', 100));
+    expect(ok!.sessionId, 1);
+    // clear() forgets the last time, so an older event is fine afterwards.
+    n.clear();
+    expect(n.normalize(_w(WatchEventKind.appSwitch, 'notes', 1)), isNotNull);
+  });
+
   test('retained events are capped and the snapshot is immutable', () {
     final n = _n(max: 3);
     for (var i = 0; i < 5; i++) {

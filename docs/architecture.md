@@ -68,7 +68,7 @@ not wired into the app, persists nothing, keeps no window titles or vision
 text, and records no keystrokes. The allowlist is asked again per event and a
 throwing check drops the event. Duplicates of the same kind and app inside a
 debounce window collapse even when other events arrive between them (per-key
-debounce, hard-capped to `maxEvents` tracked keys: past the cap the least recently accepted key is evicted and is no longer debounced), invalid configuration is rejected, a silence longer than the session gap or a call to
+debounce, hard-capped to `maxEvents` tracked keys: past the cap the least recently accepted key is evicted and is no longer debounced), invalid configuration is rejected, timestamps must stay monotonic even across `endSession` (an older event is dropped in the new session; only `clear` forgets the last time), a silence longer than the session gap or a call to
 `endSession` starts a new session, and the retained list is capped. It makes
 no privacy or retention decision; those stay with the blocked policy items.
 This is partial, unwired groundwork for BLU-006: BLU-002/003 are not merged
