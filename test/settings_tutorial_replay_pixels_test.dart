@@ -23,6 +23,16 @@ class _Store implements TutorialDoneStore {
   }
 }
 
+Future<void> _untilFound(WidgetTester t, Finder finder) async {
+  for (var i = 0; i < 500 && finder.evaluate().isEmpty; i++) {
+    await t.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 5)),
+    );
+    await t.pump();
+  }
+  expect(finder, findsWidgets);
+}
+
 /// Opt-in capture: set TUTORIAL_PIXELS=1 and run this test file.
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -89,10 +99,7 @@ void main() {
               home: SettingsScreen(tutorial: c),
             ),
           );
-          await t.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 300)),
-          );
-          await t.pump();
+          await _untilFound(t, find.byType(Scrollable));
           final title = he
               ? 'הפעלה חוזרת של המדריך'
               : 'Replay first-steps tutorial';
@@ -135,11 +142,19 @@ void main() {
           await shot('pending');
           store.hold!.complete();
           await t.pump();
-          await t.pump();
+          await t.pump(const Duration(milliseconds: 500));
           await shot('error');
-          t
-              .state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger))
-              .clearSnackBars();
+          // Explicit retry: pending again, then settled success.
+          store
+            ..fail = false
+            ..hold = Completer<void>();
+          await t.tap(find.text(title));
+          await t.pump();
+          await shot('retry-pending');
+          store.hold!.complete();
+          await t.pump();
+          await t.pump(const Duration(milliseconds: 500));
+          await shot('success');
         });
       }
     }

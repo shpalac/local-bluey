@@ -17,6 +17,18 @@ class _Reentrant extends TutorialController {
   }
 }
 
+class _SyncThrow extends TutorialController {
+  _SyncThrow({required super.store});
+  bool fail = true;
+  int calls = 0;
+  @override
+  Future<void> reset() {
+    calls++;
+    if (fail) throw StateError('/private/path sync');
+    return super.reset();
+  }
+}
+
 class _Store implements TutorialDoneStore {
   int removes = 0;
   Completer<void>? entered;
@@ -41,10 +53,12 @@ Future<void> _open(
   String label = 'Replay first-steps tutorial',
 ]) async {
   await tester.pumpWidget(MaterialApp(home: SettingsScreen(tutorial: c)));
-  await tester.runAsync(() async {
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-  });
-  await tester.pump();
+  for (var i = 0; i < 500 && find.byType(Scrollable).evaluate().isEmpty; i++) {
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 5)),
+    );
+    await tester.pump();
+  }
   await tester.scrollUntilVisible(
     find.text(label),
     200,
@@ -161,15 +175,23 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(find.byType(SnackBar), findsNothing);
-    await tester.runAsync(() async {
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-    });
-    await tester.pump();
+    for (
+      var i = 0;
+      i < 500 && find.byType(Scrollable).evaluate().isEmpty;
+      i++
+    ) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 5)),
+      );
+      await tester.pump();
+    }
     await tester.scrollUntilVisible(
       find.text('Replay first-steps tutorial'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.text('Replay first-steps tutorial'));
+    await tester.pump();
     await tester.tap(find.text('Replay first-steps tutorial'));
     await tester.pump();
     await tester.pump();
@@ -198,5 +220,32 @@ void main() {
       find.text('לא ניתן לאפס את המדריך. הקישו כדי לנסות שוב.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('synchronously throwing reset is safe; explicit retry works', (
+    tester,
+  ) async {
+    final store = _Store();
+    final c = _SyncThrow(store: store);
+    addTearDown(c.dispose);
+    await _open(tester, c);
+    await tester.tap(find.text('Replay first-steps tutorial'));
+    await tester.pump();
+    await tester.pump();
+    expect(c.calls, 1);
+    expect(store.removes, 0);
+    expect(
+      find.text('Could not reset the tutorial. Try again.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('private'), findsNothing);
+    expect(find.text('Tutorial will show on the main screen.'), findsNothing);
+    c.fail = false;
+    await tester.tap(find.text('Could not reset the tutorial. Tap to retry.'));
+    await tester.pump();
+    await tester.pump();
+    expect(c.calls, 2);
+    expect(store.removes, 1);
+    expect(find.text('Tutorial will show on the main screen.'), findsOneWidget);
   });
 }
