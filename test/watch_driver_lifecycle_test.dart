@@ -33,7 +33,7 @@ void main() {
         final watch = HookWatch();
         final pipeline = WatchPipeline(
           watch: watch,
-          frontmost: () async => (app: 'Safari', title: '', locked: false),
+          frontmost: () async => (app: 'Safari', title: 'Workspace', locked: false),
           frameDiff: () async => 0,
         );
         final driver = WatchDriver(
@@ -77,7 +77,7 @@ void main() {
             expect(ready, isTrue);
             final pipeline = WatchPipeline(
               watch: watch,
-              frontmost: () async => (app: 'Safari', title: '', locked: false),
+              frontmost: () async => (app: 'Safari', title: 'Workspace', locked: false),
               frameDiff: () async => 0,
             );
             final entered = Completer<WatchEvent?>();
@@ -138,7 +138,7 @@ void main() {
       zone.flushMicrotasks();
       final pipeline = WatchPipeline(
         watch: watch,
-        frontmost: () async => (app: 'Safari', title: '', locked: false),
+        frontmost: () async => (app: 'Safari', title: 'Workspace', locked: false),
         frameDiff: () async => 0,
       );
       var reads = 0;
@@ -179,7 +179,7 @@ void main() {
       zone.flushMicrotasks();
       final pipeline = WatchPipeline(
         watch: watch,
-        frontmost: () async => (app: 'Safari', title: '', locked: false),
+        frontmost: () async => (app: 'Safari', title: 'Workspace', locked: false),
         frameDiff: () async => 0,
       );
       var reads = 0, meaningful = false;
