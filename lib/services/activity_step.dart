@@ -82,10 +82,16 @@ final class ActivityStep {
       throw const ActivityStepFormatException('expected JSON object');
     }
     const fields = {
-      'schemaVersion', 'stepId', 'sessionId', 'timestamp',
-      'kind', 'classification', 'confidence',
+      'schemaVersion',
+      'stepId',
+      'sessionId',
+      'timestamp',
+      'kind',
+      'classification',
+      'confidence',
     };
-    if (source.length != fields.length || !source.keys.toSet().containsAll(fields)) {
+    if (source.length != fields.length ||
+        !source.keys.toSet().containsAll(fields)) {
       throw const ActivityStepFormatException('unknown or missing field');
     }
     if (source['schemaVersion'] != schemaVersion ||
@@ -98,9 +104,12 @@ final class ActivityStep {
     final kind = source['kind'];
     final classification = source['classification'];
     final confidence = source['confidence'];
-    if (stepId is! String || sessionId is! String ||
-        timestamp is! String || kind is! String ||
-        classification is! String || confidence is! num) {
+    if (stepId is! String ||
+        sessionId is! String ||
+        timestamp is! String ||
+        kind is! String ||
+        classification is! String ||
+        confidence is! num) {
       throw const ActivityStepFormatException('invalid field type');
     }
     // Require explicit UTC Z, not an ambiguous local time or offset.
@@ -111,9 +120,12 @@ final class ActivityStep {
     if (parsedTime == null || !parsedTime.isUtc) {
       throw const ActivityStepFormatException('invalid timestamp');
     }
-    final parsedKind = ActivityKind.values.where((v) => v.name == kind).firstOrNull;
+    final parsedKind = ActivityKind.values
+        .where((v) => v.name == kind)
+        .firstOrNull;
     final parsedClass = ActivityClassification.values
-        .where((v) => v.name == classification).firstOrNull;
+        .where((v) => v.name == classification)
+        .firstOrNull;
     if (parsedKind == null || parsedClass == null) {
       throw const ActivityStepFormatException('unknown enum');
     }
