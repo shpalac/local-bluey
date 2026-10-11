@@ -20,7 +20,11 @@ Talk to Bluey, ask about what's on your screen, and let him help with computer t
 
 ---
 
-<div align="center">\n  <img src="docs/screenshots/showcase/hero.png" width="100%" alt="Local Bluey showcase featuring real Flutter test screenshots; mock captures, not device photos">\n</div>\n\n## ✨ Meet Bluey
+<div align="center">
+  <img src="docs/screenshots/showcase/hero.png" width="100%" alt="Local Bluey showcase featuring real Flutter test screenshots; mock captures, not device photos">
+</div>
+
+## ✨ Meet Bluey
 
 <div align="center">
   <img src="docs/screenshots/face-listening-light.png" width="30%" alt="Bluey listening, light theme">
@@ -88,7 +92,12 @@ Conversation summaries, past-answer search and suggestions, plus **user-defined 
 </tr>
 </table>
 
-## 📸 A closer look\n\n<div align="center">\n  <img src="docs/screenshots/showcase/gallery.png" width="100%" alt="Gallery assembled from actual Flutter test screenshot captures">\n</div>\n
+## 📸 A closer look
+
+<div align="center">
+  <img src="docs/screenshots/showcase/gallery.png" width="100%" alt="Gallery assembled from actual Flutter test screenshot captures">
+</div>
+
 
 <div align="center">
 <table>
