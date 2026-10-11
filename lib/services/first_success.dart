@@ -3,21 +3,22 @@ import 'settings_store.dart';
 import 'strings.dart';
 import 'stt.dart';
 
-/// How ready a backing service is for the first request (#226).
+/// First-request planning labels (#226), not full provider qualification.
 enum ServiceReadiness {
-  /// Verified reachable (brain) or configured (speech-to-text).
+  /// Brain model-list check returned OK, or STT configuration passed its
+  /// kind/endpoint-presence check. Neither proves a successful first request.
   ready,
 
-  /// Configured but not answering.
+  /// Brain check failed or threw; other callers can also supply this label.
   unreachable,
 
-  /// No usable configuration yet.
+  /// Brain URL empty, or HTTP STT URL absent/blank or STT settings load failed.
   notConfigured,
 }
 
 bool get _hebrewSpeech => Strings.speechLanguage.startsWith('he');
 
-/// Which permissions and services are actually available right now.
+/// Caller-supplied permission and service snapshot for planning, not live probes.
 class FirstSuccessInputs {
   const FirstSuccessInputs({
     required this.accessibility,
@@ -36,10 +37,10 @@ class FirstSuccessInputs {
   /// Microphone granted (needed for any spoken question).
   final bool microphone;
 
-  /// The chat model endpoint.
+  /// Caller brain status, normally the model-list check result.
   final ServiceReadiness brain;
 
-  /// Speech-to-text.
+  /// Caller STT status, normally configuration only, not transcription readiness.
   final ServiceReadiness stt;
 }
 
@@ -54,9 +55,9 @@ class ReadinessIssue {
   final String message;
 }
 
-/// The honest first-success path for what is ready (#226): a first request
-/// that does not depend on anything missing, and tutorial steps gated on
-/// their real capability. A plan never claims readiness it did not verify.
+/// Derives first-request suggestions and tutorial flags from supplied labels
+/// and permission booleans (#226). It performs no provider or permission probe;
+/// a ready input is not independent evidence of working transcription/inference.
 class FirstSuccessPlan {
   const FirstSuccessPlan({
     required this.issues,
@@ -65,7 +66,7 @@ class FirstSuccessPlan {
     required this.pointingAvailable,
   });
 
-  /// Builds the plan from [inputs].
+  /// Builds the plan from [inputs] and the current speech-language preference.
   factory FirstSuccessPlan.from(FirstSuccessInputs inputs) {
     final issues = <ReadinessIssue>[
       if (!inputs.microphone)
@@ -134,24 +135,27 @@ class FirstSuccessPlan {
     );
   }
 
-  /// What blocks a spoken first request; empty when one can work.
+  /// Issues implied by the snapshot; empty is not a successful-request proof.
   final List<ReadinessIssue> issues;
 
   /// The first thing to say, or null when something blocks it.
   final String? suggestedRequest;
 
-  /// A question about the screen can be answered.
+  /// Snapshot permits a screen suggestion, not verified screen-answer quality.
   final bool screenQuestionAvailable;
 
-  /// Pointing at something on screen can work.
+  /// Snapshot permits pointing, not a live native action verification.
   final bool pointingAvailable;
 
-  /// True when the first spoken request has what it needs.
+  /// True when the supplied snapshot yields no issues, not a runtime guarantee.
   bool get voiceReady => issues.isEmpty;
 }
 
-/// Reads live settings and verifies the brain endpoint (#226). Speech-to-
-/// text is checked for configuration only: probing it would send audio.
+/// Reads settings and runs the brain model-list check (#226), not chat/model
+/// inference qualification. STT is configuration-only: HTTP requires a
+/// nonblank endpoint; native kind is labelled ready even though its provider
+/// is currently a not-installed placeholder. No STT reachability, credentials,
+/// model, language or native capability is tested and no audio is sent here.
 Future<(ServiceReadiness brain, ServiceReadiness stt)> checkServices({
   EndpointAssistant? assistant,
 }) async {
