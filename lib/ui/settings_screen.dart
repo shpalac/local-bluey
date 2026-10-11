@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -1053,56 +1055,99 @@ class _TutorialReplayTile extends StatefulWidget {
 
 class _TutorialReplayTileState extends State<_TutorialReplayTile> {
   Future<void>? _attempt;
+  int _generation = 0;
   bool _pending = false;
   bool _failed = false;
+
+  @override
+  void didUpdateWidget(_TutorialReplayTile old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.controller, widget.controller)) {
+      // A result from the replaced owner must not display or block replay.
+      _generation++;
+      _attempt = null;
+      _pending = false;
+      _failed = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _generation++;
+    super.dispose();
+  }
 
   Future<void> _replay() {
     final active = _attempt;
     if (active != null) return active;
+    // Install the attempt before reset runs so a reentrant tap joins it.
+    final done = Completer<void>();
+    _attempt = done.future;
+    final generation = ++_generation;
     setState(() {
       _pending = true;
       _failed = false;
     });
-    final attempt = _run();
-    _attempt = attempt;
-    return attempt;
+    unawaited(_run(widget.controller, generation, done));
+    return done.future;
   }
 
-  Future<void> _run() async {
+  Future<void> _run(
+    TutorialController owner,
+    int generation,
+    Completer<void> done,
+  ) async {
     var ok = true;
     try {
-      await widget.controller.reset();
+      await owner.reset();
     } catch (_) {
       ok = false;
     }
-    _attempt = null;
-    if (!mounted) return;
-    setState(() {
-      _pending = false;
-      _failed = !ok;
-    });
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          ok
-              ? 'Tutorial will show on the main screen.'
-              : 'Could not reset the tutorial. Try again.',
+    if (mounted && generation == _generation) {
+      _attempt = null;
+      setState(() {
+        _pending = false;
+        _failed = !ok;
+      });
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.removeCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? Strings.t(
+                    'Tutorial will show on the main screen.',
+                    'המדריך יוצג במסך הראשי.',
+                  )
+                : Strings.t(
+                    'Could not reset the tutorial. Try again.',
+                    'לא ניתן לאפס את המדריך. נסו שוב.',
+                  ),
+          ),
         ),
-      ),
-    );
+      );
+    }
+    done.complete();
   }
 
   @override
   Widget build(BuildContext context) => ListTile(
     leading: const Icon(Icons.school_outlined),
-    title: const Text('Replay first-steps tutorial'),
+    title: Text(
+      Strings.t('Replay first-steps tutorial', 'הפעלה חוזרת של המדריך'),
+    ),
     subtitle: Text(
       _pending
-          ? 'Resetting...'
+          ? Strings.t('Resetting...', 'מאפס...')
           : _failed
-          ? 'Could not reset the tutorial. Tap to retry.'
-          : 'Wake, ask, point - the guided demo.',
+          ? Strings.t(
+              'Could not reset the tutorial. Tap to retry.',
+              'לא ניתן לאפס את המדריך. הקישו כדי לנסות שוב.',
+            )
+          : Strings.t(
+              'Wake, ask, point - the guided demo.',
+              'להעיר, לשאול, להצביע - ההדגמה המודרכת.',
+            ),
     ),
     onTap: _replay,
   );
