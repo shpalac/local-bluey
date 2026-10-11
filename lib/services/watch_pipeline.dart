@@ -153,6 +153,13 @@ class WatchPipeline {
                 locked: info.locked,
               ) !=
               SensitiveVerdict.allow) {
+            // A denied/unknown window invalidates the previous comparison.
+            // Otherwise returning to the same safe title would mistakenly
+            // reuse pre-denial state as if there had been no interruption.
+            if (!stale()) {
+              _lastApp = _lastTitle = null;
+              _changeStreak = 0;
+            }
             return null;
           }
           return _process(info, stale);
