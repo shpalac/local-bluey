@@ -543,3 +543,7 @@ Verified manager coordination still states both owner questions pending: whether
 ## Keeping the map current
 
 After another related merge, compare the original criterion against current source and exact-head evidence, add its delivery to the ledger, and revise only the affected unmet criterion/disposition. Keep historical failures and proof limits attached to their claims. Manager decides issue disposition; a ready row does not authorize issue closure/status/assignee edits.
+
+### #619 Accessibility/RTL critical-card first code slice
+
+[Eight new fixtures](../test/accessibility_rtl_suite_test.dart) use existing PermissionRecoveryCard/WatchSuggestionCard at320px EN/HebrewRTL/lightdark/1x2x: realTab/Enter Fix/Later/Never/Dismiss, named semantic tap actions, pendingFixdisabled/skipped without duplicate action, safe failure/retry and unchanged fabricated Hebrew quotation. No production UI/bridge/storage/transport change. Fresh focused40passes(8new), analyzer clean, format274/0changed; [inspected final pixels and reproduction/rollback](evidence/issue619/README.md). Scroll top and bottom together expose controls at2x, not all in one viewport. Flutter semantic-tree/keyboard fixture only, not actual VoiceOver/device/native/allcriticalactions or full619acceptance. Existing native/privacy/retained gates unchanged; Refs-only/issueOPEN.
