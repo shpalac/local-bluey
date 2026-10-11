@@ -58,6 +58,28 @@ result -> brain -> reply -> TTS (lib/services/tts via provider)
   executed actions, one run id per brain turn (#57). Startup recovery and
   record/load/delete are ordered; unknown/corrupt disk history is not overwritten.
 
+## Capture monitor (BLU-007)
+
+`lib/services/capture_monitor.dart` sits on top of `ScreenWatch`. It exposes
+an indicator (off, active, paused), pause and resume, refusal counters by
+reason (paused, not allowed, hard denied, private window, locked), an
+immediate `stop`, and `attachLock`, which stops capture when a lock signal
+says locked. It never starts a session: `resume` only lifts a pause inside a
+running session, and ending the session forgets the pause. State is in memory
+only, so after a restart the indicator is off. The counters are integers; no
+app names, titles or screen content are recorded. It is not wired into the
+app yet and makes no privacy or retention decision.
+
+`runIfAllowed` fences each request by a monitor epoch and the `ScreenWatch`
+generation captured before its first gate: stop, restart, pause, resume or
+dispose in between refuses the request or drops its result. Pausing during a
+running operation drops that result but cannot cancel the operation itself.
+Refusal reasons are best effort: the watch is asked twice, and a denial by the
+second ask is counted as not allowed without a finer reason. After `dispose`,
+`attachLock` and `resetRefusals` do nothing (counts are left as they were) and
+`stop` still stops without notifying. This is partial, unwired groundwork for BLU-007: BLU-001 is not
+resolved and nothing here claims the full issue.
+
 ## Pattern miner (BLU-008)
 
 `lib/services/pattern_miner.dart` finds repeated step sequences in a list of
