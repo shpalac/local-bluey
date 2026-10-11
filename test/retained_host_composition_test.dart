@@ -250,13 +250,10 @@ class Fixture {
     Future<Uint8List> Function()? snapshot,
   }) => WatchVision(
     provider: () => host.brain.value?.provider,
-    foreground: () async => (
-      app: 'Editor', title: 'Workspace', locked: false,
-    ),
+    foreground: () async =>
+        (app: 'Editor', title: 'Workspace', locked: false),
     snapshot: () async => ScreenSnapshot(
-      jpeg: snapshot == null
-          ? Uint8List.fromList([1, 2])
-          : await snapshot(),
+      jpeg: snapshot == null ? Uint8List.fromList([1, 2]) : await snapshot(),
       targets: 'Workspace tasks',
       width: 320,
       height: 240,
