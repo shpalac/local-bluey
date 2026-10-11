@@ -111,8 +111,7 @@ class TrayPublicationCaller extends ChangeNotifier {
   TrayPublicationState _sample() => _desired = _read();
 
   Future<void> _run(Completer<void> done) async {
-    var passes = 0;
-    while (!_disposed && passes++ < 2) {
+    while (!_disposed) {
       _again = false;
       TrayPublicationState? entered;
       var failedPass = false;

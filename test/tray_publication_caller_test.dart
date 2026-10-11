@@ -398,54 +398,62 @@ void main() {
     expect(f.methods.where((m) => m == 'setContextMenu').length, 4);
     c.dispose();
   });
-  test(
-    'fresh successor bounded even with more requests during successor',
-    () async {
-      final first = Completer<void>(), second = Completer<void>();
-      final releaseFirst = Completer<void>(), releaseSecond = Completer<void>();
-      var current = state(false);
-      var menus = 0;
-      final titles = <String>[];
-      final c = TrayPublicationCaller.operations(
-        read: () => current,
-        icon: () async {},
-        title: (value) async {
-          titles.add(value);
-        },
-        menu: (_) async {
-          menus++;
-          if (menus == 1) {
-            first.complete();
-            await releaseFirst.future;
-          }
-          if (menus == 2) {
-            second.complete();
-            await releaseSecond.future;
-          }
-        },
-      );
-      final done = c.request();
-      await first.future;
-      current = state(true);
-      c.request();
-      releaseFirst.complete();
-      await second.future;
-      current = state(false);
-      for (var i = 0; i < 20; i++) {
-        expect(identical(done, c.request()), isTrue);
-      }
-      releaseSecond.complete();
-      await done;
-      expect(menus, 2);
-      expect(titles, ['', '● 05:00']);
-      expect(c.desired!.active, false);
-      expect(c.publishedActive, true);
-      await c.request();
-      expect(menus, 3);
-      expect(c.publishedActive, false);
-      c.dispose();
-    },
-  );
+  test('new genuine transition during successor drains sequential latest pass before join', () async {
+    final first = Completer<void>(), second = Completer<void>();
+    final releaseFirst = Completer<void>(), releaseSecond = Completer<void>();
+    final third = Completer<void>(), releaseThird = Completer<void>();
+    var current = state(false);
+    var menus = 0;
+    final titles = <String>[];
+    final c = TrayPublicationCaller.operations(
+      read: () => current,
+      icon: () async {},
+      title: (value) async {
+        titles.add(value);
+      },
+      menu: (_) async {
+        menus++;
+        if (menus == 1) {
+          first.complete();
+          await releaseFirst.future;
+        }
+        if (menus == 2) {
+          second.complete();
+          await releaseSecond.future;
+        }
+        if (menus == 3) {
+          third.complete();
+          await releaseThird.future;
+        }
+      },
+    );
+    final done = c.request();
+    await first.future;
+    current = state(true);
+    c.request();
+    releaseFirst.complete();
+    await second.future;
+    current = state(false);
+    for (var i = 0; i < 20; i++) {
+      expect(identical(done, c.request()), isTrue);
+    }
+    var settled = false;
+    done.then((_) => settled = true);
+    expect(settled, isFalse);
+    releaseSecond.complete();
+    await third.future;
+    expect(settled, isFalse);
+    expect(identical(done, c.request()), isTrue);
+    releaseThird.complete();
+    await done;
+    expect(menus, 3);
+    expect(titles, ['', '● 05:00', '']);
+    expect(c.desired!.active, false);
+    expect(c.publishedActive, false);
+    await c.request();
+    expect(menus, 3);
+    c.dispose();
+  });
   test(
     'failed menu retried after returning to prior successful active state',
     () async {
