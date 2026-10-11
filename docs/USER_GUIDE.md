@@ -35,11 +35,38 @@ limits](../README.md#os-integration-91).
 
 1. Press and hold the face. He shows *Listening*.
 2. Speak. Let go.
-3. Your words go to the transcription endpoint, then to the brain.
-4. The answer lands in the bubble and is spoken back.
+3. With usable saved HTTP STT settings, the recorded file goes to that transcription endpoint. Its text then goes to the brain.
+4. The answer lands in the bubble and is spoken back if speech is configured and available.
 
 If anything in that chain fails you get the error in the bubble, not
 silence - see `docs/TROUBLESHOOTING.md`.
+
+## Transcription configuration and limits
+
+Voice requests use separate saved STT settings, not the general brain URL.
+The default is HTTP with no transcription endpoint. On first STT load,
+saved legacy transcription URL/model and an available legacy brain key
+are copied once into the STT settings. Changing the current Settings
+transcription URL/model fields after that migration changes legacy values
+only, not the active STT settings. The form has no supported STT provider
+picker or complete active-STT configuration workflow today. This guide
+does not offer a manual preference-editing workaround.
+
+HTTP STT requires an explicit saved endpoint, the audio-transcription API
+contract and a model the server actually supports. Brain connection tests
+check the brain, not STT. First-success STT readiness checks configuration
+only; a saved URL or native kind is not evidence that transcription works.
+Native transcription is a not-installed placeholder. The model store and
+PCM decoder do not install or activate native inference.
+
+The phrase "type your request instead" exists in degraded-mode metadata,
+but the current app has no typed-request form wired to request dispatch.
+Typing configuration fields or a parsed ask URL is not a typed question.
+If STT is unavailable, voice asking remains unavailable; double-tapping
+the face or tray Ask Bluey can wake Bluey but cannot replace transcription
+or submit typed text. Local face controls and the tray kill switch are
+separate from asking. See [voice troubleshooting](TROUBLESHOOTING.md#voice-problems)
+and the [source audit](STT_READINESS_REMAINDER.md).
 
 ## What Bluey can do on your machine
 
