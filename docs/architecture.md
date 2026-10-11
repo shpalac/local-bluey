@@ -58,6 +58,19 @@ result -> brain -> reply -> TTS (lib/services/tts via provider)
   executed actions, one run id per brain turn (#57). Startup recovery and
   record/load/delete are ordered; unknown/corrupt disk history is not overwritten.
 
+## Action events (BLU-006)
+
+`lib/services/action_events.dart` maps `WatchEvent`s from `WatchPipeline` into
+`ActionEvent`s: a stable kind (app activated, screen changed, screen
+described), the allowlisted app, the source time, a fixed per-kind confidence,
+a sequence number and a session id. It is pure Dart and in memory only. It is
+not wired into the app, persists nothing, keeps no window titles or vision
+text, and records no keystrokes. The allowlist is asked again per event and a
+throwing check drops the event. Duplicates of the same kind and app inside a
+debounce window collapse, a silence longer than the session gap or a call to
+`endSession` starts a new session, and the retained list is capped. It makes
+no privacy or retention decision; those stay with the blocked policy items.
+
 ## Known gaps
 
 Tracked openly rather than claimed as done: Android/Linux ports
