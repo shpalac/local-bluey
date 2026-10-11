@@ -10,12 +10,19 @@ class _Checker extends PermissionChecker {
   final grants = <String, bool>{'microphone': true};
   Completer<void>? entered;
   Completer<bool>? release;
+
+  /// Completes once a full probe round has returned (observable barrier).
+  final probed = Completer<void>();
   @override
   Future<bool> accessibility() async => false;
   @override
   Future<bool> screenRecording() async => false;
   @override
-  Future<bool> localNetwork() async => false;
+  Future<bool> localNetwork() async {
+    if (!probed.isCompleted) probed.complete();
+    return false;
+  }
+
   @override
   Future<bool> microphone() {
     final r = release;
@@ -31,13 +38,27 @@ Future<void> _clearViaRegistry() => DataRegistry.stores
     .firstWhere((s) => s.id == 'permission_watchdog')
     .clear();
 
+/// Deterministic fixture: only the permission store stays registered so
+/// DataRegistry.deleteAll runs without platform plugins.
+void _isolateRegistry() {
+  final all = List<DataStoreInfo>.of(DataRegistry.stores);
+  final only = all.firstWhere((s) => s.id == 'permission_watchdog');
+  DataRegistry.stores
+    ..clear()
+    ..add(only);
+  addTearDown(() {
+    DataRegistry.stores
+      ..clear()
+      ..addAll(all);
+  });
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const key = 'watchdog.granted.microphone';
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
-    _RefusingPrefs.mode = _Mode.none;
   });
   tearDown(() => PermissionWatchdog.debugClearStore = null);
 
@@ -67,8 +88,10 @@ void main() {
     final other = PermissionWatchdog(checker: _Checker());
     final first = retired.recordGranted(); // probe entered, then abandoned
     await heldChecker.entered!.future;
-    final queued = other.recordGranted(); // probed before the clear
-    await Future<void>.delayed(Duration.zero);
+    final otherChecker = _Checker();
+    final queued = PermissionWatchdog(checker: otherChecker)
+        .recordGranted(); // probed before the clear
+    await otherChecker.probed.future;
     final clear = _clearViaRegistry();
     heldChecker.release!.complete(true);
     await Future.wait([first, queued, clear]);
@@ -79,20 +102,43 @@ void main() {
   });
 
   test('a write already entered finishes before the removal runs', () async {
+    _isolateRegistry();
     final real = await SharedPreferences.getInstance();
     final gate = Completer<void>();
     final held = _HeldWritePrefs(real, gate);
     final dog = PermissionWatchdog(checker: _Checker(), prefsOverride: held);
     final write = dog.recordGranted();
     await held.entered.future;
-    final clear = _clearViaRegistry();
-    await Future<void>.delayed(Duration.zero);
+    // A second write is queued behind the entered, held one.
+    final secondChecker = _Checker();
+    final second = PermissionWatchdog(
+      checker: secondChecker,
+      prefsOverride: held,
+    ).recordGranted();
+    await secondChecker.probed.future;
+    final clear = DataRegistry.deleteAll();
     expect(real.getBool(key), isNull); // write still held, removal not run
+    expect(held.setCalls, 1); // the queued write has not entered
     gate.complete();
-    await write;
-    await clear;
+    await Future.wait([write, second, clear]);
     expect(real.getBool(key), isNull);
+    expect(held.setCalls, 1); // the queued write was invalidated, never ran
   });
+
+  test(
+    'actual DataRegistry.deleteAll clears baselines and keeps working',
+    () async {
+      _isolateRegistry();
+      SharedPreferences.setMockInitialValues({key: true, 'other': 1});
+      await DataRegistry.deleteAll();
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getBool(key), isNull);
+      expect(prefs.getInt('other'), isNull);
+      final dog = PermissionWatchdog(checker: _Checker());
+      await dog.recordGranted();
+      expect((await SharedPreferences.getInstance()).getBool(key), isTrue);
+    },
+  );
 
   test('repeated clear and recheck after clear keep nothing old', () async {
     final checker = _Checker();
@@ -113,26 +159,35 @@ void main() {
     expect(prefs.getInt('other'), 1);
   });
 
-  for (final mode in [_Mode.refuse, _Mode.thrown]) {
-    test(
-      '${mode.name} removal is reported, then a fresh clear retries',
-      () async {
-        SharedPreferences.setMockInitialValues({
-          key: true,
-          'watchdog.granted.accessibility': true,
-        });
-        final real = await SharedPreferences.getInstance();
-        _RefusingPrefs.mode = mode;
-        PermissionWatchdog.debugClearStore = _RefusingPrefs(real);
-        await expectLater(_clearViaRegistry(), throwsA(isA<StateError>()));
-        expect(real.getBool(key), isTrue); // partial/no deletion is not hidden
-        _RefusingPrefs.mode = _Mode.none;
-        await _clearViaRegistry();
-        expect(real.getBool(key), isNull);
-        expect(real.getBool('watchdog.granted.accessibility'), isNull);
-      },
-    );
-  }
+  test(
+    'partial false and thrown removal keep other keys, then retry',
+    () async {
+      const acc = 'watchdog.granted.accessibility';
+      const scr = 'watchdog.granted.screen_recording';
+      SharedPreferences.setMockInitialValues({key: true, acc: true, scr: true});
+      final real = await SharedPreferences.getInstance();
+      final store = _RefusingPrefs(real)
+        ..modes = {acc: _Mode.refuse, scr: _Mode.thrown};
+      PermissionWatchdog.debugClearStore = store;
+      await expectLater(
+        _clearViaRegistry(),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.toString(),
+            'message',
+            isNot(contains('/private')),
+          ),
+        ),
+      );
+      expect(real.getBool(key), isNull); // other keys continued
+      expect(real.getBool(acc), isTrue); // refused key is not hidden
+      expect(real.getBool(scr), isTrue); // thrown key is not hidden
+      store.modes = {};
+      await _clearViaRegistry();
+      expect(real.getBool(acc), isNull);
+      expect(real.getBool(scr), isNull);
+    },
+  );
 }
 
 enum _Mode { none, refuse, thrown }
@@ -140,11 +195,12 @@ enum _Mode { none, refuse, thrown }
 class _RefusingPrefs implements SharedPreferences {
   _RefusingPrefs(this._p);
   final SharedPreferences _p;
-  static _Mode mode = _Mode.none;
+  Map<String, _Mode> modes = {};
   @override
   Set<String> getKeys() => _p.getKeys();
   @override
   Future<bool> remove(String key) async {
+    final mode = modes[key] ?? _Mode.none;
     if (mode == _Mode.thrown) throw StateError('/private/path');
     return mode == _Mode.refuse ? false : _p.remove(key);
   }
@@ -158,10 +214,12 @@ class _HeldWritePrefs implements SharedPreferences {
   final SharedPreferences _p;
   final Completer<void> _gate;
   final entered = Completer<void>();
+  int setCalls = 0;
   @override
   bool? getBool(String key) => _p.getBool(key);
   @override
   Future<bool> setBool(String key, bool value) async {
+    setCalls++;
     if (!entered.isCompleted) entered.complete();
     await _gate.future;
     return _p.setBool(key, value);
