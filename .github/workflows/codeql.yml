@@ -21,11 +21,14 @@ on:
       - 'android/**'
       - 'macos/**'
       - 'ios/**'
-      - 'lib/**'
       - 'pubspec.*'
       - '.github/workflows/codeql.yml'
   schedule:
     - cron: '23 4 * * 1'
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
