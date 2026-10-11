@@ -132,6 +132,8 @@ void main() {
               await host.reload();
               await hold.loadAndSync();
               var mode = 'error', checks = 0, prompts = 0;
+              var actionFail = true;
+              final actionRelease = Completer<void>();
               final entered = Completer<void>(), release = Completer<bool>();
               final trust = TrustObservation(
                 read: () {
@@ -156,6 +158,10 @@ void main() {
                   caller: trust,
                   openSettings: () async {
                     prompts++;
+                    if (actionFail) {
+                      await actionRelease.future;
+                      throw StateError('private action detail');
+                    }
                   },
                 ),
               ];
@@ -260,7 +266,7 @@ void main() {
                   final bytes = await image.toByteData(
                     format: ui.ImageByteFormat.png,
                   );
-                  await File('/tmp/427-$name-$state.png')
+                  await File('/tmp/433-$name-$state.png')
                       .writeAsBytes(bytes!.buffer.asUint8List());
                   image.dispose();
                 });
@@ -298,7 +304,38 @@ void main() {
               await tester.pumpAndSettle();
               await shot('denied-action');
               await tester.tap(find.text(settingsText));
+              await tester.pump();
               expect(prompts, 1);
+              await focusNotice();
+              await shot('action-pending-top');
+              final opening = hebrew ? 'פותח...' : 'Opening...';
+              await tester.ensureVisible(find.text(opening));
+              await tester.pump();
+              expect(
+                tester
+                    .widget<TextButton>(
+                      find.widgetWithText(TextButton, opening),
+                    )
+                    .onPressed,
+                isNull,
+              );
+              await shot('action-pending-button');
+              actionRelease.complete();
+              await tester.pumpAndSettle();
+              expect(find.textContaining('private'), findsNothing);
+              final retryAction = hebrew
+                  ? 'ניסיון חוזר לפתיחת הגדרות'
+                  : 'Retry opening settings';
+              await focusNotice();
+              await shot('action-error-top');
+              await tester.ensureVisible(find.text(retryAction));
+              await tester.pumpAndSettle();
+              await shot('action-error-button');
+              actionFail = false;
+              await tester.tap(find.text(retryAction));
+              await tester.pumpAndSettle();
+              expect(prompts, 2);
+              expect(trust.status, TrustObservationStatus.denied);
               expect(checks, 2);
               mode = 'pending';
               await tester.ensureVisible(find.text(checkText));
@@ -325,7 +362,7 @@ void main() {
               await tester.pumpAndSettle();
               expect(trust.status, TrustObservationStatus.granted);
               expect(checks, 3);
-              expect(prompts, 1);
+              expect(prompts, 2);
               expect(find.text(checkText), findsNothing);
               await shot('recovered');
               mode = 'error';
