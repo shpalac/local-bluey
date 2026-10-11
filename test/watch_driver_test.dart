@@ -32,7 +32,7 @@ void main() {
           watch: watch,
           frontmost: () async {
             reads++;
-            return (app: 'Safari', title: '', locked: false);
+            return (app: 'Safari', title: 'Workspace', locked: false);
           },
           frameDiff: () async => 0.0,
         );
