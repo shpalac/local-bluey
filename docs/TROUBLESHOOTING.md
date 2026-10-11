@@ -63,7 +63,8 @@ check the provider in Settings."**
 **Nothing happens when he should click or type.**
 
 - Check the tray menu: if it says "Stopped (kill switch)", the kill switch
-  is engaged - wake him again.
+  is engaged - use **Resume** in the Mac tray. Waking the face does not
+  reset the kill switch.
 - If a confirmation appeared and timed out, the action was refused; ask
   again and confirm.
 
@@ -107,15 +108,20 @@ check the provider in Settings."**
 **Saying the wake word does nothing.**
 
 - A real on-device wake-word spotter hasn't shipped yet (tracked as
-  issue #79). Wake Bluey by double-tapping his face, from the tray menu,
-  or with `localbluey://wake`.
+  issue #79). Wake Bluey by double-tapping his face or choosing **Ask
+  Bluey** in the Mac tray. `localbluey://wake` is a parser example only:
+  the current app has no incoming URL registration or consumer/dispatch.
+  It is not a wake workaround or working Shortcut.
 
 ## Kill switch
 
 **"Stopped (kill switch)."**
 
-- Everything in flight was cancelled, on purpose. Wake him from the tray
-  or phone to continue.
+- The safety kill switch is engaged. Use **Resume** in the Mac tray to
+  lift it; waking from the face or phone is separate. Stop invalidates
+  request/tool generations, not every entered native/network effect.
+  Screen-watch Stop and speech Mute are separate controls. An incoming
+  `localbluey://stop` URL does not operate this switch.
 
 ## Status messages (not errors)
 

@@ -138,21 +138,23 @@ approved host run; no hardware observation is claimed here.
 
 ## OS integration (#91)
 
-Deep links use only the canonical lowercase `localbluey://action` form (no trailing slash, extra path, userinfo, port or fragment). Non-ask actions take no query. Ask accepts exactly one literal `text` key and no other fields; percent-encode UTF-8 text (`+` means space). Malformed encoding and ambiguous/alternate path forms are rejected without dispatch. Encoded links are capped at 8192 ASCII characters and decoded ask text at 2048 UTF-8 bytes; whitespace-only asks are rejected and valid text is preserved unchanged. Supported actions (validated in `lib/services/deep_links.dart`):
+The current app has a validated URL parser, but does not register the `localbluey` scheme or consume/dispatch incoming URLs. These examples describe parsed action identifiers, not working Shortcuts, microphone, answer, kill-switch or status entry points. There is no text-request admission path bound to the parser. See the [OS entry-point audit](docs/OS_ENTRYPOINT_REMAINDER.md) for the source inventory and remaining decisions; this is source review, not a reproduced OS launch failure.
 
-- `localbluey://wake` / `localbluey://sleep` - same wake/sleep path as the face gesture
-- `localbluey://ask?text=<question>` - asks Bluey (text required)
-- `localbluey://stop` - kill switch
-- `localbluey://mute` - stops in-flight speech
-- `localbluey://status` - shows current state
+The parser accepts only canonical lowercase `localbluey://action` (no trailing slash, extra path, userinfo, port or fragment). Non-ask actions take no query. Ask accepts exactly one literal `text` key and no other fields; percent-encode UTF-8 text (`+` means space). Malformed encoding and ambiguous/alternate path forms return null. Encoded input is capped at 8192 ASCII code units and decoded ask text at 2048 UTF-8 bytes; whitespace-only asks are rejected and valid text is preserved unchanged. Parsed identifiers (validated in `lib/services/deep_links.dart`):
 
-Deep links never run computer-control or other confirm-required actions silently; those stay behind the in-app safety gate (#19, #57).
+- `localbluey://wake` / `localbluey://sleep` - parsed wake/sleep identifiers
+- `localbluey://ask?text=<question>` - parsed ask identifier and required text
+- `localbluey://stop` - parsed stop identifier
+- `localbluey://mute` - parsed mute identifier
+- `localbluey://status` - parsed status identifier
+
+Parsing changes no app state and enforces neither tool safety nor native permissions. Any future dispatch needs selected request/queue, safety/confirmation, logging, role/lock and lifetime contracts; none is activated here. To wake or sleep now, double tap the face. Tray Ask Bluey wakes; it is not text ask. Tray Stop engages the safety kill switch and resets hold-key intent; Resume lifts the kill switch. Generation fences reject stale request/tool work, but do not physically cancel every entered native or network effect. Screen-watch Stop and speech Mute are separate controls.
 
 The macOS tray offers quick actions: Ask Bluey (wake), Mute replies, Status, plus Show/Hide/Stop/Resume/Quit.
 
 Mac hold-to-talk key (#228): in Settings, switch on "Hold a key to talk" to hold a key alone from any app (default Right Command, 400 ms; Left Command, Right Option and Fn/Globe also offered), release to send, Esc to cancel. Off by default. It needs the macOS Input Monitoring permission; without it the switch stays on but the shortcut does nothing and Settings says why. Any other key during the hold cancels it, so Cmd+C and Cmd+Tab are untouched. Works on the Mac alone, no phone needed. System-wide capture and the sandbox entitlements are not yet verified on a real Mac.
 
-Platform limits: iOS App Intents/Shortcuts and widgets need native platform registration and are tracked as follow-up work.
+Platform limits: incoming URL registration/consumption/dispatch and iOS App Intents/Shortcuts/widgets are not delivered in the reviewed current app sources. Native registration and device validation remain separate follow-up work; parser tests prove no OS launch, permission or native shortcut behavior.
 
 
 ### App-lock regression and visual fixtures (#298)
