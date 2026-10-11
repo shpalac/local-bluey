@@ -20,4 +20,6 @@ Synthetic widget evidence only. No device, native or storage-durability claim.
 
 ## Scope limits
 
-Captured from the PR head named in the PR thread. Behavior (held write, disposal, stale owner, sync and async failure, retry, real prefs) is proven by the tests, not by the images. Synthetic only.
+Captured from commit a39c1ee7e38c6974dd1941cf7d7f0fbddc97db47 (the PR head before this README update; no source change since). Behavior is proven by the actual `test/onboarding_completion_test.dart` cases: repeat presses join one write, async false and thrown write failure show one safe error with no handoff and retry works, held write then disposal has no late callback, and a real preferences write persists done before handoff. The images prove only the rendered states above. Synthetic only.
+
+The pixel test's 320 px at 2x variants run only with `TUTORIAL_PIXELS=1` because the default test font overflows at that size; the other variants run in the default suite as structural checks.
