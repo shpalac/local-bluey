@@ -1,0 +1,768 @@
+Resolving dependencies...
+Downloading packages...
+  code_assets 1.2.1 (2.1.0 available)
+  cupertino_icons 1.0.9 (2.0.0 available)
+  flutter_secure_storage 9.2.4 (11.2.0 available)
+  flutter_secure_storage_linux 1.2.3 (3.0.3 available)
+  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+  flutter_secure_storage_platform_interface 1.1.2 (2.1.1 available)
+  flutter_secure_storage_web 1.2.1 (2.1.1 available)
+  flutter_secure_storage_windows 3.1.2 (4.2.2 available)
+  hooks 2.0.2 (2.2.0 available)
+  jni_flutter 1.0.3 (1.0.4+1 available)
+  js 0.6.7 (0.7.2 available)
+  local_auth 2.3.0 (3.0.2 available)
+  local_auth_android 1.0.56 (2.2.0 available)
+  local_auth_darwin 1.6.1 (2.0.4 available)
+  local_auth_windows 1.0.11 (2.0.2 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.3 (1.19.0 available)
+  objective_c 9.5.0 (9.6.2 available)
+  record 7.1.1 (7.1.2 available)
+  record_linux 2.1.2 (2.1.3 available)
+  record_use 0.6.0 (1.1.1 available)
+  screen_retriever 0.2.2 (0.3.0 available)
+  shared_preferences 2.5.5 (2.5.6 available)
+  test_api 0.7.12 (0.7.15 available)
+  tray_manager 0.2.4 (0.8.0 available)
+  vector_math 2.4.0 (2.4.3 available)
+  win32 5.15.0 (6.4.0 available)
+Got dependencies!
+27 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart
+00:00 +0: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects empty
+00:00 +1: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects odd
+00:00 +2: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects wrong bytes
+00:00 +3: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects wrong rate type
+00:00 +4: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects wrong rate
+00:00 +5: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects wrong duration type
+00:00 +6: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects zero duration
+00:00 +7: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects negative duration
+00:00 +8: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects over duration
+00:00 +9: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects huge duration
+00:00 +10: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel rejects missing fields
+00:00 +11: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel null maps generic decoderError
+00:00 +12: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel wrong outer maps generic decoderError
+00:00 +13: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel missing plugin maps generic decoderError
+00:00 +14: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel platform maps generic decoderError
+00:00 +15: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel output boundary 41943040
+00:00 +16: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: actual channel output boundary 41943042
+00:00 +17: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: outer driver cannot bypass output validation 0/16000/0:00:00.250000
+00:00 +18: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: outer driver cannot bypass output validation 1/16000/0:00:00.250000
+00:00 +19: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: outer driver cannot bypass output validation 2/0/0:00:00.250000
+00:00 +20: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: outer driver cannot bypass output validation 2/16000/0:00:00.000000
+00:00 +21: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: outer driver cannot bypass output validation 2/16000/-0:00:00.001000
+00:00 +22: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: outer driver cannot bypass output validation 2/16000/0:10:00.001000
+00:00 +23: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: outer driver cannot bypass output validation 41943042/16000/0:00:00.250000
+00:00 +24: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: file boundary false/1/null never enters driver
+00:00 +25: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: file boundary true/0/null never enters driver
+00:00 +26: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: file boundary true/-1/null never enters driver
+00:00 +27: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: file boundary true/8388609/null never enters driver
+00:00 +28: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: file boundary true/1/exists never enters driver
+00:00 +29: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: file boundary true/1/length never enters driver
+00:00 +30: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: outer exact output cap and duration cap accepted read-only
+00:00 +31: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: normal actual channel output is readonly without duration equality
+00:00 +32: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: entered driver untyped error generic and expected typed error unchanged
+00:00 +33: /home/sandbox/lb-445/test/pcm_decode_boundary_test.dart: outer return detached readonly and source duration is independent
+00:00 +34: loading /home/sandbox/lb-445/test/pcm_decode_test.dart
+00:00 +34: /home/sandbox/lb-445/test/pcm_decode_test.dart: PcmDecoder (#197 prework) decodes an existing non-empty file through the driver
+00:00 +35: /home/sandbox/lb-445/test/pcm_decode_test.dart: PcmDecoder (#197 prework) missing file throws decoderError
+00:00 +36: /home/sandbox/lb-445/test/pcm_decode_test.dart: PcmDecoder (#197 prework) empty file throws decoderError
+00:01 +37: /home/sandbox/lb-445/test/pcm_decode_test.dart: PcmDecoder (#197 prework) oversized file throws decoderError before reaching the driver
+00:01 +38: /home/sandbox/lb-445/test/pcm_decode_test.dart: PcmDecoder (#197 prework) driver decoderError passes through
+00:01 +39: /home/sandbox/lb-445/test/pcm_decode_test.dart: NativePcmDecoderDriver maps a well-formed native reply
+00:01 +40: /home/sandbox/lb-445/test/pcm_decode_test.dart: NativePcmDecoderDriver PlatformException becomes decoderError
+00:01 +41: /home/sandbox/lb-445/test/pcm_decode_test.dart: NativePcmDecoderDriver malformed reply becomes decoderError
+00:01 +42: loading /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart
+00:01 +42: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: measure records and persists; semantics preserved
+00:01 +43: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: clear during measured work: old sample never returns
+00:01 +44: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: clear during a queued append wins
+00:01 +45: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: multiple writes then clear leaves nothing; repeated clear ok
+00:01 +46: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: fresh measurement after clear is accepted
+00:01 +47: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: append failure is reported, not thrown
+PerfMonitor write failed: PathNotFoundException: Cannot open file, path = '/tmp/perf_delNQLXOK/missing/dir/perf.jsonl' (OS Error: No such file or directory, errno = 2)
+00:01 +48: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: failed delete reaches the caller, keeps bytes, retry succeeds
+PerfMonitor clear failed: FileSystemException: disk busy, path = '/tmp/perf_delBKMGCU/perf.jsonl'
+00:01 +49: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: a measurement that starts after clear begins is kept
+00:01 +50: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: storage lookup failure on clear is reported too
+PerfMonitor clear failed: Bad state: no documents dir
+00:01 +51: /home/sandbox/lb-445/test/perf_monitor_deletion_test.dart: medians come from the injected clock
+00:01 +52: loading /home/sandbox/lb-445/test/permission_dismissal_test.dart
+00:02 +52: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered record/accessibility/false clear owns only dismissed id
+00:02 +53: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered record/accessibility/true clear owns only dismissed id
+00:02 +54: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered record/screen_recording/false clear owns only dismissed id
+00:02 +55: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered record/screen_recording/true clear owns only dismissed id
+00:02 +56: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered record/microphone/false clear owns only dismissed id
+00:02 +57: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered record/microphone/true clear owns only dismissed id
+00:02 +58: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered record/local_network/false clear owns only dismissed id
+00:02 +59: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered record/local_network/true clear owns only dismissed id
+00:02 +60: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered recheck/accessibility/false clear owns only dismissed id
+00:02 +61: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered recheck/accessibility/true clear owns only dismissed id
+00:02 +62: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered recheck/screen_recording/false clear owns only dismissed id
+00:02 +63: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered recheck/screen_recording/true clear owns only dismissed id
+00:02 +64: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered recheck/microphone/false clear owns only dismissed id
+00:02 +65: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered recheck/microphone/true clear owns only dismissed id
+00:02 +66: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered recheck/local_network/false clear owns only dismissed id
+00:02 +67: /home/sandbox/lb-445/test/permission_dismissal_test.dart: entered recheck/local_network/true clear owns only dismissed id
+00:02 +68: /home/sandbox/lb-445/test/permission_dismissal_test.dart: dismissal during different entered checker invalidates whole original id observation
+00:02 +69: /home/sandbox/lb-445/test/permission_dismissal_test.dart: new invocation before clear future settles records fresh grant
+00:02 +70: /home/sandbox/lb-445/test/permission_dismissal_test.dart: checker failure stays failure not denial, later dismissal and probe work
+00:02 +71: loading /home/sandbox/lb-445/test/permission_observation_notice_test.dart
+00:03 +71: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-1-en-light-normal
+00:04 +72: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-1-en-light-onboard
+00:05 +73: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-1-en-dark-normal
+00:05 +74: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-1-en-dark-onboard
+00:06 +75: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-1-he-light-normal
+00:06 +76: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-1-he-light-onboard
+00:07 +77: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-1-he-dark-normal
+00:07 +78: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-1-he-dark-onboard
+00:07 +79: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-2-en-light-normal
+00:08 +80: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-2-en-light-onboard
+00:08 +81: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-2-en-dark-normal
+00:08 +82: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-2-en-dark-onboard
+00:09 +83: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-2-he-light-normal
+00:09 +84: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-2-he-light-onboard
+00:09 +85: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-2-he-dark-normal
+00:10 +86: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 320-2-he-dark-onboard
+00:10 +87: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-1-en-light-normal
+00:10 +88: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-1-en-light-onboard
+00:11 +89: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-1-en-dark-normal
+00:11 +90: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-1-en-dark-onboard
+00:11 +91: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-1-he-light-normal
+00:11 +92: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-1-he-light-onboard
+00:12 +93: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-1-he-dark-normal
+00:12 +94: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-1-he-dark-onboard
+00:12 +95: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-2-en-light-normal
+00:13 +96: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-2-en-light-onboard
+00:13 +97: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-2-en-dark-normal
+00:13 +98: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-2-en-dark-onboard
+00:14 +99: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-2-he-light-normal
+00:14 +100: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-2-he-light-onboard
+00:14 +101: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-2-he-dark-normal
+00:14 +102: /home/sandbox/lb-445/test/permission_observation_notice_test.dart: actual permission notice composed 1000-2-he-dark-onboard
+00:15 +103: loading /home/sandbox/lb-445/test/permission_observation_test.dart
+00:15 +103: /home/sandbox/lb-445/test/permission_observation_test.dart: actual watchdog recovery list and successful fresh grant replace only actual result
+00:15 +104: /home/sandbox/lb-445/test/permission_observation_test.dart: actual checker accessibility failure retains list safely then explicit recovery
+00:15 +105: /home/sandbox/lb-445/test/permission_observation_test.dart: actual checker screen_recording failure retains list safely then explicit recovery
+00:15 +106: /home/sandbox/lb-445/test/permission_observation_test.dart: actual checker microphone failure retains list safely then explicit recovery
+00:15 +107: /home/sandbox/lb-445/test/permission_observation_test.dart: actual checker local_network failure retains list safely then explicit recovery
+00:15 +108: /home/sandbox/lb-445/test/permission_observation_test.dart: actual preference read failure is failed observation not fabricated empty current
+00:15 +109: /home/sandbox/lb-445/test/permission_observation_test.dart: completion joins actual entered baseline write not just checker result
+00:15 +110: /home/sandbox/lb-445/test/permission_observation_test.dart: held actual older error suppressed, resume burst joins sequential fresh result
+00:15 +111: /home/sandbox/lb-445/test/permission_observation_test.dart: existing clearBaseline and caller selected-id dismissal prevent stale list resurrection
+00:15 +112: /home/sandbox/lb-445/test/permission_observation_test.dart: caller also filters already-produced delayed list without rewriting owner semantics
+00:15 +113: /home/sandbox/lb-445/test/permission_observation_test.dart: sync error contained with retained list
+00:15 +114: /home/sandbox/lb-445/test/permission_observation_test.dart: pending notification reentrant retry joins and disposal prevents queued probe
+00:15 +115: /home/sandbox/lb-445/test/permission_observation_test.dart: entered disposal settles without late display or fresh successor false
+00:15 +116: /home/sandbox/lb-445/test/permission_observation_test.dart: entered disposal settles without late display or fresh successor true
+00:15 +117: /home/sandbox/lb-445/test/permission_observation_test.dart: terminal listener disposal is safe
+00:15 +118: /home/sandbox/lb-445/test/permission_observation_test.dart: source-only main retains watchdog and original selected-id effects
+00:15 +119: loading /home/sandbox/lb-445/test/permission_watchdog_test.dart
+00:16 +119: /home/sandbox/lb-445/test/permission_watchdog_test.dart: recordGranted stores only granted permissions
+00:16 +120: /home/sandbox/lb-445/test/permission_watchdog_test.dart: recheckRevoked reports a grant that was lost
+00:16 +121: /home/sandbox/lb-445/test/permission_watchdog_test.dart: recheckRevoked adds newly granted permissions to the baseline
+00:16 +122: /home/sandbox/lb-445/test/permission_watchdog_test.dart: clearBaseline stops reporting the dismissed permission
+00:16 +123: /home/sandbox/lb-445/test/permission_watchdog_test.dart: permission kept granted is never revoked
+00:16 +124: loading /home/sandbox/lb-445/test/phone_audio_test.dart
+00:17 +124: /home/sandbox/lb-445/test/phone_audio_test.dart: a valid m4a payload is staged byte for byte
+00:17 +125: /home/sandbox/lb-445/test/phone_audio_test.dart: malformed base64 is refused without a file or raw error text
+00:17 +126: /home/sandbox/lb-445/test/phone_audio_test.dart: oversized payloads are refused before and after decoding
+00:17 +127: /home/sandbox/lb-445/test/phone_audio_test.dart: bytes that are not an MP4 container are refused
+00:17 +128: /home/sandbox/lb-445/test/phone_audio_test.dart: a write failure is reported once and leaves no file
+00:17 +129: /home/sandbox/lb-445/test/phone_audio_test.dart: an entered partial write is removed and reported once
+00:17 +130: /home/sandbox/lb-445/test/phone_audio_test.dart: concurrent stages own independent files under equal clocks
+00:17 +131: /home/sandbox/lb-445/test/phone_audio_test.dart: PhoneAudioReceiver listener path malformed, oversize and non-audio give one safe bubble each
+00:17 +132: /home/sandbox/lb-445/test/phone_audio_test.dart: PhoneAudioReceiver listener path a storage failure is one safe bubble and no leftover
+00:17 +133: /home/sandbox/lb-445/test/phone_audio_test.dart: PhoneAudioReceiver listener path a valid payload reaches the runner and is cleaned up
+00:17 +134: /home/sandbox/lb-445/test/phone_audio_test.dart: PhoneAudioReceiver listener path a runner failure is contained and the file removed
+00:17 +135: /home/sandbox/lb-445/test/phone_audio_test.dart: PhoneAudioReceiver listener path a receiver disposed during staging neither runs nor leaks
+00:17 +136: /home/sandbox/lb-445/test/phone_audio_test.dart: PhoneAudioReceiver listener path a throwing refusal callback is reported once and tracking settles
+00:17 +137: /home/sandbox/lb-445/test/phone_audio_test.dart: PhoneAudioReceiver listener path a disposed receiver shows no bubble for a refusal
+00:17 +138: loading /home/sandbox/lb-445/test/phone_reply_test.dart
+00:18 +138: /home/sandbox/lb-445/test/phone_reply_test.dart: success: playing after start, done on completion, clip removed
+00:18 +139: /home/sandbox/lb-445/test/phone_reply_test.dart: an immediate completion inside play is not lost
+00:18 +140: /home/sandbox/lb-445/test/phone_reply_test.dart: text-only replies are acknowledged by display, no session
+00:18 +141: /home/sandbox/lb-445/test/phone_reply_test.dart: malformed, empty and oversize audio: safe note, no false receipts
+00:18 +142: /home/sandbox/lb-445/test/phone_reply_test.dart: create failure, entered partial write: safe note, no leftover
+PhoneReplyReceiver: Bad state: /private/dir
+00:18 +143: /home/sandbox/lb-445/test/phone_reply_test.dart: a player start error is one safe note, no playing, clip removed
+00:18 +144: /home/sandbox/lb-445/test/phone_reply_test.dart: a newer say replaces a held one: no old receipts or leaks
+00:18 +145: /home/sandbox/lb-445/test/phone_reply_test.dart: a late event from the replaced clip cannot finish or delete the new one
+00:18 +146: /home/sandbox/lb-445/test/phone_reply_test.dart: a held old failure after replacement does not overwrite newer text
+00:19 +147: /home/sandbox/lb-445/test/phone_reply_test.dart: stopSpeech stops playback, removes the clip, no later done
+00:19 +148: /home/sandbox/lb-445/test/phone_reply_test.dart: stopSpeech during a held write: nothing starts
+00:20 +149: /home/sandbox/lb-445/test/phone_reply_test.dart: stop failure: no overlapping replacement, observable, then recovers
+00:20 +150: /home/sandbox/lb-445/test/phone_reply_test.dart: held old play, newer say, stop/dispose fail: completion still seen
+00:21 +151: /home/sandbox/lb-445/test/phone_reply_test.dart: play side effect then throw + failing stop/dispose: kept, retryable
+00:21 +152: /home/sandbox/lb-445/test/phone_reply_test.dart: throwing playing send + failing stop/dispose: kept, no overlap
+PhoneReplyReceiver: Bad state: link
+00:21 +153: /home/sandbox/lb-445/test/phone_reply_test.dart: dispose with stop+dispose failure then completion: nothing published
+00:21 +154: /home/sandbox/lb-445/test/phone_reply_test.dart: subscription cancel and dispose failures are contained
+00:21 +155: /home/sandbox/lb-445/test/phone_reply_test.dart: completion while play is held: playing then exactly one done
+00:22 +156: /home/sandbox/lb-445/test/phone_reply_test.dart: completion while play is held, then play throws: no done
+00:23 +157: /home/sandbox/lb-445/test/phone_reply_test.dart: many entered clips: replaced or stopped, every waiter settles
+00:23 +158: /home/sandbox/lb-445/test/phone_reply_test.dart: a throwing subscription cancel is contained, retried, recovers
+00:23 +159: /home/sandbox/lb-445/test/phone_reply_test.dart: a stuck stop that recovers is retried on the next release
+00:23 +160: /home/sandbox/lb-445/test/phone_reply_test.dart: dispose during staging: no play, no UI, no leaked clip
+00:24 +161: /home/sandbox/lb-445/test/phone_reply_test.dart: dispose while playing: late completion sends nothing
+00:24 +162: /home/sandbox/lb-445/test/phone_reply_test.dart: a failed delete is observable and retried
+00:24 +163: /home/sandbox/lb-445/test/phone_reply_test.dart: a throwing done send still cleans up and never escapes
+PhoneReplyReceiver: Bad state: link down
+00:24 +164: /home/sandbox/lb-445/test/phone_reply_test.dart: listener path: errors from callbacks never escape
+00:24 +165: loading /home/sandbox/lb-445/test/phone_reply_ui_test.dart
+00:24 +165: /home/sandbox/lb-445/test/phone_reply_ui_test.dart: bubble shows reply-error-note
+00:25 +166: /home/sandbox/lb-445/test/phone_reply_ui_test.dart: bubble shows reply-cleanup-pending
+00:25 +167: /home/sandbox/lb-445/test/phone_reply_ui_test.dart: cleanup note keeps the answer, clears on recovery, no late use
+00:25 +168: loading /home/sandbox/lb-445/test/privacy_clear_widget_test.dart
+00:26 +168: /home/sandbox/lb-445/test/privacy_clear_widget_test.dart: privacy registry clear, false/throw toggle and recovery stay honest
+00:31 +169: loading /home/sandbox/lb-445/test/privacy_docs_contract_test.dart
+00:31 +169: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: scrubber: email address is replaced
+00:31 +170: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: scrubber: 16-digit card shape is replaced
+00:31 +171: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: scrubber: 9-digit number is replaced
+00:31 +172: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: scrubber: ordinary text is not replaced
+00:31 +173: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: scrubber: password-shaped text is not replaced
+00:31 +174: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: scrubber: token-shaped text is not replaced
+00:31 +175: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: docs stay within that contract user guide does not claim passwords/tokens are redacted
+00:31 +176: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: docs stay within that contract user guide says the toggle does not edit screenshots
+00:31 +177: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: docs stay within that contract scrubbing claims are scoped and watching gap is stated
+00:31 +178: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: docs stay within that contract site page no longer claims screenshots are withheld entirely
+00:31 +179: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: docs stay within that contract user guide and README state the pattern limits
+00:31 +180: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: docs stay within that contract README lists the same pattern families as the scrubber
+00:31 +181: /home/sandbox/lb-445/test/privacy_docs_contract_test.dart: docs stay within that contract egress and local-only wording stays within what is recorded
+00:31 +182: loading /home/sandbox/lb-445/test/privacy_guard_test.dart
+00:32 +182: /home/sandbox/lb-445/test/privacy_guard_test.dart: redacts emails, card numbers and id-shaped numbers
+00:32 +183: /home/sandbox/lb-445/test/privacy_guard_test.dart: local-only refuses remote providers, allows localhost
+00:32 +184: /home/sandbox/lb-445/test/privacy_guard_test.dart: local-only off never refuses
+00:32 +185: /home/sandbox/lb-445/test/privacy_guard_test.dart: isLocalUrl accepts loopback forms only (#121)
+00:32 +186: /home/sandbox/lb-445/test/privacy_guard_test.dart: isLocalUrl rejects mDNS and remote hosts (#121)
+00:32 +187: /home/sandbox/lb-445/test/privacy_guard_test.dart: refusalForUrl gates any endpoint in local-only mode (#120)
+00:32 +188: /home/sandbox/lb-445/test/privacy_guard_test.dart: bare-host classification rejects malformed/unknown destinations (#297)
+00:32 +189: loading /home/sandbox/lb-445/test/privacy_ordering_test.dart
+00:33 +189: /home/sandbox/lb-445/test/privacy_ordering_test.dart: read uncertainty prevents STT/TTS and diagnostic HTTP effects
+00:33 +190: /home/sandbox/lb-445/test/privacy_ordering_test.dart: successful write followed by failed reconciliation reports uncertainty then recovers
+00:33 +191: /home/sandbox/lb-445/test/privacy_ordering_test.dart: entered read cannot undo completed registry clear
+00:33 +192: /home/sandbox/lb-445/test/privacy_ordering_test.dart: entered write cannot undo completed registry clear
+00:33 +193: /home/sandbox/lb-445/test/privacy_ordering_test.dart: entered remove cannot undo completed registry clear
+00:33 +194: /home/sandbox/lb-445/test/privacy_ordering_test.dart: read throw retains honest state/retries
+00:33 +195: /home/sandbox/lb-445/test/privacy_ordering_test.dart: write false retains honest state/retries
+00:33 +196: /home/sandbox/lb-445/test/privacy_ordering_test.dart: write throw retains honest state/retries
+00:33 +197: /home/sandbox/lb-445/test/privacy_ordering_test.dart: remove false retains honest state/retries
+00:33 +198: /home/sandbox/lb-445/test/privacy_ordering_test.dart: remove throw retains honest state/retries
+00:33 +199: /home/sandbox/lb-445/test/privacy_ordering_test.dart: uncertain read never authorizes remote, debug override unchanged
+00:33 +200: /home/sandbox/lb-445/test/privacy_ordering_test.dart: queued old choice invalidated but fresh choice after clear persists
+00:33 +201: loading /home/sandbox/lb-445/test/privacy_plists_test.dart
+00:33 +201: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) ios/Runner/Info.plist declares every privacy key at the top level
+00:33 +202: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) ios/Runner/Info.plist gives each permission a non-empty description
+00:33 +203: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) ios/Runner/Info.plist advertises the service type the app registers
+00:33 +204: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) ios/Runner/Info.plist has no privacy key buried in a nested dict
+00:33 +205: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) macos/Runner/Info.plist declares every privacy key at the top level
+00:33 +206: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) macos/Runner/Info.plist gives each permission a non-empty description
+00:33 +207: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) macos/Runner/Info.plist advertises the service type the app registers
+00:33 +208: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) macos/Runner/Info.plist has no privacy key buried in a nested dict
+00:33 +209: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) iOS/Info.plist declares every privacy key at the top level
+00:33 +210: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) iOS/Info.plist gives each permission a non-empty description
+00:33 +211: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) iOS/Info.plist advertises the service type the app registers
+00:33 +212: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) iOS/Info.plist has no privacy key buried in a nested dict
+00:33 +213: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) Mac/Info.plist declares every privacy key at the top level
+00:33 +214: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) Mac/Info.plist gives each permission a non-empty description
+00:33 +215: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) Mac/Info.plist advertises the service type the app registers
+00:33 +216: /home/sandbox/lb-445/test/privacy_plists_test.dart: privacy keys are where the OS can read them (#15) Mac/Info.plist has no privacy key buried in a nested dict
+00:33 +217: /home/sandbox/lb-445/test/privacy_plists_test.dart: the legacy Swift link advertises kServiceType (#15)
+00:33 +218: loading /home/sandbox/lb-445/test/provider_retry_test.dart
+00:34 +218: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text permanent HTTP 401 exactly one request
+00:34 +219: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text permanent HTTP 403 exactly one request
+00:34 +220: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text permanent HTTP 404 exactly one request
+00:34 +221: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text permanent HTTP 429 exactly one request
+00:34 +222: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text permanent HTTP 500 exactly one request
+00:34 +223: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text invalid response exactly one request not json
+00:34 +224: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text invalid response exactly one request []
+00:34 +225: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text invalid response exactly one request {"message":42,"choices":42}
+00:34 +226: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text typed socket exact exponential delay then success
+00:34 +227: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text typed timeout exact exponential delay then success
+00:34 +228: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama text generic client error not inferred from transport sounding text
+00:34 +229: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools permanent HTTP 401 exactly one request
+00:34 +230: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools permanent HTTP 403 exactly one request
+00:34 +231: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools permanent HTTP 404 exactly one request
+00:34 +232: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools permanent HTTP 429 exactly one request
+00:34 +233: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools permanent HTTP 500 exactly one request
+00:34 +234: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools invalid response exactly one request not json
+00:34 +235: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools invalid response exactly one request []
+00:34 +236: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools invalid response exactly one request {"message":42,"choices":42}
+00:34 +237: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools typed socket exact exponential delay then success
+00:34 +238: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools typed timeout exact exponential delay then success
+00:34 +239: /home/sandbox/lb-445/test/provider_retry_test.dart: Ollama tools generic client error not inferred from transport sounding text
+00:34 +240: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text permanent HTTP 401 exactly one request
+00:34 +241: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text permanent HTTP 403 exactly one request
+00:34 +242: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text permanent HTTP 404 exactly one request
+00:34 +243: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text permanent HTTP 429 exactly one request
+00:34 +244: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text permanent HTTP 500 exactly one request
+00:34 +245: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text invalid response exactly one request not json
+00:34 +246: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text invalid response exactly one request []
+00:34 +247: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text invalid response exactly one request {"message":42,"choices":42}
+00:34 +248: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text typed socket exact exponential delay then success
+00:34 +249: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text typed timeout exact exponential delay then success
+00:34 +250: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI text generic client error not inferred from transport sounding text
+00:34 +251: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools permanent HTTP 401 exactly one request
+00:34 +252: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools permanent HTTP 403 exactly one request
+00:34 +253: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools permanent HTTP 404 exactly one request
+00:34 +254: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools permanent HTTP 429 exactly one request
+00:34 +255: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools permanent HTTP 500 exactly one request
+00:34 +256: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools invalid response exactly one request not json
+00:34 +257: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools invalid response exactly one request []
+00:34 +258: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools invalid response exactly one request {"message":42,"choices":42}
+00:34 +259: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools typed socket exact exponential delay then success
+00:34 +260: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools typed timeout exact exponential delay then success
+00:34 +261: /home/sandbox/lb-445/test/provider_retry_test.dart: OpenAI tools generic client error not inferred from transport sounding text
+00:34 +262: /home/sandbox/lb-445/test/provider_retry_test.dart: default permanent errors no callback, explicit predicate replaces classification
+00:34 +263: /home/sandbox/lb-445/test/provider_retry_test.dart: predicate/callback errors propagate no subsequent call; final attempt skips predicate
+00:34 +264: /home/sandbox/lb-445/test/provider_retry_test.dart: invalid attempts/delays never invoke call
+00:34 +265: /home/sandbox/lb-445/test/provider_retry_test.dart: exhaustion attempt/callback bound and delay cap
+00:34 +266: loading /home/sandbox/lb-445/test/provider_stream_test.dart
+00:35 +266: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON every byte split including Hebrew preserves exact tokens
+00:35 +267: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON CRLF multiple records metadata empty and final EOF
+00:35 +268: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON malformed/structured errors honest without raw echo {bad
+00:35 +269: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON malformed/structured errors honest without raw echo {"error":{"message":"secret raw"}}
+00:35 +270: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON malformed/structured errors honest without raw echo {"message":{"content":42},"choices":[{"delta":{"content":42}}]}
+00:35 +271: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON malformed/structured errors honest without raw echo [1]
+00:35 +272: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON invalid utf8 errors
+00:35 +273: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON oversized pending line fails before later data
+00:35 +274: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON non200 owns body cancellation/shared client remains
+00:35 +275: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON body error consumes failure and releases listener
+00:35 +276: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON entered body subscriber cancellation releases consumption
+00:35 +277: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON terminal marker ignores trailing malformed data and cancels body
+00:35 +278: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE every byte split including Hebrew preserves exact tokens
+00:35 +279: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE CRLF multiple records metadata empty and final EOF
+00:35 +280: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE malformed/structured errors honest without raw echo {bad
+00:35 +281: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE malformed/structured errors honest without raw echo {"error":{"message":"secret raw"}}
+00:35 +282: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE malformed/structured errors honest without raw echo {"message":{"content":42},"choices":[{"delta":{"content":42}}]}
+00:35 +283: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE malformed/structured errors honest without raw echo [1]
+00:35 +284: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE invalid utf8 errors
+00:35 +285: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE oversized pending line fails before later data
+00:35 +286: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE non200 owns body cancellation/shared client remains
+00:35 +287: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE body error consumes failure and releases listener
+00:35 +288: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE entered body subscriber cancellation releases consumption
+00:35 +289: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE terminal marker ignores trailing malformed data and cancels body
+00:35 +290: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE multiline data field forms one complete JSON event
+00:35 +291: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE accumulated event cap catches many individually small lines
+00:35 +292: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON malformed record cancels active owned body
+00:35 +293: /home/sandbox/lb-445/test/provider_stream_test.dart: NDJSON exact line cap accepted and no streaming tool dispatch
+00:35 +294: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE malformed record cancels active owned body
+00:35 +295: /home/sandbox/lb-445/test/provider_stream_test.dart: SSE exact line cap accepted and no streaming tool dispatch
+00:35 +296: loading /home/sandbox/lb-445/test/request_runner_test.dart
+00:36 +296: /home/sandbox/lb-445/test/request_runner_test.dart: empty transcription short-circuits with a hint
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+00:36 +297: /home/sandbox/lb-445/test/request_runner_test.dart: no brain configured asks the user to set one up
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+00:36 +298: /home/sandbox/lb-445/test/request_runner_test.dart: plain reply: conversation, bubble, face, say with audio
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+00:36 +299: /home/sandbox/lb-445/test/request_runner_test.dart: asleep companion resets to a sleepy face
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+00:36 +300: /home/sandbox/lb-445/test/request_runner_test.dart: routine trigger expands into standing instructions (#56)
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+00:36 +301: /home/sandbox/lb-445/test/request_runner_test.dart: denied tool is reported to the brain, not executed
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+00:36 +302: /home/sandbox/lb-445/test/request_runner_test.dart: executed tool feeds text and image back to the brain
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+In a test, one can call "TestWidgetsFlutterBinding.ensureInitialized()" as the first line in the test's "main()" method to initialize the binding.
+If ServicesBinding is a custom binding mixin, there must also be a custom binding class, like WidgetsFlutterBinding, but that mixes in the selected binding, and that is the class that must be constructed before using the "instance" getter.
+00:36 +303: /home/sandbox/lb-445/test/request_runner_test.dart: max tool steps stops the loop with a note
+PerfMonitor write failed: Binding has not yet been initialized.
+The "instance" getter on the ServicesBinding binding mixin is only available once that binding has been initialized.
+Typically, this is done by calling "WidgetsFlutterBinding.ensureInitialized()" or "runApp()" (the latter calls the former). Typically this call is done in the "void main()" method. The "ensureInitialized" method is idempotent; calling it multiple times is not harmful. After calling that method, the "instance" getter will return the binding.
+00:36 +304: /home/sandbox/lb-445/test/request_runner_test.dart: kill before the tool step stops the run (#107)
+00:36 +305: /home/sandbox/lb-445/test/request_runner_test.dart: kill during confirmation stops after the denial (#107)
+00:36 +306: /home/sandbox/lb-445/test/request_runner_test.dart: generation bump (kill+resume) stops after execution (#107)
+00:36 +307: /home/sandbox/lb-445/test/request_runner_test.dart: Stop during transcription discards the late transcript (#199)
+00:36 +308: /home/sandbox/lb-445/test/request_runner_test.dart: job timer bounds transcription and consumes prior stage budget (#199)
+00:36 +309: /home/sandbox/lb-445/test/request_runner_test.dart: brain timeout discards late stream/reply and uses remaining budget
+00:36 +310: /home/sandbox/lb-445/test/request_runner_test.dart: TTS failure still says the text and notes the failure
+00:36 +311: /home/sandbox/lb-445/test/request_runner_test.dart: transcription failure surfaces an error state
+00:36 +312: /home/sandbox/lb-445/test/request_runner_test.dart: unexpected brain error surfaces an error state
+00:36 +313: /home/sandbox/lb-445/test/request_runner_test.dart: entered streaming/plain ask discards late reply after Stop
+00:36 +314: /home/sandbox/lb-445/test/request_runner_test.dart: entered allowed confirmation never executes after Stop
+00:36 +315: /home/sandbox/lb-445/test/request_runner_test.dart: entered executed tool result discards late reply after Stop
+00:36 +316: /home/sandbox/lb-445/test/request_runner_test.dart: entered denied tool result discards late reply after Stop
+00:36 +317: /home/sandbox/lb-445/test/request_runner_test.dart: entered synthesis success cannot say/play after Stop
+00:36 +318: /home/sandbox/lb-445/test/request_runner_test.dart: entered synthesis error cannot say/play after Stop
+00:36 +319: /home/sandbox/lb-445/test/request_runner_test.dart: entered streaming/plain ask discards late reply after kill+resume
+00:36 +320: /home/sandbox/lb-445/test/request_runner_test.dart: entered allowed confirmation never executes after kill+resume
+00:36 +321: /home/sandbox/lb-445/test/request_runner_test.dart: entered executed tool result discards late reply after kill+resume
+00:36 +322: /home/sandbox/lb-445/test/request_runner_test.dart: entered denied tool result discards late reply after kill+resume
+00:36 +323: /home/sandbox/lb-445/test/request_runner_test.dart: entered synthesis success cannot say/play after kill+resume
+00:36 +324: /home/sandbox/lb-445/test/request_runner_test.dart: entered synthesis error cannot say/play after kill+resume
+00:36 +325: /home/sandbox/lb-445/test/request_runner_test.dart: whole-job budget expires at entered settings and discards late completion
+00:36 +326: /home/sandbox/lb-445/test/request_runner_test.dart: whole-job budget expires at entered stt-settings and discards late completion
+00:36 +327: /home/sandbox/lb-445/test/request_runner_test.dart: whole-job budget expires at entered transcription and discards late completion
+00:36 +328: /home/sandbox/lb-445/test/request_runner_test.dart: whole-job budget expires at entered ask and discards late completion
+00:36 +329: /home/sandbox/lb-445/test/request_runner_test.dart: whole-job budget expires at entered confirmation and discards late completion
+00:36 +330: /home/sandbox/lb-445/test/request_runner_test.dart: whole-job budget expires at entered execution and discards late completion
+00:36 +331: /home/sandbox/lb-445/test/request_runner_test.dart: whole-job budget expires at entered result and discards late completion
+00:36 +332: /home/sandbox/lb-445/test/request_runner_test.dart: whole-job budget expires at entered synthesis and discards late completion
+00:36 +333: /home/sandbox/lb-445/test/request_runner_test.dart: pending confirmation times out at remaining budget before late success
+00:36 +334: /home/sandbox/lb-445/test/request_runner_test.dart: pending confirmation times out at remaining budget before late error
+00:36 +335: /home/sandbox/lb-445/test/request_runner_test.dart: pending execution times out at remaining budget before late success
+00:36 +336: /home/sandbox/lb-445/test/request_runner_test.dart: pending execution times out at remaining budget before late error
+00:36 +337: /home/sandbox/lb-445/test/request_runner_test.dart: pending synthesis times out at remaining budget before late success
+00:36 +338: /home/sandbox/lb-445/test/request_runner_test.dart: pending synthesis times out at remaining budget before late error
+00:36 +339: /home/sandbox/lb-445/test/request_runner_test.dart: #366 one active request overlapping utterances run one at a time, in order
+00:36 +340: /home/sandbox/lb-445/test/request_runner_test.dart: #366 one active request beyond the queue cap a request is rejected and cleaned up
+00:36 +341: /home/sandbox/lb-445/test/request_runner_test.dart: #366 one active request a Stop between turn grant and entry revokes the request
+00:36 +342: /home/sandbox/lb-445/test/request_runner_test.dart: #366 one active request Stop discards queued requests instead of running them
+00:36 +343: loading /home/sandbox/lb-445/test/retry_test.dart
+00:36 +343: /home/sandbox/lb-445/test/retry_test.dart: succeeds after transient failures
+00:36 +344: /home/sandbox/lb-445/test/retry_test.dart: gives up after maxAttempts and rethrows
+00:36 +345: /home/sandbox/lb-445/test/retry_test.dart: non-retryable errors fail immediately
+00:36 +346: loading /home/sandbox/lb-445/test/routines_test.dart
+00:37 +346: /home/sandbox/lb-445/test/routines_test.dart: load recovery and ordering (#333) read failure keeps the file; changes refused; retry loads
+RoutineStore read failed: FileSystemException: locked, path = '/tmp/routines_recHKEZII/routines.json'
+RoutineStore read failed: FileSystemException: locked, path = '/tmp/routines_recHKEZII/routines.json'
+00:37 +347: /home/sandbox/lb-445/test/routines_test.dart: load recovery and ordering (#333) malformed JSON is reported and never overwritten
+00:37 +348: /home/sandbox/lb-445/test/routines_test.dart: load recovery and ordering (#333) one bad row keeps the good rows, reports, protects the file
+00:37 +349: /home/sandbox/lb-445/test/routines_test.dart: load recovery and ordering (#333) clear is the explicit way out of an unreadable file
+00:37 +350: /home/sandbox/lb-445/test/routines_test.dart: load recovery and ordering (#333) add then clear (entered write) ends empty on disk and in memory
+00:37 +351: /home/sandbox/lb-445/test/routines_test.dart: load recovery and ordering (#333) clear then add: add lands after the delete
+00:37 +352: /home/sandbox/lb-445/test/routines_test.dart: load recovery and ordering (#333) failing delete rethrows, keeps memory and file, retry works
+RoutineStore clear failed: FileSystemException: busy, path = '/tmp/routines_recCAERRI/routines.json'
+00:37 +353: /home/sandbox/lb-445/test/routines_test.dart: load recovery and ordering (#333) the public list is read-only
+00:37 +354: /home/sandbox/lb-445/test/routines_test.dart: load recovery and ordering (#333) write failure leaves memory and disk unchanged
+RoutineStore write failed: FileSystemException: full, path = '/tmp/routines_recWCRYMU/routines.json.1.tmp'
+00:37 +355: /home/sandbox/lb-445/test/routines_test.dart: trigger matches case-insensitively inside the utterance
+00:37 +356: /home/sandbox/lb-445/test/routines_test.dart: disabled routines never fire
+00:37 +357: /home/sandbox/lb-445/test/routines_test.dart: export/import round-trips as a shareable skill pack
+00:37 +358: /home/sandbox/lb-445/test/routines_test.dart: an empty pack imports nothing
+00:37 +359: /home/sandbox/lb-445/test/routines_test.dart: import (#287) valid pack: accurate count, one write, wrapped format too
+00:37 +360: /home/sandbox/lb-445/test/routines_test.dart: import (#287) malformed JSON and top-level shapes are rejected
+00:37 +361: /home/sandbox/lb-445/test/routines_test.dart: import (#287) a late bad item rejects the whole pack
+00:37 +362: /home/sandbox/lb-445/test/routines_test.dart: import (#287) invalid field types and empty values are rejected
+00:37 +363: /home/sandbox/lb-445/test/routines_test.dart: import (#287) duplicates in the pack and collisions with existing are rejected
+00:37 +364: /home/sandbox/lb-445/test/routines_test.dart: import (#287) oversized pack and too many routines are rejected
+00:37 +365: /home/sandbox/lb-445/test/routines_test.dart: import (#287) stage failure keeps original bytes, memory, no staging; retry works
+RoutineStore import write failed: FileSystemException: disk full, path = '/tmp/routines_impYZKRNO/routines.json.2.tmp'
+00:37 +366: /home/sandbox/lb-445/test/routines_test.dart: import (#287) commit failure keeps original bytes, memory, no staging; retry works
+RoutineStore import write failed: FileSystemException: rename failed, path = '/tmp/routines_impBTNNKN/routines.json'
+00:37 +367: /home/sandbox/lb-445/test/routines_test.dart: import (#287) overlapping imports of different names serialize, keep both
+00:37 +368: /home/sandbox/lb-445/test/routines_test.dart: import (#287) overlapping imports of the same name: second is rejected
+00:37 +369: /home/sandbox/lb-445/test/routines_test.dart: import (#287) a failed import cleans up, then the next import succeeds
+RoutineStore import write failed: FileSystemException: disk full, path = '/tmp/routines_impULLRVC/routines.json.1.tmp'
+00:37 +370: /home/sandbox/lb-445/test/routines_test.dart: import (#287) field limits are exact and enabled null means true
+00:37 +371: /home/sandbox/lb-445/test/routines_test.dart: import (#287) add, remove and export keep their behavior
+00:37 +372: loading /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart
+00:38 +372: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered confirmation kill held yes denies old work
+00:38 +373: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered confirmation kill held no denies old work
+00:38 +374: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered confirmation kill held error denies old work
+00:38 +375: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered confirmation kill reset yes denies old work
+00:38 +376: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered confirmation kill reset no denies old work
+00:38 +377: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered confirmation kill reset error denies old work
+00:38 +378: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered enabled kill held success no confirm
+00:38 +379: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered enabled kill held error no confirm
+00:38 +380: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered enabled kill reset success no confirm
+00:38 +381: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered enabled kill reset error no confirm
+00:38 +382: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered allowlist kill held success no confirm
+00:38 +383: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered allowlist kill held error no confirm
+00:38 +384: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered allowlist kill reset success no confirm
+00:38 +385: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: entered allowlist kill reset error no confirm
+00:38 +386: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: safe early success after enabled read still invalidated
+00:38 +387: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: current enabled error remains visible
+00:38 +388: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: current allowlist error remains visible
+00:38 +389: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: current confirm error remains visible
+00:38 +390: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: kill snapshot isolates throwing callbacks and defers additions
+00:38 +391: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: reentrant kill invalidates but does not recursively dispatch
+00:38 +392: /home/sandbox/lb-445/test/safety_gate_lifecycle_test.dart: kill inside front app lookup cannot open a fresh confirmation
+00:38 +393: loading /home/sandbox/lb-445/test/safety_gate_test.dart
+00:39 +393: /home/sandbox/lb-445/test/safety_gate_test.dart: safe tools always pass; risky tools ask the human
+00:39 +394: /home/sandbox/lb-445/test/safety_gate_test.dart: deny by default when no confirm hook is wired
+00:39 +395: /home/sandbox/lb-445/test/safety_gate_test.dart: kill switch blocks everything until reset
+00:39 +396: /home/sandbox/lb-445/test/safety_gate_test.dart: allowlist rejects non-listed apps without asking
+00:39 +397: /home/sandbox/lb-445/test/safety_gate_test.dart: disabled gate lets everything through
+00:39 +398: /home/sandbox/lb-445/test/safety_gate_test.dart: kill during the confirmation dialog still denies (#107)
+00:39 +399: /home/sandbox/lb-445/test/safety_gate_test.dart: kill bumps the generation so a resumed run stays stopped (#107)
+00:39 +400: /home/sandbox/lb-445/test/safety_gate_test.dart: type_text description shows the full text and the Return (#108)
+00:39 +401: /home/sandbox/lb-445/test/safety_gate_test.dart: press_keys description is null-safe; click shows coordinates (#108)
+00:39 +402: /home/sandbox/lb-445/test/safety_gate_test.dart: default-deny apps are refused even with an empty allowlist (#109)
+00:39 +403: /home/sandbox/lb-445/test/safety_gate_test.dart: default-deny app is allowed when explicitly allowlisted (#109)
+00:39 +404: /home/sandbox/lb-445/test/safety_gate_test.dart: input tools are checked against the front app (#109)
+00:39 +405: loading /home/sandbox/lb-445/test/safety_preferences_test.dart
+00:39 +405: /home/sandbox/lb-445/test/safety_preferences_test.dart: actual registry clears three keys and never lifts killed gate
+00:39 +406: /home/sandbox/lb-445/test/safety_preferences_test.dart: entered safety.resumeAtMs write cannot undo completed clear, fresh choices work
+00:39 +407: /home/sandbox/lb-445/test/safety_preferences_test.dart: entered safety.enabled write cannot undo completed clear, fresh choices work
+00:39 +408: /home/sandbox/lb-445/test/safety_preferences_test.dart: entered safety.appAllowlist write cannot undo completed clear, fresh choices work
+00:39 +409: /home/sandbox/lb-445/test/safety_preferences_test.dart: write false is safe and queue retries
+00:40 +410: /home/sandbox/lb-445/test/safety_preferences_test.dart: write throw is safe and queue retries
+00:40 +411: /home/sandbox/lb-445/test/safety_preferences_test.dart: remove false is safe and queue retries
+00:40 +412: /home/sandbox/lb-445/test/safety_preferences_test.dart: remove throw is safe and queue retries
+00:40 +413: /home/sandbox/lb-445/test/safety_preferences_test.dart: failed disable after written pause deadline is honest partial state
+00:40 +414: /home/sandbox/lb-445/test/safety_preferences_test.dart: entered expiry read cannot overwrite fresh post-clear disabled choice
+00:40 +415: /home/sandbox/lb-445/test/safety_preferences_test.dart: entered expiry setter is ordered before clear and fresh choice
+00:40 +416: /home/sandbox/lb-445/test/safety_preferences_test.dart: read failure never authorizes confirmation bypass
+00:40 +417: /home/sandbox/lb-445/test/safety_preferences_test.dart: entered removal completes before a fresh post-clear pause
+00:40 +418: /home/sandbox/lb-445/test/safety_preferences_test.dart: stale disabled read after explicit enable cannot bypass confirmations
+00:40 +419: /home/sandbox/lb-445/test/safety_preferences_test.dart: partial clear failure retains actual remainder and retry removes it
+00:40 +420: loading /home/sandbox/lb-445/test/screen_watch_consent_test.dart
+00:40 +420: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: consent snapshot immutable and scope/length changes require new dialog
+00:40 +421: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: active/concurrent starts refused without extending consented duration
+00:40 +422: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: stop during entered start cancels it and permits fresh session
+00:40 +423: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: new allowlisted app never broadens active session; fresh consent includes it
+00:40 +424: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: local restriction stops session and drops entered observation result
+00:40 +425: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: local gate refuses before operation begins
+00:40 +426: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: remove restriction stops session and drops entered observation result
+00:40 +427: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: remove gate refuses before operation begins
+00:40 +428: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: deny restriction stops session and drops entered observation result
+00:40 +429: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: deny gate refuses before operation begins
+00:40 +430: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: stop/restart during entered gate cannot use a newer session
+00:40 +431: /home/sandbox/lb-445/test/screen_watch_consent_test.dart: hard denies, private windows and lock remain stronger than snapshot
+00:40 +432: loading /home/sandbox/lb-445/test/screen_watch_test.dart
+00:41 +432: /home/sandbox/lb-445/test/screen_watch_test.dart: off by default - nothing may observe on a fresh launch
+00:41 +433: /home/sandbox/lb-445/test/screen_watch_test.dart: start refuses without consent, local-only, or an allowlist
+00:41 +434: /home/sandbox/lb-445/test/screen_watch_test.dart: allowlisted app observed only while the session is on
+00:41 +435: /home/sandbox/lb-445/test/screen_watch_test.dart: excluded app: nothing runs, only the counter moves
+00:41 +436: /home/sandbox/lb-445/test/screen_watch_test.dart: stop cancels in-flight work and drops its result
+00:41 +437: /home/sandbox/lb-445/test/screen_watch_test.dart: session expires on its own after the fixed length
+00:41 +438: /home/sandbox/lb-445/test/screen_watch_test.dart: a session never survives a restart - nothing is persisted
+00:41 +439: /home/sandbox/lb-445/test/screen_watch_test.dart: exclusion counter resets on demand
+00:41 +440: loading /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart
+00:42 +440: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: (setUpAll)
+00:42 +440: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: face listening
+00:42 +441: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: face thinking
+00:43 +442: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: face answer bubble short
+00:43 +443: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: face answer bubble long
+00:44 +444: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: face sleepy
+00:44 +445: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: face error
+00:45 +446: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: face dark theme
+00:45 +447: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding first step
+00:46 +448: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding compact-light
+00:46 +449: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding compact-dark-200
+00:47 +450: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding desktop-light
+00:47 +451: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding desktop-dark
+00:47 +452: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding desktop-light-200
+00:48 +453: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding wide-light
+00:48 +454: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding he-light
+00:49 +455: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding he-dark-200
+00:49 +456: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding compact-dark-200-bottom
+00:49 +457: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding he-dark-200-bottom
+00:50 +458: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding compact-dark-200 actions stay reachable
+00:50 +459: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding desktop-light-200 actions stay reachable
+00:50 +460: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: onboarding he-dark-200 actions stay reachable
+00:51 +461: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: settings default
+00:51 +462: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: settings dark
+00:52 +463: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: unsupported platform
+00:52 +464: /home/sandbox/lb-445/test/screenshots/screenshot_harness_test.dart: (tearDownAll)
+00:52 +464: loading /home/sandbox/lb-445/test/settings_deletion_test.dart
+00:53 +464: /home/sandbox/lb-445/test/settings_deletion_test.dart: clear then save cannot restore old key or endpoint (#247)
+00:56 +465: /home/sandbox/lb-445/test/settings_deletion_test.dart: deliberately entered settings save normally after clear (#247)
+00:57 +466: /home/sandbox/lb-445/test/settings_deletion_test.dart: delete-all closes the form and requests first-run (#247)
+00:57 +467: /home/sandbox/lb-445/test/settings_deletion_test.dart: failed key deletion preserves editable state and reports error (#247)
+00:58 +468: /home/sandbox/lb-445/test/settings_deletion_test.dart: safety clear drops allowlist and preserves unrelated edits
+00:59 +469: /home/sandbox/lb-445/test/settings_deletion_test.dart: unsaved pause is dropped by safety clear
+01:00 +470: /home/sandbox/lb-445/test/settings_deletion_test.dart: perf clear keeps overlay off after save
+01:01 +471: /home/sandbox/lb-445/test/settings_deletion_test.dart: entered old allowlist initial read cannot restore after clear
+01:03 +472: /home/sandbox/lb-445/test/settings_deletion_test.dart: entered old gate initial read cannot restore after clear
+01:04 +473: /home/sandbox/lb-445/test/settings_deletion_test.dart: entered old overlay initial read cannot restore after clear
+01:05 +474: /home/sandbox/lb-445/test/settings_deletion_test.dart: entered old localOnly initial read cannot restore after clear
+01:06 +475: /home/sandbox/lb-445/test/settings_deletion_test.dart: entered reload disables Save, failure requires explicit recovery
+01:07 +476: /home/sandbox/lb-445/test/settings_deletion_test.dart: new allowlist and pause after clear are saved normally
+01:08 +477: /home/sandbox/lb-445/test/settings_deletion_test.dart: new overlay choice after clear is saved normally
+01:09 +478: /home/sandbox/lb-445/test/settings_deletion_test.dart: entered gate setter excludes clear and delete-all until save settles
+01:10 +479: /home/sandbox/lb-445/test/settings_deletion_test.dart: entered pause setter excludes clear and delete-all until save settles
+01:12 +480: /home/sandbox/lb-445/test/settings_deletion_test.dart: entered allowlist setter excludes clear and delete-all until save settles
+01:12 +481: /home/sandbox/lb-445/test/settings_deletion_test.dart: entered overlay setter excludes clear and delete-all until save settles
+01:14 +482: loading /home/sandbox/lb-445/test/settings_store_test.dart
+01:14 +482: /home/sandbox/lb-445/test/settings_store_test.dart: secure-storage failures (#123) load returns settings without a key when the store throws
+01:14 +483: /home/sandbox/lb-445/test/settings_store_test.dart: secure-storage failures (#123) a healthy store loads the key and clears the warning
+01:14 +484: /home/sandbox/lb-445/test/settings_store_test.dart: copyWith clearing (#123) clearApiKey removes the key
+01:14 +485: /home/sandbox/lb-445/test/settings_store_test.dart: copyWith clearing (#123) clear flags remove endpoint overrides
+01:14 +486: /home/sandbox/lb-445/test/settings_store_test.dart: copyWith clearing (#123) without flags, copyWith keeps values as before
+01:14 +487: /home/sandbox/lb-445/test/settings_store_test.dart: save ordering (#123) save writes the schema version
+01:14 +488: /home/sandbox/lb-445/test/settings_store_test.dart: save ordering (#123) a healthy store saves everything plus the schema version
+01:14 +489: loading /home/sandbox/lb-445/test/settings_ux_test.dart
+01:15 +489: /home/sandbox/lb-445/test/settings_ux_test.dart: time-boxed gate pause (#133) pauseFor disables until the deadline, then re-enables
+01:15 +490: /home/sandbox/lb-445/test/settings_ux_test.dart: time-boxed gate pause (#133) indefinite off stays off without a deadline
+01:15 +491: /home/sandbox/lb-445/test/settings_ux_test.dart: settings screen gate warning (#133) turning the switch off asks first
+01:17 +492: /home/sandbox/lb-445/test/settings_ux_test.dart: settings screen gate warning (#133) choosing Pause 15 min disables with a deadline and banner
+01:18 +493: loading /home/sandbox/lb-445/test/speak_receipts_test.dart
+01:19 +493: /home/sandbox/lb-445/test/speak_receipts_test.dart: #87: spoken replies are tracked, acks clear them
+01:19 +494: /home/sandbox/lb-445/test/speak_receipts_test.dart: #87: missing receipt is logged as a failure
+01:19 +495: /home/sandbox/lb-445/test/speak_receipts_test.dart: #87: silent actions get no receipt tracking
+01:19 +496: /home/sandbox/lb-445/test/speak_receipts_test.dart: #87: manual retry returns the stored packet
+01:19 +497: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: original packet mutations cannot enlarge retained payload
+01:19 +498: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: retry mutations cannot alter the cache or later retries
+01:19 +499: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: many acknowledgements obey count and encoded byte caps
+01:19 +500: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: count eviction cancels timers and cannot revive an ID
+01:19 +501: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: sole reply expires at the boundary without another reply
+01:19 +502: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: oversized packets are delivered but are never retryable
+01:19 +503: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: UTF-8 packet text and spoken text both count toward the cap
+01:19 +504: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: zero retry budgets retain nothing
+01:19 +505: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: many timeouts cap failure history and expire payloads
+01:19 +506: /home/sandbox/lb-445/test/speak_receipts_test.dart: #255: dispose clears all state and emits no later failure
+01:19 +507: loading /home/sandbox/lb-445/test/speech_disposal_caller_test.dart
+01:19 +507: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: installed immediate once/reentrant sync rejection
+01:19 +508: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: installed immediate once/reentrant async rejection
+01:19 +509: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: actual owner held stop/release/dispose completion none
+01:19 +510: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: actual owner held stop/release/dispose completion stop
+01:19 +511: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: actual owner held stop/release/dispose completion dispose
+01:19 +512: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: actual owner held stop/release/dispose completion delete
+01:19 +513: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: actual old resolve terminal completion preserves owner semantics
+01:19 +514: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: actual old write terminal completion preserves owner semantics
+01:19 +515: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: actual old start terminal completion preserves owner semantics
+01:19 +516: /home/sandbox/lb-445/test/speech_disposal_caller_test.dart: actual main retained owner immediate same teardown order source only
+01:19 +517: loading /home/sandbox/lb-445/test/speech_failure_test.dart
+01:20 +517: /home/sandbox/lb-445/test/speech_failure_test.dart: valid JSON-shaped  {"error":"private-key"} rejected safe exact detail
+01:20 +518: /home/sandbox/lb-445/test/speech_failure_test.dart: valid JSON-shaped 
+	["private-input"] rejected safe exact detail
+01:20 +519: /home/sandbox/lb-445/test/speech_failure_test.dart: valid JSON-shaped "/private/path" rejected safe exact detail
+01:20 +520: /home/sandbox/lb-445/test/speech_failure_test.dart: valid JSON-shaped true rejected safe exact detail
+01:20 +521: /home/sandbox/lb-445/test/speech_failure_test.dart: valid JSON-shaped false rejected safe exact detail
+01:20 +522: /home/sandbox/lb-445/test/speech_failure_test.dart: valid JSON-shaped null rejected safe exact detail
+01:20 +523: /home/sandbox/lb-445/test/speech_failure_test.dart: valid JSON-shaped 42 rejected safe exact detail
+01:20 +524: /home/sandbox/lb-445/test/speech_failure_test.dart: valid JSON-shaped -2.5 rejected safe exact detail
+01:20 +525: /home/sandbox/lb-445/test/speech_failure_test.dart: declared application/json; charset=utf-8 body {} rejected without inspecting error text
+01:20 +526: /home/sandbox/lb-445/test/speech_failure_test.dart: declared application/json; charset=utf-8 body [] rejected without inspecting error text
+01:20 +527: /home/sandbox/lb-445/test/speech_failure_test.dart: declared application/json; charset=utf-8 body "private-key" rejected without inspecting error text
+01:20 +528: /home/sandbox/lb-445/test/speech_failure_test.dart: declared application/json; charset=utf-8 body not json rejected without inspecting error text
+01:20 +529: /home/sandbox/lb-445/test/speech_failure_test.dart: declared APPLICATION/JSON body {} rejected without inspecting error text
+01:20 +530: /home/sandbox/lb-445/test/speech_failure_test.dart: declared APPLICATION/JSON body [] rejected without inspecting error text
+01:20 +531: /home/sandbox/lb-445/test/speech_failure_test.dart: declared APPLICATION/JSON body "private-key" rejected without inspecting error text
+01:20 +532: /home/sandbox/lb-445/test/speech_failure_test.dart: declared APPLICATION/JSON body not json rejected without inspecting error text
+01:20 +533: /home/sandbox/lb-445/test/speech_failure_test.dart: declared application/problem+json body {} rejected without inspecting error text
+01:20 +534: /home/sandbox/lb-445/test/speech_failure_test.dart: declared application/problem+json body [] rejected without inspecting error text
+01:20 +535: /home/sandbox/lb-445/test/speech_failure_test.dart: declared application/problem+json body "private-key" rejected without inspecting error text
+01:20 +536: /home/sandbox/lb-445/test/speech_failure_test.dart: declared application/problem+json body not json rejected without inspecting error text
+01:20 +537: /home/sandbox/lb-445/test/speech_failure_test.dart: opaque binary/invalid JSON [255, 251, 0, 255] unchanged not codec claim
+01:20 +538: /home/sandbox/lb-445/test/speech_failure_test.dart: opaque binary/invalid JSON [73, 68, 51, 255] unchanged not codec claim
+01:20 +539: /home/sandbox/lb-445/test/speech_failure_test.dart: opaque binary/invalid JSON [123, 255] unchanged not codec claim
+01:20 +540: /home/sandbox/lb-445/test/speech_failure_test.dart: opaque binary/invalid JSON [91, 255] unchanged not codec claim
+01:20 +541: /home/sandbox/lb-445/test/speech_failure_test.dart: opaque binary/invalid JSON [123, 110, 111, 116, 32, 74, 83, 79, 78] unchanged not codec claim
+01:20 +542: /home/sandbox/lb-445/test/speech_failure_test.dart: opaque binary/invalid JSON [1, 2, 3] unchanged not codec claim
+01:20 +543: /home/sandbox/lb-445/test/speech_failure_test.dart: HTTP private sentinel safely retains status and empty typed
+01:20 +544: /home/sandbox/lb-445/test/speech_failure_test.dart: entered transport error typed safe no retry
+01:20 +545: /home/sandbox/lb-445/test/speech_failure_test.dart: fake deadline 60s late success consumed single request
+01:20 +546: /home/sandbox/lb-445/test/speech_failure_test.dart: fake deadline 60s late error consumed single request
+01:20 +547: /home/sandbox/lb-445/test/speech_failure_test.dart: timeout seam positive and privacy refusal remains before send
+01:20 +548: loading /home/sandbox/lb-445/test/speech_mute_caller_test.dart
+01:21 +548: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: immediate entry pending before notification reentrant join and each broadcast
+01:21 +549: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: sync throw safely failed explicit retry only
+01:21 +550: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: actual owner stop/release held joined completion errorfalse
+01:21 +551: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: actual owner stop/release held joined completion errortrue
+01:21 +552: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: best-effort delete failure does not become erasure proof
+01:21 +553: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: disposed caller fences new entry
+01:21 +554: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: disposed caller fences entered completion
+01:21 +555: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: reentrant disposal notification safe actual completion remains pending
+01:21 +556: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: actual old resolve stop then terminal dispose no fresh playback
+01:21 +557: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: actual old write stop then terminal dispose no fresh playback
+01:21 +558: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: actual old start stop then terminal dispose no fresh playback
+01:21 +559: /home/sandbox/lb-445/test/speech_mute_caller_test.dart: main both notices actual retained owner same terminal order source-only
+01:21 +560: loading /home/sandbox/lb-445/test/speech_mute_notice_test.dart
+01:22 +560: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-1-en-light-normal
+01:23 +561: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-1-en-light-onboard
+01:24 +562: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-1-en-dark-normal
+01:24 +563: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-1-en-dark-onboard
+01:24 +564: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-1-he-light-normal
+01:25 +565: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-1-he-light-onboard
+01:25 +566: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-1-he-dark-normal
+01:25 +567: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-1-he-dark-onboard
+01:26 +568: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-2-en-light-normal
+01:26 +569: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-2-en-light-onboard
+01:26 +570: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-2-en-dark-normal
+01:27 +571: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-2-en-dark-onboard
+01:27 +572: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-2-he-light-normal
+01:27 +573: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-2-he-light-onboard
+01:28 +574: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-2-he-dark-normal
+01:28 +575: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 320-2-he-dark-onboard
+01:28 +576: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-1-en-light-normal
+01:28 +577: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-1-en-light-onboard
+01:29 +578: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-1-en-dark-normal
+01:29 +579: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-1-en-dark-onboard
+01:29 +580: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-1-he-light-normal
+01:29 +581: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-1-he-light-onboard
+01:30 +582: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-1-he-dark-normal
+01:30 +583: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-1-he-dark-onboard
+01:30 +584: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-2-en-light-normal
+01:30 +585: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-2-en-light-onboard
+01:31 +586: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-2-en-dark-normal
+01:31 +587: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-2-en-dark-onboard
+01:31 +588: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-2-he-light-normal
+01:31 +589: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-2-he-light-onboard
+01:32 +590: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-2-he-dark-normal
+01:32 +591: /home/sandbox/lb-445/test/speech_mute_notice_test.dart: actual mute notice composed 1000-2-he-dark-onboard
+01:32 +592: loading /home/sandbox/lb-445/test/speech_playback_test.dart
+01:33 +592: /home/sandbox/lb-445/test/speech_playback_test.dart: entered resolve invalidated by stop never resurrects
+01:33 +593: /home/sandbox/lb-445/test/speech_playback_test.dart: entered write invalidated by stop never resurrects
+01:33 +594: /home/sandbox/lb-445/test/speech_playback_test.dart: entered start invalidated by stop never resurrects
+01:33 +595: /home/sandbox/lb-445/test/speech_playback_test.dart: entered resolve invalidated by dispose never resurrects
+01:33 +596: /home/sandbox/lb-445/test/speech_playback_test.dart: entered write invalidated by dispose never resurrects
+01:33 +597: /home/sandbox/lb-445/test/speech_playback_test.dart: entered start invalidated by dispose never resurrects
+01:33 +598: /home/sandbox/lb-445/test/speech_playback_test.dart: same-clock overlapping writes use distinct paths and latest wins
+01:33 +599: /home/sandbox/lb-445/test/speech_playback_test.dart: older entered start settles before newer clip; old completion cannot delete newer
+01:33 +600: /home/sandbox/lb-445/test/speech_playback_test.dart: immediate completion listened before play cleans file/listener
+01:33 +601: /home/sandbox/lb-445/test/speech_playback_test.dart: write and play failures clean files and settle; cleanup failure reported
+01:33 +602: /home/sandbox/lb-445/test/speech_playback_test.dart: completion error is consumed and releases ownership/listener
+01:33 +603: /home/sandbox/lb-445/test/speech_playback_test.dart: stop/dispose errors still release listener/file; repeated dispose shares result
+01:33 +604: /home/sandbox/lb-445/test/speech_playback_test.dart: late old completion/error after replacement does not touch newer clip false
+01:33 +605: /home/sandbox/lb-445/test/speech_playback_test.dart: late old completion/error after replacement does not touch newer clip true
+01:33 +606: /home/sandbox/lb-445/test/speech_playback_test.dart: completion error stops active playback even if stop reports failure
+01:33 +607: /home/sandbox/lb-445/test/speech_playback_test.dart: production storage reserves unique files and cleans owned directory
+01:33 +608: loading /home/sandbox/lb-445/test/speech_test.dart
+01:33 +608: /home/sandbox/lb-445/test/speech_test.dart: posts model, voice and input; returns audio bytes
+01:33 +609: /home/sandbox/lb-445/test/speech_test.dart: dedicated TTS URL wins over the brain base URL
+01:33 +610: /home/sandbox/lb-445/test/speech_test.dart: non-200 raises SpeechException
+01:33 +611: /home/sandbox/lb-445/test/speech_test.dart: 200 with empty body raises SpeechException (#118)
+01:33 +612: /home/sandbox/lb-445/test/speech_test.dart: 200 with a JSON error body raises SpeechException (#118)
+01:33 +613: /home/sandbox/lb-445/test/speech_test.dart: trailing slash in base URL does not produce // (#118)
+01:33 +614: /home/sandbox/lb-445/test/speech_test.dart: local-only mode refuses a remote TTS endpoint (#120)
+01:34 +615: All tests passed!

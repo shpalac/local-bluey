@@ -67,6 +67,8 @@ import 'ui/appearance_startup_notice.dart';
 import 'ui/settings_screen.dart';
 import 'ui/unsupported_screen.dart';
 import 'services/screen_watch.dart';
+import 'services/tray_publication_caller.dart';
+import 'ui/tray_publication_notice.dart';
 import 'ui/watch_banner.dart';
 import 'services/watch_pipeline.dart';
 import 'services/watch_driver.dart';
@@ -235,6 +237,7 @@ class _MacHomeState extends State<MacHome>
   final _receipts = SpeakReceipts();
   final _speech = SpeechService();
   final _windowAction = WindowActionCaller();
+  final _trayPublication = TrayPublicationCaller();
   late final _speechDisposal = SpeechDisposalCaller(owner: _speech);
   late final _speechMute = SpeechMuteCaller(
     owner: _speech,
@@ -273,7 +276,7 @@ class _MacHomeState extends State<MacHome>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     trayManager.addListener(this);
-    _setupTray();
+    unawaited(_trayPublication.request());
     _server.onPairRequest = _askToPair;
     _server.start();
     _server.requests.listen(_onPhoneRequest);
@@ -378,7 +381,6 @@ class _MacHomeState extends State<MacHome>
 
   /// Mirrors the watch session into the menu bar (#212): red countdown
   /// title while observing, plus a one-tap stop item.
-  bool _trayWatchActive = false;
   WatchDriver? _watchDriver;
   final _watchSuggestions = WatchSuggestions();
   StreamSubscription<WatchSuggestion>? _watchSuggestionSub;
@@ -428,47 +430,7 @@ class _MacHomeState extends State<MacHome>
     }
   }
 
-  Future<void> _syncWatchTray() async {
-    final watch = ScreenWatch.instance;
-    if (watch.isActive) {
-      final r = watch.remaining;
-      final mm = r.inMinutes.remainder(60).toString().padLeft(2, '0');
-      final ss = r.inSeconds.remainder(60).toString().padLeft(2, '0');
-      await trayManager.setTitle('● $mm:$ss');
-    } else {
-      await trayManager.setTitle('');
-    }
-    // The menu only changes when the session starts or stops (the stop item
-    // appears/disappears); rebuilding it on every one-second tick would
-    // churn the native menu for no reason.
-    if (watch.isActive != _trayWatchActive) {
-      _trayWatchActive = watch.isActive;
-      await _setupTray();
-    }
-  }
-
-  Future<void> _setupTray() async {
-    await trayManager.setIcon('assets/tray_icon.png');
-    await trayManager.setContextMenu(
-      Menu(
-        items: [
-          MenuItem(key: 'show', label: 'Show Bluey'),
-          MenuItem(key: 'hide', label: 'Hide'),
-          MenuItem.separator(),
-          MenuItem(key: 'ask', label: 'Ask Bluey (wake)'),
-          MenuItem(key: 'mute', label: 'Mute replies'),
-          MenuItem(key: 'status', label: 'Status'),
-          MenuItem.separator(),
-          if (ScreenWatch.instance.isActive)
-            MenuItem(key: 'stopwatch', label: 'Stop watching (kill switch)'),
-          MenuItem(key: 'stop', label: 'Stop Bluey (kill switch)'),
-          MenuItem(key: 'resume', label: 'Resume Bluey'),
-          MenuItem.separator(),
-          MenuItem(key: 'quit', label: 'Quit'),
-        ],
-      ),
-    );
-  }
+  Future<void> _syncWatchTray() => _trayPublication.request();
 
   @override
   void onTrayIconMouseDown() {
@@ -664,6 +626,7 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void dispose() {
+    _trayPublication.dispose();
     _windowAction.dispose();
     _speechMute.dispose();
     _permissions.removeListener(_onPermissionsChanged);
@@ -698,6 +661,7 @@ class _MacHomeState extends State<MacHome>
             children: [
               MacNoticeRegion(
                 children: [
+                  TrayPublicationNotice(caller: _trayPublication),
                   WindowActionNotice(caller: _windowAction),
                   SpeechMuteNotice(caller: _speechMute),
                   HostReloadNotice(controller: _hostReload),
@@ -911,6 +875,7 @@ class _MacHomeState extends State<MacHome>
               return const SizedBox.shrink();
             },
           ),
+          TrayPublicationNotice(caller: _trayPublication),
           WindowActionNotice(caller: _windowAction),
           SpeechMuteNotice(caller: _speechMute),
           PermissionObservationNotice(caller: _permissions),
