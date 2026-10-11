@@ -12,6 +12,9 @@ import 'link/models.dart';
 import 'link/phone_server.dart';
 import 'services/audio_capture.dart';
 import 'services/key_recording_intent.dart';
+import 'services/key_cleanup_caller.dart';
+import 'ui/key_cleanup_notice.dart';
+import 'ui/mac_notice_region.dart';
 import 'services/brain_host.dart';
 import 'services/host_reload_controller.dart';
 import 'ui/host_reload_notice.dart';
@@ -243,6 +246,11 @@ class _MacHomeState extends State<MacHome>
     allowed: () => mounted && !_safety.killed,
   );
 
+  late final _keyCleanup = KeyCleanupCaller(
+    owner: _keyRecording,
+    allowed: () => mounted && !_safety.killed,
+  );
+
   BlueyStatus _status = BlueyStatus.listening;
 
   @override
@@ -263,6 +271,7 @@ class _MacHomeState extends State<MacHome>
     });
     _checkTrust();
     _keyRecording.addListener(_onKeyRecordingChanged);
+    _keyCleanup.refreshGuard();
     HoldKeySettings.instance.addListener(_syncHoldKey);
     unawaited(_holdKeyCaller.loadAndSync());
     ScreenWatch.instance.addListener(_syncWatchTray);
@@ -282,6 +291,7 @@ class _MacHomeState extends State<MacHome>
     _safety.frontAppProvider = () => _tools.lastFrontApp;
     _safety.onConfirm = _confirmAction;
     _safety.onKill(() {
+      _keyCleanup.refreshGuard();
       unawaited(_onKeyHoldCancel());
       setState(() => _bubble = 'Stopped.');
       BrainHost.brain.value?.reset();
@@ -637,6 +647,7 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void dispose() {
+    _keyCleanup.dispose();
     _hostReload.dispose();
     _keyRecording.removeListener(_onKeyRecordingChanged);
     _tutorial.removeListener(_onTutorialChanged);
@@ -662,8 +673,13 @@ class _MacHomeState extends State<MacHome>
         child: SafeArea(
           child: Column(
             children: [
-              HostReloadNotice(controller: _hostReload),
-              HoldKeyCallerNotice(caller: _holdKeyCaller),
+              MacNoticeRegion(
+                children: [
+                  HostReloadNotice(controller: _hostReload),
+                  HoldKeyCallerNotice(caller: _holdKeyCaller),
+                  KeyCleanupNotice(caller: _keyCleanup),
+                ],
+              ),
               Expanded(
                 child: OnboardingScreen(
                   onPlan: (plan) => _tutorial.configure(
@@ -839,11 +855,11 @@ class _MacHomeState extends State<MacHome>
           ],
         ),
       ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
+      bottomNavigationBar: MacNoticeRegion(
         children: [
           HostReloadNotice(controller: _hostReload),
           HoldKeyCallerNotice(caller: _holdKeyCaller),
+          KeyCleanupNotice(caller: _keyCleanup),
           ValueListenableBuilder<String?>(
             valueListenable: BrainHost.refusedReason,
             builder: (context, refused, _) {
