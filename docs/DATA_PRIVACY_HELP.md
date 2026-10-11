@@ -31,13 +31,14 @@ On success a notice says "All local data deleted", the Settings screen closes an
 
 ### If it fails part way
 
-Delete all does its work in this order:
+Delete all works in two stages:
 
-1. It tries each category in the inventory, one by one.
-2. Only if every category cleared, it clears all remaining saved preferences and then the secure-storage items.
-3. If any category failed, it stops after step 1 and reports "Could not delete local data: Could not clear stores: " followed by the failed category ids.
+1. It tries every category in the inventory, in order. A category that fails does not stop the later ones; each is still attempted, and the failed ones are collected.
+2. Only if every category cleared, it then clears the remaining saved preferences and the secure-storage items. If any category failed, this second stage is skipped.
 
-So a partial failure is not an all-or-nothing rollback. Categories before the failure stay cleared, and later data (the remaining preferences and secure-storage items) is not cleared. Press **Delete all local data** again to retry. Nothing retries on its own.
+If any category failed, you see a notice starting "Could not delete local data:" followed by the app's error text. It names the failed category ids, but its exact wording is not fixed, so this page does not quote it.
+
+So a partial failure is not an all-or-nothing rollback. Every category that succeeded, whether it came before or after a failed one, stays cleared. The failed categories keep their data, and the remaining preferences and secure-storage items are not cleared. Press **Delete all local data** again to retry. Nothing retries on its own.
 
 ## Limits
 
