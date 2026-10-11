@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 
 import 'screen_watch.dart';
+import 'sensitive_content_gate.dart';
 
 /// What the watcher observed at one moment (#213).
 enum WatchEventKind {
@@ -142,7 +143,20 @@ class WatchPipeline {
         frontApp: info.app,
         windowTitle: info.title,
         locked: info.locked,
-        operation: () => _process(info, stale),
+        operation: () async {
+          // Refuse unknown, sensitive or private metadata BEFORE frame diff,
+          // capture, memory buffers or vision. The watch consent/allowlist
+          // check above remains independently mandatory.
+          if (SensitiveContentGate.beforeCapture(
+                app: info.app,
+                title: info.title,
+                locked: info.locked,
+              ) !=
+              SensitiveVerdict.allow) {
+            return null;
+          }
+          return _process(info, stale);
+        },
       );
       return stale() ? null : result;
     } catch (_) {
