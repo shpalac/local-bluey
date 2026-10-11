@@ -30,7 +30,9 @@ class ModelAsset {
     this.languages = const [],
   });
 
-  /// Reads one asset from manifest JSON; throws [FormatException] if invalid.
+  /// Reads typed fields, not semantic install admission. Required field types
+  /// throw [FormatException]; notice defaults empty and languages keeps strings.
+  /// Size, digest, notice content and accepted format/backend are checked by install.
   factory ModelAsset.fromJson(Map<String, dynamic> json) {
     String str(String key) {
       final v = json[key];
@@ -61,7 +63,7 @@ class ModelAsset {
   /// Revision label; one id can have several revisions.
   final String revision;
 
-  /// Exact size in bytes.
+  /// Caller-declared size in bytes; install checks the transferred file length.
   final int bytes;
 
   /// Expected lowercase hex SHA-256 of the file.
@@ -73,10 +75,10 @@ class ModelAsset {
   /// Inference backend this asset targets, checked against the store.
   final String backend;
 
-  /// License or notice text. Required: an asset without one is rejected.
+  /// Caller notice text. Install rejects blank text, without license verification.
   final String licenseNotice;
 
-  /// Language codes the asset supports.
+  /// Caller language labels, not verified decoder or inference capabilities.
   final List<String> languages;
 
   /// Collision-free, directory-safe key per id and revision. Each part is
@@ -85,9 +87,9 @@ class ModelAsset {
       '${base64Url.encode(utf8.encode(id)).replaceAll('=', '')}.'
       '${base64Url.encode(utf8.encode(revision)).replaceAll('=', '')}';
 
-  /// Immutable, content-unique file name: the key plus a digest prefix. A
-  /// different digest under the same id and revision gets a different file,
-  /// so a leased file's contents never change under its holder.
+  /// File name uses the key plus the first 32 digest characters (or all of a
+  /// shorter input). Different prefixes separate files under one id/revision;
+  /// this is not a full-digest collision guarantee or external-write protection.
   String get fileName {
     final sha = sha256Hex.length >= 32 ? sha256Hex.substring(0, 32) : sha256Hex;
     return '$key.$sha';
@@ -99,7 +101,10 @@ class ModelManifest {
   /// Creates a manifest.
   const ModelManifest({required this.version, required this.assets});
 
-  /// Parses manifest JSON; unknown versions throw [FormatException].
+  /// Parses typed metadata, not install admission. Unknown versions, top-level
+  /// shape and assets container errors throw [FormatException]. Numeric 1.0
+  /// passes version equality then throws [TypeError] at the int cast; non-map
+  /// asset elements also throw [TypeError]. Asset fields use [ModelAsset.fromJson].
   factory ModelManifest.parse(String source) {
     final json = jsonDecode(source);
     if (json is! Map<String, dynamic>) {
@@ -128,10 +133,10 @@ class ModelManifest {
 
 /// Why an install did or did not activate.
 enum ModelInstallResult {
-  /// Verified and now the active asset.
+  /// Transferred size/hash checked and the selection commit completed.
   activated,
 
-  /// The asset was already active; nothing changed.
+  /// Same file name already active by metadata/existence/size lookup, no rehash.
   alreadyActive,
 
   /// Format or backend not accepted by this store.
@@ -203,9 +208,9 @@ class ModelLease {
 
 /// The store. All paths live under the injected [root].
 ///
-/// Safe-removal policy: selection changes immediately and never points at a
-/// removed or unverified asset. Files of an asset with open leases are
-/// deleted when the last lease is released, never while in use.
+/// Selection mutations and lease registration are serialized. Store-owned
+/// removal defers leased files until final release. Restart reads only check
+/// metadata shape, file existence and size, not integrity or native readiness.
 class ModelStore {
   /// Creates a store rooted at [root].
   ModelStore({
@@ -299,8 +304,10 @@ class ModelStore {
   Directory get _partial => Directory('${root.path}/partial');
   File get _selection => File('${root.path}/selection.json');
 
-  /// Reads the persisted verified selection, or null if none or broken.
-  /// A selection whose file is missing or the wrong size is ignored.
+  /// Reads selection metadata, returning null for missing/type-invalid/malformed
+  /// selection or missing/wrong-size file. Does not rehash bytes or repeat
+  /// install notice, digest syntax or accepted format/backend admission. Other
+  /// filesystem failures can propagate; this is not inference readiness.
   Future<ModelAsset?> activeAsset() async {
     _ensureLive();
     if (!_selection.existsSync()) return null;
@@ -317,8 +324,10 @@ class ModelStore {
     }
   }
 
-  /// Downloads (resuming a kept partial), verifies size and hash, then
-  /// activates atomically. Any failure leaves the previous selection intact.
+  /// Checks notice, size/digest syntax, then format/backend admission. Resumes
+  /// an injected transfer and checks size/hash before serialized activation.
+  /// Tested transfer/admission failures retain the previous selection; this
+  /// is not rollback for every filesystem commit/prune failure or crash proof.
   Future<ModelInstallResult> install(
     ModelAsset asset, {
     ModelCancelToken? cancel,
@@ -512,7 +521,7 @@ class ModelStore {
     if (file.existsSync()) await file.delete();
   }
 
-  /// Removes every verified file except [keep]; leased ones wait for release.
+  /// Removes other asset-folder files except [keep]; leased ones wait for release.
   /// Runs inside the serialized commit.
   Future<void> _pruneInactive({required String keep}) async {
     if (!_assets.existsSync()) return;
@@ -598,8 +607,10 @@ class ModelStore {
     }
   }
 
-  /// Inventory for the privacy screen: id, revision and size of the active
-  /// asset plus bytes held in partial transfers. Empty when nothing is stored.
+  /// Active metadata id/revision/declared size and partial-file bytes only.
+  /// Always includes partialBytes; excludes inactive leased, pending-delete
+  /// and orphan asset bytes. No production dynamic-inventory consumer, loaded
+  /// model state or resident-memory measurement is implied.
   Future<Map<String, Object>> inventory() async {
     _ensureLive();
     final asset = await activeAsset();
