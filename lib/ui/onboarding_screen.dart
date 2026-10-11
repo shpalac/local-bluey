@@ -60,8 +60,19 @@ class OnboardingScreen extends StatefulWidget {
   static Future<bool> isDone() async =>
       (await SharedPreferences.getInstance()).getBool(_kDone) ?? false;
 
-  static Future<void> markDone() async =>
-      (await SharedPreferences.getInstance()).setBool(_kDone, true);
+  /// Holds or fails the actual completion write in widget fixtures.
+  @visibleForTesting
+  static Future<bool> Function()? debugWriteDone;
+
+  /// Persists completion; a refused write (false) is a failure, not success.
+  static Future<void> markDone() async {
+    final ok =
+        await (debugWriteDone?.call() ??
+            SharedPreferences.getInstance().then(
+              (p) => p.setBool(_kDone, true),
+            ));
+    if (!ok) throw StateError('Onboarding completion was not saved.');
+  }
 
   static Future<void> _markStepDone(String id, bool done) async =>
       (await SharedPreferences.getInstance()).setBool('$_kStepPrefix$id', done);
@@ -95,6 +106,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   FirstSuccessPlan? _plan;
   int _step = 0;
   bool _busy = false;
+  bool _completing = false;
+  bool _completeFailed = false;
   bool _disposed = false;
 
   /// Bumped on every step change and disposal. A verify result that finds a
@@ -313,9 +326,27 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
   Future<void> _startBluey() async {
     final plan = _plan;
-    if (_busy || plan == null) return;
+    if (_busy || _completing || plan == null) return;
+    final gen = _gen;
+    setState(() {
+      _completing = true;
+      _completeFailed = false;
+    });
+    var ok = true;
+    try {
+      await OnboardingScreen.markDone();
+    } catch (_) {
+      ok = false;
+    }
+    if (_disposed || !mounted || gen != _gen) return;
+    if (!ok) {
+      setState(() {
+        _completing = false;
+        _completeFailed = true;
+      });
+      return;
+    }
     widget.onPlan?.call(plan);
-    await OnboardingScreen.markDone();
     widget.onDone();
   }
 
@@ -544,11 +575,22 @@ class _OnboardingScreenState extends State<OnboardingScreen>
             Expanded(
               child: ListView(children: [...rows, _firstRequest(context)]),
             ),
+            if (_completeFailed)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  _t(
+                    'Could not save setup. Tap Start Bluey to try again.',
+                    'לא ניתן לשמור את ההגדרה. לחצו על התחל עם בלואי כדי לנסות שוב.',
+                  ),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
             Wrap(
               spacing: 12,
               children: [
                 OutlinedButton(
-                  onPressed: _busy
+                  onPressed: _busy || _completing
                       ? null
                       : () {
                           _gen++;
@@ -557,7 +599,9 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                   child: Text(_t('Back to setup', 'חזרה להגדרה')),
                 ),
                 FilledButton(
-                  onPressed: _busy || _plan == null ? null : _startBluey,
+                  onPressed: _busy || _completing || _plan == null
+                      ? null
+                      : _startBluey,
                   child: Text(
                     _plan == null
                         ? _t('Checking...', 'בודק...')
