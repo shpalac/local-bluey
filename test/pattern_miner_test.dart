@@ -198,40 +198,64 @@ void main() {
       expect(PatternMiner(maxStepGap: Duration.zero), isNotNull);
     });
 
-    test('more than maxInputSteps valid steps throws, even from a stream', () {
-      final m = PatternMiner(maxSteps: 3, maxInputSteps: 5);
+    test(
+      'more than maxInputSteps steps throws, valid or not, even endless',
+      () {
+        final m = PatternMiner(maxSteps: 3, maxInputSteps: 5);
+        final t = DateTime.utc(2026, 3, 1);
+        ObservedStep valid(int i) => ObservedStep(
+          fingerprint: 'A',
+          at: t.add(Duration(seconds: i)),
+        );
+        expect(() => m.mine(Iterable.generate(6, valid)), throwsArgumentError);
+        expect(
+          () => m.mine(Iterable.generate(1 << 30, valid)),
+          throwsArgumentError,
+        );
+        // All-invalid endless generator: still finite, still throws.
+        expect(
+          () => m.mine(
+            Iterable.generate(
+              1 << 30,
+              (i) => ObservedStep(fingerprint: '', at: t),
+            ),
+          ),
+          throwsArgumentError,
+        );
+        // Invalid steps count against the bound.
+        expect(
+          () => m.mine([
+            for (var i = 0; i < 5; i++) ObservedStep(fingerprint: '', at: t),
+            valid(0),
+          ]),
+          throwsArgumentError,
+        );
+      },
+    );
+
+    test('the limit error never carries or renders the input', () {
+      final m = PatternMiner(maxSteps: 1, maxInputSteps: 1);
       final t = DateTime.utc(2026, 3, 1);
-      expect(
-        () => m.mine(
-          Iterable.generate(
-            6,
-            (i) => ObservedStep(
-              fingerprint: 'A',
-              at: t.add(Duration(seconds: i)),
-            ),
-          ),
-        ),
-        throwsArgumentError,
+      final secret = ObservedStep(fingerprint: 'secret-looking-label', at: t);
+      try {
+        m.mine([secret, secret]);
+        fail('should throw');
+      } on ArgumentError catch (e) {
+        expect(e.invalidValue, isNull);
+        expect(e.toString(), isNot(contains('secret-looking-label')));
+        expect(e.toString(), contains('1'));
+      }
+    });
+
+    test('oversized contexts are dropped, the limit itself is accepted', () {
+      final m = PatternMiner(
+        minOccurrences: 1,
+        minDistinctDays: 1,
+        maxContextLength: 4,
       );
-      // An unbounded input stops at the limit instead of running forever.
-      expect(
-        () => m.mine(
-          Iterable.generate(
-            1 << 30,
-            (i) => ObservedStep(
-              fingerprint: 'A',
-              at: t.add(Duration(seconds: i)),
-            ),
-          ),
-        ),
-        throwsArgumentError,
-      );
-      // Invalid steps do not count against the input bound.
-      final ok = [
-        for (var i = 0; i < 20; i++) ObservedStep(fingerprint: '', at: t),
-        ObservedStep(fingerprint: 'A', at: t),
-      ];
-      expect(m.mine(ok), isEmpty);
+      expect(m.mine(_ab(0, context: 'abcde')), isEmpty);
+      expect(m.mine(_ab(0, context: 'abcd')), isNotEmpty);
+      expect(() => PatternMiner(maxContextLength: 0), throwsArgumentError);
     });
 
     test('exactly maxInputSteps valid steps is accepted', () {

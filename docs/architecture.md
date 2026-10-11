@@ -70,9 +70,11 @@ contexts, a shorter sequence with the same counts as a longer one that contains
 it is dropped, and the result order is fixed. Steps are ordered by time and
 equal-time steps keep the caller's input order, so that order can change the
 result. Occurrences are counted with overlap and belong to the UTC day of their
-first step. At most `maxInputSteps` valid steps are accepted per call (more
-throws, nothing is dropped silently) and only the most recent `maxSteps` of them
-are mined. Invalid configuration throws. This is partial, unwired groundwork for
+first step. At most `maxInputSteps` input steps are visited per call, valid or not (one more
+throws with a count only, so iteration is always finite). Steps with an empty or
+too long fingerprint or a too long context (`maxContextLength`) are dropped, and
+only the most recent `maxSteps` of the rest are mined. The limits are
+engineering input safeguards, not product thresholds. Invalid configuration throws. This is partial, unwired groundwork for
 BLU-008: BLU-004/006 are not merged and nothing here claims the full issue. It reads no screen content and makes no suggestion or policy decision.
 
 ## Known gaps

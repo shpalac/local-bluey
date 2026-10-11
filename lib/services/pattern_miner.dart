@@ -70,9 +70,10 @@ String _encode(String context, List<String> sequence) {
 /// - Occurrences are counted with overlap: in A, A, A the sequence A>A
 ///   occurs twice.
 /// - An occurrence belongs to the UTC day of its first step.
-/// - Bounds: at most [maxInputSteps] valid steps may be passed in (more
-///   throws, nothing is silently dropped); of those only the most recent
-///   [maxSteps] are mined.
+/// - Bounds: at most [maxInputSteps] input steps (valid or not) may be
+///   visited per call (one more throws, so iteration is always finite);
+///   steps with an empty or too long fingerprint or a too long context are
+///   dropped; of the rest only the most recent [maxSteps] are mined.
 class PatternMiner {
   PatternMiner({
     this.minLength = 2,
@@ -83,6 +84,7 @@ class PatternMiner {
     this.maxSteps = 5000,
     this.maxFingerprintLength = 128,
     this.maxInputSteps = 50000,
+    this.maxContextLength = 128,
   }) {
     void positive(String name, int v) {
       if (v < 1) throw ArgumentError.value(v, name, 'must be at least 1');
@@ -95,6 +97,7 @@ class PatternMiner {
     positive('maxSteps', maxSteps);
     positive('maxFingerprintLength', maxFingerprintLength);
     positive('maxInputSteps', maxInputSteps);
+    positive('maxContextLength', maxContextLength);
     if (maxLength < minLength) {
       throw ArgumentError.value(maxLength, 'maxLength', 'must be >= minLength');
     }
@@ -114,8 +117,14 @@ class PatternMiner {
     }
   }
 
-  /// Most valid steps accepted per call; one more throws [ArgumentError].
+  /// Most input steps visited per call, valid or not; visiting one more
+  /// throws [ArgumentError] (with a count only, never the input itself).
+  /// An engineering input safeguard, not a product threshold.
   final int maxInputSteps;
+
+  /// Steps with a longer context are dropped, never truncated. Also an
+  /// engineering safeguard: contexts are kept in keys and public ids.
+  final int maxContextLength;
 
   /// Shortest sequence reported.
   final int minLength;
@@ -138,22 +147,21 @@ class PatternMiner {
   /// Steps with a longer fingerprint are dropped, never truncated.
   final int maxFingerprintLength;
 
-  /// Mines [steps]. Empty or oversized fingerprints are dropped. Throws
-  /// [ArgumentError] when more than [maxInputSteps] valid steps are given, so
-  /// the recent steps that win are never chosen silently.
+  /// Mines [steps]. Empty or oversized fingerprints and oversized contexts
+  /// are dropped. Throws [ArgumentError] when more than [maxInputSteps]
+  /// steps are visited, so the recent steps that win are never chosen
+  /// silently.
   List<PatternCandidate> mine(Iterable<ObservedStep> steps) {
     final clean = <ObservedStep>[];
+    var visited = 0;
     for (final s in steps) {
-      if (s.fingerprint.isEmpty ||
-          s.fingerprint.length > maxFingerprintLength) {
-        continue;
+      if (++visited > maxInputSteps) {
+        throw ArgumentError('more than $maxInputSteps input steps');
       }
-      if (clean.length >= maxInputSteps) {
-        throw ArgumentError.value(
-          steps,
-          'steps',
-          'more than $maxInputSteps valid steps',
-        );
+      if (s.fingerprint.isEmpty ||
+          s.fingerprint.length > maxFingerprintLength ||
+          s.context.length > maxContextLength) {
+        continue;
       }
       clean.add(s);
     }
