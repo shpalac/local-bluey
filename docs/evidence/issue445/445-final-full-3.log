@@ -1,0 +1,530 @@
+Resolving dependencies...
+Downloading packages...
+  code_assets 1.2.1 (2.1.0 available)
+  cupertino_icons 1.0.9 (2.0.0 available)
+  flutter_secure_storage 9.2.4 (11.2.0 available)
+  flutter_secure_storage_linux 1.2.3 (3.0.3 available)
+  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+  flutter_secure_storage_platform_interface 1.1.2 (2.1.1 available)
+  flutter_secure_storage_web 1.2.1 (2.1.1 available)
+  flutter_secure_storage_windows 3.1.2 (4.2.2 available)
+  hooks 2.0.2 (2.2.0 available)
+  jni_flutter 1.0.3 (1.0.4+1 available)
+  js 0.6.7 (0.7.2 available)
+  local_auth 2.3.0 (3.0.2 available)
+  local_auth_android 1.0.56 (2.2.0 available)
+  local_auth_darwin 1.6.1 (2.0.4 available)
+  local_auth_windows 1.0.11 (2.0.2 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.3 (1.19.0 available)
+  objective_c 9.5.0 (9.6.2 available)
+  record 7.1.1 (7.1.2 available)
+  record_linux 2.1.2 (2.1.3 available)
+  record_use 0.6.0 (1.1.1 available)
+  screen_retriever 0.2.2 (0.3.0 available)
+  shared_preferences 2.5.5 (2.5.6 available)
+  test_api 0.7.12 (0.7.15 available)
+  tray_manager 0.2.4 (0.8.0 available)
+  vector_math 2.4.0 (2.4.3 available)
+  win32 5.15.0 (6.4.0 available)
+Got dependencies!
+27 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/sandbox/lb-445/test/stt_deadline_test.dart
+00:00 +0: /home/sandbox/lb-445/test/stt_deadline_test.dart: entered send expires before late headers, releases late body
+00:00 +1: /home/sandbox/lb-445/test/stt_deadline_test.dart: late headers leave only original budget; stalled chunk body cancels before late success
+00:00 +2: /home/sandbox/lb-445/test/stt_deadline_test.dart: entered send expires before late error, releases late body
+00:00 +3: /home/sandbox/lb-445/test/stt_deadline_test.dart: late headers leave only original budget; stalled chunk body cancels before late error
+00:00 +4: /home/sandbox/lb-445/test/stt_deadline_test.dart: preparation shares deadline and cannot send after release
+00:00 +5: /home/sandbox/lb-445/test/stt_deadline_test.dart: normal chunked body settled correctly: {"text":" hi "}
+00:00 +6: /home/sandbox/lb-445/test/stt_deadline_test.dart: normal chunked body settled correctly: not json
+00:00 +7: /home/sandbox/lb-445/test/stt_deadline_test.dart: normal chunked body settled correctly: {"missing":"text"}
+00:00 +8: /home/sandbox/lb-445/test/stt_deadline_test.dart: body error propagates, listener releases, client remains open
+00:00 +9: /home/sandbox/lb-445/test/stt_deadline_test.dart: pending body cancellation cannot delay observable deadline
+00:00 +10: /home/sandbox/lb-445/test/stt_deadline_test.dart: entered multipart preparation cannot upload after expiry
+00:00 +11: /home/sandbox/lb-445/test/stt_deadline_test.dart: privacy refusal before any file or send access
+00:00 +12: loading /home/sandbox/lb-445/test/stt_test.dart
+00:00 +12: /home/sandbox/lb-445/test/stt_test.dart: posts the file and returns the transcript text
+00:00 +13: /home/sandbox/lb-445/test/stt_test.dart: trailing slash in base URL does not produce // (#118)
+00:00 +14: /home/sandbox/lb-445/test/stt_test.dart: no endpoint configured fails with modelUnavailable (#196)
+00:00 +15: /home/sandbox/lb-445/test/stt_test.dart: non-200 raises httpError with the status
+00:00 +16: /home/sandbox/lb-445/test/stt_test.dart: 200 with non-JSON body raises decoderError (#118)
+00:00 +17: /home/sandbox/lb-445/test/stt_test.dart: 200 without a text field raises decoderError (#118)
+00:00 +18: /home/sandbox/lb-445/test/stt_test.dart: local-only mode refuses a remote STT endpoint (#120)
+00:01 +19: /home/sandbox/lb-445/test/stt_test.dart: speech language is sent as a field when set, omitted on auto
+00:01 +20: /home/sandbox/lb-445/test/stt_test.dart: redirect in local-only mode is refused, not followed (#199)
+DBG override=true
+00:01 +21: /home/sandbox/lb-445/test/stt_test.dart: redirects are never followed silently (#199)
+00:01 +22: /home/sandbox/lb-445/test/stt_test.dart: native whisper stub throws unsupportedPlatform (#196/#197)
+00:01 +23: /home/sandbox/lb-445/test/stt_test.dart: factory returns the provider matching the kind (#196)
+00:01 +24: /home/sandbox/lb-445/test/stt_test.dart: load migrates legacy brain transcription keys exactly once (#196)
+00:01 +25: /home/sandbox/lb-445/test/stt_test.dart: deliberate STT reset (#249) reset keeps STT empty without changing legacy brain settings
+00:01 +26: /home/sandbox/lb-445/test/stt_test.dart: deliberate STT reset (#249) fresh legacy install migrates its credential only once
+00:01 +27: /home/sandbox/lb-445/test/stt_test.dart: deliberate STT reset (#249) secure deletion failure is reported and can be retried
+00:01 +28: /home/sandbox/lb-445/test/stt_test.dart: deliberate STT reset (#249) delete-all followed by restart has defaults, no legacy migration
+00:01 +29: /home/sandbox/lb-445/test/stt_test.dart: unknown persisted kind recovers to http (#196)
+00:01 +30: /home/sandbox/lb-445/test/stt_test.dart: defaults have no endpoint - never a silent fallback (#196)
+00:01 +31: /home/sandbox/lb-445/test/stt_test.dart: RequestRunner provider selection resolves the provider from the saved settings when not injected
+00:01 +32: /home/sandbox/lb-445/test/stt_test.dart: RequestRunner provider selection an injected transcriber always wins over the factory (#196)
+00:01 +33: /home/sandbox/lb-445/test/stt_test.dart: a missing capture fails clearly instead of crashing (#254)
+00:01 +34: /home/sandbox/lb-445/test/stt_test.dart: an empty capture fails clearly instead of crashing (#254)
+00:01 +35: loading /home/sandbox/lb-445/test/support_matrix_test.dart
+00:01 +35: /home/sandbox/lb-445/test/support_matrix_test.dart: macOS is the host with full capabilities
+00:01 +36: /home/sandbox/lb-445/test/support_matrix_test.dart: iOS and Android are phone clients
+00:01 +37: /home/sandbox/lb-445/test/support_matrix_test.dart: unknown platforms are unsupported, never silently hosts
+00:01 +38: /home/sandbox/lb-445/test/support_matrix_test.dart: device names match the pair-facing labels
+00:01 +39: loading /home/sandbox/lb-445/test/theme_clear_widget_test.dart
+00:02 +39: /home/sandbox/lb-445/test/theme_clear_widget_test.dart: actual Settings theme clear refreshes System and fresh choices
+00:04 +40: loading /home/sandbox/lb-445/test/theme_ordering_test.dart
+00:05 +40: /home/sandbox/lb-445/test/theme_ordering_test.dart: entered read before clear/new choice cannot restore override
+00:05 +41: /home/sandbox/lb-445/test/theme_ordering_test.dart: entered write before clear/new choice cannot restore override
+00:05 +42: /home/sandbox/lb-445/test/theme_ordering_test.dart: entered remove before clear/new choice cannot restore override
+00:05 +43: /home/sandbox/lb-445/test/theme_ordering_test.dart: write false reports safely and retries
+00:05 +44: /home/sandbox/lb-445/test/theme_ordering_test.dart: write throw reports safely and retries
+00:05 +45: /home/sandbox/lb-445/test/theme_ordering_test.dart: remove false reports safely and retries
+00:05 +46: /home/sandbox/lb-445/test/theme_ordering_test.dart: remove throw reports safely and retries
+00:05 +47: /home/sandbox/lb-445/test/theme_ordering_test.dart: entered write then clear removes preference before completing
+00:05 +48: /home/sandbox/lb-445/test/theme_ordering_test.dart: failed clear after entered write reconciles retained preference
+00:05 +49: /home/sandbox/lb-445/test/theme_ordering_test.dart: old entered read followed by clear publishes only System
+00:05 +50: loading /home/sandbox/lb-445/test/theme_test.dart
+00:05 +50: /home/sandbox/lb-445/test/theme_test.dart: #87: semantic colors pass WCAG AA in both themes
+00:05 +51: /home/sandbox/lb-445/test/theme_test.dart: #87: override persists and defaults to system
+00:05 +52: /home/sandbox/lb-445/test/theme_test.dart: #87: app builds in both themes
+00:06 +53: loading /home/sandbox/lb-445/test/tool_executor_test.dart
+00:07 +53: /home/sandbox/lb-445/test/tool_executor_test.dart: look_at_screen captures and returns targets + image
+00:07 +54: /home/sandbox/lb-445/test/tool_executor_test.dart: point_at resolves the id natively and warps there
+00:07 +55: /home/sandbox/lb-445/test/tool_executor_test.dart: click converts 0-1000 grid to screen points
+00:07 +56: /home/sandbox/lb-445/test/tool_executor_test.dart: click prefers target id over grid
+00:07 +57: /home/sandbox/lb-445/test/tool_executor_test.dart: sensitive OCR text withholds the screenshot (#122)
+00:07 +58: /home/sandbox/lb-445/test/tool_executor_test.dart: zoom crop is withheld after a sensitive snapshot (#122)
+00:07 +59: /home/sandbox/lb-445/test/tool_executor_test.dart: zoom withholds sensitive text that appeared after the snapshot (#245)
+00:07 +60: /home/sandbox/lb-445/test/tool_executor_test.dart: zoom returns no image when the crop cannot be read (#245)
+00:07 +61: /home/sandbox/lb-445/test/tool_executor_test.dart: a verified clean crop still returns its image (#245)
+00:07 +62: /home/sandbox/lb-445/test/tool_executor_test.dart: verified blank crop still returns its image (#245)
+00:07 +63: /home/sandbox/lb-445/test/tool_executor_test.dart: unknown crop after change to Mail fails closed (#245)
+00:07 +64: /home/sandbox/lb-445/test/tool_executor_test.dart: unknown crop after change to Safari fails closed (#245)
+00:07 +65: /home/sandbox/lb-445/test/tool_executor_test.dart: nonempty crop text without verification fails closed (#245)
+00:07 +66: /home/sandbox/lb-445/test/tool_executor_test.dart: go_to_sleep fires the callback
+00:07 +67: /home/sandbox/lb-445/test/tool_executor_test.dart: press_keys returns a fresh screen afterwards
+00:07 +68: /home/sandbox/lb-445/test/tool_executor_test.dart: zoom_screen maps the grid region to display points (#80)
+00:07 +69: /home/sandbox/lb-445/test/tool_executor_test.dart: zoom round-trips on a different display size (#80)
+00:07 +70: /home/sandbox/lb-445/test/tool_executor_test.dart: zoom requires a fresh snapshot
+00:07 +71: /home/sandbox/lb-445/test/tool_executor_test.dart: a stale target is still rejected after a zoom (#80)
+00:07 +72: /home/sandbox/lb-445/test/tool_executor_test.dart: wait is bounded at the maximum (#80)
+00:12 +73: /home/sandbox/lb-445/test/tool_executor_test.dart: wait is cancelled by the kill switch (#80)
+00:12 +74: /home/sandbox/lb-445/test/tool_executor_test.dart: #110: bad arguments become Error results, not aborts numbers sent as strings are coerced
+00:12 +75: /home/sandbox/lb-445/test/tool_executor_test.dart: #110: bad arguments become Error results, not aborts non-string text does not throw and reaches the brain
+00:12 +76: /home/sandbox/lb-445/test/tool_executor_test.dart: #110: bad arguments become Error results, not aborts native failure returns an Error result instead of rethrowing
+00:12 +77: loading /home/sandbox/lb-445/test/tray_publication_caller_test.dart
+00:12 +77: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual held setIcon installed join and successful markers
+00:12 +78: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual failure setIcon no unchanged-tick retry explicit fresh recovery
+00:12 +79: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual held setIcon disposal fences later caller operations
+00:12 +80: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual held setTitle installed join and successful markers
+00:12 +81: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual failure setTitle no unchanged-tick retry explicit fresh recovery
+00:12 +82: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual held setTitle disposal fences later caller operations
+00:12 +83: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual held setContextMenu installed join and successful markers
+00:12 +84: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual failure setContextMenu no unchanged-tick retry explicit fresh recovery
+00:12 +85: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual held setContextMenu disposal fences later caller operations
+00:12 +86: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual setIcon latest actual state sampled for next operation
+00:12 +87: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual setTitle latest actual state sampled for next operation
+00:12 +88: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual setContextMenu latest actual state sampled for next operation
+00:12 +89: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: failed old menu drains latest active transition once
+00:12 +90: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual ScreenWatch consent clock ticks title without menu churn
+00:12 +91: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: queued and reentrant disposal zero native entry
+00:12 +92: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: sync operation and read errors safely consumed
+00:12 +93: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual entered mac asset may finish after disposal no next title/menu
+00:12 +94: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: failed actual plugin menu maps proposed ids not prior ids
+00:12 +95: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual asset rejection no channel write explicit retry
+00:12 +96: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: actual active to stop during menu bounded fresh successor
+00:12 +97: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: reentrant before entry reads latest only, no self successor
+00:12 +98: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: failed transition preserves prior successful marker and menu error through ticks
+00:12 +99: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: fresh successor bounded even with more requests during successor
+00:12 +100: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: failed menu retried after returning to prior successful active state
+00:12 +101: /home/sandbox/lb-445/test/tray_publication_caller_test.dart: main sole publication owner same actions both notices lifetime
+00:13 +102: loading /home/sandbox/lb-445/test/tray_publication_notice_test.dart
+00:13 +102: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-1-en-light-normal
+00:14 +103: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-1-en-light-onboard
+00:15 +104: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-1-en-dark-normal
+00:15 +105: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-1-en-dark-onboard
+00:16 +106: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-1-he-light-normal
+00:16 +107: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-1-he-light-onboard
+00:16 +108: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-1-he-dark-normal
+00:17 +109: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-1-he-dark-onboard
+00:17 +110: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-2-en-light-normal
+00:17 +111: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-2-en-light-onboard
+00:18 +112: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-2-en-dark-normal
+00:18 +113: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-2-en-dark-onboard
+00:18 +114: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-2-he-light-normal
+00:18 +115: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-2-he-light-onboard
+00:19 +116: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-2-he-dark-normal
+00:19 +117: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 320-2-he-dark-onboard
+00:19 +118: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-1-en-light-normal
+00:20 +119: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-1-en-light-onboard
+00:20 +120: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-1-en-dark-normal
+00:20 +121: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-1-en-dark-onboard
+00:20 +122: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-1-he-light-normal
+00:21 +123: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-1-he-light-onboard
+00:21 +124: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-1-he-dark-normal
+00:21 +125: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-1-he-dark-onboard
+00:21 +126: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-2-en-light-normal
+00:22 +127: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-2-en-light-onboard
+00:22 +128: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-2-en-dark-normal
+00:22 +129: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-2-en-dark-onboard
+00:22 +130: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-2-he-light-normal
+00:23 +131: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-2-he-light-onboard
+00:23 +132: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-2-he-dark-normal
+00:23 +133: /home/sandbox/lb-445/test/tray_publication_notice_test.dart: actual tray publication notice composed 1000-2-he-dark-onboard
+00:23 +134: loading /home/sandbox/lb-445/test/troubleshooting_provider_layout_test.dart
+00:24 +134: /home/sandbox/lb-445/test/troubleshooting_provider_layout_test.dart: (setUpAll)
+00:24 +134: /home/sandbox/lb-445/test/troubleshooting_provider_layout_test.dart: mocked probe title compact 200% EN
+00:25 +135: /home/sandbox/lb-445/test/troubleshooting_provider_layout_test.dart: mocked probe title compact 200% HE
+00:25 +136: /home/sandbox/lb-445/test/troubleshooting_provider_layout_test.dart: (tearDownAll)
+00:25 +136: loading /home/sandbox/lb-445/test/trust_observation_notice_test.dart
+00:26 +136: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-1-en-light-normal
+00:27 +137: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-1-en-light-onboard
+00:27 +138: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-1-en-dark-normal
+00:28 +139: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-1-en-dark-onboard
+00:28 +140: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-1-he-light-normal
+00:29 +141: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-1-he-light-onboard
+00:29 +142: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-1-he-dark-normal
+00:29 +143: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-1-he-dark-onboard
+00:30 +144: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-2-en-light-normal
+00:30 +145: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-2-en-light-onboard
+00:30 +146: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-2-en-dark-normal
+00:31 +147: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-2-en-dark-onboard
+00:31 +148: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-2-he-light-normal
+00:31 +149: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-2-he-light-onboard
+00:32 +150: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-2-he-dark-normal
+00:32 +151: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 320-2-he-dark-onboard
+00:32 +152: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-1-en-light-normal
+00:33 +153: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-1-en-light-onboard
+00:33 +154: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-1-en-dark-normal
+00:33 +155: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-1-en-dark-onboard
+00:34 +156: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-1-he-light-normal
+00:34 +157: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-1-he-light-onboard
+00:34 +158: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-1-he-dark-normal
+00:34 +159: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-1-he-dark-onboard
+00:35 +160: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-2-en-light-normal
+00:35 +161: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-2-en-light-onboard
+00:35 +162: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-2-en-dark-normal
+00:36 +163: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-2-en-dark-onboard
+00:36 +164: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-2-he-light-normal
+00:36 +165: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-2-he-light-onboard
+00:36 +166: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-2-he-dark-normal
+00:37 +167: /home/sandbox/lb-445/test/trust_observation_notice_test.dart: actual trust notice composed 1000-2-he-dark-onboard
+00:37 +168: loading /home/sandbox/lb-445/test/trust_observation_test.dart
+00:38 +168: /home/sandbox/lb-445/test/trust_observation_test.dart: actual MacHostControl channel maps true without prompts
+00:38 +169: /home/sandbox/lb-445/test/trust_observation_test.dart: actual MacHostControl channel maps false without prompts
+00:38 +170: /home/sandbox/lb-445/test/trust_observation_test.dart: actual MacHostControl channel maps null without prompts
+00:38 +171: /home/sandbox/lb-445/test/trust_observation_test.dart: actual channel failure is safe unknown not denial
+00:38 +172: /home/sandbox/lb-445/test/trust_observation_test.dart: retains true honestly on async failure then explicit success
+00:38 +173: /home/sandbox/lb-445/test/trust_observation_test.dart: retains false honestly on async failure then explicit success
+00:38 +174: /home/sandbox/lb-445/test/trust_observation_test.dart: retains true honestly on sync failure then explicit success
+00:38 +175: /home/sandbox/lb-445/test/trust_observation_test.dart: retains false honestly on sync failure then explicit success
+00:38 +176: /home/sandbox/lb-445/test/trust_observation_test.dart: entered startup resume burst joins through one fresh successor and drops old failure
+00:38 +177: /home/sandbox/lb-445/test/trust_observation_test.dart: queued resume joins fresh queued read; retry before pending notify joins same future
+00:38 +178: /home/sandbox/lb-445/test/trust_observation_test.dart: resume during successor requests one further fresh entered-period read
+00:38 +179: /home/sandbox/lb-445/test/trust_observation_test.dart: queued disposal from pending notification prevents source entry
+00:38 +180: /home/sandbox/lb-445/test/trust_observation_test.dart: entered disposal drops fresh successor and publication false
+00:38 +181: /home/sandbox/lb-445/test/trust_observation_test.dart: entered disposal drops fresh successor and publication true
+00:38 +182: /home/sandbox/lb-445/test/trust_observation_test.dart: terminal notification reentrant new read preserves installed pending ownership
+00:38 +183: /home/sandbox/lb-445/test/trust_observation_test.dart: terminal notification can dispose safely
+00:38 +184: /home/sandbox/lb-445/test/trust_observation_test.dart: actual main uses same startup resume disposal and both notice branches
+00:38 +185: loading /home/sandbox/lb-445/test/trust_settings_action_test.dart
+00:38 +185: /home/sandbox/lb-445/test/trust_settings_action_test.dart: generic async failure explicit retry success is not grant
+00:39 +186: /home/sandbox/lb-445/test/trust_settings_action_test.dart: generic sync failure explicit retry success is not grant
+00:39 +187: /home/sandbox/lb-445/test/trust_settings_action_test.dart: held reentrant duplicate and status transitions retain error only on denial
+00:39 +188: /home/sandbox/lb-445/test/trust_settings_action_test.dart: queued status change prevents entry and old dispatch after teardown is inert
+00:39 +189: /home/sandbox/lb-445/test/trust_settings_action_test.dart: queued disposal prevents callback entry
+00:39 +190: /home/sandbox/lb-445/test/trust_settings_action_test.dart: entered action error completes safely after teardown
+00:39 +191: /home/sandbox/lb-445/test/trust_settings_action_test.dart: actual MacHostControl channel order none no grant inference
+00:39 +192: /home/sandbox/lb-445/test/trust_settings_action_test.dart: actual MacHostControl channel order askPermission no grant inference
+00:39 +193: /home/sandbox/lb-445/test/trust_settings_action_test.dart: actual MacHostControl channel order openAccessibilitySettings no grant inference
+00:39 +194: loading /home/sandbox/lb-445/test/tutorial_gating_test.dart
+00:40 +194: /home/sandbox/lb-445/test/tutorial_gating_test.dart: without pointing the tutorial ends after the first answer
+00:40 +195: /home/sandbox/lb-445/test/tutorial_gating_test.dart: with pointing the third step still gates on a real point
+00:40 +196: /home/sandbox/lb-445/test/tutorial_gating_test.dart: a point event is ignored when pointing is not offered
+00:40 +197: loading /home/sandbox/lb-445/test/tutorial_replay_test.dart
+00:41 +197: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered skip write then reset success new run not hidden
+00:41 +198: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered skip write then reset error new run not hidden
+00:41 +199: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered point write then reset success new run not hidden
+00:41 +200: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered point write then reset error new run not hidden
+00:41 +201: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered answer write then reset success new run not hidden
+00:41 +202: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered answer write then reset error new run not hidden
+00:41 +203: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered reset then skip cannot complete new run before removal
+00:41 +204: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered reset then point cannot complete new run before removal
+00:41 +205: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered reset then answer cannot complete new run before removal
+00:41 +206: /home/sandbox/lb-445/test/tutorial_replay_test.dart: repeated terminal events/skip coalesce for pointing false
+00:41 +207: /home/sandbox/lb-445/test/tutorial_replay_test.dart: repeated terminal events/skip coalesce for pointing true
+00:41 +208: /home/sandbox/lb-445/test/tutorial_replay_test.dart: void final event failure safe visible status no automatic retry and explicit success
+00:41 +209: /home/sandbox/lb-445/test/tutorial_replay_test.dart: reset remove failure truthful awaited safe and explicit recovery
+00:41 +210: /home/sandbox/lb-445/test/tutorial_replay_test.dart: awaited skip failure safe and explicit retry recovers queue
+00:41 +211: /home/sandbox/lb-445/test/tutorial_replay_test.dart: entered reset invalidated by later reset publishes only newest run
+00:41 +212: /home/sandbox/lb-445/test/tutorial_replay_test.dart: dispose during entered finish does not notify disposed listener
+00:41 +213: loading /home/sandbox/lb-445/test/tutorial_test.dart
+00:41 +213: /home/sandbox/lb-445/test/tutorial_test.dart: TutorialController starts at wake and walks wake -> ask -> point -> done
+00:41 +214: /home/sandbox/lb-445/test/tutorial_test.dart: TutorialController skip finishes at any step and persists
+00:41 +215: /home/sandbox/lb-445/test/tutorial_test.dart: TutorialController reset clears the flag and starts over (replay)
+00:41 +216: /home/sandbox/lb-445/test/tutorial_test.dart: TutorialController dismiss hides without persisting; reset brings it back
+00:41 +217: /home/sandbox/lb-445/test/tutorial_test.dart: TutorialCard shows the current instruction, progress and skip
+00:42 +218: loading /home/sandbox/lb-445/test/undo_executor_test.dart
+00:42 +218: /home/sandbox/lb-445/test/undo_executor_test.dart: a successful type_text becomes the last undoable action (#89)
+00:42 +219: /home/sandbox/lb-445/test/undo_executor_test.dart: a final action clears the undo offer (#89)
+00:43 +220: loading /home/sandbox/lb-445/test/unsupported_screen_test.dart
+00:43 +220: /home/sandbox/lb-445/test/unsupported_screen_test.dart: routing by role (#84) host platforms get the Mac home
+00:43 +221: /home/sandbox/lb-445/test/unsupported_screen_test.dart: routing by role (#84) client platforms get the client UI, never unsupported
+00:43 +222: /home/sandbox/lb-445/test/unsupported_screen_test.dart: routing by role (#84) unsupported and unknown platforms get the unsupported screen
+00:43 +223: /home/sandbox/lb-445/test/unsupported_screen_test.dart: unsupported reasons unknown OS names are reported as unrecognized
+00:43 +224: /home/sandbox/lb-445/test/unsupported_screen_test.dart: unsupported reasons known-but-unsupported platforms get a role explanation
+00:43 +225: /home/sandbox/lb-445/test/unsupported_screen_test.dart: unsupported screen explains and starts no work
+00:44 +226: loading /home/sandbox/lb-445/test/user_feedback_test.dart
+00:44 +226: /home/sandbox/lb-445/test/user_feedback_test.dart: every known failure maps to a pattern (#89)
+00:44 +227: /home/sandbox/lb-445/test/user_feedback_test.dart: empty states are the no-content cases only
+00:44 +228: /home/sandbox/lb-445/test/user_feedback_test.dart: classifier maps tool error text to known failures
+00:44 +229: /home/sandbox/lb-445/test/user_feedback_test.dart: undo is offered only for reversible actions (#89)
+00:44 +230: loading /home/sandbox/lb-445/test/wake_word_test.dart
+00:45 +230: /home/sandbox/lb-445/test/wake_word_test.dart: dormant without a spotter engine
+00:45 +231: /home/sandbox/lb-445/test/wake_word_test.dart: below threshold never confirms
+00:45 +232: /home/sandbox/lb-445/test/wake_word_test.dart: remote endpoint: spotter alone wakes, no upload
+00:45 +233: /home/sandbox/lb-445/test/wake_word_test.dart: default is off and persisted
+00:45 +234: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) enabled without an engine never starts the recorder
+00:45 +235: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) disabled by default does not record
+00:45 +236: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) permission denied reports an error and stays stopped
+00:45 +237: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) a scored window wakes once and its file is deleted
+00:45 +238: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) stop during the window closes capture, no wake
+00:45 +239: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) stop during scoring suppresses the late wake
+00:45 +240: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) stop then immediate restart runs one loop, old work is stale
+00:45 +241: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) score exception stops safely and a retry works
+00:45 +242: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) start failure before open reports before cleanup, then settles
+00:45 +243: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) start failure after open reports before cleanup, then settles
+00:45 +244: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) stop during capture.start ends without waiting a window
+00:45 +245: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) window error awaits entered cleanup and settles before assertions
+00:45 +246: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) permission check finishing after stop writes no error
+00:45 +247: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) permission denial from an old start never hits a newer one
+00:45 +248: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) stop during local confirmation suppresses the wake
+00:45 +249: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) transcriber exception stops safely and deletes the file
+00:45 +250: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) cleanup tolerates a window the spotter already removed
+00:45 +251: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) failed stop closes then throws retains exact file until actual cleanup
+00:45 +252: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) failed stop stays open retains exact file until actual cleanup
+00:45 +253: /home/sandbox/lb-445/test/wake_word_test.dart: lifecycle (#280) stop while settings load never reaches the transcriber
+00:45 +254: loading /home/sandbox/lb-445/test/watch_banner_visual_test.dart
+00:46 +254: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=1.0 dark=false width=320.0
+00:47 +255: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=1.0 dark=false width=320.0
+00:47 +256: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=1.5 dark=false width=320.0
+00:47 +257: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=1.5 dark=false width=320.0
+00:47 +258: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=2.0 dark=false width=320.0
+00:47 +259: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=2.0 dark=false width=320.0
+00:48 +260: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=1.0 dark=true width=320.0
+00:48 +261: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=1.0 dark=true width=320.0
+00:48 +262: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=1.5 dark=true width=320.0
+00:48 +263: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=1.5 dark=true width=320.0
+00:48 +264: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=2.0 dark=true width=320.0
+00:48 +265: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=2.0 dark=true width=320.0
+00:48 +266: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=1.0 dark=false width=390.0
+00:49 +267: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=1.0 dark=false width=390.0
+00:49 +268: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=1.5 dark=false width=390.0
+00:49 +269: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=1.5 dark=false width=390.0
+00:49 +270: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=2.0 dark=false width=390.0
+00:49 +271: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=2.0 dark=false width=390.0
+00:49 +272: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=1.0 dark=true width=390.0
+00:49 +273: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=1.0 dark=true width=390.0
+00:50 +274: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=1.5 dark=true width=390.0
+00:50 +275: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=1.5 dark=true width=390.0
+00:50 +276: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=false scale=2.0 dark=true width=390.0
+00:50 +277: /home/sandbox/lb-445/test/watch_banner_visual_test.dart: actual compact app watch Stop/back RTL=true scale=2.0 dark=true width=390.0
+00:50 +278: loading /home/sandbox/lb-445/test/watch_driver_lifecycle_test.dart
+00:51 +278: /home/sandbox/lb-445/test/watch_driver_lifecycle_test.dart: run lifetime keeps exactly one cancel hook and removes on manual stop
+00:51 +279: /home/sandbox/lb-445/test/watch_driver_lifecycle_test.dart: entered tick stop late result no resurrection/overlap
+00:51 +280: /home/sandbox/lb-445/test/watch_driver_lifecycle_test.dart: entered tick stop/restart late result no resurrection/overlap
+00:51 +281: /home/sandbox/lb-445/test/watch_driver_lifecycle_test.dart: entered tick stop late error no resurrection/overlap
+00:51 +282: /home/sandbox/lb-445/test/watch_driver_lifecycle_test.dart: entered tick stop/restart late error no resurrection/overlap
+00:51 +283: /home/sandbox/lb-445/test/watch_driver_lifecycle_test.dart: current tick error stops honestly, explicit restart works
+00:51 +284: /home/sandbox/lb-445/test/watch_driver_lifecycle_test.dart: quiet bounded backoff and activity returns min; repeated start/stop cancels one hook
+00:51 +285: loading /home/sandbox/lb-445/test/watch_driver_test.dart
+00:51 +285: /home/sandbox/lb-445/test/watch_driver_test.dart: driver ticks adaptively, stops with the session, clears events
+00:51 +286: loading /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart
+00:52 +286: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: frontmost clear entered success silent
+00:52 +287: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: frontmost clear entered error silent
+00:52 +288: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: frontmost dispose entered success silent
+00:52 +289: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: frontmost dispose entered error silent
+00:52 +290: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: diff clear entered success silent
+00:52 +291: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: diff clear entered error silent
+00:52 +292: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: diff dispose entered success silent
+00:52 +293: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: diff dispose entered error silent
+00:52 +294: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: vision clear entered success silent
+00:52 +295: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: vision clear entered error silent
+00:52 +296: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: vision dispose entered success silent
+00:52 +297: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: vision dispose entered error silent
+00:52 +298: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: stop restart during frontmost never uses old signal for new capture
+00:52 +299: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: clear resets baseline debounce and same-clock vision cooldown
+00:52 +300: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: oversized strings fail silent without prefix baseline or summary retention
+00:52 +301: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: current source errors still propagate rather than fake quiet success
+00:52 +302: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: clear while policy gate entered cannot mutate reset baseline
+00:52 +303: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: current diff errors remain visible
+00:52 +304: /home/sandbox/lb-445/test/watch_pipeline_lifecycle_test.dart: current vision errors remain visible
+00:52 +305: loading /home/sandbox/lb-445/test/watch_pipeline_test.dart
+00:53 +305: /home/sandbox/lb-445/test/watch_pipeline_test.dart: nothing runs while the session is off
+00:53 +306: /home/sandbox/lb-445/test/watch_pipeline_test.dart: app switch emits; quiet frame emits nothing
+00:53 +307: /home/sandbox/lb-445/test/watch_pipeline_test.dart: meaningful change needs the debounce, then one vision call
+00:53 +308: /home/sandbox/lb-445/test/watch_pipeline_test.dart: vision calls respect the cooldown
+00:53 +309: /home/sandbox/lb-445/test/watch_pipeline_test.dart: excluded app: pipeline pauses, only the counter moves
+00:53 +310: /home/sandbox/lb-445/test/watch_pipeline_test.dart: lock screen pauses everything
+00:53 +311: /home/sandbox/lb-445/test/watch_pipeline_test.dart: stop during an in-flight tick leaves no events behind
+00:53 +312: /home/sandbox/lb-445/test/watch_pipeline_test.dart: real emitted buffer capped with immutable independent snapshots
+00:53 +313: loading /home/sandbox/lb-445/test/watch_policy_alias_test.dart
+00:53 +313: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: 1Password 7
+00:53 +314: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: Bitwarden Desktop
+00:53 +315: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: KeePassXC 2.7
+00:53 +316: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: Passwords
+00:53 +317: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: Proton Pass
+00:53 +318: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: ProtonPass.app
+00:53 +319: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: NordPass
+00:53 +320: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: Strongbox
+00:53 +321: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: Authy Desktop
+00:53 +322: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: Google Authenticator
+00:53 +323: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: Microsoft Authenticator
+00:53 +324: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: Wallet
+00:53 +325: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: Keeper
+00:53 +326: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: RoboForm
+00:53 +327: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist:  Keychain Access.app 
+00:53 +328: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: System Settings
+00:53 +329: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: com.vendor.1password.desktop
+00:53 +330: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known app/identity denied despite allowlist: com.vendor.bitwarden
+00:53 +331: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: Bitwarden Web Vault
+00:53 +332: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: 1Password - Vault
+00:53 +333: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: My KeePassXC Database
+00:53 +334: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: Proton Pass - Vault
+00:53 +335: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: NordPass - Password Manager
+00:53 +336: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: Passwords
+00:53 +337: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: Wallet
+00:53 +338: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: Keeper Vault
+00:53 +339: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: Strongbox 1.2
+00:53 +340: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: Keychain Access
+00:53 +341: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: Review of Bitwarden Desktop
+00:53 +342: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: known title denied in allowlisted browser: Passwords
+00:53 +343: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated app is not denied by generic substring: Pass Notes
+00:53 +344: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated app is not denied by generic substring: Key Sketch
+00:53 +345: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated app is not denied by generic substring: Vault Planner
+00:53 +346: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated app is not denied by generic substring: Goalkeeper
+00:53 +347: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated app is not denied by generic substring: Strongboxer
+00:53 +348: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated app is not denied by generic substring: Passwordsmith
+00:53 +349: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated app is not denied by generic substring: NotBitwarden
+00:53 +350: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated app is not denied by generic substring: 1Passwordish
+00:53 +351: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated normal title stays allowed: Passing tests
+00:54 +352: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated normal title stays allowed: Keyboard shortcuts
+00:54 +353: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated normal title stays allowed: Vault architecture notes
+00:54 +354: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated normal title stays allowed: My wallet design
+00:54 +355: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated normal title stays allowed: Goalkeeper training
+00:54 +356: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated normal title stays allowed: Passwords in fiction
+00:54 +357: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated normal title stays allowed: Strongbox construction
+00:54 +358: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: unrelated normal title stays allowed: Bitwardens overview
+00:54 +359: /home/sandbox/lb-445/test/watch_policy_alias_test.dart: lock/private precedence retained over secret aliases
+00:54 +360: loading /home/sandbox/lb-445/test/watch_policy_test.dart
+00:54 +360: /home/sandbox/lb-445/test/watch_policy_test.dart: hard deny list always wins, even over an allowlist entry
+00:54 +361: /home/sandbox/lb-445/test/watch_policy_test.dart: banking surfaces denied by app name and by window title
+00:54 +362: /home/sandbox/lb-445/test/watch_policy_test.dart: Hebrew banking titles are denied
+00:54 +363: /home/sandbox/lb-445/test/watch_policy_test.dart: private browser windows denied in every browser language
+00:54 +364: /home/sandbox/lb-445/test/watch_policy_test.dart: lock screen denies before anything else
+00:54 +365: /home/sandbox/lb-445/test/watch_policy_test.dart: allowlist matches normalized names only
+00:54 +366: /home/sandbox/lb-445/test/watch_policy_test.dart: user denylist denies on top of the allowlist
+00:54 +367: /home/sandbox/lb-445/test/watch_policy_test.dart: allowlist edits persist and normalize
+00:54 +368: loading /home/sandbox/lb-445/test/watch_screen_consent_test.dart
+00:55 +368: /home/sandbox/lb-445/test/watch_screen_consent_test.dart: (setUpAll)
+00:55 +368: /home/sandbox/lb-445/test/watch_screen_consent_test.dart: bound consent and disabled active additions EN
+00:56 +369: /home/sandbox/lb-445/test/watch_screen_consent_test.dart: bound consent and disabled active additions HE
+00:57 +370: /home/sandbox/lb-445/test/watch_screen_consent_test.dart: (tearDownAll)
+00:57 +370: loading /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart
+00:58 +370: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: late preference error after invalidation stays silent false
+00:58 +371: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: late preference error after invalidation stays silent true
+00:58 +372: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: oversized app and empty detail do not retain keys
+00:58 +373: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: entered read stays silent after reset; current events independent
+00:58 +374: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: entered read stays silent after dispose; current events independent
+00:58 +375: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: same text across apps cannot aggregate; normalized same-app repeat works
+00:58 +376: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: unique details bounded FIFO; evicted keys need three fresh repeats
+00:58 +377: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: oversized detail stays silent without prefix-collision counting
+00:58 +378: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: concurrent reads obey minGap and session cap
+00:58 +379: /home/sandbox/lb-445/test/watch_suggestions_lifecycle_test.dart: never preference matching normalized; uncertain context skipped
+00:58 +380: loading /home/sandbox/lb-445/test/watch_suggestions_test.dart
+00:58 +380: /home/sandbox/lb-445/test/watch_suggestions_test.dart: uncertain context stays silent
+00:58 +381: /home/sandbox/lb-445/test/watch_suggestions_test.dart: repeated on-screen text triggers once, with evidence
+00:58 +382: /home/sandbox/lb-445/test/watch_suggestions_test.dart: rate limit: gap between suggestions and a session cap
+00:58 +383: /home/sandbox/lb-445/test/watch_suggestions_test.dart: never for this app silences it
+00:58 +384: /home/sandbox/lb-445/test/watch_suggestions_test.dart: injected instruction text is display-only data
+00:58 +385: loading /home/sandbox/lb-445/test/watch_vision_test.dart
+00:59 +385: /home/sandbox/lb-445/test/watch_vision_test.dart: main wired to tested stateless service not Brain.ask
+00:59 +386: /home/sandbox/lb-445/test/watch_vision_test.dart: fresh readonly snapshots no user history/memory or screen accumulation
+00:59 +387: /home/sandbox/lb-445/test/watch_vision_test.dart: pending user/tool exchange ordering unaffected by vision tool envelope
+00:59 +388: /home/sandbox/lb-445/test/watch_vision_test.dart: stop during entered snapshot success discarded across new session
+00:59 +389: /home/sandbox/lb-445/test/watch_vision_test.dart: stop during entered snapshot error discarded across new session
+00:59 +390: /home/sandbox/lb-445/test/watch_vision_test.dart: stop during entered provider success discarded across new session
+00:59 +391: /home/sandbox/lb-445/test/watch_vision_test.dart: stop during entered provider error discarded across new session
+00:59 +392: /home/sandbox/lb-445/test/watch_vision_test.dart: current provider failure visible without conversation state
+00:59 +393: /home/sandbox/lb-445/test/watch_vision_test.dart: tightened local-only after capture prevents inference
+00:59 +394: /home/sandbox/lb-445/test/watch_vision_test.dart: fresh session uses current provider without previous screen context
+00:59 +395: /home/sandbox/lb-445/test/watch_vision_test.dart: stopped/not-allowlisted/null provider never capture or infer
+00:59 +396: loading /home/sandbox/lb-445/test/widget_test.dart
+01:00 +396: /home/sandbox/lb-445/test/widget_test.dart: face screen renders and shows bubble
+01:00 +397: /home/sandbox/lb-445/test/widget_test.dart: packet json round-trip
+01:00 +398: loading /home/sandbox/lb-445/test/window_action_caller_test.dart
+01:01 +398: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin held isMinimized joins completion
+01:01 +399: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin failure isMinimized generic explicit retry
+01:01 +400: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin held restore joins completion
+01:01 +401: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin failure restore generic explicit retry
+01:01 +402: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin held show joins completion
+01:01 +403: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin failure show generic explicit retry
+01:01 +404: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin held focus joins completion
+01:01 +405: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin failure focus generic explicit retry
+01:01 +406: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin held hide joins completion
+01:01 +407: /home/sandbox/lb-445/test/window_action_caller_test.dart: actual plugin failure hide generic explicit retry
+01:01 +408: /home/sandbox/lb-445/test/window_action_caller_test.dart: nonminimized actual show omits restore
+01:01 +409: /home/sandbox/lb-445/test/window_action_caller_test.dart: conflicting burst initialWindowIntent.show latestSamefalse bounded
+01:01 +410: /home/sandbox/lb-445/test/window_action_caller_test.dart: conflicting burst initialWindowIntent.show latestSametrue bounded
+01:01 +411: /home/sandbox/lb-445/test/window_action_caller_test.dart: conflicting burst initialWindowIntent.hide latestSamefalse bounded
+01:01 +412: /home/sandbox/lb-445/test/window_action_caller_test.dart: conflicting burst initialWindowIntent.hide latestSametrue bounded
+01:01 +413: /home/sandbox/lb-445/test/window_action_caller_test.dart: superseded error cannot overwrite successful latest intent
+01:01 +414: /home/sandbox/lb-445/test/window_action_caller_test.dart: final successor error names final intent only
+01:01 +415: /home/sandbox/lb-445/test/window_action_caller_test.dart: reentrant pending explicit replacement before entry latest only
+01:01 +416: /home/sandbox/lb-445/test/window_action_caller_test.dart: joined completion includes held successor
+01:01 +417: /home/sandbox/lb-445/test/window_action_caller_test.dart: sync injected throw contained
+01:01 +418: /home/sandbox/lb-445/test/window_action_caller_test.dart: queued disposal prevents any actual plugin entry
+01:01 +419: /home/sandbox/lb-445/test/window_action_caller_test.dart: entered show disposal fences caller successor and late publish
+01:01 +420: /home/sandbox/lb-445/test/window_action_caller_test.dart: entered focus disposal fences caller successor and late publish
+01:01 +421: /home/sandbox/lb-445/test/window_action_caller_test.dart: entered hide disposal fences caller successor and late publish
+01:01 +422: /home/sandbox/lb-445/test/window_action_caller_test.dart: entered actual show internal isMinimized may finish after disposal caller fence only
+01:01 +423: /home/sandbox/lb-445/test/window_action_caller_test.dart: entered actual show internal restore may finish after disposal caller fence only
+01:01 +424: /home/sandbox/lb-445/test/window_action_caller_test.dart: reentrant pending latest intent and disposal safe
+01:01 +425: /home/sandbox/lb-445/test/window_action_caller_test.dart: main actual same caller icon/show/hide both notices teardown source-only
+01:01 +426: loading /home/sandbox/lb-445/test/window_action_notice_test.dart
+01:02 +426: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-1-en-light-normal
+01:03 +427: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-1-en-light-onboard
+01:03 +428: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-1-en-dark-normal
+01:04 +429: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-1-en-dark-onboard
+01:04 +430: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-1-he-light-normal
+01:04 +431: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-1-he-light-onboard
+01:05 +432: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-1-he-dark-normal
+01:05 +433: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-1-he-dark-onboard
+01:05 +434: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-2-en-light-normal
+01:06 +435: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-2-en-light-onboard
+01:06 +436: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-2-en-dark-normal
+01:06 +437: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-2-en-dark-onboard
+01:07 +438: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-2-he-light-normal
+01:07 +439: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-2-he-light-onboard
+01:07 +440: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-2-he-dark-normal
+01:07 +441: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 320-2-he-dark-onboard
+01:08 +442: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-1-en-light-normal
+01:08 +443: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-1-en-light-onboard
+01:08 +444: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-1-en-dark-normal
+01:08 +445: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-1-en-dark-onboard
+01:09 +446: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-1-he-light-normal
+01:09 +447: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-1-he-light-onboard
+01:09 +448: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-1-he-dark-normal
+01:09 +449: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-1-he-dark-onboard
+01:10 +450: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-2-en-light-normal
+01:10 +451: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-2-en-light-onboard
+01:10 +452: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-2-en-dark-normal
+01:11 +453: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-2-en-dark-onboard
+01:11 +454: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-2-he-light-normal
+01:11 +455: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-2-he-light-onboard
+01:11 +456: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-2-he-dark-normal
+01:12 +457: /home/sandbox/lb-445/test/window_action_notice_test.dart: actual window action notice composed 1000-2-he-dark-onboard
+01:12 +458: All tests passed!

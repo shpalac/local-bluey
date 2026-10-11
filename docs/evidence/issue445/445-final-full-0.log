@@ -1,0 +1,497 @@
+Resolving dependencies...
+Downloading packages...
+  code_assets 1.2.1 (2.1.0 available)
+  cupertino_icons 1.0.9 (2.0.0 available)
+  flutter_secure_storage 9.2.4 (11.2.0 available)
+  flutter_secure_storage_linux 1.2.3 (3.0.3 available)
+  flutter_secure_storage_macos 3.1.3 (4.0.0 available)
+  flutter_secure_storage_platform_interface 1.1.2 (2.1.1 available)
+  flutter_secure_storage_web 1.2.1 (2.1.1 available)
+  flutter_secure_storage_windows 3.1.2 (4.2.2 available)
+  hooks 2.0.2 (2.2.0 available)
+  jni_flutter 1.0.3 (1.0.4+1 available)
+  js 0.6.7 (0.7.2 available)
+  local_auth 2.3.0 (3.0.2 available)
+  local_auth_android 1.0.56 (2.2.0 available)
+  local_auth_darwin 1.6.1 (2.0.4 available)
+  local_auth_windows 1.0.11 (2.0.2 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  meta 1.18.3 (1.19.0 available)
+  objective_c 9.5.0 (9.6.2 available)
+  record 7.1.1 (7.1.2 available)
+  record_linux 2.1.2 (2.1.3 available)
+  record_use 0.6.0 (1.1.1 available)
+  screen_retriever 0.2.2 (0.3.0 available)
+  shared_preferences 2.5.5 (2.5.6 available)
+  test_api 0.7.12 (0.7.15 available)
+  tray_manager 0.2.4 (0.8.0 available)
+  vector_math 2.4.0 (2.4.3 available)
+  win32 5.15.0 (6.4.0 available)
+Got dependencies!
+27 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading /home/sandbox/lb-445/test/action_log_test.dart
+00:00 +0: /home/sandbox/lb-445/test/action_log_test.dart: every executed tool is recorded under the run id
+00:00 +1: /home/sandbox/lb-445/test/action_log_test.dart: failures carry recovery guidance in the summary
+00:00 +2: /home/sandbox/lb-445/test/action_log_test.dart: unknown runs summarize cleanly
+00:00 +3: /home/sandbox/lb-445/test/action_log_test.dart: unloaded and incomplete empty-run summaries keep warning boundary
+00:00 +4: /home/sandbox/lb-445/test/action_log_test.dart: temp-file restart and first record preserve order and grouping
+00:00 +5: /home/sandbox/lb-445/test/action_log_test.dart: corrupt and malformed timestamps are skipped without overwrite
+00:00 +6: /home/sandbox/lb-445/test/action_log_test.dart: unreadable and failed writes report uncertainty without unknown overwrite
+00:00 +7: /home/sandbox/lb-445/test/action_log_test.dart: exact age cutoff and 600-row load/record cap keep 500
+00:00 +8: /home/sandbox/lb-445/test/action_log_test.dart: entered load completes before clear; later load cannot resurrect
+00:00 +9: /home/sandbox/lb-445/test/action_log_test.dart: entered write and overlapping records precede clear; fresh work survives
+00:00 +10: /home/sandbox/lb-445/test/action_log_test.dart: delete failure propagates, preserves memory, queue can recover
+00:00 +11: /home/sandbox/lb-445/test/action_log_test.dart: caller mutations cannot change retained arguments; UTF8 and structure bounded
+00:00 +12: loading /home/sandbox/lb-445/test/appearance_app_pixels_test.dart
+00:01 +12: /home/sandbox/lb-445/test/appearance_app_pixels_test.dart: actual compact app top appearance notice/watch/route RTL=false scale1.5
+00:02 +13: /home/sandbox/lb-445/test/appearance_app_pixels_test.dart: actual compact app top appearance notice/watch/route RTL=true scale1.5
+00:02 +14: loading /home/sandbox/lb-445/test/appearance_startup_notice_test.dart
+00:03 +14: /home/sandbox/lb-445/test/appearance_startup_notice_test.dart: LocalBlueyApp shared app-wide notice constructs after appearance failure
+00:04 +15: /home/sandbox/lb-445/test/appearance_startup_notice_test.dart: actual shared notice failure, entered retry and recovery render safely
+00:04 +16: loading /home/sandbox/lb-445/test/appearance_startup_test.dart
+00:05 +16: /home/sandbox/lb-445/test/appearance_startup_test.dart: immediate scheduled disposal performs no mutation notification or entry
+00:05 +17: /home/sandbox/lb-445/test/appearance_startup_test.dart: queued latest actual read fail=false disposed=false joins and settles
+00:05 +18: /home/sandbox/lb-445/test/appearance_startup_test.dart: queued latest actual read fail=false disposed=true joins and settles
+00:05 +19: /home/sandbox/lb-445/test/appearance_startup_test.dart: queued latest actual read fail=true disposed=false joins and settles
+00:05 +20: /home/sandbox/lb-445/test/appearance_startup_test.dart: queued latest actual read fail=true disposed=true joins and settles
+00:05 +21: /home/sandbox/lb-445/test/appearance_startup_test.dart: actual theme failed read preserves light mode until fresh explicit retry
+00:05 +22: /home/sandbox/lb-445/test/appearance_startup_test.dart: actual theme failed read preserves dark mode until fresh explicit retry
+00:05 +23: /home/sandbox/lb-445/test/appearance_startup_test.dart: actual theme failed read preserves null mode until fresh explicit retry
+00:05 +24: /home/sandbox/lb-445/test/appearance_startup_test.dart: actual failed entered read reconciles but caller still reports failure
+00:05 +25: /home/sandbox/lb-445/test/appearance_startup_test.dart: actual ordered old read failure cannot replace newer successful load status
+00:05 +26: /home/sandbox/lb-445/test/appearance_startup_test.dart: actual entered theme load after caller disposal cannot publish notice
+00:05 +27: /home/sandbox/lb-445/test/appearance_startup_test.dart: sync throw=false safely contained without raw details
+00:05 +28: /home/sandbox/lb-445/test/appearance_startup_test.dart: sync throw=true safely contained without raw details
+00:05 +29: /home/sandbox/lb-445/test/appearance_startup_test.dart: reentrant loading retry joins installed owner with one actual read
+00:05 +30: /home/sandbox/lb-445/test/appearance_startup_test.dart: reentrant caller disposal prevents not-yet-entered load
+00:05 +31: /home/sandbox/lb-445/test/appearance_startup_test.dart: actual main appearance-only startup/source wiring and preceding loads unchanged
+00:05 +32: loading /home/sandbox/lb-445/test/audio_capture_identity_test.dart
+00:05 +32: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: partial start retains identity and current cleanup null=false
+00:05 +33: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: partial start retains identity and current cleanup null=true
+00:05 +34: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: failed still-open retry retains token and joins actual held cleanup
+00:05 +35: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: held failed deletion file-only retry null=false
+00:05 +36: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: held failed deletion file-only retry null=true
+00:05 +37: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: external consumed token then new legacy capture has zero stale effects
+00:05 +38: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: foreign token cannot stop or delete current capture
+00:05 +39: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: busy legacy entered start yields no acquisition identity
+00:05 +40: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: temp failure receipt zero driver stop and stale token after new start
+00:05 +41: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: cleanup before held start release fences acquisition and release delivery
+00:05 +42: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: entered external stop then cleanup joins and owns output without delivery
+00:05 +43: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: cap cleanup release race one stop exact file owner
+00:05 +44: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: dispose failure receipt does not authorize stop on disposed driver
+00:05 +45: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: dispose while cleanup held joins before driver release
+00:05 +46: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: identity exists during entered partial start and cleanup joins failure
+00:05 +47: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: driver disposal error retained separately from complete stop
+00:05 +48: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: pre-entry failure receipt survives later legacy acquisition without effects
+00:05 +49: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: queued cleanup then immediate disposal never stops disposed driver
+00:05 +50: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: token release concurrent held stop transfers exactly once
+00:05 +51: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: release cleanup pending order cleanupFirst=false no delivery
+00:05 +52: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: release cleanup pending order cleanupFirst=true no delivery
+00:05 +53: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: transferred token release never touches new legacy capture or old file
+00:05 +54: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: external legacy consumption then stale release zero new capture effects
+00:05 +55: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: current driver null is token receipt not wrapper null proof
+00:05 +56: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: token release failed stop retains uncertainty for explicit cleanup
+00:05 +57: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: partial entered start release reports failure without file transfer
+00:05 +58: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: release held start success joins and transfers its own file
+00:05 +59: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: foreign no-entry and disposed token release distinct zero-effect receipts
+00:05 +60: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: release joining held cleanup deletion cannot steal output
+00:05 +61: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: dispose held token release joins and closing owns untransferred file
+00:05 +62: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: capped token release consumes once without second driver stop
+00:05 +63: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: entered legacy release joined by token release transfers only token file
+00:05 +64: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: release selected before queued immediate disposal returns no output
+00:05 +65: /home/sandbox/lb-445/test/audio_capture_identity_test.dart: release observes failed cleanup deletion retains exact file for retry
+00:06 +66: loading /home/sandbox/lb-445/test/audio_capture_test.dart
+00:06 +66: /home/sandbox/lb-445/test/audio_capture_test.dart: partial start owns candidate, safe typed error, successful cleanup only
+00:06 +67: /home/sandbox/lb-445/test/audio_capture_test.dart: gated entered partial start joins stop and all failed stop callers
+00:06 +68: /home/sandbox/lb-445/test/audio_capture_test.dart: dispose joins partial start and attempts driver disposal after failed stop
+00:06 +69: /home/sandbox/lb-445/test/audio_capture_test.dart: dispose failure retained safe and explicitly retryable once per attempt
+00:06 +70: /home/sandbox/lb-445/test/audio_capture_test.dart: entered release joined by dispose does not publish post-close file
+00:06 +71: /home/sandbox/lb-445/test/audio_capture_test.dart: successful-null recovery retains exact candidate on deletion failure until explicit retry
+00:06 +72: /home/sandbox/lb-445/test/audio_capture_test.dart: closing delete failure retains file and still attempts driver dispose
+00:06 +73: /home/sandbox/lb-445/test/audio_capture_test.dart: entered closing delete joins stop and repeated dispose failure=false
+00:06 +74: /home/sandbox/lb-445/test/audio_capture_test.dart: entered closing delete joins stop and repeated dispose failure=true
+00:06 +75: /home/sandbox/lb-445/test/audio_capture_test.dart: temp failure before driver entry is not native uncertainty
+00:06 +76: /home/sandbox/lb-445/test/audio_capture_test.dart: successful current driver null cleanup clears partial-start uncertainty
+00:06 +77: /home/sandbox/lb-445/test/audio_capture_test.dart: stop during an in-flight start still stops the recorder (#117)
+00:06 +78: /home/sandbox/lb-445/test/audio_capture_test.dart: max duration auto-stops and preserves the file (#117)
+00:06 +79: /home/sandbox/lb-445/test/audio_capture_test.dart: cap/release joins one stop and consumes its file once (#246)
+00:06 +80: /home/sandbox/lb-445/test/audio_capture_test.dart: failed capped stop is reported on release and recovers (#246)
+00:06 +81: /home/sandbox/lb-445/test/audio_capture_test.dart: dispose during start waits and closes the microphone (#246)
+00:06 +82: /home/sandbox/lb-445/test/audio_capture_test.dart: start is idempotent while recording (#117)
+00:06 +83: /home/sandbox/lb-445/test/audio_capture_test.dart: sweep deletes stale bluey_hold files only (#116)
+00:06 +84: loading /home/sandbox/lb-445/test/biometric_lock_test.dart
+00:07 +84: /home/sandbox/lb-445/test/biometric_lock_test.dart: #92: lock off passes through without authenticating
+00:07 +85: /home/sandbox/lb-445/test/biometric_lock_test.dart: #92: lock on defers to the authenticator
+00:07 +86: /home/sandbox/lb-445/test/biometric_lock_test.dart: #92: enabled flag persists and defaults to off
+00:07 +87: /home/sandbox/lb-445/test/biometric_lock_test.dart: enable failed never persists an enabled lock
+00:07 +88: /home/sandbox/lb-445/test/biometric_lock_test.dart: enable unavailable never persists an enabled lock
+00:07 +89: /home/sandbox/lb-445/test/biometric_lock_test.dart: enable error never persists an enabled lock
+00:07 +90: /home/sandbox/lb-445/test/biometric_lock_test.dart: platform exceptions distinguish missing credentials from errors
+00:07 +91: /home/sandbox/lb-445/test/biometric_lock_test.dart: #363 explicit preference clear clear removes storage and cached state and notifies
+00:07 +92: /home/sandbox/lb-445/test/biometric_lock_test.dart: #363 explicit preference clear an enable authentication entered before clear is discarded
+00:07 +93: /home/sandbox/lb-445/test/biometric_lock_test.dart: #363 explicit preference clear clear is ordered after a write already entered
+00:07 +94: /home/sandbox/lb-445/test/biometric_lock_test.dart: #363 explicit preference clear a write queued after clear is dropped
+00:07 +95: /home/sandbox/lb-445/test/biometric_lock_test.dart: #363 explicit preference clear entered removal retains the real preference until it fails
+00:07 +96: /home/sandbox/lb-445/test/biometric_lock_test.dart: #363 explicit preference clear a false-return removal is a failure and retry works
+00:07 +97: /home/sandbox/lb-445/test/biometric_lock_test.dart: #363 explicit preference clear failed authentication does not disable an enabled lock
+00:07 +98: loading /home/sandbox/lb-445/test/brain_host_test.dart
+00:08 +98: /home/sandbox/lb-445/test/brain_host_test.dart: old load success cannot overwrite newer allowed
+00:08 +99: /home/sandbox/lb-445/test/brain_host_test.dart: old load success cannot overwrite newer refused
+00:08 +100: /home/sandbox/lb-445/test/brain_host_test.dart: old load error cannot overwrite newer allowed
+00:08 +101: /home/sandbox/lb-445/test/brain_host_test.dart: old load error cannot overwrite newer refused
+00:08 +102: /home/sandbox/lb-445/test/brain_host_test.dart: old refusal success cannot overwrite newer allowed
+00:08 +103: /home/sandbox/lb-445/test/brain_host_test.dart: old refusal success cannot overwrite newer refused
+00:08 +104: /home/sandbox/lb-445/test/brain_host_test.dart: old refusal error cannot overwrite newer allowed
+00:08 +105: /home/sandbox/lb-445/test/brain_host_test.dart: old refusal error cannot overwrite newer refused
+00:08 +106: /home/sandbox/lb-445/test/brain_host_test.dart: current load error retains prior coherent result
+00:08 +107: /home/sandbox/lb-445/test/brain_host_test.dart: current refusal error retains prior coherent result
+00:08 +108: /home/sandbox/lb-445/test/brain_host_test.dart: current build error retains prior coherent result
+00:08 +109: /home/sandbox/lb-445/test/brain_host_test.dart: every notification reads coherent allowed/refused/local state
+00:08 +110: /home/sandbox/lb-445/test/brain_host_test.dart: listener reentrant reload owns next publication without old partial writes
+00:08 +111: /home/sandbox/lb-445/test/brain_host_test.dart: reentrant build-triggered reload cannot publish superseded result
+00:08 +112: /home/sandbox/lb-445/test/brain_host_test.dart: old allowed remote refusal wait cannot revive newer refusal
+00:08 +113: /home/sandbox/lb-445/test/brain_host_test.dart: notifier-triggered second local reload wins over remote first
+00:08 +114: /home/sandbox/lb-445/test/brain_host_test.dart: first current construction error does not claim remote or clear refusal
+00:08 +115: /home/sandbox/lb-445/test/brain_host_test.dart: reentrant same remote success delivers pending listener
+00:08 +116: /home/sandbox/lb-445/test/brain_host_test.dart: reentrant same remote failure delivers pending listener
+00:08 +117: /home/sandbox/lb-445/test/brain_host_test.dart: reentrant same refusal success delivers pending listener
+00:08 +118: /home/sandbox/lb-445/test/brain_host_test.dart: reentrant same refusal failure delivers pending listener
+00:08 +119: loading /home/sandbox/lb-445/test/brain_lifecycle_test.dart
+00:08 +119: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: entered ask reset success no old history/tool
+00:08 +120: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: entered ask reset error no old history/tool
+00:08 +121: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: entered plain reset success no old history/tool
+00:08 +122: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: entered plain reset error no old history/tool
+00:08 +123: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: entered tool reset success no old history/tool
+00:08 +124: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: entered tool reset error no old history/tool
+00:08 +125: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: entered stream reset tokens no old callback/assistant
+00:08 +126: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: entered stream reset error no old callback/assistant
+00:08 +127: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: reset inside onToken stops further callbacks/tool/history
+00:08 +128: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: actual overflow summary reset success cannot restore memory
+00:08 +129: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: actual overflow summary reset error cannot restore memory
+00:08 +130: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: concurrent summary waiters share owned batch and preserve new overflow
+00:08 +131: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: submitted snapshots and images detached immutable through appends/reset
+00:08 +132: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: current provider error propagates and reset clears manual memory
+00:08 +133: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: reset detaches old summary owner while new session commits independent summary
+00:08 +134: /home/sandbox/lb-445/test/brain_lifecycle_test.dart: concurrent failed summary leaves batch for one subsequent retry
+00:08 +135: loading /home/sandbox/lb-445/test/brain_test.dart
+00:09 +135: /home/sandbox/lb-445/test/brain_test.dart: system prompt lists all tools with required params
+00:09 +136: /home/sandbox/lb-445/test/brain_test.dart: parses spoken text plus one tool call
+00:09 +137: /home/sandbox/lb-445/test/brain_test.dart: parses tool call with arguments
+00:09 +138: /home/sandbox/lb-445/test/brain_test.dart: plain text stays spoken, invalid json ignored
+00:09 +139: /home/sandbox/lb-445/test/brain_test.dart: brain keeps history across ask and tool result
+00:09 +140: /home/sandbox/lb-445/test/brain_test.dart: history is bounded and keeps the system prompt
+00:09 +141: /home/sandbox/lb-445/test/brain_test.dart: older images are pruned, recent ones kept
+00:09 +142: /home/sandbox/lb-445/test/brain_test.dart: askStreaming yields partials and returns the full reply
+00:09 +143: /home/sandbox/lb-445/test/brain_test.dart: conversation memory (#60) overflowed turns are folded into a memory message
+00:09 +144: /home/sandbox/lb-445/test/brain_test.dart: conversation memory (#60) failed summarization keeps overflow buffered for retry
+00:09 +145: loading /home/sandbox/lb-445/test/bubble_test.dart
+00:10 +145: /home/sandbox/lb-445/test/bubble_test.dart: streaming tokens keep ONE bubble widget (#130)
+00:12 +146: /home/sandbox/lb-445/test/bubble_test.dart: long answers stay within the height cap and scroll (#130)
+00:12 +147: /home/sandbox/lb-445/test/bubble_test.dart: no bubble, no widget
+00:12 +148: loading /home/sandbox/lb-445/test/character_ordering_test.dart
+00:13 +148: /home/sandbox/lb-445/test/character_ordering_test.dart: entered write, queued old choice, registry clear, fresh choice remain ordered
+00:13 +149: /home/sandbox/lb-445/test/character_ordering_test.dart: entered clear precedes fresh choice; default not published early
+00:13 +150: /home/sandbox/lb-445/test/character_ordering_test.dart: entered old read cannot publish over registry clear fresh=false
+00:13 +151: /home/sandbox/lb-445/test/character_ordering_test.dart: entered old read cannot publish over registry clear fresh=true
+00:13 +152: /home/sandbox/lb-445/test/character_ordering_test.dart: write false/throw=false retains actual state and retry works
+00:13 +153: /home/sandbox/lb-445/test/character_ordering_test.dart: remove false/throw=false retains actual state and retry works
+00:13 +154: /home/sandbox/lb-445/test/character_ordering_test.dart: write false/throw=true retains actual state and retry works
+00:13 +155: /home/sandbox/lb-445/test/character_ordering_test.dart: remove false/throw=true retains actual state and retry works
+00:13 +156: /home/sandbox/lb-445/test/character_ordering_test.dart: load read uncertainty retains last verified choice and explicit load recovers
+00:13 +157: /home/sandbox/lb-445/test/character_ordering_test.dart: write read uncertainty retains last verified choice and explicit load recovers
+00:13 +158: /home/sandbox/lb-445/test/character_ordering_test.dart: remove read uncertainty retains last verified choice and explicit load recovers
+00:13 +159: /home/sandbox/lb-445/test/character_ordering_test.dart: failed registry clear reports safe error and actual retained choice then recovers
+00:13 +160: /home/sandbox/lb-445/test/character_ordering_test.dart: entered write then registry clear leaves default with no stale Captain publication
+00:13 +161: /home/sandbox/lb-445/test/character_ordering_test.dart: failed write may change actual storage; reconciliation does not imply rollback
+00:13 +162: /home/sandbox/lb-445/test/character_ordering_test.dart: failed post-write read then successful reconciliation publishes actual but still reports failure
+00:13 +163: /home/sandbox/lb-445/test/character_ordering_test.dart: unknown persisted ID remains unchanged with Bluey fallback
+00:13 +164: /home/sandbox/lb-445/test/character_ordering_test.dart: caller audit uses contained main startup load without changing store owner
+00:13 +165: loading /home/sandbox/lb-445/test/character_startup_test.dart
+00:14 +165: /home/sandbox/lb-445/test/character_startup_test.dart: immediate scheduled disposal performs no mutation notification or entry
+00:14 +166: /home/sandbox/lb-445/test/character_startup_test.dart: queued latest actual read fail=false disposed=false joins and settles
+00:14 +167: /home/sandbox/lb-445/test/character_startup_test.dart: queued latest actual read fail=false disposed=true joins and settles
+00:14 +168: /home/sandbox/lb-445/test/character_startup_test.dart: queued latest actual read fail=true disposed=false joins and settles
+00:14 +169: /home/sandbox/lb-445/test/character_startup_test.dart: queued latest actual read fail=true disposed=true joins and settles
+00:14 +170: /home/sandbox/lb-445/test/character_startup_test.dart: actual character failed read preserves bluey choice until fresh explicit retry
+00:14 +171: /home/sandbox/lb-445/test/character_startup_test.dart: actual character failed read preserves captain choice until fresh explicit retry
+00:14 +172: /home/sandbox/lb-445/test/character_startup_test.dart: actual character failed read preserves null choice until fresh explicit retry
+00:14 +173: /home/sandbox/lb-445/test/character_startup_test.dart: actual failed entered read reconciles but caller still reports failure
+00:14 +174: /home/sandbox/lb-445/test/character_startup_test.dart: actual ordered old read failure cannot replace newer successful load status
+00:14 +175: /home/sandbox/lb-445/test/character_startup_test.dart: actual entered character load after caller disposal cannot publish notice
+00:14 +176: /home/sandbox/lb-445/test/character_startup_test.dart: sync throw=false safely contained without raw details
+00:14 +177: /home/sandbox/lb-445/test/character_startup_test.dart: sync throw=true safely contained without raw details
+00:14 +178: /home/sandbox/lb-445/test/character_startup_test.dart: reentrant loading retry joins installed owner with one actual read
+00:14 +179: /home/sandbox/lb-445/test/character_startup_test.dart: reentrant caller disposal prevents not-yet-entered load
+00:14 +180: /home/sandbox/lb-445/test/character_startup_test.dart: successful caller is not independent choice verification
+00:14 +181: /home/sandbox/lb-445/test/character_startup_test.dart: actual main only character load is contained
+00:14 +182: loading /home/sandbox/lb-445/test/character_startup_visual_test.dart
+00:14 +182: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=1.0 dark=false width=320.0
+00:15 +183: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=1.0 dark=false width=320.0
+00:15 +184: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=1.5 dark=false width=320.0
+00:16 +185: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=1.5 dark=false width=320.0
+00:16 +186: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=2.0 dark=false width=320.0
+00:16 +187: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=2.0 dark=false width=320.0
+00:16 +188: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=1.0 dark=true width=320.0
+00:16 +189: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=1.0 dark=true width=320.0
+00:16 +190: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=1.5 dark=true width=320.0
+00:17 +191: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=1.5 dark=true width=320.0
+00:17 +192: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=2.0 dark=true width=320.0
+00:17 +193: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=2.0 dark=true width=320.0
+00:17 +194: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=1.0 dark=false width=390.0
+00:17 +195: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=1.0 dark=false width=390.0
+00:17 +196: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=1.5 dark=false width=390.0
+00:18 +197: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=1.5 dark=false width=390.0
+00:18 +198: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=2.0 dark=false width=390.0
+00:18 +199: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=2.0 dark=false width=390.0
+00:18 +200: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=1.0 dark=true width=390.0
+00:18 +201: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=1.0 dark=true width=390.0
+00:18 +202: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=1.5 dark=true width=390.0
+00:18 +203: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=1.5 dark=true width=390.0
+00:18 +204: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=false scale=2.0 dark=true width=390.0
+00:19 +205: /home/sandbox/lb-445/test/character_startup_visual_test.dart: actual concurrent character/appearance app Stop/back RTL=true scale=2.0 dark=true width=390.0
+00:19 +206: loading /home/sandbox/lb-445/test/characters_test.dart
+00:19 +206: /home/sandbox/lb-445/test/characters_test.dart: reactions cycle and stay in character
+00:19 +207: /home/sandbox/lb-445/test/characters_test.dart: every character colors every mood
+00:19 +208: /home/sandbox/lb-445/test/characters_test.dart: selection persists and survives reload
+00:19 +209: /home/sandbox/lb-445/test/characters_test.dart: unknown character id falls back to Bluey
+00:19 +210: loading /home/sandbox/lb-445/test/connection_error_test.dart
+00:20 +210: /home/sandbox/lb-445/test/connection_error_test.dart: connectionTarget (#239) uses the URL port, not any client port
+00:20 +211: /home/sandbox/lb-445/test/connection_error_test.dart: connectionTarget (#239) falls back to the scheme default port
+00:20 +212: /home/sandbox/lb-445/test/connection_error_test.dart: connectionTarget (#239) returns raw text for an unparseable URL
+00:20 +213: /home/sandbox/lb-445/test/connection_error_test.dart: describeConnectionFailure (#239) refused names the configured port and a next step
+00:20 +214: /home/sandbox/lb-445/test/connection_error_test.dart: describeConnectionFailure (#239) refused on a remote host does not suggest ollama serve
+00:20 +215: /home/sandbox/lb-445/test/connection_error_test.dart: describeConnectionFailure (#239) timeout
+00:20 +216: /home/sandbox/lb-445/test/connection_error_test.dart: describeConnectionFailure (#239) unknown host
+00:20 +217: /home/sandbox/lb-445/test/connection_error_test.dart: describeConnectionFailure (#239) tls
+00:20 +218: /home/sandbox/lb-445/test/connection_error_test.dart: describeConnectionFailure (#239) 401 and 403 mean a bad key
+00:20 +219: /home/sandbox/lb-445/test/connection_error_test.dart: describeConnectionFailure (#239) 404 about a model means the model is missing
+00:20 +220: /home/sandbox/lb-445/test/connection_error_test.dart: describeConnectionFailure (#239) plain 404 means a wrong path
+00:20 +221: /home/sandbox/lb-445/test/connection_error_test.dart: describeConnectionFailure (#239) other status and unknown errors keep the raw text in details
+00:20 +222: /home/sandbox/lb-445/test/connection_error_test.dart: settings Test connection with nothing listening (#239) shows a friendly message, the Detect action and Details
+00:23 +223: loading /home/sandbox/lb-445/test/conversation_test.dart
+00:23 +223: /home/sandbox/lb-445/test/conversation_test.dart: temp-file fresh-instance first add recovers, load is idempotent
+00:23 +224: /home/sandbox/lb-445/test/conversation_test.dart: missing history known empty, blank turn unchanged, injected clock and cap
+00:23 +225: /home/sandbox/lb-445/test/conversation_test.dart: bad rows preserve valid entries and bytes, clear resets uncertainty
+00:23 +226: /home/sandbox/lb-445/test/conversation_test.dart: malformed root and unreadable bytes are never overwritten on add
+00:23 +227: /home/sandbox/lb-445/test/conversation_test.dart: entered read stays pending before clear then cannot resurrect
+00:23 +228: /home/sandbox/lb-445/test/conversation_test.dart: entered write, queued add, clear and fresh add settle in call order
+00:23 +229: /home/sandbox/lb-445/test/conversation_test.dart: write/delete failures report uncertainty; memory and queue recover
+00:23 +230: loading /home/sandbox/lb-445/test/dartdoc_contracts_test.dart
+00:24 +230: /home/sandbox/lb-445/test/dartdoc_contracts_test.dart: every public contract member is documented (#179)
+00:24 +231: loading /home/sandbox/lb-445/test/data_registry_test.dart
+00:25 +231: /home/sandbox/lb-445/test/data_registry_test.dart: store coverage (#83) every persistence source file is registered
+00:25 +232: /home/sandbox/lb-445/test/data_registry_test.dart: store coverage (#83) action registry deletion orders older records and removes disk history
+00:25 +233: /home/sandbox/lb-445/test/data_registry_test.dart: store coverage (#83) conversation registry deletion orders older adds and removes disk
+00:25 +234: /home/sandbox/lb-445/test/data_registry_test.dart: store coverage (#83) registered source files exist
+00:25 +235: /home/sandbox/lb-445/test/data_registry_test.dart: retention (#83) action log prunes entries older than the retention window
+00:25 +236: /home/sandbox/lb-445/test/data_registry_test.dart: retention (#83) egress monitor prunes old entries
+00:25 +237: /home/sandbox/lb-445/test/data_registry_test.dart: delete-all reports store failures rather than clearing first-run flag
+DataRegistry: clearing failed failed: Bad state: cannot delete
+00:25 +238: /home/sandbox/lb-445/test/data_registry_test.dart: delete all (#83) deleteAll clears every registered store and preferences
+00:25 +239: loading /home/sandbox/lb-445/test/deep_links_test.dart
+00:26 +239: /home/sandbox/lb-445/test/deep_links_test.dart: #91: valid links parse
+00:26 +240: /home/sandbox/lb-445/test/deep_links_test.dart: #91: wrong scheme or unknown action is rejected
+00:26 +241: /home/sandbox/lb-445/test/deep_links_test.dart: #91: only silent-safe actions are allowed
+00:26 +242: /home/sandbox/lb-445/test/deep_links_test.dart: canonical actions reject all route/query ambiguity (#289)
+00:26 +243: /home/sandbox/lb-445/test/deep_links_test.dart: encoded asks retain original Hebrew/English/emoji and spaces
+00:26 +244: /home/sandbox/lb-445/test/deep_links_test.dart: empty/whitespace and malformed percent or UTF-8 reject safely
+00:26 +245: /home/sandbox/lb-445/test/deep_links_test.dart: decoded UTF-8 and encoded input size limits are enforced
+00:26 +246: loading /home/sandbox/lb-445/test/degraded_test.dart
+00:26 +246: /home/sandbox/lb-445/test/degraded_test.dart: #90: every mode has a user message and a fallback
+00:26 +247: /home/sandbox/lb-445/test/degraded_test.dart: #90: brain-unreachable keeps local control working
+00:26 +248: /home/sandbox/lb-445/test/degraded_test.dart: #90: TTS failure degrades to text-only
+00:26 +249: /home/sandbox/lb-445/test/degraded_test.dart: #90: offline Mac auto-reconnects
+00:26 +250: /home/sandbox/lb-445/test/degraded_test.dart: #90: transcription failure offers typed input
+00:26 +251: loading /home/sandbox/lb-445/test/diagnostics_deadline_test.dart
+00:27 +251: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: entered check 0 timeout before late pass progresses ordered
+00:27 +252: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: entered check 0 timeout before late error progresses ordered
+00:27 +253: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: entered check 2 timeout before late pass progresses ordered
+00:27 +254: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: entered check 2 timeout before late error progresses ordered
+00:27 +255: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: entered check 5 timeout before late pass progresses ordered
+00:27 +256: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: entered check 5 timeout before late error progresses ordered
+00:27 +257: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: throw retains built-in EN/HE identity provider
+00:27 +258: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: throw retains built-in EN/HE identity pairing
+00:27 +259: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: throw retains built-in EN/HE identity linux_display
+00:27 +260: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: throw retains built-in EN/HE identity linux_keyring
+00:27 +261: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: throw retains built-in EN/HE identity linux_discovery
+00:27 +262: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: throw retains built-in EN/HE identity linux_audio
+00:27 +263: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: duplicate/mismatched returned ids cannot impersonate another check
+00:27 +264: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: custom failure generic safe metadata and key preserved
+00:27 +265: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: current correct result preserved; timeout positive validation
+00:27 +266: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: all checks pending complete at one budget each in order
+00:27 +267: /home/sandbox/lb-445/test/diagnostics_deadline_test.dart: immediate async error is handled before deadline wrapper
+00:27 +268: loading /home/sandbox/lb-445/test/diagnostics_provider_test.dart
+00:28 +268: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send https://localhost.evil.invalid
+00:28 +269: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send https://127.0.0.1.evil.invalid
+00:28 +270: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send https://evil.invalid/localhost
+00:28 +271: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send https://evil.invalid?q=127.0.0.1
+00:28 +272: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send https://localhost@evil.invalid
+00:28 +273: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send http://device.local
+00:28 +274: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send http://192.168.1.2
+00:28 +275: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send http://10.0.0.1
+00:28 +276: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send file://localhost/a
+00:28 +277: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send ftp://localhost/a
+00:28 +278: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send not a url
+00:28 +279: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send 
+00:28 +280: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send http://[broken
+00:28 +281: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: local-only refuses without send http://evil.invalid/#localhost
+00:28 +282: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: existing supported loopback form sends and cancels body http://localhost:9
+00:28 +283: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: existing supported loopback form sends and cancels body https://LOCALHOST
+00:28 +284: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: existing supported loopback form sends and cancels body http://127.2.3.4:9
+00:28 +285: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: existing supported loopback form sends and cancels body http://0.0.0.0
+00:28 +286: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: existing supported loopback form sends and cancels body http://[::1]:9
+00:28 +287: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: existing supported loopback form sends and cancels body http://[::ffff:127.0.0.1]:9
+00:28 +288: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: non-success 301 never pass or redirect follow
+00:28 +289: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: non-success 302 never pass or redirect follow
+00:28 +290: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: non-success 307 never pass or redirect follow
+00:28 +291: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: non-success 308 never pass or redirect follow
+00:28 +292: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: non-success 401 never pass or redirect follow
+00:28 +293: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: non-success 403 never pass or redirect follow
+00:28 +294: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: non-success 404 never pass or redirect follow
+00:28 +295: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: non-success 500 never pass or redirect follow
+00:28 +296: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: entered send times out before late response and preserves shared client
+00:28 +297: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: entered send times out before late error and preserves shared client
+00:28 +298: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: stalled body and pending/failing cancellation cannot delay header result
+00:28 +299: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: settings preparation shares deadline without late send
+00:28 +300: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: send failure unknown, generic guidance/report does not disclose secrets
+00:28 +301: /home/sandbox/lb-445/test/diagnostics_provider_test.dart: invalid URL refused even outside local-only
+00:28 +302: loading /home/sandbox/lb-445/test/diagnostics_test.dart
+00:28 +302: /home/sandbox/lb-445/test/diagnostics_test.dart: #152: on non-Linux the checks report unknown, never a false pass
+00:28 +303: /home/sandbox/lb-445/test/diagnostics_test.dart: #152: missing binaries fail with the apt fix, found ones pass
+00:28 +304: /home/sandbox/lb-445/test/diagnostics_test.dart: #152: a lookup error reports unknown, never a false pass
+00:28 +305: /home/sandbox/lb-445/test/diagnostics_test.dart: #152: linux checks appear in the redacted diagnostics report
+00:28 +306: /home/sandbox/lb-445/test/diagnostics_test.dart: #85: injected fakes report pass/fail/unknown
+00:28 +307: /home/sandbox/lb-445/test/diagnostics_test.dart: #85: a throwing check reports unknown, never a false pass
+00:28 +308: /home/sandbox/lb-445/test/diagnostics_test.dart: #85: diagnostics report redacts keys
+00:28 +309: loading /home/sandbox/lb-445/test/discover_test.dart
+00:29 +309: /home/sandbox/lb-445/test/discover_test.dart: #93: notifications default to OFF per type
+00:29 +310: /home/sandbox/lb-445/test/discover_test.dart: #93: suggestions need no screen contents
+00:29 +311: /home/sandbox/lb-445/test/discover_test.dart: #93: recents come from the local log; clearing clears them
+00:29 +312: /home/sandbox/lb-445/test/discover_test.dart: #93: search is offline over local items only
+00:29 +313: loading /home/sandbox/lb-445/test/e2e_phone_host_test.dart
+00:30 +313: /home/sandbox/lb-445/test/e2e_phone_host_test.dart: phone <-> linux host e2e (#154) paired phone sends hold-to-talk, host backend warps the pointer
+00:30 +314: loading /home/sandbox/lb-445/test/egress_monitor_test.dart
+00:31 +314: /home/sandbox/lb-445/test/egress_monitor_test.dart: restart and first record preserve history; duplicate load is safe
+00:31 +315: /home/sandbox/lb-445/test/egress_monitor_test.dart: missing history is known empty, uninitialized history is not
+00:31 +316: /home/sandbox/lb-445/test/egress_monitor_test.dart: corrupt/truncated rows do not erase valid metadata or imply zero
+00:31 +317: /home/sandbox/lb-445/test/egress_monitor_test.dart: age and count pruning restores the newest bounded metadata
+00:31 +318: /home/sandbox/lb-445/test/egress_monitor_test.dart: delayed load settles before completed clear, without resurrection
+00:31 +319: /home/sandbox/lb-445/test/egress_monitor_test.dart: delayed write settles before clear; fresh post-clear record survives
+00:31 +320: /home/sandbox/lb-445/test/egress_monitor_test.dart: read failure does not overwrite unknown disk history
+00:31 +321: /home/sandbox/lb-445/test/egress_monitor_test.dart: write failure is honest and queue remains usable
+00:31 +322: /home/sandbox/lb-445/test/egress_monitor_test.dart: failed deletion is reported; retry clear establishes empty history
+00:31 +323: /home/sandbox/lb-445/test/egress_monitor_test.dart: offline self-test loads prior remote history and reports unavailable
+00:31 +324: /home/sandbox/lb-445/test/egress_monitor_test.dart: report groups hosts, kinds, bytes and last retained time
+00:31 +325: /home/sandbox/lb-445/test/egress_monitor_test.dart: offline self-test flags remote configured endpoints
+00:31 +326: /home/sandbox/lb-445/test/egress_monitor_test.dart: retained hosts match endpoint local-only policy without DNS (#297)
+00:31 +327: loading /home/sandbox/lb-445/test/endpoint_assistant_test.dart
+00:31 +327: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: checkEndpoint ollama: parses model names and reports latency
+00:32 +328: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: checkEndpoint openai-compatible: hits /models with the bearer key
+00:32 +329: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: checkEndpoint trailing slashes and whitespace do not break the URL
+00:32 +330: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: checkEndpoint non-200 is a typed http error with the status
+00:32 +331: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: checkEndpoint unparseable response body is badResponse
+00:32 +332: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: checkEndpoint connection failure is unreachable, not an exception
+00:32 +333: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: checkEndpoint timeout is unreachable with a timed-out detail
+00:32 +334: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: checkEndpoint an empty base url is invalidUrl
+00:32 +335: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: detectLocalOllama returns the detection with a suggested model
+00:32 +336: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: detectLocalOllama returns null when nothing answers
+00:32 +337: /home/sandbox/lb-445/test/endpoint_assistant_test.dart: presets cover Ollama, LocalAI and OpenRouter with the right URL shapes
+00:32 +338: loading /home/sandbox/lb-445/test/endpoint_shape_test.dart
+00:32 +338: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama empty object is badResponse not false verification
+00:32 +339: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama null is badResponse not false verification
+00:32 +340: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama array is badResponse not false verification
+00:32 +341: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama scalar is badResponse not false verification
+00:32 +342: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama missing is badResponse not false verification
+00:32 +343: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama null field is badResponse not false verification
+00:32 +344: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama wrong list is badResponse not false verification
+00:32 +345: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama null row is badResponse not false verification
+00:32 +346: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama wrong row is badResponse not false verification
+00:32 +347: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama missing id is badResponse not false verification
+00:32 +348: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama null id is badResponse not false verification
+00:32 +349: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama wrong id is badResponse not false verification
+00:32 +350: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama empty id is badResponse not false verification
+00:32 +351: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama blank id is badResponse not false verification
+00:32 +352: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama partial malformed is badResponse not false verification
+00:32 +353: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama explicit valid metadata accepted readonly original IDs
+00:32 +354: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama explicit empty accepted readonly original IDs
+00:32 +355: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama http drops private sentinels preserves typed category/status
+00:32 +356: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama transport drops private sentinels preserves typed category/status
+00:32 +357: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.ollama parse drops private sentinels preserves typed category/status
+00:32 +358: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible empty object is badResponse not false verification
+00:32 +359: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible null is badResponse not false verification
+00:32 +360: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible array is badResponse not false verification
+00:32 +361: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible scalar is badResponse not false verification
+00:32 +362: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible missing is badResponse not false verification
+00:32 +363: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible null field is badResponse not false verification
+00:32 +364: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible wrong list is badResponse not false verification
+00:32 +365: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible null row is badResponse not false verification
+00:32 +366: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible wrong row is badResponse not false verification
+00:32 +367: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible missing id is badResponse not false verification
+00:32 +368: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible null id is badResponse not false verification
+00:32 +369: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible wrong id is badResponse not false verification
+00:32 +370: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible empty id is badResponse not false verification
+00:32 +371: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible blank id is badResponse not false verification
+00:32 +372: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible partial malformed is badResponse not false verification
+00:32 +373: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible explicit valid metadata accepted readonly original IDs
+00:32 +374: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible explicit empty accepted readonly original IDs
+00:32 +375: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible http drops private sentinels preserves typed category/status
+00:32 +376: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible transport drops private sentinels preserves typed category/status
+00:32 +377: /home/sandbox/lb-445/test/endpoint_shape_test.dart: BrainBackend.openAiCompatible parse drops private sentinels preserves typed category/status
+00:32 +378: /home/sandbox/lb-445/test/endpoint_shape_test.dart: actual detection validates {} and readonly suggested model
+00:32 +379: /home/sandbox/lb-445/test/endpoint_shape_test.dart: actual detection validates {"models":null} and readonly suggested model
+00:32 +380: /home/sandbox/lb-445/test/endpoint_shape_test.dart: actual detection validates {"models":[]} and readonly suggested model
+00:32 +381: /home/sandbox/lb-445/test/endpoint_shape_test.dart: actual detection validates {"models":[{"name":"first"},{"name":"second"}]} and readonly suggested model
+00:32 +382: loading /home/sandbox/lb-445/test/endpoint_test.dart
+00:33 +382: /home/sandbox/lb-445/test/endpoint_test.dart: joins base and path cleanly (#118)
+00:33 +383: loading /home/sandbox/lb-445/test/face_a11y_test.dart
+00:34 +383: /home/sandbox/lb-445/test/face_a11y_test.dart: face has a semantic wake action wired to the gesture handler
+00:34 +384: /home/sandbox/lb-445/test/face_a11y_test.dart: status chip is a live region (#131)
+00:34 +385: loading /home/sandbox/lb-445/test/first_success_test.dart
+00:35 +385: /home/sandbox/lb-445/test/first_success_test.dart: FirstSuccessPlan screen-ready: screen question and pointing offered
+00:35 +386: /home/sandbox/lb-445/test/first_success_test.dart: FirstSuccessPlan screen deferred: voice-only question, no pointing
+00:35 +387: /home/sandbox/lb-445/test/first_success_test.dart: FirstSuccessPlan accessibility deferred: screen question yes, pointing no
+00:35 +388: /home/sandbox/lb-445/test/first_success_test.dart: FirstSuccessPlan denied mic: no first request, actionable issue
+00:35 +389: /home/sandbox/lb-445/test/first_success_test.dart: FirstSuccessPlan unreachable brain and unconfigured stt both reported
+00:35 +390: /home/sandbox/lb-445/test/first_success_test.dart: FirstSuccessPlan unconfigured brain explains the fix
+00:35 +391: loading /home/sandbox/lb-445/test/frame_differ_test.dart
+00:35 +391: /home/sandbox/lb-445/test/frame_differ_test.dart: synthetic production codec 1x1 stable and changed pixels
+00:35 +392: /home/sandbox/lb-445/test/frame_differ_test.dart: synthetic production codec 3x2 stable and changed pixels
+00:35 +393: /home/sandbox/lb-445/test/frame_differ_test.dart: synthetic production codec 32x18 stable and changed pixels
+00:35 +394: /home/sandbox/lb-445/test/frame_differ_test.dart: synthetic production codec 120x1 stable and changed pixels
+00:35 +395: /home/sandbox/lb-445/test/frame_differ_test.dart: synthetic production codec 1x120 stable and changed pixels
+00:35 +396: /home/sandbox/lb-445/test/frame_differ_test.dart: synthetic production codec 80x60 stable and changed pixels
+00:35 +397: /home/sandbox/lb-445/test/frame_differ_test.dart: production malformed input throws and next good input baseline fresh
+00:35 +398: /home/sandbox/lb-445/test/frame_differ_test.dart: reset entered decode success releases and stays fresh
+00:35 +399: /home/sandbox/lb-445/test/frame_differ_test.dart: reset entered decode error releases and stays fresh
+00:35 +400: /home/sandbox/lb-445/test/frame_differ_test.dart: reset entered frame success releases and stays fresh
+00:35 +401: /home/sandbox/lb-445/test/frame_differ_test.dart: reset entered frame error releases and stays fresh
+00:35 +402: /home/sandbox/lb-445/test/frame_differ_test.dart: reset entered bytes success releases and stays fresh
+00:35 +403: /home/sandbox/lb-445/test/frame_differ_test.dart: reset entered bytes error releases and stays fresh
+00:35 +404: /home/sandbox/lb-445/test/frame_differ_test.dart: latest concurrent completion owns baseline; old work released
+00:35 +405: /home/sandbox/lb-445/test/frame_differ_test.dart: shape change baseline; malformed dimensions/bytes and null conversion clear
+00:35 +406: /home/sandbox/lb-445/test/frame_differ_test.dart: current frame error propagates and acquired resources released
+00:35 +407: /home/sandbox/lb-445/test/frame_differ_test.dart: current bytes error propagates and acquired resources released
+00:35 +408: /home/sandbox/lb-445/test/frame_differ_test.dart: out-of-order frame completion cannot replace newest baseline
+00:35 +409: /home/sandbox/lb-445/test/frame_differ_test.dart: out-of-order bytes completion cannot replace newest baseline
+00:35 +410: loading /home/sandbox/lb-445/test/haptics_clear_widget_test.dart
+00:36 +410: /home/sandbox/lb-445/test/haptics_clear_widget_test.dart: Settings haptics clear, failed toggle and recovery stay honest
+00:38 +411: loading /home/sandbox/lb-445/test/haptics_ordering_test.dart
+00:39 +411: /home/sandbox/lb-445/test/haptics_ordering_test.dart: entered read before clear/new choice cannot restore flag
+00:39 +412: /home/sandbox/lb-445/test/haptics_ordering_test.dart: entered write before clear/new choice cannot restore flag
+00:39 +413: /home/sandbox/lb-445/test/haptics_ordering_test.dart: entered remove before clear/new choice cannot restore flag
+00:39 +414: /home/sandbox/lb-445/test/haptics_ordering_test.dart: write false reports safely and retries
+00:39 +415: /home/sandbox/lb-445/test/haptics_ordering_test.dart: write throw reports safely and retries
+00:39 +416: /home/sandbox/lb-445/test/haptics_ordering_test.dart: remove false reports safely and retries
+00:39 +417: /home/sandbox/lb-445/test/haptics_ordering_test.dart: remove throw reports safely and retries
+00:39 +418: /home/sandbox/lb-445/test/haptics_ordering_test.dart: entered write then clear removes preference before completing
+00:39 +419: /home/sandbox/lb-445/test/haptics_ordering_test.dart: failed clear after entered write reconciles retained preference
+00:39 +420: /home/sandbox/lb-445/test/haptics_ordering_test.dart: old entered read followed by clear publishes only default-on
+00:39 +421: /home/sandbox/lb-445/test/haptics_ordering_test.dart: clear resumes counting once per event, fresh off suppresses all
+00:39 +422: /home/sandbox/lb-445/test/haptics_ordering_test.dart: throwing read reports safe error and explicit retry recovers
+00:39 +423: /home/sandbox/lb-445/test/haptics_ordering_test.dart: production startup consumes read failure and explicit retry recovers
+00:39 +424: loading /home/sandbox/lb-445/test/haptics_test.dart
+00:40 +424: /home/sandbox/lb-445/test/haptics_test.dart: #88: exactly one haptic per event
+00:40 +425: /home/sandbox/lb-445/test/haptics_test.dart: #88: toggle off silences every haptic
+00:40 +426: /home/sandbox/lb-445/test/haptics_test.dart: #88: enabled state persists
+00:40 +427: All tests passed!
