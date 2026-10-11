@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/capture_monitor.dart';
@@ -181,7 +182,7 @@ void main() {
       return watch;
     }
 
-    test('external start, stop and expiry notify exactly once each', () async {
+    test('external start and stop notify exactly once each', () async {
       final watch = ScreenWatch.forTesting();
       await WatchPolicy.addToAllowlist('Safari');
       final m = CaptureMonitor(watch: watch);
@@ -305,6 +306,9 @@ void main() {
     test('lifecycle calls after dispose are safe and attach nothing', () async {
       final watch = await started();
       final m = CaptureMonitor(watch: watch);
+      m.pause();
+      expect(await run(m, 'Safari'), isNull);
+      expect(m.refusals[CaptureRefusal.paused], 1);
       m.dispose();
       final lock = ValueNotifier<bool>(true);
       m.attachLock(lock, () => lock.value);
@@ -312,10 +316,113 @@ void main() {
       lock.value = true;
       expect(watch.isActive, isTrue);
       m.resetRefusals();
+      // resetRefusals is a no-op after dispose: the count is untouched.
+      expect(m.refusals[CaptureRefusal.paused], 1);
       expect(await run(m, 'Safari'), isNull);
       // Stopping stays effective after dispose (safe direction).
       m.stop();
       expect(watch.isActive, isFalse);
+    });
+
+    // A controlled hold on the SECOND allowlist ask: the monitor's own gate
+    // (first ask) passes, then ScreenWatch.runIfAllowed's gate (second ask)
+    // is held while the session changes.
+    Future<(ScreenWatch, Completer<void>, void Function())>
+    secondAskHeld() async {
+      var calls = 0;
+      var armed = false;
+      final gate = Completer<void>();
+      final watch = ScreenWatch.forTesting(
+        allowlist: () async {
+          if (armed && ++calls == 2) await gate.future;
+          return ['safari'];
+        },
+      );
+      expect(await watch.start(consentConfirmed: true), isNull);
+      addTearDown(watch.stop);
+      return (watch, gate, () => armed = true);
+    }
+
+    test('second ask held, pause+resume: operation does not enter', () async {
+      final (watch, gate, arm) = await secondAskHeld();
+      final m = CaptureMonitor(watch: watch);
+      addTearDown(m.dispose);
+      arm();
+      var ran = false;
+      final f = m.runIfAllowed<String>(
+        frontApp: 'Safari',
+        operation: () async {
+          ran = true;
+          return 'frame';
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+      m.pause();
+      m.resume();
+      gate.complete();
+      expect(await f, isNull);
+      expect(ran, isFalse);
+    });
+
+    test('second ask held, stop+restart: operation does not enter', () async {
+      final (watch, gate, arm) = await secondAskHeld();
+      final m = CaptureMonitor(watch: watch);
+      addTearDown(m.dispose);
+      arm();
+      var ran = false;
+      final f = m.runIfAllowed<String>(
+        frontApp: 'Safari',
+        operation: () async {
+          ran = true;
+          return 'old frame';
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+      watch.stop();
+      expect(await watch.start(consentConfirmed: true), isNull);
+      gate.complete();
+      expect(await f, isNull);
+      expect(ran, isFalse);
+    });
+
+    test('second ask held, dispose: operation does not enter', () async {
+      final (watch, gate, arm) = await secondAskHeld();
+      final m = CaptureMonitor(watch: watch);
+      arm();
+      var ran = false;
+      final f = m.runIfAllowed<String>(
+        frontApp: 'Safari',
+        operation: () async {
+          ran = true;
+          return 'frame';
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+      m.dispose();
+      gate.complete();
+      expect(await f, isNull);
+      expect(ran, isFalse);
+    });
+
+    test('expiry by the session timer notifies once and shows off', () {
+      fakeAsync((zone) {
+        // ignore: avoid_async_calls_in_sync_code - fakeAsync drives the clock.
+        Zone.current.run(() async {
+          final watch = await started();
+          final m = CaptureMonitor(watch: watch);
+          var n = 0;
+          m.addListener(() => n++);
+          expect(m.indicator, CaptureIndicator.active);
+          zone.elapse(const Duration(minutes: 4));
+          expect(n, 0, reason: 'ticks alone do not change the indicator');
+          zone.elapse(const Duration(minutes: 1, seconds: 2));
+          expect(watch.isActive, isFalse);
+          expect(m.indicator, CaptureIndicator.off);
+          expect(n, 1);
+          m.dispose();
+        });
+        zone.flushMicrotasks();
+      });
     });
 
     test(

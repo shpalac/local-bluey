@@ -241,10 +241,11 @@ class CaptureMonitor extends ChangeNotifier {
 
   /// Clears the refusal counters.
   void resetRefusals() {
+    if (_disposed) return;
     for (final r in CaptureRefusal.values) {
       _counts[r] = 0;
     }
-    if (!_disposed) notifyListeners();
+    notifyListeners();
   }
 
   @override
