@@ -2,7 +2,7 @@
 
 Docs-only note for issue #469. It maps each original acceptance bullet of the three open issues to what is on `main` today. It changes no code, issue, comment or assignee. #363 stays owner-retained whatever this note recommends.
 
-Evidence here is synthetic: fake preference stores, fake authenticators, fake players and in-memory file systems. It is not proof of physical erase, OS behavior, real biometrics, a real phone or a real Mac.
+Evidence here is synthetic: fake preference stores, fake authenticators, fake players and tiny synthetic byte payloads. The phone audio and phone reply tests write real temp files in an isolated `Directory.systemTemp` directory through injected operations. It is not proof of physical erase, OS behavior, real biometrics, a real phone or a real Mac.
 
 Basis: `main` at `1a48797` (live repository read on 2026-10-11). The PR heads below were each approved by the manager at that exact head in the PR Slack thread. Squash merges and CI status were read from GitHub the same day; the required checks (static, test, linux, security) were green on all three PRs.
 
@@ -24,7 +24,7 @@ Source: `lib/services/biometric_lock.dart`, `lib/ui/app_lock_tile.dart`, `lib/se
 | Held enable authentication, clear, release old success: nothing persisted or published; fresh enable needs new auth and works | `biometric_lock_test.dart` "an enable authentication entered before clear is discarded"; the widget test above | Met (synthetic) |
 | Held write and removal ordering; failed removal reaches the caller and retry works; no real OS fault claim | "clear is ordered after a write already entered", "a write queued after clear is dropped", "entered removal retains the real preference until it fails", "a false-return removal is a failure and retry works" | Met (synthetic) |
 | Actual widget fixture for tile and clear, stale auth, fresh recovery; existing lock fixtures kept | `lock_gate_test.dart` "#363: registry clear route reports failure safely and recovers"; existing lock-off, failure and retry, lifecycle and bilingual tests unchanged | Met (synthetic) |
-| Pixels inspected if UI changes | `docs/evidence/issue-363-applock-clear-failed-en.png`, `docs/evidence/issue-363-applock-clear-recovered-he.png` | Met |
+| Pixels inspected if UI changes | [`issue-363-applock-clear-failed-en.png`](evidence/issue-363-applock-clear-failed-en.png), [`issue-363-applock-clear-recovered-he.png`](evidence/issue-363-applock-clear-recovered-he.png) | Met |
 | Failed authentication must not disable an enabled lock | "failed authentication does not disable an enabled lock" | Met |
 
 Unmet original bounded criteria: none found.
@@ -60,15 +60,27 @@ Source: `lib/services/phone_reply.dart`, the phone section of `lib/main.dart`, t
 | Malformed, empty, oversize audio; create, partial-write and player-start failures: no uncaught error, safe text, no false playing or done | `phone_reply_test.dart` "malformed, empty and oversize audio: safe note, no false receipts", "create failure, entered partial write: safe note, no leftover", "a player start error is one safe note, no playing, clip removed" | Met (synthetic) |
 | Success and text-only receipt semantics; completion subscribed before play; immediate completion not lost | "success: playing after start, done on completion, clip removed", "an immediate completion inside play is not lost", "text-only replies are acknowledged by display, no session", "completion while play is held: playing then exactly one done" | Met (synthetic) |
 | Held operation then newer say, stopSpeech or disposal: no old restart, receipt or late UI callback; unique clip ownership | "a newer say replaces a held one: no old receipts or leaks", "a late event from the replaced clip cannot finish or delete the new one", "stopSpeech stops playback, removes the clip, no later done", "stopSpeech during a held write: nothing starts", "dispose during staging: no play, no UI, no leaked clip", "dispose while playing: late completion sends nothing" | Met (synthetic) |
+| Unique per-call clip ownership under equal clocks | Source: each clip name carries a per-call `_sequence` counter (`phone_reply.dart`), so names cannot collide. Tests: "a late event from the replaced clip cannot finish or delete the new one" and the newer-say fixture check different paths and one live clip. No #372 test holds the clock equal or compares clip bytes; that is source inference, not a fixture. (The equal-clock fixture is the #366 host-intake test "concurrent stages own independent files under equal clocks".) | Met by source plus partial fixtures |
 | Cleanup on completion, replacement and dispose; delete failure observable and retried; no physical erase claim | "a failed delete is observable and retried", "many entered clips: replaced or stopped, every waiter settles" | Met (synthetic) |
 | Actual listener wiring plus extracted listener fixtures | "listener path: errors from callbacks never escape" | Met (synthetic) |
-| Pixels inspected if rendering changes | `docs/evidence/issue-372-reply-cleanup-pending.png`, `docs/evidence/issue-372-reply-error-note.png`, `test/phone_reply_ui_test.dart` | Met |
+| Existing speech, receipt, link, haptics, phone and full CI tests pass | Existing files `speech_*_test.dart`, `speak_receipts_test.dart`, `link_layer_test.dart`, `link_pairing_test.dart`, `haptics_*_test.dart`, `e2e_phone_host_test.dart` and the full suite, run unchanged on current main (see the fresh checks section). The required CI checks were green at the approved head. | Met at the approved head; fresh run recorded below |
+| Pixels inspected if rendering changes | [`issue-372-reply-cleanup-pending.png`](evidence/issue-372-reply-cleanup-pending.png), [`issue-372-reply-error-note.png`](evidence/issue-372-reply-error-note.png), `test/phone_reply_ui_test.dart` | Met |
 
-Unmet original bounded criteria: none found.
+Unmet original bounded criteria: none found. The equal-clock ownership point rests on source plus partial fixtures, as noted in the table.
 
-Delivered limits: decoded reply audio is bounded at 12 MiB (`PhoneReplyReceiver.maxBytes`). Audio stays opaque; no codec validation is claimed. Latest say replaces the earlier one. Fake storage and player only: no real phone, Mac or speaker claim, and no new protocol message.
+Delivered limits: decoded reply audio is bounded at 12 MiB (`PhoneReplyReceiver.maxBytes`). Audio stays opaque; no codec validation is claimed. Latest say replaces the earlier one. Fake player and injected file operations over isolated temp files only: no real phone, Mac or speaker claim, and no new protocol message.
 
 Recommended disposition: ready to close as delivered at the synthetic level.
+
+## Fresh checks on current main
+
+Run on `main` at `1a48797` plus this docs-only change, with the unchanged app-lock, intake, runner and reply tests included:
+
+- `dart format --set-exit-if-changed lib test`: clean.
+- `flutter analyze`: no issues.
+- Full `flutter test`: 2236 passed, 1 skipped, 0 failed. This includes the unchanged `biometric_lock_test.dart`, `lock_gate_test.dart`, `request_runner_test.dart`, `phone_audio_test.dart`, `phone_reply_test.dart` and `phone_reply_ui_test.dart`.
+
+The rendered note was previewed as HTML and inspected as images (all tables readable); the four evidence links under `docs/evidence/` resolve from this file.
 
 ## What this note does not claim
 
