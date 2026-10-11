@@ -82,7 +82,9 @@ abstract final class SensitiveContentGate {
     required String? text,
     required bool exactFrameVerified,
   }) {
-    if (!exactFrameVerified || text == null || text.length > maxEvidenceLength) {
+    if (!exactFrameVerified ||
+        text == null ||
+        text.length > maxEvidenceLength) {
       return SensitiveVerdict.unverifiedText;
     }
     if (_contentSecrets.hasMatch(text) ||

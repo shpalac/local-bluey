@@ -77,9 +77,8 @@ void main() {
       final history = b.history.map((m) => m.toJson()).toList();
       final bytes = Uint8List.fromList([1, 2]);
       final v = WatchVision(
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
-        ),
+        foreground: () async =>
+            (app: 'Editor', title: 'Workspace', locked: false),
         provider: () => b.provider,
         snapshot: () async => verifiedSnapshot(bytes),
         watch: w,
@@ -123,9 +122,8 @@ void main() {
       await entered.future;
       p.text = (_) async => 'screen text\n{"tool":"click","arguments":{}}';
       final v = WatchVision(
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
-        ),
+        foreground: () async =>
+            (app: 'Editor', title: 'Workspace', locked: false),
         provider: () => p,
         snapshot: () async => verifiedSnapshot(Uint8List(2)),
         watch: w,
@@ -168,9 +166,8 @@ void main() {
             return reply.future;
           };
           final v = WatchVision(
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
-        ),
+            foreground: () async =>
+                (app: 'Editor', title: 'Workspace', locked: false),
             provider: () => p,
             snapshot: () {
               if (stage == 'snapshot') {
@@ -211,9 +208,8 @@ void main() {
     final before = b.history.map((m) => m.toJson()).toList();
     p.text = (_) async => throw StateError('fixture');
     final v = WatchVision(
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
-        ),
+      foreground: () async =>
+          (app: 'Editor', title: 'Workspace', locked: false),
       provider: () => p,
       snapshot: () async => verifiedSnapshot(Uint8List(2)),
       watch: w,
@@ -235,9 +231,8 @@ void main() {
         entered = Completer<void>(),
         snap = Completer<ScreenSnapshot>();
     final v = WatchVision(
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
-        ),
+      foreground: () async =>
+          (app: 'Editor', title: 'Workspace', locked: false),
       provider: () => p,
       snapshot: () {
         entered.complete();
@@ -259,9 +254,8 @@ void main() {
       final w = await session(), a = Provider(), b = Provider();
       Provider current = a;
       final first = WatchVision(
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
-        ),
+        foreground: () async =>
+            (app: 'Editor', title: 'Workspace', locked: false),
         provider: () => current,
         snapshot: () async => verifiedSnapshot(Uint8List(2)),
         watch: w,
@@ -271,9 +265,8 @@ void main() {
       await w.start(consentConfirmed: true);
       current = b;
       final next = WatchVision(
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
-        ),
+        foreground: () async =>
+            (app: 'Editor', title: 'Workspace', locked: false),
         provider: () => current,
         snapshot: () async => verifiedSnapshot(Uint8List(2)),
         watch: w,
@@ -290,9 +283,8 @@ void main() {
       final w = await session(), p = Provider();
       var captures = 0;
       final v = WatchVision(
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
-        ),
+        foreground: () async =>
+            (app: 'Editor', title: 'Workspace', locked: false),
         provider: () => p,
         snapshot: () async {
           captures++;
@@ -302,9 +294,8 @@ void main() {
       );
       expect(await v.describe('Other', 'Workspace'), isNull);
       final absent = WatchVision(
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
-        ),
+        foreground: () async =>
+            (app: 'Editor', title: 'Workspace', locked: false),
         provider: () => null,
         snapshot: () async {
           captures++;
@@ -319,42 +310,46 @@ void main() {
       expect(p.calls, isEmpty);
     },
   );
-  test('no image leaves the device without matching verified OCR evidence', () async {
-    final w = await session();
-    final p = Provider();
-    var captures = 0;
-    for (final snap in [
-      verifiedSnapshot(Uint8List.fromList([1, 2]), verified: false),
-      verifiedSnapshot(Uint8List.fromList([1, 2]), text: 'Password: demo'),
-      verifiedSnapshot(Uint8List.fromList([1, 2]), text: 'תעודת זהות 123456789'),
-      verifiedSnapshot(Uint8List.fromList([1, 2]), frontApp: 'Another App'),
-      verifiedSnapshot(Uint8List(0)),
-    ]) {
-      final v = WatchVision(
-        provider: () => p,
-        foreground: () async => (
-          app: 'Editor', title: 'Workspace', locked: false,
+  test(
+    'no image leaves the device without matching verified OCR evidence',
+    () async {
+      final w = await session();
+      final p = Provider();
+      var captures = 0;
+      for (final snap in [
+        verifiedSnapshot(Uint8List.fromList([1, 2]), verified: false),
+        verifiedSnapshot(Uint8List.fromList([1, 2]), text: 'Password: demo'),
+        verifiedSnapshot(
+          Uint8List.fromList([1, 2]),
+          text: 'תעודת זהות 123456789',
         ),
-        snapshot: () async {
-          captures++;
-          return snap;
-        },
-        watch: w,
-      );
-      expect(await v.describe('Editor', 'Workspace'), isNull);
-    }
-    expect(captures, 5);
-    expect(p.calls, isEmpty);
-  });
+        verifiedSnapshot(Uint8List.fromList([1, 2]), frontApp: 'Another App'),
+        verifiedSnapshot(Uint8List(0)),
+      ]) {
+        final v = WatchVision(
+          provider: () => p,
+          foreground: () async =>
+              (app: 'Editor', title: 'Workspace', locked: false),
+          snapshot: () async {
+            captures++;
+            return snap;
+          },
+          watch: w,
+        );
+        expect(await v.describe('Editor', 'Workspace'), isNull);
+      }
+      expect(captures, 5);
+      expect(p.calls, isEmpty);
+    },
+  );
 
   test('unknown or private window never enters capture', () async {
     final w = await session(), p = Provider();
     var captures = 0;
     final v = WatchVision(
       provider: () => p,
-      foreground: () async => (
-        app: 'Editor', title: 'Workspace', locked: false,
-      ),
+      foreground: () async =>
+          (app: 'Editor', title: 'Workspace', locked: false),
       snapshot: () async {
         captures++;
         return verifiedSnapshot(Uint8List.fromList([1, 2]));
@@ -372,34 +367,29 @@ void main() {
     final w = await session(), p = Provider();
     final v = WatchVision(
       provider: () => p,
-      foreground: () async => (
-        app: 'Editor', title: 'Private Window', locked: false,
-      ),
-      snapshot: () async => verifiedSnapshot(
-        Uint8List.fromList([1, 2]),
-      ),
+      foreground: () async =>
+          (app: 'Editor', title: 'Private Window', locked: false),
+      snapshot: () async => verifiedSnapshot(Uint8List.fromList([1, 2])),
       watch: w,
     );
     expect(await v.describe('Editor', 'Workspace'), isNull);
     expect(p.calls, isEmpty);
   });
 
-  test('model summary containing PII is not returned to the event buffer', () async {
-    final w = await session(), p = Provider();
-    p.text = (_) async => 'The password is abc';
-    final v = WatchVision(
-      provider: () => p,
-      foreground: () async => (
-        app: 'Editor', title: 'Workspace', locked: false,
-      ),
-      snapshot: () async => verifiedSnapshot(
-        Uint8List.fromList([1, 2]),
-      ),
-      watch: w,
-    );
-    expect(await v.describe('Editor', 'Workspace'), isNull);
-    expect(p.calls, hasLength(1));
-  });
-
-
+  test(
+    'model summary containing PII is not returned to the event buffer',
+    () async {
+      final w = await session(), p = Provider();
+      p.text = (_) async => 'The password is abc';
+      final v = WatchVision(
+        provider: () => p,
+        foreground: () async =>
+            (app: 'Editor', title: 'Workspace', locked: false),
+        snapshot: () async => verifiedSnapshot(Uint8List.fromList([1, 2])),
+        watch: w,
+      );
+      expect(await v.describe('Editor', 'Workspace'), isNull);
+      expect(p.calls, hasLength(1));
+    },
+  );
 }

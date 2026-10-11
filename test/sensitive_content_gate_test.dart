@@ -28,11 +28,17 @@ void main() {
   test('locked and private browsing denied regardless of consent', () {
     expect(
       SensitiveContentGate.beforeCapture(
-        app: 'Editor', title: 'Project', locked: true,
+        app: 'Editor',
+        title: 'Project',
+        locked: true,
       ),
       SensitiveVerdict.locked,
     );
-    for (final title in ['New Incognito Tab', 'Private Browsing', 'חלון פרטי']) {
+    for (final title in [
+      'New Incognito Tab',
+      'Private Browsing',
+      'חלון פרטי',
+    ]) {
       expect(
         SensitiveContentGate.beforeCapture(app: 'Browser', title: title),
         SensitiveVerdict.privateWindow,
@@ -42,8 +48,12 @@ void main() {
 
   test('password, authentication, finance and Hebrew windows blocked', () {
     for (final title in [
-      'Password manager', 'Sign in', '2FA code',
-      'חשבון בנק', 'התחברות', 'כרטיס אשראי',
+      'Password manager',
+      'Sign in',
+      '2FA code',
+      'חשבון בנק',
+      'התחברות',
+      'כרטיס אשראי',
     ]) {
       expect(
         SensitiveContentGate.beforeCapture(app: 'Browser', title: title),
@@ -66,9 +76,7 @@ void main() {
       'ghp_abcdefghijklmnopqrstuvwxyz',
     ]) {
       expect(
-        SensitiveContentGate.beforeEgress(
-          text: text, exactFrameVerified: true,
-        ),
+        SensitiveContentGate.beforeEgress(text: text, exactFrameVerified: true),
         SensitiveVerdict.sensitiveText,
         reason: 'PII fixture should block',
       );
@@ -78,33 +86,35 @@ void main() {
   test('verified benign/blank OCR may pass; missing OCR must fail', () {
     expect(
       SensitiveContentGate.beforeEgress(
-        text: 'README — Tasks', exactFrameVerified: true,
+        text: 'README — Tasks',
+        exactFrameVerified: true,
       ),
       SensitiveVerdict.allow,
     );
     expect(
-      SensitiveContentGate.beforeEgress(
-        text: '', exactFrameVerified: true,
-      ),
+      SensitiveContentGate.beforeEgress(text: '', exactFrameVerified: true),
       SensitiveVerdict.allow,
     );
     for (final verified in [false, true]) {
       expect(
         SensitiveContentGate.beforeEgress(
-          text: null, exactFrameVerified: verified,
+          text: null,
+          exactFrameVerified: verified,
         ),
         SensitiveVerdict.unverifiedText,
       );
     }
     expect(
       SensitiveContentGate.beforeEgress(
-        text: 'Tasks', exactFrameVerified: false,
+        text: 'Tasks',
+        exactFrameVerified: false,
       ),
       SensitiveVerdict.unverifiedText,
     );
     expect(
       SensitiveContentGate.beforeEgress(
-        text: List.filled(65537, 'a').join(), exactFrameVerified: true,
+        text: List.filled(65537, 'a').join(),
+        exactFrameVerified: true,
       ),
       SensitiveVerdict.unverifiedText,
     );
@@ -112,7 +122,8 @@ void main() {
 
   test('refusal reports reason only, not the secret text', () {
     final verdict = SensitiveContentGate.beforeEgress(
-      text: 'password: secret123', exactFrameVerified: true,
+      text: 'password: secret123',
+      exactFrameVerified: true,
     );
     expect(verdict.name, 'sensitiveText');
     expect(verdict.toString(), isNot(contains('secret123')));
