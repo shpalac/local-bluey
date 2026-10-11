@@ -9,19 +9,21 @@ import 'privacy_guard.dart';
 import 'request_interfaces.dart';
 import 'stt.dart';
 
-/// Pluggable keyword spotter. A native on-device engine (e.g. Porcupine or a
-/// CoreML keyword model) implements this and scores raw audio windows
-/// locally. No engine is bundled yet; the service stays dormant without one.
+/// Pluggable window scorer intended for an on-device engine; none is bundled.
+/// Injected implementation internals are not verified as local by this interface.
+/// The service stays dormant without a spotter.
 abstract class WakeWordSpotter {
   /// 0..1 confidence that the window contains the wake phrase.
   Future<double> score(File audioWindow);
 }
 
-/// Opt-in always-listening wake word (#64). Records short overlapping
-/// windows and asks the spotter for a local confidence score. A wake is
-/// confirmed by transcription only when that stays on this machine;
-/// otherwise the spotter alone decides and no audio is uploaded (#79). The mic indicator is the
-/// existing listening status chip; [listening] exposes the state.
+/// Dormant opt-in wake scaffold (#64/#79), default off with no bundled engine.
+/// Windows run serial capture/start, delay, stop, score and optional confirmation,
+/// not overlapping PCM. No production app construction, callback, Settings or
+/// listening/error binding is wired. Manual face wake is a separate path.
+/// Positive scores use an injected transcriber or loopback-configured STT for
+/// confirmation; otherwise this service skips transcription and trusts the score.
+/// This branch is not a no-upload guarantee for injected engines/transcribers.
 class WakeWordService {
   WakeWordService({
     this.spotter,
@@ -56,11 +58,13 @@ class WakeWordService {
   /// The phrase that wakes Bluey.
   final String wakePhrase;
 
-  /// Whether the service is currently listening; the UI binds to this.
+  /// Logical listening state; no current production UI binding.
+  /// False at stop entry does not confirm physical capture cleanup.
   final ValueNotifier<bool> listening = ValueNotifier(false);
 
-  /// Last failure (permission, recorder, scoring), or null. Cleared by the
-  /// next [start]; a failure leaves the service stopped and retryable.
+  /// Current start/loop failure, cleared by the next [start]. No app binding.
+  /// Raw interpolated errors and suppressed cleanup failures are current behavior,
+  /// not a safe notice or verified stopped-hardware contract.
   final ValueNotifier<String?> lastError = ValueNotifier(null);
 
   bool _running = false;
@@ -76,8 +80,8 @@ class WakeWordService {
   Future<void> Function()? debugAfterSettingsLoad;
   Completer<void>? _cancelWindow;
 
-  /// Called when the wake phrase is confirmed - main wires this to the same
-  /// path as hold-to-talk.
+  /// Optional scored/confirmed wake callback. Main does not register it today;
+  /// this is not the manual face onWakeChanged callback.
   void Function()? onWake;
 
   /// The persisted on/off preference.
@@ -120,8 +124,9 @@ class WakeWordService {
     _loopFuture = _loop(gen);
   }
 
-  /// Stops listening: closes an open recording, suppresses any score or
-  /// confirmation still in flight, and waits until the loop has ended.
+  /// Invalidates the generation, cancels the window delay and joins the loop.
+  /// Late score/confirmation cannot wake; entered start/score/STT may still run
+  /// and hold this join. Cleanup is attempted, not physical stop/erasure proof.
   Future<void> stop() async {
     _generation++;
     _running = false;
@@ -151,8 +156,8 @@ class WakeWordService {
             windowTrace = st;
           }
         }
-        // Whatever happened above, the open recording is closed and its file
-        // is owned (scored or deleted) here, including on error paths.
+        // Attempt capture stop even on a window error. A thrown stop can retain
+        // capture ownership; a returned file is scored/deletion-attempted below.
         File? file;
         try {
           file = await _capture.stop();
@@ -177,7 +182,7 @@ class WakeWordService {
       try {
         await AudioCapture.deleteQuietly(await _capture.stop());
       } on Object catch (_) {
-        // The recorder is already gone; nothing left to close.
+        // Suppress final stop failure; retained cleanup may still be unresolved.
       }
       if (gen == _generation) {
         _running = false;
@@ -196,9 +201,10 @@ class WakeWordService {
     bool stale() => gen != null && (gen != _generation || !_running);
     if (await engine.score(file) < scoreThreshold || stale()) return false;
 
-    // The spotter already fired on-device. Confirm via transcription only
-    // when that stays on this machine (an injected transcriber, or a local
-    // endpoint); otherwise trust the spotter and never upload the audio.
+    // Positive score: injected transcription is trusted, not verified local.
+    // Otherwise loopback URL spelling allows confirmation without a DNS probe;
+    // remote/missing endpoints skip this service's STT call. This does not audit
+    // engine/transcriber internals or qualify native/provider readiness.
     final stt = await SttSettings.load();
     await debugAfterSettingsLoad?.call();
     if (stale()) return false;
