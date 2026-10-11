@@ -543,3 +543,7 @@ Verified manager coordination still states both owner questions pending: whether
 ## Keeping the map current
 
 After another related merge, compare the original criterion against current source and exact-head evidence, add its delivery to the ledger, and revise only the affected unmet criterion/disposition. Keep historical failures and proof limits attached to their claims. Manager decides issue disposition; a ready row does not authorize issue closure/status/assignee edits.
+
+### #627 Capability matrix first code slice
+
+[Eleven new contracts](../test/capability_matrix_contract_test.dart): exact roles/capability sets for Mac/iOS/Android/Linux/Windows/unknown, unknown capability false, immutable shared capability set; all15UnsupportedHostControl methods fail explicitly on iOS/Android/Windows/unknown before native/platform/network calls. Controlled Linux factory environment selects unsupported/X11/Wayland while public SupportMatrix role remains unsupported; constructed bridge is not permission/readiness/platform parity. Fresh capability/support/host/unsupported-widget batch23passes(11new), analyze clean, format274/0changed. No production/matrix policy/default/host implementation changed; native TCC/device/Linux executable readiness not tested. Rollback this test and map section only. Refs #627/issueOPEN/partial acceptance; native/runtime consent gates unchanged.
