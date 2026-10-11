@@ -46,6 +46,7 @@ import 'services/hold_key_caller.dart';
 import 'ui/hold_key_caller_notice.dart';
 import 'services/speak_receipts.dart';
 import 'services/speech.dart';
+import 'services/speech_disposal_caller.dart';
 import 'services/tool_executor.dart';
 import 'ui/face_screen.dart';
 import 'ui/permission_recovery_card.dart';
@@ -229,6 +230,7 @@ class _MacHomeState extends State<MacHome>
   final _capture = AudioCapture();
   final _receipts = SpeakReceipts();
   final _speech = SpeechService();
+  late final _speechDisposal = SpeechDisposalCaller(owner: _speech);
   final _tools = ToolExecutor();
   final _safety = SafetyGate();
   late final HoldKeyController _holdKey = HoldKeyController(
@@ -674,7 +676,7 @@ class _MacHomeState extends State<MacHome>
     _server.stop();
     _receipts.dispose();
     unawaited(_disposeKeyCapture());
-    _speech.dispose();
+    unawaited(_speechDisposal.dispose());
     super.dispose();
   }
 
