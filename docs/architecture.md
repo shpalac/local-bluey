@@ -74,6 +74,20 @@ no privacy or retention decision; those stay with the blocked policy items.
 This is partial, unwired groundwork for BLU-006: BLU-002/003 are not merged
 and nothing here claims the full issue.
 
+## Retention purge (BLU-005)
+
+`lib/services/retention_purge.dart` is a scoped purge over a list of stores. It
+shows each store's declared retention text and clears only stores the caller
+classified as activity or cache. Anything else, including every store that is
+not classified, is protected and refused, so a "delete activity and caches"
+action cannot reach routines or settings. A store that throws is reported by
+exception type only and the rest still run, a second purge while one is running
+is refused as busy, and repeated ids are cleared once. It is pure Dart, holds
+no data, is not wired into the app and has no UI. It picks no retention period,
+no default and no classification of the existing stores: those stay with the
+approved policy work. This is partial, unwired groundwork for BLU-005: nothing
+here claims the settings UI or the full issue.
+
 ## Known gaps
 
 Tracked openly rather than claimed as done: Android/Linux ports
