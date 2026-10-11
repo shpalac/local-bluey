@@ -1,6 +1,18 @@
 # Mac tray remainder
 
-Snapshot: main `8db5818cf990a82782d66174a1a36aa4ddced709`, 11 October 2026. Read-only #435 audit. Only this document changes. No tray failure was reproduced, no new test or native run was made, and no implementation is selected. Delivered [startup caller status](MAC_STARTUP_REMAINDER.md) and [acceptance map](ACCEPTANCE_MAP.md) remain separate.
+Historical snapshot: main `8db5818cf990a82782d66174a1a36aa4ddced709`, 11 October 2026. Read-only #435 audit. Only this document changes. No tray failure was reproduced, no new test or native run was made, and no implementation is selected. Delivered [startup caller status](MAC_STARTUP_REMAINDER.md) and [acceptance map](ACCEPTANCE_MAP.md) remain separate.
+
+## Delivered action status: 11 October 2026
+
+Current main `4e50239a679484e7c65c309bd955f1eefb77af8f`; docs-only #443 addendum. The historical #435 audit below remains unchanged. Its terminal/mute/window suggestions and test proposals are now delivered by separately selected PR438/#437, PR440/#439 and PR442/#441, not duplicate backlog. [Canonical reconciliation](ACCEPTANCE_MAP.md#mac-explicit-actions-and-terminal-delivery) records original criteria, exact approved heads/merges/required and docs checks, current actual source/direct/composed fixtures and reopened pixels.
+
+- [Terminal caller](../lib/services/speech_disposal_caller.dart): immediate same-order once-only retained owner disposal, installed joined completion, sync/async failure consumption, no retry/restart/UI/erasure guarantee.
+- [Mute caller](../lib/services/speech_mute_caller.dart): immediate actual stop invalidation, joined local completion, original immediate phone broadcast per explicit event including duplicates/retry, localized independent pending/error notice both branches. No remote receipt/native playback/all-file erasure proof.
+- [Window caller](../lib/services/window_action_caller.dart): icon/Show same show-before-focus path, no focus after failed show, Hide only, one entered intent plus bounded latest explicit successor, generic final-intent explicit retry. Caller-level disposal fences later focus/successors/display; unchanged entered plugin isMinimized/restore/show may finish. No native cancellation/visibility/focus or hidden in-app recovery guarantee.
+
+**Still unselected:** setup/watch title/menu publication, desired-versus-published state, generic recovery surface and process-wide tray singleton/listener/destroy ownership. Current main still starts setup without consuming its future and supplies async watch publication to a void notifier listener. Existing source-derived overlap/menu-marker/post-dispose risks below remain unproven OS failures. Manager selects and coordinates any publication slice; no automatic watch/kill/resume/mute/settings action, owner change or whole-tray/native gate follows here. Stop/Resume/Quit meanings unchanged; original #91/#212 remain CLOSED anchors. Startup/onboarding/tutorial/recordGranted/clearBaseline/deletion boundaries remain separate. #351/#266/#344 holds, #246 shpalac/unpublished ownership and #393 native condition unchanged. Refs-only, no issue effects or ownership transfer.
+
+## Historical #435 audit (unchanged below)
 
 ## Original expectations and current delivery
 
