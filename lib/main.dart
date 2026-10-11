@@ -25,6 +25,8 @@ import 'services/action_log.dart';
 import 'services/conversation.dart';
 import 'services/perf_monitor.dart';
 import 'services/permission_watchdog.dart';
+import 'services/permission_observation.dart';
+import 'ui/permission_observation_notice.dart';
 import 'services/tutorial.dart';
 import 'services/routines.dart';
 import 'services/safety_gate.dart';
@@ -217,7 +219,7 @@ class _MacHomeState extends State<MacHome>
   bool _showOnboarding = false;
   final _hostReload = HostReloadController();
   final _watchdog = PermissionWatchdog(checker: const LivePermissionChecker());
-  List<OnboardingPermission> _revoked = [];
+  late final _permissions = PermissionObservation(watchdog: _watchdog);
   final _tutorial = TutorialController.instance;
   final _server = PhoneServer();
   final _face = ValueNotifier<FaceState>(FaceState(mood: Mood.resting));
@@ -283,7 +285,8 @@ class _MacHomeState extends State<MacHome>
     OnboardingScreen.isDone().then((done) {
       if (!done && mounted) setState(() => _showOnboarding = true);
     });
-    _recheckPermissions();
+    _permissions.addListener(_onPermissionsChanged);
+    unawaited(_permissions.check());
     TutorialController.isDone().then((done) {
       if (done) _tutorial.dismiss();
     });
@@ -304,14 +307,13 @@ class _MacHomeState extends State<MacHome>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Returning from System Settings re-checks for revoked grants (#174).
     if (state == AppLifecycleState.resumed) {
-      _recheckPermissions();
+      unawaited(_permissions.resume());
       unawaited(_trust.resume());
     }
   }
 
-  Future<void> _recheckPermissions() async {
-    final revoked = await _watchdog.recheckRevoked();
-    if (mounted) setState(() => _revoked = revoked);
+  void _onPermissionsChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<bool> _askToPair(String deviceName) async {
@@ -654,6 +656,8 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void dispose() {
+    _permissions.removeListener(_onPermissionsChanged);
+    _permissions.dispose();
     _trust.dispose();
     _keyCleanup.dispose();
     _hostReload.dispose();
@@ -676,6 +680,7 @@ class _MacHomeState extends State<MacHome>
 
   @override
   Widget build(BuildContext context) {
+    final revoked = _permissions.revoked;
     if (_showOnboarding) {
       return Material(
         child: SafeArea(
@@ -686,6 +691,7 @@ class _MacHomeState extends State<MacHome>
                   HostReloadNotice(controller: _hostReload),
                   HoldKeyCallerNotice(caller: _holdKeyCaller),
                   KeyCleanupNotice(caller: _keyCleanup),
+                  PermissionObservationNotice(caller: _permissions),
                   TrustObservationNotice(
                     caller: _trust,
                     openSettings: _openTrustSettings,
@@ -788,14 +794,15 @@ class _MacHomeState extends State<MacHome>
               padding: const EdgeInsets.fromLTRB(16, 48, 16, 0),
               child: TutorialCard(controller: _tutorial),
             ),
-            if (_revoked.isNotEmpty)
+            if (revoked.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 48, 16, 0),
                 child: PermissionRecoveryCard(
-                  permission: _revoked.first,
+                  permission: revoked.first,
                   onDismiss: () {
-                    _watchdog.clearBaseline(_revoked.first.id);
-                    setState(() => _revoked = _revoked.sublist(1));
+                    final id = revoked.first.id;
+                    _watchdog.clearBaseline(id);
+                    _permissions.dismiss(id);
                   },
                 ),
               ),
@@ -892,6 +899,7 @@ class _MacHomeState extends State<MacHome>
               return const SizedBox.shrink();
             },
           ),
+          PermissionObservationNotice(caller: _permissions),
           TrustObservationNotice(
             caller: _trust,
             openSettings: _openTrustSettings,
