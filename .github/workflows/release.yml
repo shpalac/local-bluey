@@ -14,14 +14,20 @@ on:
 permissions:
   contents: read
 
-env:
-  FLUTTER_VERSION: "3.47.6"
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   version-check:
     runs-on: ubuntu-latest
     timeout-minutes: 3
-    permissions: {}
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Tag must match pubspec version
@@ -47,11 +53,30 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - run: dart format --set-exit-if-changed lib test tool
       - run: flutter analyze
-      - run: flutter test
+      - run: flutter test --coverage --file-reporter json:test-report.jsonl --timeout 90s
+      - run: dart run tool/check_coverage.dart
+      - name: Structured test results
+        if: ${{ always() }}
+        run: |
+          status=0
+          python3 tool/test_report.py test-report.jsonl --junit test-results.xml > test-summary.md || status=$?
+          cat test-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+      - name: Upload release test evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-test-evidence
+          path: |
+            test-report.jsonl
+            test-results.xml
+            test-summary.md
+            coverage/lcov.info
+          retention-days: 14
 
   build:
     needs: test
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     environment: release
     permissions:
@@ -59,8 +84,21 @@ jobs:
       id-token: write # attest-build-provenance
       attestations: write
     strategy:
+      fail-fast: false
       matrix:
-        target: [macos, ios, android]
+        include:
+          - target: macos
+            os: macos-latest
+            artifact: local-bluey-macos.tar.gz
+          - target: ios
+            os: macos-latest
+            artifact: local-bluey-ios.tar.gz
+          - target: android
+            os: ubuntu-latest
+            artifact: local-bluey-android.apk
+          - target: linux
+            os: ubuntu-latest
+            artifact: local-bluey-linux-x86_64.tar.gz
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Read Flutter version
@@ -70,6 +108,18 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      - name: Set up Java for Android
+        if: matrix.target == 'android'
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Linux build dependencies
+        if: matrix.target == 'linux'
+        uses: awalsh128/cache-apt-pkgs-action@553a35bb8ebd9fcabcb1c9451aa4c98e1b4ca8a9 # v1.6.3
+        with:
+          packages: clang cmake ninja-build pkg-config libgtk-3-dev libayatana-appindicator3-dev libsecret-1-dev libjsoncpp-dev libavahi-client-dev libasound2-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
       - run: flutter pub get --enforce-lockfile
       - name: Build macOS
         if: matrix.target == 'macos'
@@ -86,24 +136,34 @@ jobs:
         run: |
           flutter build apk --release
           cp build/app/outputs/flutter-apk/app-release.apk local-bluey-android.apk
-      - name: Package artifact
+      - name: Build Linux
+        if: matrix.target == 'linux'
         run: |
-          # shellcheck disable=SC2012
-          artifact=$(ls local-bluey-*.{tar.gz,apk} 2>/dev/null | head -1)
-          sha256sum "$artifact" > "$artifact.sha256"
-          echo "ARTIFACT=$artifact" >> "$GITHUB_ENV"
+          flutter build linux --release
+          tar -C build/linux/x64/release -czf local-bluey-linux-x86_64.tar.gz bundle
+      - name: Package checksum
+        env:
+          ARTIFACT: ${{ matrix.artifact }}
+        run: |
+          test -s "$ARTIFACT"
+          if command -v sha256sum >/dev/null; then
+            sha256sum "$ARTIFACT" > "$ARTIFACT.sha256"
+          else
+            shasum -a 256 "$ARTIFACT" > "$ARTIFACT.sha256"
+          fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: release-${{ matrix.target }}
+          name: release-build-${{ matrix.target }}
           path: |
             local-bluey-*.tar.gz
             local-bluey-*.apk
             local-bluey-*.sha256
+          if-no-files-found: error
           retention-days: 7
       - name: Attest build provenance
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: ${{ env.ARTIFACT }}
+          subject-path: ${{ matrix.artifact }}
 
   publish:
     needs: build
@@ -116,7 +176,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
-          pattern: release-*
+          pattern: release-build-*
           merge-multiple: true
       - name: SBOM from pubspec.lock
         run: |
@@ -131,6 +191,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          sha256sum local-bluey-*.tar.gz local-bluey-*.apk > SHA256SUMS
+          test "$(find . -maxdepth 1 -name 'local-bluey-*.sha256' | wc -l)" -eq 4
+          cat local-bluey-*.sha256 > SHA256SUMS
+          sha256sum --check SHA256SUMS
           gh release create "$GITHUB_REF_NAME" --generate-notes \
             local-bluey-*.tar.gz local-bluey-*.apk SHA256SUMS sbom.json

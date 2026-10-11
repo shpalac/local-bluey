@@ -9,21 +9,7 @@ name: CodeQL
 on:
   push:
     branches: [main]
-    paths:
-      - 'android/**'
-      - 'macos/**'
-      - 'ios/**'
-      - 'lib/**'
-      - 'pubspec.*'
-      - '.github/workflows/codeql.yml'
   pull_request:
-    paths:
-      - 'android/**'
-      - 'macos/**'
-      - 'ios/**'
-      - 'lib/**'
-      - 'pubspec.*'
-      - '.github/workflows/codeql.yml'
   schedule:
     - cron: '23 4 * * 1'
 
@@ -31,13 +17,33 @@ defaults:
   run:
     shell: bash
 
+concurrency:
+  group: codeql-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      swift: ${{ steps.select.outputs.swift }}
+      kotlin: ${{ steps.select.outputs.kotlin }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: select
+        run: python3 tool/ci_control.py select
+
   # Kotlin compiles fine without a build here: build-mode none analyzes
   # sources directly and needs no Gradle/AGP setup.
   kotlin:
+    needs: changes
+    if: ${{ github.event_name == 'schedule' || needs.changes.outputs.kotlin == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -54,6 +60,8 @@ jobs:
   # Swift needs a traced build. `flutter build macos --config-only` writes the
   # ephemeral xcfilelists that a direct xcodebuild otherwise fails on.
   swift:
+    needs: changes
+    if: ${{ github.event_name == 'schedule' || needs.changes.outputs.swift == 'true' }}
     runs-on: macos-latest
     timeout-minutes: 40
     permissions:
@@ -90,3 +98,19 @@ jobs:
       - uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52 # v3.38.2
         with:
           category: /language:swift
+
+  codeql-required:
+    if: ${{ always() }}
+    needs: [changes, kotlin, swift]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Require selected security analysis
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+          CI_EXPECTED_JOBS: >-
+            {"changes":true,"kotlin":${{ github.event_name == 'schedule' || needs.changes.outputs.kotlin == 'true' }},"swift":${{ github.event_name == 'schedule' || needs.changes.outputs.swift == 'true' }}}
+        run: python3 tool/ci_control.py gate

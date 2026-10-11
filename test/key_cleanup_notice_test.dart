@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -32,6 +33,22 @@ class _Checker extends PermissionChecker {
   Future<bool> microphone() async => false;
   @override
   Future<bool> localNetwork() async => false;
+}
+
+/// Flush the fake widget clock while allowing real file I/O to complete.
+/// The deadline bounds hangs; completion is determined by the owner state.
+Future<void> _pumpUntil(WidgetTester tester, bool Function() completed) async {
+  final elapsed = Stopwatch()..start();
+  while (!completed()) {
+    if (elapsed.elapsed > const Duration(seconds: 5)) {
+      fail('Cleanup operation did not settle within five seconds');
+    }
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 10)),
+    );
+  }
+  await tester.pump();
 }
 
 void main() {
@@ -83,12 +100,8 @@ void main() {
       expect(f.driver.starts, 1);
       expect(f.delivered, isEmpty);
       await tester.tap(find.text('Retry cleanup'));
-      for (var i = 0; i < 8 && c.visible; i++) {
-        await tester.pump();
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 20)),
-        );
-      }
+      expect(c.loading, true);
+      await _pumpUntil(tester, () => !c.loading);
       await tester.pumpAndSettle();
       expect(c.visible, false);
       expect(f.driver.stops, 1);
@@ -349,12 +362,8 @@ void main() {
               );
               f.driver.fail = 'stop';
               await tester.tap(retry);
-              for (var i = 0; i < 6; i++) {
-                await tester.pump();
-                await tester.runAsync(
-                  () => Future<void>.delayed(const Duration(milliseconds: 20)),
-                );
-              }
+              expect(c.loading, true);
+              await _pumpUntil(tester, () => !c.loading);
               expect(c.failed, true);
               expect(c.enabled, true);
               expect(find.textContaining('private'), findsNothing);
@@ -362,13 +371,7 @@ void main() {
               f.driver.fail = null;
               f.driver.hold = 'stop';
               await tester.tap(retry);
-              for (var i = 0; i < 6 && !f.driver.entered.isCompleted; i++) {
-                await tester.pump();
-                await tester.runAsync(
-                  () => Future<void>.delayed(const Duration(milliseconds: 20)),
-                );
-              }
-              await tester.pump();
+              await _pumpUntil(tester, () => f.driver.entered.isCompleted);
               expect(f.driver.entered.isCompleted, true);
               expect(c.loading, true);
               expect(
@@ -386,13 +389,16 @@ void main() {
               );
               expect(tester.takeException(), isNull);
               await shot('pending');
+              // Hold actual file deletion so completion cannot depend on disk
+              // speed or a fixed number of real-time polling iterations.
+              f.deleteGate = Completer<void>();
+              f.deleteEntered = Completer<void>();
               f.driver.release.complete();
-              for (var i = 0; i < 6 && c.loading; i++) {
-                await tester.pump();
-                await tester.runAsync(
-                  () => Future<void>.delayed(const Duration(milliseconds: 20)),
-                );
-              }
+              await _pumpUntil(tester, () => f.deleteEntered!.isCompleted);
+              expect(c.loading, true);
+              expect(c.visible, true);
+              f.deleteGate!.complete();
+              await _pumpUntil(tester, () => !c.loading);
               await tester.pumpAndSettle();
               expect(c.visible, false);
               expect(find.byType(KeyCleanupNotice), findsOneWidget);

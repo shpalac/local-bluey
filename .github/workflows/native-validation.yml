@@ -1,0 +1,38 @@
+name: Native validation (manual, trusted main)
+
+# Signed hosts must never execute arbitrary pull-request code.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: native-validation
+  cancel-in-progress: false
+
+jobs:
+  native-validation:
+    if: ${{ github.ref == 'refs/heads/main' && vars.ENABLE_NATIVE_VALIDATION == 'true' }}
+    environment: native-validation
+    runs-on: [self-hosted, macos]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - name: Contract integration tests on macOS (mocked MethodChannel)
+        run: flutter test integration_test -d macos
+      - name: Check signed host readiness
+        run: bash tool/mac_e2e.sh doctor

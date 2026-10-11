@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md', 'docs/**']
   # No paths-ignore on pull_request: the required checks must report on
   # docs-only PRs too, or branch protection leaves them unmergeable.
   pull_request:
+  workflow_dispatch:
   # Weekly dependency/vulnerability scan so new advisories against an
   # unchanged lockfile are noticed (#144). Only the security and
   # pinned-actions jobs run on schedule.
@@ -21,17 +21,43 @@ defaults:
     shell: bash
 
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Least privilege by default; jobs escalate only when they must.
 permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      doc_contracts: ${{ steps.select.outputs.doc_contracts }}
+      dart: ${{ steps.select.outputs.dart }}
+      macos: ${{ steps.select.outputs.macos }}
+      ios: ${{ steps.select.outputs.ios }}
+      android: ${{ steps.select.outputs.android }}
+      linux: ${{ steps.select.outputs.linux }}
+      integration: ${{ steps.select.outputs.integration }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: CI control and reporting fixtures
+        run: |
+          python3 -m unittest discover -s tool -p test_ci_control.py
+          python3 -m unittest discover -s tool -p test_test_report.py
+          python3 -m unittest discover -s tool -p test_ci_metrics.py
+      - name: Select validation lanes
+        id: select
+        run: python3 tool/ci_control.py select
+
   # Fast lane on Linux: format and static analysis only (#153).
   static:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: changes
+    if: ${{ needs.changes.outputs.dart == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -50,7 +76,7 @@ jobs:
       - run: flutter pub get --enforce-lockfile
 
       - name: Format check
-        run: dart format --set-exit-if-changed lib test
+        run: dart format --set-exit-if-changed lib test tool integration_test
 
       - name: CI metrics fixtures
         run: python3 -m unittest discover -s tool -p test_ci_metrics.py
@@ -58,11 +84,30 @@ jobs:
       - name: Analyze
         run: flutter analyze
 
+  docs-contracts:
+    needs: changes
+    if: ${{ needs.changes.outputs.doc_contracts == 'true' && needs.changes.outputs.dart != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - name: Verify source-backed privacy documentation
+        run: flutter test test/privacy_docs_contract_test.dart --reporter expanded --timeout 90s
+
   # Docs lane (#179): dartdoc generation stays warning-free for the
   # public contract files, alongside the in-repo coverage test
   # (test/dartdoc_contracts_test.dart).
   docs:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: changes
+    if: ${{ needs.changes.outputs.dart == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -96,7 +141,8 @@ jobs:
   # Test lane (#153): unit/widget tests with coverage (thresholds + lcov
   # artifact) and machine-readable results uploaded on every run (#159).
   test:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: changes
+    if: ${{ needs.changes.outputs.dart == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -115,13 +161,22 @@ jobs:
       - run: flutter pub get --enforce-lockfile
 
       - name: Unit + widget tests (mocked contracts)
-        run: flutter test --coverage --reporter expanded 2>&1 | tee test-output.log
+        run: flutter test --coverage --reporter expanded --file-reporter json:test-report.jsonl --timeout 90s 2>&1 | tee test-output.log
         timeout-minutes: 8
+
+      - name: Structured test summary and JUnit
+        if: ${{ always() }}
+        run: |
+          status=0
+          python3 tool/test_report.py test-report.jsonl --junit test-results.xml > test-summary.md || status=$?
+          cat test-summary.md >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
 
       - name: Coverage thresholds (services/, link/) (#136)
         run: dart run tool/check_coverage.dart
 
       - name: Upload coverage report
+        if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage
@@ -133,7 +188,11 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-logs
-          path: test-output.log
+          path: |
+            test-output.log
+            test-report.jsonl
+            test-results.xml
+            test-summary.md
           retention-days: 7
 
   # Builds stay on macOS: iOS/macOS outputs need Xcode. Runs in parallel
@@ -141,7 +200,8 @@ jobs:
   # test results, so gating on them only added wall-clock (#144, #153).
   # Docs-only changes skip this 25-minute lane entirely.
   build-macos:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: changes
+    if: ${{ needs.changes.outputs.macos == 'true' }}
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -172,7 +232,8 @@ jobs:
           retention-days: 3
 
   build-ios:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: changes
+    if: ${{ needs.changes.outputs.ios == 'true' }}
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -207,8 +268,8 @@ jobs:
   # automatable slice of the real-device checklist; hardware-only items
   # (permissions, pairing, kill switch) stay manual.
   simulator:
-    if: ${{ github.event_name != 'schedule' }}
-    needs: [static, test]
+    needs: changes
+    if: ${{ needs.changes.outputs.ios == 'true' }}
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -258,23 +319,25 @@ jobs:
   # either build failed or was cancelled.
   build:
     if: ${{ always() && github.event_name != 'schedule' }}
-    needs: [build-macos, build-ios]
+    needs: [changes, build-macos, build-ios]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require both native builds
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Require selected native builds
         env:
-          MACOS_RESULT: ${{ needs.build-macos.result }}
-          IOS_RESULT: ${{ needs.build-ios.result }}
-        run: |
-          echo "build-macos: $MACOS_RESULT"
-          echo "build-ios: $IOS_RESULT"
-          [ "$MACOS_RESULT" = "success" ] && [ "$IOS_RESULT" = "success" ]
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+          CI_EXPECTED_JOBS: >-
+            {"changes":true,"build-macos":${{ needs.changes.outputs.macos == 'true' }},"build-ios":${{ needs.changes.outputs.ios == 'true' }}}
+        run: python3 tool/ci_control.py gate
 
   # Android debug APK on ubuntu - no Xcode needed (#153). Runs in parallel
   # with the fast lanes for the same reason as the macOS builds.
   android:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: changes
+    if: ${{ needs.changes.outputs.android == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -323,7 +386,8 @@ jobs:
   # emulator and runs integration_test/ against it. The native MethodChannel
   # is mocked in-Dart, so no macOS host is needed.
   android-integration:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: changes
+    if: ${{ needs.changes.outputs.integration == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -367,14 +431,23 @@ jobs:
           arch: x86_64
           target: google_apis
           profile: pixel_6
-          script: flutter test integration_test --reporter expanded
+          script: flutter test integration_test --reporter expanded --file-reporter json:android-integration.jsonl --timeout 90s
+
+      - name: Upload emulator diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: android-integration-${{ matrix.api-level }}
+          path: android-integration.jsonl
+          retention-days: 7
 
   # Linux client build + tests on the generated linux/ runner (#149).
   # GTK3 stack + plugin system deps: tray_manager (ayatana-appindicator),
   # flutter_secure_storage (libsecret, libjsoncpp), nsd (Avahi),
   # record/audioplayers (ALSA), window_manager (GTK).
   linux:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: changes
+    if: ${{ needs.changes.outputs.linux == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -412,9 +485,6 @@ jobs:
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
 
       - run: flutter pub get --enforce-lockfile
-
-      - name: Unit + widget tests
-        run: flutter test --reporter expanded
 
       # Phone <-> Linux host E2E under a real X server (#154): the link
       # protocol pairs over loopback TCP and the X11 backend drives
@@ -533,22 +603,18 @@ jobs:
           fi
           echo "Negative test passed."
 
-  # Native-validation lane: exercises the real device bridge. Enable by
-  # setting the ENABLE_NATIVE_VALIDATION repo variable to true once a
-  # self-hosted Mac runner with a signed environment is registered; mocked
-  # contract tests stay in the main lane above.
-  native-validation:
-    if: ${{ vars.ENABLE_NATIVE_VALIDATION == 'true' }}
-    runs-on: [self-hosted, macos]
-    timeout-minutes: 30
+  ci-required:
+    if: ${{ always() }}
+    needs: [changes, static, docs, docs-contracts, test, build-macos, build-ios, simulator, build, android, android-integration, linux, security, pinned-actions]
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Read Flutter version
-        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-      - run: flutter pub get --enforce-lockfile
-      - name: Integration tests on macOS
-        run: flutter test integration_test -d macos
+          persist-credentials: false
+      - name: Require all selected validation lanes
+        env:
+          CI_JOB_RESULTS: ${{ toJSON(needs) }}
+          CI_EXPECTED_JOBS: >-
+            {"changes":true,"docs-contracts":${{ needs.changes.outputs.doc_contracts == 'true' && needs.changes.outputs.dart != 'true' }},"static":${{ needs.changes.outputs.dart == 'true' }},"docs":${{ needs.changes.outputs.dart == 'true' }},"test":${{ needs.changes.outputs.dart == 'true' }},"build-macos":${{ needs.changes.outputs.macos == 'true' }},"build-ios":${{ needs.changes.outputs.ios == 'true' }},"simulator":${{ needs.changes.outputs.ios == 'true' }},"build":${{ github.event_name != 'schedule' }},"android":${{ needs.changes.outputs.android == 'true' }},"android-integration":${{ needs.changes.outputs.integration == 'true' }},"linux":${{ needs.changes.outputs.linux == 'true' }},"security":true,"pinned-actions":true}
+        run: python3 tool/ci_control.py gate
