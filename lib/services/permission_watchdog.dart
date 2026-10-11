@@ -31,6 +31,45 @@ class PermissionWatchdog {
 
   static const _kPrefix = 'watchdog.granted.';
 
+  static PermissionWatchdog? _live;
+
+  /// Registers this instance as the app's live baseline owner so explicit
+  /// data deletion is ordered with its entered writes.
+  void registerAsLive() => _live = this;
+
+  /// Releases the live registration if this instance still holds it.
+  void unregisterLive() {
+    if (identical(_live, this)) _live = null;
+  }
+
+  /// The registered live owner, or null when none is mounted.
+  static PermissionWatchdog? get live => _live;
+
+  /// Data-registry entry point: clears every baseline through the live owner
+  /// when one is registered, otherwise through a fresh owner over the same
+  /// store. Throws a generic failure when storage refused any removal.
+  static Future<void> clearAllBaselines() =>
+      (_live ?? PermissionWatchdog(checker: const LivePermissionChecker()))
+          .clearAll();
+
+  /// Invalidates every entered observation synchronously, then removes all
+  /// baseline keys after entered writes. Observations begun afterwards may
+  /// record a fresh baseline. A refused removal is reported, never hidden.
+  Future<void> clearAll() {
+    for (final p in onboardingPermissions) {
+      _dismissals[p.id] = (_dismissals[p.id] ?? 0) + 1;
+    }
+    return _ordered(() async {
+      final store = await _store;
+      var failed = false;
+      for (final key in store.getKeys().toList()) {
+        if (!key.startsWith(_kPrefix)) continue;
+        if (!await store.remove(key)) failed = true;
+      }
+      if (failed) throw StateError('Permission baseline was not cleared.');
+    });
+  }
+
   /// The grant-history store (test seam: [prefsOverride] wins).
   Future<SharedPreferences> get _store async =>
       _prefs ??= prefsOverride ?? await SharedPreferences.getInstance();

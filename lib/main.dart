@@ -275,6 +275,7 @@ class _MacHomeState extends State<MacHome>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _watchdog.registerAsLive();
     trayManager.addListener(this);
     unawaited(_trayPublication.request());
     _server.onPairRequest = _askToPair;
@@ -626,6 +627,7 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void dispose() {
+    _watchdog.unregisterLive();
     _trayPublication.dispose();
     _windowAction.dispose();
     _speechMute.dispose();
