@@ -2,7 +2,13 @@
 
 Historical snapshot: main d9c1d3f6833960826ba5dbeb7d6ca229ab5ee84d, 11 October 2026. Read-only audit for #425 of four MacHome startup callers. No source, fixture, UI, native or permission changes. Prior [acceptance map](ACCEPTANCE_MAP.md) remains delivered, with its limits. This is not a whole-startup readiness claim.
 
-## Current delivery status: 11 October 2026
+## Explicit settings action status: 11 October 2026
+
+Current main `4e50239a679484e7c65c309bd955f1eefb77af8f`; docs-only #443 addendum supersedes the prior #431 statement that explicit trust-settings callback errors remain unhandled. PR434/#433 now contains this verified-denied action in the existing notice: pending before queued entry, duplicate suppression/internal join, generic localized explicit retry, queued status/disposal prevention and no entered-action disposed UI update. Main retains actual askPermission then openAccessibilitySettings. Action success is not permission-grant proof, and read-only trust/permission observations never prompt. See [canonical action reconciliation](ACCEPTANCE_MAP.md#433-explicit-accessibility-settings-action) for exact approved head/merge/checks, actual channel/direct/composed source and reopened EN/RTL pixels.
+
+Remaining boundaries are raw onboarding/tutorial done-read and their route/owner-run choices; Settings reset, onboarding recordGranted, recovery clearBaseline, and entered watchdog baseline persistence versus delete-all. They remain separately owned or unselected, requiring manager/shpalac coordination. No ownership transfer or implementation selected. Display fencing is not deletion fencing. #351/#266/#344 holds, #246 shpalac/unpublished ownership and #393 native condition unchanged. Earlier #431 and #425 text remains historical, not authority for duplicate settings work or native readiness.
+
+## Prior #431 delivery status: 11 October 2026
 
 Current main is `3ccb1d94c869dd115e5372993080d95f5746b443`. This #431 addendum supersedes only the historical trust/permission implementation suggestions below. The original #425 snapshot, source reasoning and failed/unproven interleavings remain unchanged as historical evidence, not current backlog. See [current acceptance map](ACCEPTANCE_MAP.md#mac-trust-and-permission-delivery) for exact reviewed heads, merge commits, successful required checks and criterion reconciliation.
 
