@@ -403,12 +403,7 @@ class _MacHomeState extends State<MacHome>
           if (size.width <= 0 || size.height <= 0) {
             throw StateError('Unable to verify screen bounds');
           }
-          return NativeControl.snapshotRegion(
-            0,
-            0,
-            size.width,
-            size.height,
-          );
+          return NativeControl.snapshotRegion(0, 0, size.width, size.height);
         },
         foreground: NativeControl.watchFrontmostInfo,
         watch: watch,
