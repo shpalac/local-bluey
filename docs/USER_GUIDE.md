@@ -116,14 +116,46 @@ working emergency control.
   [#351](https://github.com/shpalac/local-bluey/issues/351)). This is
   pattern matching and can miss secrets; see the README privacy section for
   the exact limits.
-- **Data-egress report**: a bounded on-device record of the requests Bluey
-  itself instruments (destination, size, time). It is recorded history, not a
-  complete audit of every connection, and a missing record is not proof that
-  nothing was sent.
+- **Egress record**: bounded caller metadata, not a
+  complete audit or network byte total, and not proof of delivery. See [record and self-test limits](#egress-record-and-self-test-limits).
 - **Action log**: a persistent record of what Bluey did.
 - **Data deletion & retention**: Settings > data privacy clears stored data
   by category.
 - **Biometric app lock**: require Touch ID / Face ID to open the app.
+
+## Egress record and self-test limits
+
+Settings > Data and privacy lists the egress storage category and its clear
+control. It does not currently show a live report or a "Run offline
+self-test" button. The stored record keeps up to 300 entries / 30 days of
+host, caller label, supplied amount and record time. It does not keep the
+request content or key from current callers.
+
+Recorded amounts have different meanings: brain calls use JSON character
+counts after a response, speech uses input-text character counts,
+transcription uses input-file bytes, and endpoint/Settings checks record0.
+Character counts here are String.length, which can differ from UTF-8 bytes.
+Audio/text amounts omit request wrapping and headers.0 is not zero traffic.
+Streams and the Diagnostics probe have no record site. A failed attempt may
+have a record or none, and Settings may add a row separate from its brain
+call. Rows are not unique requests, network byte totals or delivery receipts.
+
+Missing storage means no retained entries, not no historical transmission.
+Unreadable or partly corrupt history is unavailable/incomplete and is not
+overwritten until explicit deletion succeeds. Clearing waits for older
+storage operations; it does not cancel traffic or prevent fresh records.
+A failed clear is not confirmed deletion or physical erasure.
+
+The internal offline self-test checks legacy BrainSettings brain,
+transcription fallback and speech URLs plus retained host labels, using the
+same loopback-only policy without DNS or a network request. Unknown,
+malformed and `.local` hosts are not confirmed on-device. It does not check
+separate active STT settings or native transcription, which remains a
+not-installed placeholder. An empty result does not prove reachability,
+model support, offline readiness or that nothing left the device. A local
+service may itself forward data. The record is not a reviewed safe-export
+contract. See [transcription limits](#transcription-configuration-and-limits)
+and the [egress source audit](EGRESS_EVIDENCE_REMAINDER.md).
 
 ## The phone remote
 
