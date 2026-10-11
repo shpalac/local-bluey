@@ -65,7 +65,7 @@ class CaptureAcquisition {
 /// Thin wrapper over the platform recorder so the capture state machine is
 /// testable without a microphone (#117).
 abstract class RecorderDriver {
-  /// Whether mic permission is currently granted (never prompts).
+  /// Checks microphone access. Production may request native permission.
   Future<bool> hasPermission();
 
   /// Starts recording into [path].
@@ -159,7 +159,7 @@ class AudioCapture {
   /// Whether a capture is currently open.
   bool get isRecording => _recording;
 
-  /// Whether mic permission is granted; never prompts (#174).
+  /// Delegates to the driver; production uses the plugin requesting default.
   Future<bool> hasPermission() => _driver.hasPermission();
 
   /// Starts a capture into a fresh temp .m4a (AAC-LC 16 kHz).
