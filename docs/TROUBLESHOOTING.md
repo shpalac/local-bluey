@@ -29,6 +29,34 @@ check the provider in Settings."**
 - Fix: point the brain at a local endpoint (e.g. Ollama on
   `http://localhost:11434`) or turn Local-only mode off in Settings.
 
+## Egress record
+
+**I cannot find the report or offline self-test in Settings.**
+
+- Settings > Data and privacy lists the egress storage category and clear
+  control, not a live report or self-test button. Do not use the brain
+  connection test as an offline or STT readiness check.
+- The internal self-test checks legacy brain settings and retained hosts,
+  not separate active STT settings. Native transcription is not installed;
+  an empty result does not prove usable offline voice or zero traffic.
+
+**The history is empty, unavailable/incomplete, or the amount looks wrong.**
+
+- Missing history is not proof that nothing was sent. Only selected callers
+  record metadata; streams and the Diagnostics probe are not recorded.
+- Amounts mix brain JSON/speech-text character counts, transcription input
+  bytes and zero-amount checks. They omit request wrapping/headers and are
+  not network byte totals or delivery receipts. Failed attempts may have
+  rows or none; a Settings test may produce separate caller rows.
+- Unknown or `.local` hosts are not confirmed on-device. Classification
+  uses no DNS; a local service may forward data.
+- Unreadable/partly corrupt history is preserved rather than overwritten.
+  Clear only if you intend to delete retained history. A failed clear does
+  not confirm deletion; successful clear waits for older storage work,
+  not traffic, physical erasure or new records. No report/export or manual
+  file-editing workaround is offered.
+- See [record and self-test limits](USER_GUIDE.md#egress-record-and-self-test-limits).
+
 ## Voice problems
 
 **"Voice input is unavailable right now - type your request instead."**
