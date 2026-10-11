@@ -543,3 +543,10 @@ Verified manager coordination still states both owner questions pending: whether
 ## Keeping the map current
 
 After another related merge, compare the original criterion against current source and exact-head evidence, add its delivery to the ledger, and revise only the affected unmet criterion/disposition. Keep historical failures and proof limits attached to their claims. Manager decides issue disposition; a ready row does not authorize issue closure/status/assignee edits.
+
+## BLU-003 source-level acceptance entry (unmerged proposal)
+
+| Issue | Source evidence | Verification still required |
+| --- | --- | --- |
+| [BLU-003 #556](https://github.com/shpalac/local-bluey/issues/556) | Proposed `SensitiveContentGate` before watch pipeline pixel work and verified exact-frame OCR before watch vision egress; [contract](BLU_003_SENSITIVE_CONTENT_GATE.md) | Required CI/PR review, macOS native permission and focus-change tests, regex/OCR corpus expansion. This entry does **not** override the historical acceptance ledger above. |
+
