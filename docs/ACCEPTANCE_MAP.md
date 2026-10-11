@@ -543,3 +543,7 @@ Verified manager coordination still states both owner questions pending: whether
 ## Keeping the map current
 
 After another related merge, compare the original criterion against current source and exact-head evidence, add its delivery to the ledger, and revise only the affected unmet criterion/disposition. Keep historical failures and proof limits attached to their claims. Manager decides issue disposition; a ready row does not authorize issue closure/status/assignee edits.
+
+### #603 Offline golden-failure inventory, first implementation slice
+
+`python3 tool/golden_failure_manifest.py .` reads only known current baseline failure keys, with bounded file/count/total/pixel limits and PNG chunk framing/CRC/dimension checks; no raw contents/absolute paths in output, no update/copy/upload/CI wiring. Eight offline fabricated Python fixtures cover deterministic inventory, missing/unknown/nonregular/symlink/corrupt/truncated/trailing inputs, limits and path-free CLI failure.52 unchanged golden/theme/onboarding passes,4 existing metrics passes, analyze clean/format273zero. Empty is no-evidence, files require review; comparison/privacy never established. Stable trusted fixture directory required, not hostile concurrent filesystem or PNG decoder/PII detector. No baselines/screenshots generated or changed; artifact audience/retention/CI step requires manager disposition, full603 remains OPEN. Rollback helper/test/map only; runtime/native gates unchanged.
