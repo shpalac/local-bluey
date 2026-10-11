@@ -1,20 +1,20 @@
 # Refs-only acceptance map
 
-Snapshot: main `975ad4e626c8fef85eba49f1399a23d8965ddeff`, 11 October 2026. Scope: [#411](https://github.com/shpalac/local-bluey/issues/411). All eleven issues below were OPEN when checked. This page recommends dispositions; it does not close issues, change ownership, or decide policy.
+Current snapshot: main `93702642cb40b22a266845fa39a52a66d3d12b34`, 11 October 2026. Update scope: [#423](https://github.com/shpalac/local-bluey/issues/423). Original [#411](https://github.com/shpalac/local-bluey/issues/411) reconciliation at `975ad4e626c8fef85eba49f1399a23d8965ddeff` is preserved through its delivery ledger, unchanged rows and historical limits. All fifteen delivery issues below were OPEN when checked. This page recommends dispositions; it does not close issues, change ownership, or decide policy.
 
 ## Reading the evidence
 
 - **Ready for manager disposition** means no unmet original bounded criterion was identified from the current source, committed fixtures/evidence and successful exact-head checks. It is not a closure, native readiness claim, or proof that every app workflow works.
 - **Deferred** names an original criterion that still lacks evidence. Non-goals, native exclusions and broader startup limits are not extra acceptance gates.
-- Independently checked for this reconciliation: live issue bodies/comments, merged PR state/head/merge, required check results, current source and fixture assertions, repository evidence targets, and selected complete visual samples. Historical local test totals and full image-inspection claims remain worker reports unless explicitly verified below. No new native/device run was performed.
-- Source and test links resolve within this snapshot. Evidence READMEs and PNGs are historical artifacts, not live-system proof. Preserve them; use the follow-up references below where they describe a defect since repaired.
+- Independently checked for this reconciliation: live issue bodies/comments, merged PR state/head/merge, required check results, current source and fixture assertions, repository evidence targets, and selected complete visual samples. Historical local test totals and full image-inspection claims remain worker reports unless explicitly verified below. Prior unchanged rows retain the original975ad4e source/fixture review; this update rechecked their live issue criteria/status and resolves all linked targets at current main, with fresh deep source review focused on391 and the staged deliveries. No new native/device run was performed.
+- Source and test links resolve within the current snapshot; old ledger records remain historical. Evidence READMEs and PNGs are historical artifacts, not live-system proof. Preserve them; use the follow-up references below where they describe a defect since repaired.
 
 ## Disposition summary
 
 | Issue | Proposed disposition | Exact remaining criterion | Next responsible owner |
 | --- | --- | --- | --- |
 | [#379](https://github.com/shpalac/local-bluey/issues/379) | Ready for manager disposition | None identified in bounded criteria; see limits below. | Manager reviews disposition; Northbeam maintains this map. |
-| [#391](https://github.com/shpalac/local-bluey/issues/391) | Partial / unresolved | "Explicit retry after failure" cannot recover retained capture uncertainty through the key owner. | Manager decides bounded recovery contract/next task; Northbeam keeps map current. |
+| [#391](https://github.com/shpalac/local-bluey/issues/391) | Ready for manager disposition | None identified after PR416/418/420/422; explicit cleanup action now delivered. | Manager reviews original criterion disposition; Northbeam maintains this map. |
 | [#393](https://github.com/shpalac/local-bluey/issues/393) | Deferred | Native recorder semantics remain unverified, explicitly required by original issue. | Owner-only native validation decision; no device/permission work authorized. |
 | [#395](https://github.com/shpalac/local-bluey/issues/395) | Ready for manager disposition | None identified in bounded criteria; see limits below. | Manager reviews disposition; Northbeam maintains this map. |
 | [#397](https://github.com/shpalac/local-bluey/issues/397) | Ready for manager disposition | None identified in bounded criteria; see limits below. | Manager reviews disposition; Northbeam maintains this map. |
@@ -24,6 +24,10 @@ Snapshot: main `975ad4e626c8fef85eba49f1399a23d8965ddeff`, 11 October 2026. Scop
 | [#405](https://github.com/shpalac/local-bluey/issues/405) | Ready for manager disposition | None identified in bounded criteria; see limits below. | Manager reviews disposition; Northbeam maintains this map. |
 | [#407](https://github.com/shpalac/local-bluey/issues/407) | Ready for manager disposition | None identified in bounded criteria; see limits below. | Manager reviews disposition; Northbeam maintains this map. |
 | [#409](https://github.com/shpalac/local-bluey/issues/409) | Ready for manager disposition | None identified in bounded criteria; see limits below. | Manager reviews disposition; Northbeam maintains this map. |
+| [#415](https://github.com/shpalac/local-bluey/issues/415) | Ready for manager disposition | None identified in bounded staged criteria; see coverage below. | Manager reviews disposition; Northbeam maintains this map. |
+| [#417](https://github.com/shpalac/local-bluey/issues/417) | Ready for manager disposition | None identified in bounded staged criteria; see coverage below. | Manager reviews disposition; Northbeam maintains this map. |
+| [#419](https://github.com/shpalac/local-bluey/issues/419) | Ready for manager disposition | None identified in bounded staged criteria; see coverage below. | Manager reviews disposition; Northbeam maintains this map. |
+| [#421](https://github.com/shpalac/local-bluey/issues/421) | Ready for manager disposition | None identified in bounded staged criteria; see coverage below. | Manager reviews disposition; Northbeam maintains this map. |
 
 ## Verified delivery ledger
 
@@ -78,6 +82,31 @@ Each PR below is MERGED. All four required checks (`static`, `test`, `linux`, `s
   - Main merge: `975ad4e626c8fef85eba49f1399a23d8965ddeff`
   - Verified SUCCESS: [static](https://github.com/shpalac/local-bluey/actions/runs/38086620927/job/114314356064) / [test](https://github.com/shpalac/local-bluey/actions/runs/38086620927/job/114314356262) / [linux](https://github.com/shpalac/local-bluey/actions/runs/38086620927/job/114314356253) / [security](https://github.com/shpalac/local-bluey/actions/runs/38086620927/job/114314356338)
 
+### Later reviewed deliveries
+
+PR414 remains a historical proposal, not implementation authority. PR416/418/420/422 are the separately assigned implementations. Their exact reviewed heads and merged results were rechecked live, along with head-matching required job results.
+
+- [PR414](https://github.com/shpalac/local-bluey/pull/414)
+  - Approved head: `13bc8369887d74c277654c663797309c52518fe1`
+  - Main merge: `c934fd9cb512f9e8aa6a826814bad55e0dc8840c`
+  - Verified SUCCESS: [static](https://github.com/shpalac/local-bluey/actions/runs/38090321005/job/114325253424) / [test](https://github.com/shpalac/local-bluey/actions/runs/38090321005/job/114325253354) / [linux](https://github.com/shpalac/local-bluey/actions/runs/38090321005/job/114325253870) / [security](https://github.com/shpalac/local-bluey/actions/runs/38090321005/job/114325253299)
+- [PR416](https://github.com/shpalac/local-bluey/pull/416)
+  - Approved head: `405083fe735a1d31146cc2ed4d8ee791059320cb`
+  - Main merge: `cb797a7008c925bfdcf67f30899a7969b272b308`
+  - Verified SUCCESS: [static](https://github.com/shpalac/local-bluey/actions/runs/38091763237/job/114329451014) / [test](https://github.com/shpalac/local-bluey/actions/runs/38091763237/job/114329451211) / [linux](https://github.com/shpalac/local-bluey/actions/runs/38091763237/job/114329451328) / [security](https://github.com/shpalac/local-bluey/actions/runs/38091763237/job/114329451210)
+- [PR418](https://github.com/shpalac/local-bluey/pull/418)
+  - Approved head: `5f754be311a045f4356771898ffcb8144814b260`
+  - Main merge: `b8e376c9ad5ddc7ba6030b8e0e8b430dac8e6dc6`
+  - Verified SUCCESS: [static](https://github.com/shpalac/local-bluey/actions/runs/38092838859/job/114332627039) / [test](https://github.com/shpalac/local-bluey/actions/runs/38092838859/job/114332627311) / [linux](https://github.com/shpalac/local-bluey/actions/runs/38092838859/job/114332627212) / [security](https://github.com/shpalac/local-bluey/actions/runs/38092838859/job/114332627186)
+- [PR420](https://github.com/shpalac/local-bluey/pull/420)
+  - Approved head: `5125a96f48a53282ecd0057d3c4d77564aefbcd1`
+  - Main merge: `e05821c576208ba42452589a0110f3a04c1a47e5`
+  - Verified SUCCESS: [static](https://github.com/shpalac/local-bluey/actions/runs/38094961400/job/114338992533) / [test](https://github.com/shpalac/local-bluey/actions/runs/38094961400/job/114338992752) / [linux](https://github.com/shpalac/local-bluey/actions/runs/38094961400/job/114338992621) / [security](https://github.com/shpalac/local-bluey/actions/runs/38094961400/job/114338992667)
+- [PR422](https://github.com/shpalac/local-bluey/pull/422)
+  - Approved head: `2b2d1661246b963536ae1a2cd93e13b2cad577b3`
+  - Main merge: `93702642cb40b22a266845fa39a52a66d3d12b34`
+  - Verified SUCCESS: [static](https://github.com/shpalac/local-bluey/actions/runs/38098700086/job/114349924326) / [test](https://github.com/shpalac/local-bluey/actions/runs/38098700086/job/114349924364) / [linux](https://github.com/shpalac/local-bluey/actions/runs/38098700086/job/114349924476) / [security](https://github.com/shpalac/local-bluey/actions/runs/38098700086/job/114349924498)
+
 ## Criterion reconciliation
 
 ### #379 Local-only preference ordering and Settings
@@ -89,24 +118,24 @@ Original acceptance coverage:
 - False/throw toggle, retained state, explicit recovery and preserved unrelated edits: [actual Settings fixture](../test/privacy_clear_widget_test.dart), [Settings source](../lib/ui/settings_screen.dart).
 - Entered read/write/remove versus registry clear, stale publication and fresh later choice: [ordering fixtures](../test/privacy_ordering_test.dart), [ordered owner](../lib/services/privacy_guard.dart), [registry entry](../lib/services/data_registry.dart).
 - Read/remove failure retains honest state and propagates safe failure without fabricated OFF/rollback/erasure: the same owner/fixtures. STT/TTS/diagnostic fixtures assert zero HTTP effects on read uncertainty.
-- Existing policy/regressions and full current-head checks: PR380 ledger; later PR410 full test check covers current main. [Failed](evidence/issue-379-local-only-failed.png), [cleared](evidence/issue-379-local-only-cleared.png), [recovered](evidence/issue-379-local-only-recovered.png) and [unverified](evidence/issue-379-local-only-unverified.png) Settings pixels are committed synthetic proof.
+- Existing policy/regressions and full current-head checks: PR380 ledger; PR410 covers the original map snapshot; PR422 full test SUCCESS covers this current snapshot. [Failed](evidence/issue-379-local-only-failed.png), [cleared](evidence/issue-379-local-only-cleared.png), [recovered](evidence/issue-379-local-only-recovered.png) and [unverified](evidence/issue-379-local-only-unverified.png) Settings pixels are committed synthetic proof.
 
 Unmet bounded criterion: none identified. Ready for manager disposition. The PR380 report's unobserved main BrainHost calls were subsequently contained by [host caller](../lib/services/host_reload_controller.dart) and [source-wiring fixtures](../test/host_reload_controller_test.dart), not left as new work. Retained remote-provider behavior after a failed privacy read is a separate policy limit, not solved by containment; no real-egress claim.
 
 ### #391 Key-only recording intent
 
-Delivered: PR392 permission/session/file owner and distinct key main wiring; PR394 repairs the underlying Dart capture-contract remainder; PR396 observes separate hold-key lifecycle callers.
+Delivered: PR392 original permission/session/file owner and distinct key main wiring; PR394 underlying Dart capture uncertainty; PR396 separate hold-key caller observation. Later PR416/418 provide opt-in capture identity/cleanup/release, PR420 adopts them in the actual key owner with dedicated recovery, and PR422 exposes an independent guarded cleanup action in both Mac source branches.
 
-Original acceptance coverage:
+Each original acceptance bullet was re-read from the live issue, not inferred from the later tasks:
 
-- Permission/start/stop versus send/cancel/fresh/dispose in both orders: [key fixtures](../test/key_recording_intent_test.dart) enter actual AudioCapture with injected driver; current session checks in [key owner](../lib/services/key_recording_intent.dart) reject stale pre-start permission results.
-- At-most-once current file delivery, canceled-file cleanup, retained failed-delete/start/stop uncertainty: those fixtures assert exact delivery/ownership, closeCapture and cleanupPending, not a native-stop guarantee. Explicit recovery works for permission/file-delete failure; it is not delivered for retained capture uncertainty.
-- Kill/reset, overlapping key intents, stale/current errors and lifecycle UI containment: same owner/fixtures plus [key main wiring](../lib/main.dart). The source audit preserves ordinary face/phone paths.
-- Actual shared owner/source-only main proof, existing regressions and required CI: PR392/394/396 ledger. [Widget fixture](../test/key_recording_pixels_test.dart) and [failure/pending/recovery/uncertainty evidence](evidence/issue391/README.md) use actual FaceScreen with synthetic owner, not mounted MacHome.
+1. **"Actual entered fake permission/start/stop vs key send/cancel/reset/dispose in both orders; late permission cannot open capture, entered start must be stopped/cleaned, stale result cannot send/process/update UI."** [Actual key fixtures](../test/key_recording_intent_test.dart) hold driver permission/start/stop versus send/cancel/dispose/fresh, assert no late start, exact current delivery and stale publication rejection. End-before-entry and reentrant pending cancel are separate fixtures. [Main source](../lib/main.dart) keeps reset routed through key cancel and distinct key send, with mounted guards after awaits. The main proof is source-only, as the original criterion permits.
+2. **"Each session file delivered at most once to its own current send, cancellation deletes owned file; partial start/stop/delete failures generic and honest, no dropped cleanup ownership/physical erasure or native-stop guarantee."** The same fixtures plus [capture identity fixtures](../test/audio_capture_identity_test.dart) check exact files, one release claimant, cleanup-vs-release both orders, partial-open and failed-still-open retention, successful-current-driver null, held/failed deletion and file-only retry. [Key owner](../lib/services/key_recording_intent.dart) retains actual acquisition before await, never claims busy legacy capture, token-releases send and token-cleans cancellation. Externally transferred output is not deleted/redelivered; only a separately retained key File is deletable.
+3. **"Overlapping key intents/fresh hold/stale errors and disposal contain futures/UI, explicit retry after failure, no silent callback retry. Preserve kill/resume generation expectations and report non-key capture overlap if broader arbitration is needed rather than changing face/phone flows."** PR420 actual explicit partial-start/failed-stop recovery fixtures retain failed retry then stop/delete without delivery, later fresh hold is separate. Capture-owned cleanup failure is stage-ambiguous, including capture-owned deletion, and requires dedicated `recover`; normal cancel/dispose cannot retry it. Separately key-owned transferred-file deletion remains explicitly cancel/dispose retryable. [Cleanup caller](../lib/services/key_cleanup_caller.dart) and [22 caller fixtures](../test/key_cleanup_caller_test.dart) retain failed/aborted explicit evidence only while actual cleanupPending, reject normal live acquisition, join pending stop/delete completion, and suppress stale/disposed publication. Optional `recover(canEnter:)` checks queued lifetime/allowed/generation before cleanup; default direct-owner retained cleanup under kill and entered cleanup completion remain unchanged. Tray resume now resets then refreshes guard only, never auto-retries. Shared face/key winner policy and cancellation of already-entered processing remain excluded and reported, not solved or made new acceptance gates.
+4. **"Actual shared owner with injected AudioCapture/RecorderDriver fixtures plus source-reviewed key main wiring; clearly label helper/source-only vs mounted MacHome/device proof. Existing audio capture/hold-key/controller/lifecycle/request/phone/full tests, analyze/format/diff and four required current-head checks. Complete readable failure/pending/recovery pixels if main rendered text/state changes."** Current 53 direct key, 34 capture-identity, 22 caller and [33 notice fixtures](../test/key_cleanup_notice_test.dart) use actual owners/shared capture/injected driver, exact synthetic files and actual notice taps. [Current evidence](evidence/issue421/README.md) has 320/1000, 1x/2x text scale, EN/Hebrew RTL light/dark error, failed retry, pending, success and successive scrolling with actual FaceScreen/OnboardingScreen. Settings/close and permission effects are synthetic. Main wiring is source-reviewed, not mounted MacHome/device proof. PR422 exact-head full `test`, `static`, `linux`, `security` independently succeeded; analyze/format/diff and 1781 local passes/one skip are reported in the evidence guide, not an independently rerun local claim here.
 
-Exact unmet original criterion: "explicit retry after failure" remains partial for capture uncertainty. Current `_stopOwned` and `_cleanup` throw immediately while `_captureUncertain`; key start/cancel/disposeIntent cannot reach underlying capture.stop for a fresh current-driver cleanup attempt after partial-start/stop failure. The failure fixture explicitly expects later key starts to keep throwing after the fake driver failure is removed. Safe retention is delivered, but explicit capture-uncertainty recovery is not. **Partial / unresolved, manager decision next** on the bounded recovery contract and responsible implementation task. Do not widen source in this docs task or substitute a native gate for this Dart gap.
+Unmet original bounded criterion: none identified at current snapshot. **Ready for manager disposition**, not automatic closure. The earlier map's partial "explicit retry after failure" finding was accurate at975ad4e; PR420 supplied API-only recovery and PR422 supplied the actual UI action. No new native/mounted-Mac acceptance gate was introduced. Dart terminal receipts establish resource accounting only, not native microphone readiness, physical erasure or restart success. #393's original native condition remains separately deferred.
 
-The historical issue391 README describes the pre-394 AudioCapture defect; current [capture source](../lib/services/audio_capture.dart) owns the candidate before driver.start and supports explicit current-driver cleanup. That underlying repair is delivered and should not be duplicated, but it does not automatically clear or recover the key owner's retained uncertainty. #393's native condition is separate. Shared face/key arbitration and cancellation of already-entered processing were explicitly excluded and reported, not newly imposed acceptance gates.
+Historical [issue391 evidence](evidence/issue391/README.md) describes pre-394 capture defects and lacks the later action. Preserve it; the current identity/key/caller tests and issue421 pixels supersede its unresolved-recovery description, not its historical provenance.
 
 ### #393 Partial-start and failed-stop capture contract
 
@@ -152,7 +181,7 @@ Original evidence coverage:
 
 - Actual LocalBlueyApp synthetic active watch/pushed route; 320/390 width, scales 1/1.5/2, EN/Hebrew RTL, light/dark, independent appearance failure/entered retry/recovery: [visual fixture](../test/watch_banner_visual_test.dart), [72-pixel evidence and four sheets](evidence/issue399/README.md).
 - Visible Stop/back/body, actual contrast threshold and minimum 48x48 geometry: that fixture and [banner source](../lib/ui/watch_banner.dart). It taps back and exact Stop and verifies the synthetic session ends; [existing status-card semantics fixture](../test/home_status_cards_test.dart) is retained.
-- Full banner/app/watch/appearance regressions: PR400 required checks and later PR410 test SUCCESS. Local historical timing failures/count conflict are recorded below, not erased by later success.
+- Full banner/app/watch/appearance regressions: PR400 required checks and PR410 historical and PR422 current-snapshot test SUCCESS. Local historical timing failures/count conflict are recorded below, not erased by later success.
 
 Unmet bounded synthetic visual criterion: none identified. Ready for manager disposition. Original wording "Refs-only if native/actual lock acceptance remains" is conditional, while the evidence scope explicitly forbids synthetic route labels as native biometric/watch proof. No separate unmet real-lock criterion is specified in #399; manager should identify a distinct task if that broader acceptance is intended. No native-watch/biometric guarantee or #351 consent-policy decision. AppBar titles may ellipsize at 320dp/2x; back remains operable.
 
@@ -218,12 +247,36 @@ Original acceptance coverage:
 
 Unmet bounded criterion: none identified. Ready for manager disposition. No UI/pixel/storage/main edits. Entered owner work may finish after disposal by explicit scope; no storage cancellation or whole-startup/native-readiness claim.
 
+## Staged key recovery delivery coverage
+
+### #415 Identity-backed acquisition and no-delivery cleanup
+
+PR416 delivered an opaque instance-bound attempted acquisition retained before temp/driver awaits, busy legacy returns no identity, atomic cleanup fence and same completion through stop/deletion. Positive no-entry/cleaned/transferred receipts are distinct from mismatch/disposal uncertainty. Transfer reports external ownership; it is not alone permission to delete output or promise key reuse. [Capture source](../lib/services/audio_capture.dart) keeps evidence on bounded handles, no unbounded registry. [Actual identity tests](../test/audio_capture_identity_test.dart) cover partial start, failed-still-open retry, current null, held/failed deletion and file-only retry, cap, busy legacy, external old/new zero effects, foreign identity/temp failure/disposal. Legacy signatures and cap behavior were preserved; later activation is separately PR420/422. No unmet staged bounded criterion identified. Ready for manager disposition; native condition remains #393.
+
+### #417 Token release and exact resource ownership
+
+PR418 delivered pre-await release fencing and at-most-one file claimant. Cleanup selected before consumption wins no-delivery in both tested orders; an already transferred File is not retroactively deleted. [Identity fixtures](../test/audio_capture_identity_test.dart) cover concurrent release, held-start/cap/null/error, cleanup/release ordering, external newer legacy zero effects/new release, foreign/no-entry/disposed, held deletion and closing. Terminal outcomes cannot target a newer candidate. No key/main/UI activation or overlap winner promise follows from this API-only stage. No unmet staged bounded criterion identified. Ready for manager disposition.
+
+### #419 Actual key token adoption and explicit API
+
+PR420 replaced generic key ownership/start/stop with acquire/release/cleanup identity, with busy legacy/no claim and explicit coalesced recover installed before notification. [Key fixtures](../test/key_recording_intent_test.dart) exercise actual capture/driver/exact files, old positive receipts, separately key-owned failed deletion, external-new zero effects, held stop/delete/cap, fresh/cancel/kill/dispose, and disposed uncertainty. Capture-owned stage-ambiguous failures require dedicated recovery; separate transferred key File remains cancel/dispose retryable. Fresh hold never hides recovery. This stage was API-only; caller activation came in PR422. No unmet staged bounded criterion identified. Ready for manager disposition.
+
+### #421 Independent cleanup action and lifecycle/layout
+
+PR422 wires [caller](../lib/services/key_cleanup_caller.dart), [localized notice](../lib/ui/key_cleanup_notice.dart) and [bounded shared notice region](../lib/ui/mac_notice_region.dart) only into source-reviewed MacHome lifecycle/both branches. Explicit retry sends/starts nothing. Current Dart cleanup receipt hides only outstanding key notice; failed retry stays generic and actionable. Caller pending completion precedes notify and joins actual stop/delete. Queued caller predicate prevents post-dispose/kill entry, entered work may finish; failed/aborted evidence survives suppressed pending owner publication only while cleanup remains and fresh acquisition invalidates it. Original scope said report core conflict before changes: two races were reported, then manager selected this narrow predicate/evidence exception before implementation; no new status enum/global arbitration.
+
+[Caller tests](../test/key_cleanup_caller_test.dart) cover queued/entered kill/dispose, reentrant/notifier containment, safe retry/old external output/separate files, no automatic guard retry. [Notice tests](../test/key_cleanup_notice_test.dart) prove actual taps, failed/pending/success, killed disabled-to-resume enabled with no effects until tap. Main tray reset then refresh is source-asserted. [Evidence guide](evidence/issue421/README.md) and [compact EN light2x](evidence/issue421/421-320-2-en-light.png), [compact Hebrew dark2x](evidence/issue421/421-320-2-he-dark.png), [regular original](evidence/issue421/421-1000-2-en-light-normal-error-key-top.png) show successive scroll positions with existing independent notices/controls. The structural region caps at45% viewport, preserves existing wording/actions/visibility and body controls. Reconciliation re-opened these selected complete pixels; manager's broader inspection is recorded separately. Synthetic actual widgets/source-only main, not native or mounted MacHome. No unmet bounded criterion identified. Ready for manager disposition.
+
+### #413 Historical proposal provenance
+
+[KEY_CAPTURE_RETRY_CONTRACT.md](KEY_CAPTURE_RETRY_CONTRACT.md) remains the reviewed PR414 proposal at57c1220. Its private-session/generic-stop/no-recovery source facts and 16-case proposed matrix were true at that snapshot. They are historical, not current API descriptions or implementation authority. Separately assigned PR416/418/420/422 now implement the identity/cleanup/release/API/action slices. No host restart or driver recreation guarantee was selected. Keep proposal facts/alternatives unchanged; read the current map and source for delivered mechanics.
+
 ## Conflicts and historical limits
 
 - **PR400 local test count:** PR prose says 1556, while its listed batches are 595 + 562 + 388 + 23 = **1568**. Reconciliation checked those existing log endings locally; no raw logs are published here. Treat 1556 as a reporting mismatch, not a verified total. Grouped wake start-failure timing errors occurred; the isolated 23 pass did not erase them. PR402 repaired the test observation and its first full exact-head CI succeeded.
 - **Historical evidence:** issue391 README's capture defect is pre-PR394; issue397 README/PNG's invisible Stop/covered AppBar is pre-PR400. Do not silently rewrite evidence or schedule duplicate fixes. PR410 supplies later queued/disposed startup guards.
 - **PR404 visual history:** initial Hebrew glyph omission was fixture-only and corrected before the committed evidence. **PR406 history:** two local attempts interrupted after a fixture theme-access fake-clock hang; final fixture initializes actual IO via runAsync. The committed README records this and final successful checks are separate evidence.
-- **Visual review level:** prior workers reported full inspection of all committed captures. This reconciliation re-opened selected complete Settings, key uncertainty, hold caller failure, historical appearance RTL and current compact 2x RTL Watch/character/language samples, not every capture. Current RTL samples show readable notices/Stop/back/body; historical appearance sample confirms the old defect. No synthetic label authenticates a biometric route or real native session.
+- **Visual review level:** prior workers reported full inspection of all committed captures. The original975ad4e reconciliation re-opened selected complete Settings, key uncertainty, hold caller failure, historical appearance RTL and current compact 2x RTL Watch/character/language samples, not every capture. Current RTL samples show readable notices/Stop/back/body; historical appearance sample confirms the old defect. The current9370264 update additionally re-opened compact EN/light2x, Hebrew/dark2x and regular key-cleanup samples. No synthetic label authenticates a biometric route or real native session.
 - **Scope holds:** #351 image/consent policy, #266 and #344 remain outside this reconciliation. No policy decisions, recurring/paid runs, native requests or unpublished shpalac work are transferred by this page.
 
 ## Keeping the map current
