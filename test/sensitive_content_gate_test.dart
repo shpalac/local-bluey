@@ -16,7 +16,7 @@ void main() {
       (app: '', title: 'Project'),
       (app: 'Editor', title: ''),
       (app: 'Editor', title: null),
-      (app: 'Editor', title: 'x' * 513),
+      (app: 'Editor', title: List.filled(513, 'x').join()),
     ]) {
       expect(
         SensitiveContentGate.beforeCapture(app: entry.app, title: entry.title),
@@ -104,7 +104,7 @@ void main() {
     );
     expect(
       SensitiveContentGate.beforeEgress(
-        text: 'a' * 65537, exactFrameVerified: true,
+        text: List.filled(65537, 'a').join(), exactFrameVerified: true,
       ),
       SensitiveVerdict.unverifiedText,
     );
