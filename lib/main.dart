@@ -47,6 +47,8 @@ import 'ui/hold_key_caller_notice.dart';
 import 'services/speak_receipts.dart';
 import 'services/speech.dart';
 import 'services/speech_disposal_caller.dart';
+import 'services/speech_mute_caller.dart';
+import 'ui/speech_mute_notice.dart';
 import 'services/tool_executor.dart';
 import 'ui/face_screen.dart';
 import 'ui/permission_recovery_card.dart';
@@ -231,6 +233,10 @@ class _MacHomeState extends State<MacHome>
   final _receipts = SpeakReceipts();
   final _speech = SpeechService();
   late final _speechDisposal = SpeechDisposalCaller(owner: _speech);
+  late final _speechMute = SpeechMuteCaller(
+    owner: _speech,
+    broadcast: () => _server.broadcast(Packet(command: 'stopSpeech')),
+  );
   final _tools = ToolExecutor();
   final _safety = SafetyGate();
   late final HoldKeyController _holdKey = HoldKeyController(
@@ -481,8 +487,7 @@ class _MacHomeState extends State<MacHome>
         _server.broadcast(Packet(command: 'wake'));
       case 'mute':
         // Tray quick action (#91): stop any in-flight speech.
-        unawaited(_speech.stop());
-        _server.broadcast(Packet(command: 'stopSpeech'));
+        unawaited(_speechMute.mute());
       case 'status':
         setState(
           () => _bubble = _safety.killed
@@ -658,6 +663,7 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void dispose() {
+    _speechMute.dispose();
     _permissions.removeListener(_onPermissionsChanged);
     _permissions.dispose();
     _trust.dispose();
@@ -690,6 +696,7 @@ class _MacHomeState extends State<MacHome>
             children: [
               MacNoticeRegion(
                 children: [
+                  SpeechMuteNotice(caller: _speechMute),
                   HostReloadNotice(controller: _hostReload),
                   HoldKeyCallerNotice(caller: _holdKeyCaller),
                   KeyCleanupNotice(caller: _keyCleanup),
@@ -901,6 +908,7 @@ class _MacHomeState extends State<MacHome>
               return const SizedBox.shrink();
             },
           ),
+          SpeechMuteNotice(caller: _speechMute),
           PermissionObservationNotice(caller: _permissions),
           TrustObservationNotice(
             caller: _trust,
