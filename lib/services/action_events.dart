@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'watch_pipeline.dart';
 
 /// Stable kind of a normalized action event (BLU-006). Deliberately smaller
@@ -107,10 +109,19 @@ class ActionEventNormalizer {
   DateTime? _lastAt;
   bool _ended = false;
 
-  /// Last accepted time per (kind, app). Bounded: entries older than the
-  /// debounce window are pruned on every accepted event, and the map is
-  /// emptied by [endSession] and [clear].
+  /// Last accepted time per (kind, app). Hard-bounded to [maxEvents] keys:
+  /// entries older than the debounce window are pruned on every accepted
+  /// event, and when more than [maxEvents] keys are live the least recently
+  /// accepted key is evicted. An evicted key is no longer debounced, so the
+  /// debounce guarantee holds only for the [maxEvents] most recently
+  /// accepted distinct (kind, app) keys. Emptied by [endSession] and
+  /// [clear].
   final Map<(ActionEventKind, String), DateTime> _lastByKey = {};
+
+  /// Number of (kind, app) keys currently tracked for debounce (never more
+  /// than [maxEvents]).
+  @visibleForTesting
+  int get debounceKeyCount => _lastByKey.length;
 
   /// Independent snapshot of the retained events.
   List<ActionEvent> get events => List.unmodifiable(_events);
@@ -158,7 +169,13 @@ class ActionEventNormalizer {
     );
     _lastAt = source.at;
     _lastByKey.removeWhere((_, at) => source.at.difference(at) >= debounce);
+    // Re-insert so the map stays ordered by last accepted time, then enforce
+    // the hard cap by evicting the least recently accepted key.
+    _lastByKey.remove((kind, app));
     _lastByKey[(kind, app)] = source.at;
+    while (_lastByKey.length > maxEvents) {
+      _lastByKey.remove(_lastByKey.keys.first);
+    }
     _events.add(event);
     if (_events.length > maxEvents) _events.removeAt(0);
     return event;

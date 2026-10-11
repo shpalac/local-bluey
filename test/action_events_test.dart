@@ -179,6 +179,31 @@ void main() {
     );
   });
 
+  test('debounce keys are hard-capped; the oldest key is evicted', () {
+    final apps = {for (var i = 0; i < 50; i++) 'app$i'};
+    final n = _n(allowed: apps, max: 3);
+    // Same timestamp, high cardinality: key count never exceeds the cap.
+    for (var i = 0; i < 50; i++) {
+      n.normalize(_w(WatchEventKind.appSwitch, 'app$i', 0));
+      expect(n.debounceKeyCount, lessThanOrEqualTo(3));
+    }
+    expect(n.debounceKeyCount, 3);
+    // Cap boundary: the 3 most recent keys are still debounced...
+    expect(n.normalize(_w(WatchEventKind.appSwitch, 'app49', 1)), isNull);
+    expect(n.normalize(_w(WatchEventKind.appSwitch, 'app47', 1)), isNull);
+    // ...but an evicted key is NOT debounced any more (documented limit).
+    expect(n.normalize(_w(WatchEventKind.appSwitch, 'app0', 1)), isNotNull);
+  });
+
+  test('cap of one keeps one key and still debounces that key', () {
+    final n = _n(max: 1);
+    n.normalize(_w(WatchEventKind.appSwitch, 'notes', 0));
+    expect(n.debounceKeyCount, 1);
+    expect(n.normalize(_w(WatchEventKind.appSwitch, 'notes', 1)), isNull);
+    n.normalize(_w(WatchEventKind.appSwitch, 'safari', 1));
+    expect(n.debounceKeyCount, 1);
+  });
+
   test('retained events are capped and the snapshot is immutable', () {
     final n = _n(max: 3);
     for (var i = 0; i < 5; i++) {
