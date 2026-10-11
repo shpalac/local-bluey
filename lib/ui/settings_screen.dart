@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -25,7 +27,10 @@ import 'watch_screen.dart';
 /// Provider picker + connection details for the brain. The API key is stored
 /// in the Keychain, never in plain preferences.
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key, this.onDeleteAll});
+  const SettingsScreen({super.key, this.onDeleteAll, this.tutorial});
+
+  /// Tutorial owner used by the replay tile; defaults to the app-wide one.
+  final TutorialController? tutorial;
 
   /// Return the app to onboarding after all local data has been removed.
   final VoidCallback? onDeleteAll;
@@ -756,18 +761,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'https://github.com/shpalac/local-bluey/blob/main/docs/USER_GUIDE.md',
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.school_outlined),
-              title: const Text('Replay first-steps tutorial'),
-              subtitle: const Text('Wake, ask, point - the guided demo.'),
-              onTap: () {
-                TutorialController.instance.reset();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Tutorial will show on the main screen.'),
-                  ),
-                );
-              },
+            _TutorialReplayTile(
+              controller: widget.tutorial ?? TutorialController.instance,
             ),
             ListTile(
               leading: const Icon(Icons.visibility_outlined),
@@ -1045,5 +1040,115 @@ class _HapticsTileState extends State<_HapticsTile> {
     subtitle: Text(_error ?? 'Touch feedback on hold, answers, and connect.'),
     value: _haptics.enabled,
     onChanged: _saving ? null : _toggle,
+  );
+}
+
+/// Replays the first-steps tutorial and reports only the settled result.
+class _TutorialReplayTile extends StatefulWidget {
+  const _TutorialReplayTile({required this.controller});
+
+  final TutorialController controller;
+
+  @override
+  State<_TutorialReplayTile> createState() => _TutorialReplayTileState();
+}
+
+class _TutorialReplayTileState extends State<_TutorialReplayTile> {
+  Future<void>? _attempt;
+  int _generation = 0;
+  bool _pending = false;
+  bool _failed = false;
+
+  @override
+  void didUpdateWidget(_TutorialReplayTile old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.controller, widget.controller)) {
+      // A result from the replaced owner must not display or block replay.
+      _generation++;
+      _attempt = null;
+      _pending = false;
+      _failed = false;
+    }
+  }
+
+  @override
+  void dispose() {
+    _generation++;
+    super.dispose();
+  }
+
+  Future<void> _replay() {
+    final active = _attempt;
+    if (active != null) return active;
+    // Install the attempt before reset runs so a reentrant tap joins it.
+    final done = Completer<void>();
+    _attempt = done.future;
+    final generation = ++_generation;
+    setState(() {
+      _pending = true;
+      _failed = false;
+    });
+    unawaited(_run(widget.controller, generation, done));
+    return done.future;
+  }
+
+  Future<void> _run(
+    TutorialController owner,
+    int generation,
+    Completer<void> done,
+  ) async {
+    var ok = true;
+    try {
+      await owner.reset();
+    } catch (_) {
+      ok = false;
+    }
+    if (mounted && generation == _generation) {
+      _attempt = null;
+      setState(() {
+        _pending = false;
+        _failed = !ok;
+      });
+      final messenger = ScaffoldMessenger.of(context);
+      messenger.removeCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            ok
+                ? Strings.t(
+                    'Tutorial will show on the main screen.',
+                    'המדריך יוצג במסך הראשי.',
+                  )
+                : Strings.t(
+                    'Could not reset the tutorial. Try again.',
+                    'לא ניתן לאפס את המדריך. נסו שוב.',
+                  ),
+          ),
+        ),
+      );
+    }
+    done.complete();
+  }
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: const Icon(Icons.school_outlined),
+    title: Text(
+      Strings.t('Replay first-steps tutorial', 'הפעלה חוזרת של המדריך'),
+    ),
+    subtitle: Text(
+      _pending
+          ? Strings.t('Resetting...', 'מאפס...')
+          : _failed
+          ? Strings.t(
+              'Could not reset the tutorial. Tap to retry.',
+              'לא ניתן לאפס את המדריך. הקישו כדי לנסות שוב.',
+            )
+          : Strings.t(
+              'Wake, ask, point - the guided demo.',
+              'להעיר, לשאול, להצביע - ההדגמה המודרכת.',
+            ),
+    ),
+    onTap: _replay,
   );
 }
