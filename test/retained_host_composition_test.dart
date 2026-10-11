@@ -250,8 +250,7 @@ class Fixture {
     Future<Uint8List> Function()? snapshot,
   }) => WatchVision(
     provider: () => host.brain.value?.provider,
-    foreground: () async =>
-        (app: 'Editor', title: 'Workspace', locked: false),
+    foreground: () async => (app: 'Editor', title: 'Workspace', locked: false),
     snapshot: () async => ScreenSnapshot(
       jpeg: snapshot == null ? Uint8List.fromList([1, 2]) : await snapshot(),
       targets: 'Workspace tasks',
@@ -423,7 +422,9 @@ void main() {
         final brain = await f.retained('load');
         final before = brain.history.map((m) => m.toJson()).toList();
         final watch = await f.watch();
-        final result = await f.track(f.vision(watch).describe('Editor', 'Workspace'));
+        final result = await f.track(
+          f.vision(watch).describe('Editor', 'Workspace'),
+        );
         expect(result, 'fixture answer');
         expect(f.privacy.value, true);
         expect(f.client.requests.single.url.toString(), f.endpoint(oldUrl));
@@ -474,7 +475,10 @@ void main() {
       await f.retained('load');
       final watch = await f.watch();
       f.readFails = true;
-      expect(await f.track(f.vision(watch).describe('Editor', 'Workspace')), isNull);
+      expect(
+        await f.track(f.vision(watch).describe('Editor', 'Workspace')),
+        isNull,
+      );
       expect(watch.isActive, false);
       expect(f.privacy.value, isNull);
       expect(f.client.requests, isEmpty);
