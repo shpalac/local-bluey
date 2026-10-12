@@ -64,7 +64,8 @@ void main() {
   test('valid multiple records aggregate including final EOF record', () async {
     final result = await run(
       'SF:lib/services/first.dart\nLF:10\nLH:6\nend_of_record\n'
-      '${complete('LF:90\nLH:54\n')}',
+      'SF:lib/services/second.dart\nLF:90\nLH:54\nend_of_record\n'
+      'SF:lib/link/final.dart\nLF:100\nLH:65\n',
     );
     expect(result.exitCode, 0);
     expect(result.stdout, contains('(60/100)'));
