@@ -49,10 +49,7 @@ void main() {
       () => Future<void>.delayed(const Duration(milliseconds: 200)),
     );
     await tester.pump();
-    expect(
-      find.byType(SegmentedButton<BrainBackend>),
-      findsOneWidget,
-    );
+    expect(find.byType(SegmentedButton<BrainBackend>), findsOneWidget);
     expect(find.byType(SingleChildScrollView), findsWidgets);
     expect(tester.takeException(), isNull);
   });
