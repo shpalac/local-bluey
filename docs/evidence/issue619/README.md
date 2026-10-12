@@ -1,0 +1,19 @@
+# #619 critical-card keyboard and RTL fixtures
+
+First code slice, Refs #619, not the full accessibility acceptance. The new [suite](../../../test/accessibility_rtl_suite_test.dart) mounts existing PermissionRecoveryCard and WatchSuggestionCard with fabricated callbacks/data and no watcher, permission bridge, transport or store. Eight cases cover320px, EN/Hebrew RTL, light/dark,1x/2x. Existing UI is unchanged.
+
+Real Tab/Enter traverses Fix, Later, Never for Notes and Dismiss. Each has a named semantic tap action. An entered fabricated Fix gate disables its action without disabling Later; failure restores retry and renders safe copy, not the fabricated private exception. The quoted Hebrew remains unchanged. Callback counts ensure no extra Fix or cross-card action. The gate is released and the semantics handle disposed in finally; no timing budget, retries, skipped test or production change added.
+
+Fresh final focused run: `flutter test test/accessibility_rtl_suite_test.dart test/face_a11y_test.dart test/home_status_cards_test.dart test/onboarding_test.dart --reporter expanded` gave40passes,8new. Analyze clean, format274/0changed, diff check clean, generated SDK paths restored. Initial new-suite draft failed semantics-handle ownership at end-of-test; explicit disposal in the test body then try/finally fixed that harness error. No product defect/root-cause claim from that failed draft. A broader full-suite attempt reached647passes/1skip before the workspace120-second execution cap killed it; that incomplete run is not a full-suite pass or test failure. Required hosted exact-head tests remain the full validation route.
+
+## Pixels and reproduction
+
+Optional capture: create a private output directory, set `A11Y_CAPTURE` to it and `FLUTTER_ROOT` to the actual installed Flutter SDK, then run the new suite. Capture loads readable DejaVuSans from the existing system font path and MaterialIcons from that SDK; no font/model download. Normal tests do not require those optional pixel paths. Sixteen320x844 originals are generated. Permission capture jumps to scroll top; suggestion capture scrolls to Dismiss, so2x views show different parts of the same existing cards, not all controls at once.
+
+- [Complete EN sheet](en-sheet.png) and [complete Hebrew sheet](he-sheet.png): all16 final captures directly inspected; localized failure/quoted evidence/actions readable in their scroll positions, Material icons present. Sheets are a reduced overview, not replacement for original pixel inspection.
+- [Original compact2x EN permission/top](en-light-2-permission.png): title, reason, safe failure, Fix/Later visible; suggestion continues below the viewport.
+- [Original compact2x Hebrew dark suggestion/bottom](he-dark-2-suggestion.png): quoted evidence and Never/Dismiss visible; earlier permission header is above viewport.
+
+Initial capture exposed missing MaterialIcons in the synthetic harness and a permission view left at bottom scroll. The capture font and top-scroll ownership were fixed and final originals/sheets re-rendered and inspected. No production rendering issue was fixed or hidden.
+
+Keyboard/Flutter semantic-tree evidence is not actual VoiceOver/TalkBack output, native MacHome/TCC, focus across the whole application, physical keyboard/device acceptance, all critical actions or a native Hebrew-language review. #603 is merged preparation, not installed new golden CI. No actual network, secrets, screen capture, real permission or retained-policy change. Offline/restart/host cancellation do not apply to this isolated synchronous card traversal; permission failure/pending are fabricated. Existing separate lifecycle/permission/native tests remain. Rollback this new test/evidence/map section only; existing card behavior and fixtures remain unchanged. Issue stays OPEN and owner #351/retained/native gates stand.
