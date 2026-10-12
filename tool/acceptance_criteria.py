@@ -128,7 +128,7 @@ def run_suites(expected: dict[str, set[str]], root: Path, timeout: int) -> dict[
 
 
 def render(data: dict, suites: dict[tuple[str, str], bool] | None) -> tuple[dict, str]:
-    report = {"schemaVersion": SCHEMA_VERSION, "issues": [], "automatedSuitesPassed": True, "issueCompletionCertified": False}
+    report = {"schemaVersion": SCHEMA_VERSION, "issues": [], "automatedSuitesPassed": suites is not None, "issueCompletionCertified": False}
     md = ["# Acceptance evidence", "", "**Important:** CI validates named automated suites only. `manual_required` and `not_implemented` cannot be marked passed by CI or used to auto-close an issue.", ""]
     for issue in data["issues"]:
         rows = []
@@ -187,8 +187,9 @@ def main(argv=None) -> int:
     if summary:
         with open(summary, "a", encoding="utf-8") as fh:
             fh.write(markdown)
-    print("Acceptance report written. Automated evidence: " + ("PASSED" if report["automatedSuitesPassed"] else "FAILED") + ". Unfinished criteria remain visible.")
-    return 0 if report["automatedSuitesPassed"] else 1
+    label = "NOT RUN" if suites is None else ("PASSED" if report["automatedSuitesPassed"] else "FAILED")
+    print("Acceptance report written. Automated evidence: " + label + ". Unfinished criteria remain visible.")
+    return 0 if suites is None or report["automatedSuitesPassed"] else 1
 
 
 if __name__ == "__main__":
