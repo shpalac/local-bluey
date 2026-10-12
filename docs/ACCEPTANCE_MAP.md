@@ -581,3 +581,7 @@ ConnectionFailureKind now exposes explicit unique namespaced codes; ConnectionFa
 ### #629 RequestRunner configuration bounds, first slice
 
 Existing RequestRunner rejects negative maxQueued/maxToolSteps and nonpositive stage/job timeouts at construction. Zero waiting/tool budgets remain valid. Five budget fixtures and one actual fake-runner zero-queue overlap fixture verify overflow recording deletion/no transcription and fresh-run reuse;53 focused passes, analyzer clean. Existing valid configuration behavior and generation checks unchanged. No underlying transport cancellation, entered-action undo, workflow event queue or full leak/backpressure proof. Rollback constructor guards/new budget test/added existing fixture/map; issue OPEN/Refs #629.
+
+### #564 Unwired disabled legacy Routine review card, first slice
+
+Standalone RoutineReviewCard displays caller-supplied existing Routine fields with explicit disabled-draft framing. Accept callback refused for enabled Routine, pending callbacks disabled, generic failure/retry; no save/enable/execute/watcher wiring. Six new widget cases/32 focused passes, analyzer clean; [four inspected EN/HebrewRTL1x2x pixels and limits](evidence/issue564/README.md). Keyboard Enter/semantic action fixture, not native screen reader acceptance. Caller owns validation/privacy; no redaction certificate, editable Workflow steps or persisted decline/never, full564 remains OPEN. Rollback widget/test/evidence/map; runtime/native gates unchanged.
