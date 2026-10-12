@@ -55,6 +55,7 @@ class EvidenceTests(unittest.TestCase):
     def test_test_never_claimed_passed_without_execution(self):
         report, _ = ac.render(self.load(), None)
         self.assertEqual(report['issues'][0]['criteria'][0]['status'], 'not_run')
+        self.assertFalse(report['automatedSuitesPassed'], 'validate-only must not report passing tests')
 
     def test_missing_test_name_denies_manifest(self):
         self.sample['issues'][0]['criteria'][0]['tests'][0]['name'] = 'imagined test'
