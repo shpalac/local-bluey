@@ -39,7 +39,14 @@ def linked_issues(body: str) -> dict[int, bool]:
     without_fences = re.sub(r"(?ms)^\x60\x60\x60.*?^\x60\x60\x60[^\n]*(?:\n|$)", "", body)
     without_inline = re.sub(r"\x60[^\x60\n]*\x60", "", without_fences)
     found = {}
-    for kind, raw_number in REFERENCE.findall(without_inline):
+    for match in REFERENCE.finditer(without_inline):
+        kind, raw_number = match.groups()
+        # A statement such as "do not close #123" is not a closing keyword.
+        # Keep this separate from the positive closing regex to avoid
+        # incorrectly completing in-progress issue tasks.
+        context = without_inline[max(0, match.start() - 24):match.start()]
+        if re.search(r"(?i)\\b(?:do\\s+not|don't|never|not)\\s+$", context):
+            continue
         number = int(raw_number)
         closing = kind.lower().startswith(("close", "fix", "resolve"))
         found[number] = found.get(number, False) or closing
