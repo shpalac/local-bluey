@@ -345,6 +345,24 @@ void main() {
     },
   );
 
+  test('blank or whitespace OCR never reaches the provider', () async {
+    final w = await session();
+    for (final blank in ['', ' ', '\n\t  ']) {
+      final p = Provider();
+      final v = WatchVision(
+        foreground: () async =>
+            (app: 'Editor', title: 'Workspace', locked: false),
+        provider: () => p,
+        snapshot: () async =>
+            verifiedSnapshot(Uint8List.fromList([1, 2]), text: blank),
+        watch: w,
+      );
+      expect(await v.describe('Editor', 'Workspace'), isNull);
+      expect(p.calls, isEmpty, reason: 'blank OCR "$blank" must not egress');
+      expect(p.toolCalls, 0);
+    }
+  });
+
   test('unknown or private window never enters capture', () async {
     final w = await session(), p = Provider();
     var captures = 0;
