@@ -79,6 +79,13 @@ class IssueTaskTests(unittest.TestCase):
             {42: True, 43: False, 44: True},
         )
 
+    def test_markdown_examples_are_not_live_issue_links(self):
+        tick = chr(96)
+        sample = (f"Example: {tick}Closes #123{tick}\\n"
+                  f"{tick * 3}text\\nRefs #234\\n{tick * 3}\\n"
+                  "Refs #42")
+        self.assertEqual(task.linked_issues(sample), {42: False})
+
     def test_requires_checklisted_acceptance_criteria(self):
         with self.assertRaises(task.ContractError):
             task.validate_issue_body("## Acceptance criteria\nUnknown\n## CI plan\n", 42)
