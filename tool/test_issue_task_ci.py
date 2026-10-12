@@ -96,7 +96,7 @@ class IssueTaskTests(unittest.TestCase):
             self.check("Closes #42")
 
     def test_partially_numbered_acceptance_is_rejected(self):
-        self.body += "- [ ] Another criterion without a number.\n"
+        self.body = self.body.replace("\n## CI and validation", "\n- [ ] Another criterion without a number.\n\n## CI and validation")
         with self.assertRaisesRegex(task.ContractError, "number every criterion"):
             self.check("Refs #42")
 
