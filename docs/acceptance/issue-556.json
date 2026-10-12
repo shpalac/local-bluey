@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 556,
+      "title": "BLU-003 SensitiveContentGate — bounded CI evidence",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Benign Hebrew/English corpus passes while credentials, PII and sensitive metadata are refused without exposing secret values in diagnostic verdicts",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/sensitive_content_gate_test.dart",
+              "name": "benign English and Hebrew project windows allow"
+            },
+            {
+              "file": "test/sensitive_content_gate_test.dart",
+              "name": "password, authentication, finance and Hebrew windows blocked"
+            },
+            {
+              "file": "test/sensitive_content_gate_test.dart",
+              "name": "recognised English/Hebrew PII and secrets blocked before egress"
+            },
+            {
+              "file": "test/sensitive_content_gate_test.dart",
+              "name": "refusal reports reason only, not the secret text"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Unknown, private and locked windows fail closed; empty OCR, mid-capture foreground changes and stopped sessions do not reach the model or event buffer",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/sensitive_content_gate_test.dart",
+              "name": "unknown app/title and outsize metadata fail closed"
+            },
+            {
+              "file": "test/sensitive_content_gate_test.dart",
+              "name": "locked and private browsing denied regardless of consent"
+            },
+            {
+              "file": "test/sensitive_content_gate_test.dart",
+              "name": "verified benign OCR may pass; blank or missing OCR must deny"
+            },
+            {
+              "file": "test/watch_pipeline_test.dart",
+              "name": "unknown window metadata blocks all frame and event work"
+            },
+            {
+              "file": "test/watch_pipeline_test.dart",
+              "name": "sensitive English and Hebrew titles never enter event storage"
+            },
+            {
+              "file": "test/watch_pipeline_test.dart",
+              "name": "stop during an in-flight tick leaves no events behind"
+            },
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "blank or whitespace OCR never reaches the provider"
+            },
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "unknown or private window never enters capture"
+            },
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "foreground change after capture blocks model egress"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No unintended native image egress or sensitive background pixels during screen capture",
+          "type": "gap",
+          "reason": "Physical atomic crop/window identity and background-pixel filtering have not been verified. Production proactive vision intentionally remains OFF. Do not treat mocked OCR checks as native proof."
+        },
+        {
+          "id": "ac_3_contract",
+          "requirement": "Production watcher has no vision callback; modeled local-only and OCR-denial rules fail closed",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "production watch has no vision callback and no WatchVision"
+            },
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "no image leaves the device without matching verified OCR evidence"
+            },
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "tightened local-only after capture prevents inference"
+            },
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "model summary containing PII is not returned to the event buffer"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Exact-head flutter analyze, acceptance CI links, PR commands and reviewed evidence",
+          "type": "manual",
+          "reason": "Required CI can prove automated behavior but exact SHA review and documented native/manual limitations need maintainer sign-off; issue is already closed and this PR does not retroactively certify it."
+        },
+        {
+          "id": "native_privacy_review",
+          "requirement": "Real Mac TCC grant/revoke, focus-switch and leakage exercise approved",
+          "type": "manual",
+          "reason": "Requires a physical Mac, real privacy/screen capture behavior, sanitized evidence and maintainer sign-off."
+        }
+      ]
+    }
+  ]
+}
