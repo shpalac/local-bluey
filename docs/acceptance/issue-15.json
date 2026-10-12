@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 15,
+      "title": "Real-device Mac and phone validation",
+      "criteria": [
+        {
+          "id": "roles",
+          "requirement": "Mac host and iOS/Android client capabilities documented in code",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/support_matrix_test.dart",
+              "name": "macOS is the host with full capabilities"
+            },
+            {
+              "file": "test/support_matrix_test.dart",
+              "name": "iOS and Android are phone clients"
+            }
+          ]
+        },
+        {
+          "id": "pairing_fixture",
+          "requirement": "Paired phone end-to-end test in a deterministic host fixture",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/e2e_phone_host_test.dart",
+              "name": "paired phone sends hold-to-talk, host backend warps the pointer"
+            }
+          ]
+        },
+        {
+          "id": "tcc",
+          "requirement": "macOS Accessibility and Screen Recording permission denial/grant/revocation",
+          "type": "manual",
+          "reason": "Requires physical Mac with OS permissions"
+        },
+        {
+          "id": "microphone",
+          "requirement": "Mic prompt and revocation on real phones and Mac",
+          "type": "manual",
+          "reason": "Requires real microphone hardware and OS prompts"
+        },
+        {
+          "id": "bonjour",
+          "requirement": "iOS Bonjour discovery, permission and pairing on LAN",
+          "type": "manual",
+          "reason": "Requires physical iOS device and Mac on trusted LAN"
+        },
+        {
+          "id": "android_pair",
+          "requirement": "Android LAN pairing and microphone prompts",
+          "type": "manual",
+          "reason": "Requires real Android phone paired to a real Mac"
+        },
+        {
+          "id": "kill_switch",
+          "requirement": "Mac emergency stop on physical device",
+          "type": "manual",
+          "reason": "Requires physical host and safe, controlled test"
+        },
+        {
+          "id": "offline_reconnect",
+          "requirement": "Wi-Fi interruption and reconnection",
+          "type": "manual",
+          "reason": "Requires real network interruption testing"
+        },
+        {
+          "id": "actual_face",
+          "requirement": "Face rendering and accessibility on iOS and Android",
+          "type": "manual",
+          "reason": "Requires real screenshots and platform accessibility APIs"
+        }
+      ]
+    }
+  ]
+}
