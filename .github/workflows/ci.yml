@@ -414,11 +414,9 @@ jobs:
           arch: x86_64
           target: google_apis
           profile: pixel_6
-          script: |
-            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-              GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" python3 tool/issue_task_ci.py --mode integration
-            fi
-            flutter test integration_test --reporter expanded
+          # android-emulator-runner executes this via /bin/sh, not bash.
+          # Keep it one POSIX-compatible command; non-PR events no-op in Python.
+          script: GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" python3 tool/issue_task_ci.py --mode integration && flutter test integration_test --reporter expanded
 
   # Linux client build + tests on the generated linux/ runner (#149).
   # GTK3 stack + plugin system deps: tray_manager (ayatana-appindicator),
