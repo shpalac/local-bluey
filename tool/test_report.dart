@@ -13,7 +13,7 @@ void main(List<String> args) {
   final durations = <int, int>{};
   final starts = <int, int>{};
   final failed = <int>{};
-  var count = 0;
+  final hidden = <int>{};
 
   for (final line in File(path).readAsLinesSync()) {
     if (line.trim().isEmpty || !line.startsWith('{')) continue;
@@ -34,22 +34,41 @@ void main(List<String> args) {
         names[id] = t['name'] as String;
         suiteOf[t['id'] as int] = t['suiteID'] as int;
       case 'testDone':
-        if ((e['hidden'] as bool?) ?? false) break;
         final id = e['testID'] as int;
         final started = starts[id];
+        // Preserve exclusion of hidden loader completions without a start.
+        // An error naming that unknown identity is still invalid below.
+        if (started == null && ((e['hidden'] as bool?) ?? false)) break;
         final ended = e['time'] as int;
         if (started == null || ended < started || durations.containsKey(id)) {
           stderr.writeln('Invalid test completion timing');
           exit(2);
         }
-        count++;
         durations[id] = ended - started;
+        if ((e['hidden'] as bool?) ?? false) hidden.add(id);
         if (e['result'] == 'failure' || e['result'] == 'error') {
           failed.add(id);
         }
+      case 'error':
+        final id = e['testID'];
+        if (id is! int || !starts.containsKey(id)) {
+          stderr.writeln('Invalid test error identity');
+          exit(2);
+        }
+        // Error text/stack is deliberately not copied into the report.
+        failed.add(id);
       case 'allSuites':
     }
   }
+
+  if (failed.any((id) => !durations.containsKey(id))) {
+    stderr.writeln('Invalid test error completion');
+    exit(2);
+  }
+  // A late error makes a previously hidden completion visible (Dart protocol).
+  hidden.removeAll(failed);
+  durations.removeWhere((id, _) => hidden.contains(id));
+  final count = durations.length;
 
   if (failedFilesOnly) {
     final files = failed.map((id) => suites[suiteOf[id]] ?? '').toSet()
