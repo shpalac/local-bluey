@@ -6,6 +6,10 @@ completed merely because a PR merges or an unrelated CI check turns green.
 
 ## Lifecycle
 
+New or edited issues are checked by `.github/workflows/issue-task-hygiene.yml`.
+If an acceptance checklist or CI plan is missing, the check fails and adds
+one remediation comment; it never invents the missing requirements.
+
 1. **Triage.** Create from the task, bug, or feature template. Replace all
    placeholders with testable outcomes. Number every checklist item as
    `AC-1:`, `AC-2:`, etc.; the matching manifest IDs must be
