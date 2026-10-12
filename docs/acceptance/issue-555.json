@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 555,
+      "title": "BLU-002 immutable ActivityStep schema — bounded CI evidence",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Round-trip remains canonical; malformed enum, invalid confidence, unsafe fields and unknown schema fail closed",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "canonical round-trip"
+            },
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "unknown version and extra payload fields fail closed"
+            },
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "unknown enum, malformed json and invalid types rejected"
+            },
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "confidence must be finite within zero to one"
+            },
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "UTC and opaque safe IDs required"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "DTO handles valid and invalid inputs deterministically; cancellation, permissions, offline, restart and timeouts are not applicable to a pure, memory-only value object",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "canonical round-trip"
+            },
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "unknown enum, malformed json and invalid types rejected"
+            },
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "UTC and opaque safe IDs required"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "DTO contains no secret-bearing frame/text/path fields or capture, IO, or executor side effects",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "no capture, IO, or lifecycle side effects in DTO"
+            },
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "unknown version and extra payload fields fail closed"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Exact-head flutter analyze, acceptance CI links, PR commands and reviewed evidence",
+          "type": "manual",
+          "reason": "Acceptance tests and analyzer run in regular CI but a reviewer must tie results and implementation evidence to the exact PR head."
+        },
+        {
+          "id": "migration_review",
+          "requirement": "Schema version rejection and future migration policy approved for persistent usage",
+          "type": "manual",
+          "reason": "No deployed prior ActivityStep schema exists; a maintainer must approve the versioned schema contract and future migration policy, independent of basic JSON tests."
+        }
+      ]
+    }
+  ]
+}
