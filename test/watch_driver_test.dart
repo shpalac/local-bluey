@@ -77,4 +77,52 @@ void main() {
       expect(done, isTrue, reason: 'all async assertions finished');
     });
   });
+
+  test('driver crosses the debounce and keeps ticking with no vision', () {
+    fakeAsync((async) {
+      () async {
+        final watch = ScreenWatch.forTesting();
+        await watch.start(
+          length: const Duration(minutes: 5),
+          consentConfirmed: true,
+        );
+        var diffs = 0;
+        final pipeline = WatchPipeline(
+          watch: watch,
+          frontmost: () async =>
+              (app: 'Safari', title: 'Workspace', locked: false),
+          frameDiff: () async {
+            diffs++;
+            return 0.5;
+          },
+        );
+        final kinds = <WatchEventKind>[];
+        pipeline.stream.listen((e) => kinds.add(e.kind));
+        final driver = WatchDriver(
+          pipeline: pipeline,
+          differ: FrameDiffer(),
+          watch: watch,
+        );
+        driver.start();
+        async.elapse(const Duration(seconds: 6));
+        expect(kinds, contains(WatchEventKind.meaningfulChange));
+        final seen = diffs;
+        expect(seen, greaterThanOrEqualTo(WatchPipeline.debouncePolls));
+
+        // Later ticks past the debounce keep running; nothing calls vision.
+        async.elapse(const Duration(seconds: 30));
+        expect(diffs, greaterThan(seen));
+        expect(driver.running, isTrue);
+        expect(kinds.contains(WatchEventKind.visionCall), isFalse);
+        expect(
+          pipeline.events.every((e) => e.kind != WatchEventKind.visionCall),
+          isTrue,
+        );
+        driver.stop();
+        await pipeline.dispose();
+        watch.dispose();
+      }();
+      async.flushMicrotasks();
+    });
+  });
 }
