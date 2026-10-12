@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 636,
+      "title": "BLU-078 Contributor test handbook",
+      "criteria": [
+        {
+          "id": "commands",
+          "requirement": "Reproducible unit, widget, golden and acceptance commands are documented with pinned toolchain prerequisites",
+          "type": "manual",
+          "reason": "Documentation command review is required; CI docs job and repository-wide acceptance tests provide supporting evidence, not an automatic proof of handbook accuracy"
+        },
+        {
+          "id": "platform",
+          "requirement": "Native build prerequisites and unsupported host capabilities are explicit",
+          "type": "manual",
+          "reason": "Platform-specific prerequisites and unsupported Windows host control require maintainer review"
+        },
+        {
+          "id": "privacy",
+          "requirement": "No secret-containing artifacts, unapproved egress or unsafe permission claims are introduced",
+          "type": "manual",
+          "reason": "Documentation-only change; reviewer must verify privacy and security claims"
+        },
+        {
+          "id": "ci",
+          "requirement": "CI and relevant acceptance tests green with reproduction commands",
+          "type": "manual",
+          "reason": "Review exact-head required CI checks and sanitized acceptance-evidence artifact before merging"
+        }
+      ]
+    }
+  ]
+}
