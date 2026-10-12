@@ -15,9 +15,12 @@ final class ActivityStore {
     this.retention = const Duration(days: 7),
     this.sessionLength = const Duration(minutes: 5),
   }) : _now = now ?? DateTime.now {
-    if (capacity < 1 || retention <= Duration.zero ||
+    if (capacity < 1 ||
+        retention <= Duration.zero ||
         sessionLength <= Duration.zero) {
-      throw ArgumentError('capacity and retention/session durations must be positive');
+      throw ArgumentError(
+        'capacity and retention/session durations must be positive',
+      );
     }
   }
 
@@ -93,7 +96,8 @@ final class ActivityStore {
   }
 
   void _prune(DateTime now) {
-    _entries.removeWhere((_, step) =>
-        !step.timestamp.isAfter(now.subtract(retention)));
+    _entries.removeWhere(
+      (_, step) => !step.timestamp.isAfter(now.subtract(retention)),
+    );
   }
 }
