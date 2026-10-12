@@ -115,8 +115,13 @@ void main() {
     expect(history.add(step('a'), approved: true), isTrue);
     await history.clear();
     expect(history.snapshot, isEmpty);
-    history.stopSession();
+    expect(history.isActive, isFalse);
+    expect(history.add(step('b'), approved: true), isFalse);
+    expect(history.startSession(consentConfirmed: false), isFalse);
+    expect(history.startSession(consentConfirmed: true), isTrue);
+    expect(history.add(step('c'), approved: true), isTrue);
     await history.clear();
+    expect(history.snapshot, isEmpty);
     expect(history.isActive, isFalse);
     history.dispose();
     expect(history.startSession(consentConfirmed: true), isFalse);

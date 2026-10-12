@@ -74,14 +74,17 @@ final class ActivityStore {
     return List<ActivityStep>.unmodifiable(_entries.values);
   }
 
-  /// Physical memory purge; no future auto-resume.
+  /// Drop session ownership of records; outstanding snapshots are not securely
+  /// erased from memory and may remain reachable until garbage collection.
   void stopSession() {
     _sessionEndsAt = null;
     _entries.clear();
   }
 
-  /// Retention/deletion integration may call this without starting a session.
-  Future<void> clear() async => _entries.clear();
+  /// Delete activity AND revoke active consent. A clear must never allow new
+  /// capture without a new explicit session start, even if the old timer lives.
+  /// This is a memory-only operation, not verified encrypted disk deletion.
+  Future<void> clear() async => stopSession();
 
   void dispose() {
     stopSession();
