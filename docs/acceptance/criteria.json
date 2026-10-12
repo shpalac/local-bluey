@@ -1,0 +1,292 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 554,
+      "title": "BLU-001 privacy decisions and screen-frame policy",
+      "criteria": [
+        {
+          "id": "consent_and_restart",
+          "requirement": "Observation requires active consent and stays off after restart or cancellation (modeled contract)",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/observation_policy_test.dart",
+              "name": "default-off, restart, revoked consent and cancellation deny"
+            },
+            {
+              "file": "test/observation_policy_test.dart",
+              "name": "missing permission denies"
+            }
+          ]
+        },
+        {
+          "id": "sensitive_window_refusal",
+          "requirement": "Private and unknown window classifications are denied (modeled contract)",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/observation_policy_test.dart",
+              "name": "private and sensitive windows deny even with consent"
+            },
+            {
+              "file": "test/observation_policy_test.dart",
+              "name": "unknown classification fails closed"
+            }
+          ]
+        },
+        {
+          "id": "runtime_capture_audit",
+          "requirement": "Real screen capture, private windows, OS permissions and native focus-switch races verified",
+          "type": "manual",
+          "reason": "A maintainer must record physical macOS Screen Recording/Accessibility permission and window-switch test evidence; a mocked Flutter test does not prove native privacy."
+        },
+        {
+          "id": "privacy_review_signoff",
+          "requirement": "Threat model, data flow and absence of unapproved egress signed off",
+          "type": "manual",
+          "reason": "Security/privacy review with named approver, commit SHA and evidence link is required; CI cannot attest a human review."
+        }
+      ]
+    },
+    {
+      "number": 555,
+      "title": "BLU-002 immutable ActivityStep schema",
+      "criteria": [
+        {
+          "id": "canonical_roundtrip",
+          "requirement": "Canonical versioned JSON round-trip is stable",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "canonical round-trip"
+            }
+          ]
+        },
+        {
+          "id": "invalid_schema_denied",
+          "requirement": "Malformed enums, unknown schemas, unsafe fields and confidence values fail closed",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "unknown version and extra payload fields fail closed"
+            },
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "unknown enum, malformed json and invalid types rejected"
+            },
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "confidence must be finite within zero to one"
+            }
+          ]
+        },
+        {
+          "id": "secret_free_dto",
+          "requirement": "Serialized DTO excludes raw frames, paths and unbounded text",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/activity_step_test.dart",
+              "name": "no capture, IO, or lifecycle side effects in DTO"
+            }
+          ]
+        },
+        {
+          "id": "migration_review",
+          "requirement": "Schema compatibility and future migration policy reviewed",
+          "type": "manual",
+          "reason": "Version 1 has no prior persisted schema to migrate; maintainer must approve explicit-version rejection and document when migration adapters become required."
+        }
+      ]
+    },
+    {
+      "number": 556,
+      "title": "BLU-003 sensitive content gate",
+      "criteria": [
+        {
+          "id": "secret_corpus",
+          "requirement": "Known Hebrew and English secrets/PII are refused; benign examples pass",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/sensitive_content_gate_test.dart",
+              "name": "benign English and Hebrew project windows allow"
+            },
+            {
+              "file": "test/sensitive_content_gate_test.dart",
+              "name": "recognised English/Hebrew PII and secrets blocked before egress"
+            }
+          ]
+        },
+        {
+          "id": "deny_unknown_before_watch",
+          "requirement": "Unknown/private window metadata blocks watch processing and event buffers",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/watch_pipeline_test.dart",
+              "name": "unknown window metadata blocks all frame and event work"
+            },
+            {
+              "file": "test/watch_pipeline_test.dart",
+              "name": "sensitive English and Hebrew titles never enter event storage"
+            }
+          ]
+        },
+        {
+          "id": "vision_disabled_pending_hardware",
+          "requirement": "Production watcher cannot accidentally invoke unverified vision inference",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "production watch has no vision callback and no WatchVision"
+            },
+            {
+              "file": "test/watch_pipeline_test.dart",
+              "name": "without a vision callback ticks keep running and nothing is sent"
+            }
+          ]
+        },
+        {
+          "id": "native_atomic_capture",
+          "requirement": "Atomic native window identity and background-pixel filtering proven before enabling screen-to-model inference",
+          "type": "gap",
+          "reason": "Native crop identity can use cached focus information and may include background pixels; proactive production vision is intentionally OFF. Requires implementation and Mac verification."
+        },
+        {
+          "id": "native_privacy_review",
+          "requirement": "Real macOS permission, focus-switch and leakage tests signed off",
+          "type": "manual",
+          "reason": "Hardware TCC, OCR false negatives, focus races and sensitive-background tests need recorded device evidence and a reviewer."
+        }
+      ]
+    },
+    {
+      "number": 558,
+      "title": "BLU-005 retention settings and delete-all UI",
+      "criteria": [
+        {
+          "id": "scoped_delete_contract",
+          "requirement": "Scoped activity/cache purge protects unrelated stores in the isolated service",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/retention_purge_test.dart",
+              "name": "delete activity and caches leaves protected stores alone"
+            },
+            {
+              "file": "test/retention_purge_test.dart",
+              "name": "protected and unknown ids are refused, nothing cleared"
+            }
+          ]
+        },
+        {
+          "id": "purge_error_contract",
+          "requirement": "Purge failures, duplicate IDs and concurrent requests are handled",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/retention_purge_test.dart",
+              "name": "a failing store is reported by type only; the rest still run"
+            },
+            {
+              "file": "test/retention_purge_test.dart",
+              "name": "a second purge while one runs is refused as busy, then works"
+            }
+          ]
+        },
+        {
+          "id": "retention_ui_integration",
+          "requirement": "Retention opt-in, expiry and scoped purge are implemented in Settings UI and wired to the real registry",
+          "type": "gap",
+          "reason": "Merged PR #678 was service groundwork only; it did not connect a retention toggle or scoped purge to Settings and durable activity storage."
+        },
+        {
+          "id": "encrypted_activity_storage",
+          "requirement": "Readable data, journals and caches are deleted from verified encrypted activity storage",
+          "type": "gap",
+          "reason": "BLU-004 (#557) encrypted ActivityStore and its physical deletion proof are not delivered by the purge service."
+        },
+        {
+          "id": "deletion_scope_signoff",
+          "requirement": "User data deletion semantics validated on real devices without deleting unrelated Routines",
+          "type": "manual",
+          "reason": "A maintainer must confirm the UI and on-disk artifacts on supported systems after real storage integration."
+        }
+      ]
+    },
+    {
+      "number": 563,
+      "title": "BLU-010 local-only Routine draft generation",
+      "criteria": [
+        {
+          "id": "malformed_model_output",
+          "requirement": "Local Routine generator rejects malformed model JSON without executing it",
+          "type": "gap",
+          "reason": "Merged PR #663 added a proposal document only; no local model-powered Routine generator or parser exists to test."
+        },
+        {
+          "id": "hebrew_generation",
+          "requirement": "Generated Routine proposals support Hebrew and RTL review",
+          "type": "gap",
+          "reason": "Hebrew/RTL draft-generation UI and validated model-output fixtures have not been implemented."
+        },
+        {
+          "id": "no_cloud_fallback",
+          "requirement": "Runtime verifies local model selection and prohibits cloud fallback",
+          "type": "gap",
+          "reason": "A documentation plan cannot prove Ollama/model deployment or absence of provider fallback; implement trusted local model boundary and tests."
+        },
+        {
+          "id": "real_model_security_review",
+          "requirement": "Local-only inference and approval UX signed off",
+          "type": "manual",
+          "reason": "Test model locality, provider routing, consent and UI on an isolated real host after implementation."
+        }
+      ]
+    },
+    {
+      "number": 608,
+      "title": "BLU-052 property-based Workflow DSL tests",
+      "criteria": [
+        {
+          "id": "routine_pack_groundwork",
+          "requirement": "Existing Routine pack import properties are deterministic (supporting evidence, not Workflow DSL)",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/routines_property_test.dart",
+              "name": "the same seed always produces the same packs and results"
+            },
+            {
+              "file": "test/routines_property_test.dart",
+              "name": "every single-fault mutation is rejected with nothing changed"
+            }
+          ]
+        },
+        {
+          "id": "workflow_schema_properties",
+          "requirement": "Workflow DSL valid/invalid/migration cases are generated and reproducible",
+          "type": "gap",
+          "reason": "Workflow DSL (#567 / BLU-014) has not been implemented; pack-import property tests from PR #683 are not DSL tests."
+        },
+        {
+          "id": "invalid_workflow_no_execution",
+          "requirement": "Invalid Workflow DSL never reaches the executor",
+          "type": "gap",
+          "reason": "No Workflow DSL validation-to-execution boundary exists to exercise."
+        },
+        {
+          "id": "cross_platform_security_review",
+          "requirement": "Sanitized artifacts, supported platforms and failure behavior reviewed",
+          "type": "manual",
+          "reason": "Maintainer must review DSL runner/platform behavior and CI artifacts after the DSL is implemented; real-device limitations remain manual."
+        }
+      ]
+    }
+  ]
+}
