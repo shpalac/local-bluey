@@ -95,6 +95,10 @@ def run_suites(expected: dict[str, set[str]], root: Path, timeout: int) -> dict[
                 ["flutter", "test", path, "--reporter", "json"],
                 cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 timeout=timeout, check=False,
+                # Never expose the GitHub API token to untrusted test processes.
+                env={k: v for k, v in os.environ.items() if k not in {
+                    "GITHUB_TOKEN", "GH_TOKEN", "ACTIONS_RUNTIME_TOKEN"
+                }},
             )
             passed_file = outcome.returncode == 0
             for raw in outcome.stdout.splitlines():
