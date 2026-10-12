@@ -51,9 +51,12 @@ jobs:
 
       - name: Format check
         run: |
-          dart format --set-exit-if-changed lib test || true
-          git diff -- lib/services/activity_retention_policy.dart test/activity_retention_policy_test.dart
-          git diff --exit-code -- lib/services/activity_retention_policy.dart test/activity_retention_policy_test.dart
+          dart format lib test
+          if ! git diff --quiet -- lib test; then
+            git diff -- lib test
+            echo "::error::Dart formatting differs. Run 'dart format lib test' and commit the changes."
+            exit 1
+          fi
 
       - name: CI metrics fixtures
         run: python3 -m unittest discover -s tool -p test_ci_metrics.py
