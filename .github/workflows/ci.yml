@@ -98,6 +98,9 @@ jobs:
   # Never close an issue solely because this job is green.
   acceptance-evidence:
     if: ${{ github.event_name != 'schedule' }}
+    permissions:
+      contents: read
+      issues: read
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -112,6 +115,15 @@ jobs:
       - run: flutter pub get --enforce-lockfile
       - name: Validate acceptance manifest and no-false-pass behavior
         run: python3 -m unittest discover -s tool -p test_acceptance_criteria.py
+      - name: Validate issue task lifecycle test fixtures
+        run: python3 -m unittest discover -s tool -p test_issue_task_ci.py
+      - name: Validate issue creation and edit hygiene fixtures
+        run: python3 -m unittest discover -s tool -p test_issue_task_hygiene.py
+      - name: Enforce issue contracts and run temporary acceptance tests
+        if: ${{ github.event_name == 'pull_request' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tool/issue_task_ci.py --mode unit
       - name: Execute issue-linked test suites and report incomplete criteria
         run: python3 tool/acceptance_criteria.py --run-tests --out-dir build/acceptance
       - name: Upload sanitized issue acceptance report
@@ -356,6 +368,9 @@ jobs:
   # is mocked in-Dart, so no macOS host is needed.
   android-integration:
     if: ${{ github.event_name != 'schedule' }}
+    permissions:
+      contents: read
+      issues: read
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -399,7 +414,9 @@ jobs:
           arch: x86_64
           target: google_apis
           profile: pixel_6
-          script: flutter test integration_test --reporter expanded
+          # android-emulator-runner executes this via /bin/sh, not bash.
+          # Keep it one POSIX-compatible command; non-PR events no-op in Python.
+          script: GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}" python3 tool/issue_task_ci.py --mode integration && flutter test integration_test --reporter expanded
 
   # Linux client build + tests on the generated linux/ runner (#149).
   # GTK3 stack + plugin system deps: tray_manager (ayatana-appindicator),
