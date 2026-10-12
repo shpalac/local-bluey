@@ -12,6 +12,10 @@ Thanks for helping. This file covers the dev loop; architecture lives in
   both be clean before you push. CI runs the same two commands plus a
   format check (`dart format lib test` - run it, don't eyeball it).
 
+## Issue-driven delivery
+
+Treat every issue as a task with explicit acceptance criteria and a CI plan. See [issue task lifecycle](docs/acceptance/TASK_LIFECYCLE.md) for temporary issue acceptance manifests and permanent integration-test promotion. Use `Refs #n` during implementation; do not use `Closes #n` until the task gate, end-to-end coverage and manual reviews are complete.
+
 ## Branches and PRs
 
 - Branch per issue or per tight cluster: `fix/<issue>-short-name`,
