@@ -50,10 +50,7 @@ jobs:
       - run: flutter pub get --enforce-lockfile
 
       - name: Format check
-        run: |
-          dart format --set-exit-if-changed lib test || true
-          git diff -- lib/services/activity_store.dart test/activity_store_test.dart
-          git diff --exit-code -- lib/services/activity_store.dart test/activity_store_test.dart
+        run: dart format --set-exit-if-changed lib test
 
       - name: CI metrics fixtures
         run: python3 -m unittest discover -s tool -p test_ci_metrics.py
