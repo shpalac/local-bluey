@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 557,
+      "title": "BLU-004 encrypted ActivityStore and retention",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "SQLCipher: wrong key, WAL/journal cleanup and corruption behavior verified against real encrypted on-disk artifacts",
+          "type": "gap",
+          "reason": "SQLCipher database, key lifecycle and physical file/WAL tests are not implemented. This PR is memory-only groundwork and cannot satisfy durable storage requirements."
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Memory-only consent, denied operation, session timeout/restart, TTL, duplicate and capacity boundaries",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/activity_store_test.dart",
+              "name": "observation cannot record without per-session consent and approval"
+            },
+            {
+              "file": "test/activity_store_test.dart",
+              "name": "stop and fresh instance never resurrect observation data"
+            },
+            {
+              "file": "test/activity_store_test.dart",
+              "name": "session expiration clears data and requires fresh consent"
+            },
+            {
+              "file": "test/activity_store_test.dart",
+              "name": "TTL prunes stale records and refuses future timestamps"
+            },
+            {
+              "file": "test/activity_store_test.dart",
+              "name": "capacity, duplicates and immutable snapshots are enforced"
+            },
+            {
+              "file": "test/activity_store_test.dart",
+              "name": "invalid storage bounds fail closed"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No plaintext filesystem writes, network access or implicit re-enablement in memory-only groundwork",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/activity_store_test.dart",
+              "name": "stop and fresh instance never resurrect observation data"
+            },
+            {
+              "file": "test/activity_store_test.dart",
+              "name": "clear purges data without granting consent"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Exact-head analyzer, CI tests, encrypted SQLite evidence and reviewer approval",
+          "type": "manual",
+          "reason": "CI runs automatically; a reviewer must verify the merge head, security review, documentation and real encrypted-at-rest/WAL proof before closing."
+        }
+      ]
+    }
+  ]
+}
