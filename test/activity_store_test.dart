@@ -71,7 +71,7 @@ void main() {
   });
 
   test('TTL prunes stale records and refuses future timestamps', () {
-    final history = store();
+    final history = store(session: const Duration(hours: 2));
     expect(history.startSession(consentConfirmed: true), isTrue);
     expect(
       history.add(
