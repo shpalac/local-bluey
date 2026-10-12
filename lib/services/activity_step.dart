@@ -30,7 +30,10 @@ final class ActivityStep {
     _validateId(sessionId, 'sessionId');
     if (!timestamp.isUtc ||
         timestamp.isBefore(DateTime.utc(2000)) ||
-        timestamp.isAfter(DateTime.utc(2100))) {
+        timestamp.isAfter(DateTime.utc(2100)) ||
+        timestamp.microsecond != 0) {
+      // Canonical form is UTC millisecond precision; sub-millisecond values
+      // would not survive a round-trip, so they are rejected, not truncated.
       throw const ActivityStepFormatException('invalid UTC timestamp');
     }
     if (!confidence.isFinite || confidence < 0 || confidence > 1) {
@@ -39,6 +42,13 @@ final class ActivityStep {
   }
 
   static const int schemaVersion = 1;
+
+  /// Upper bound on an encoded step, checked before any JSON parsing. A valid
+  /// canonical step is well under 300 characters.
+  static const int maxEncodedLength = 512;
+  static final RegExp _timestampPattern = RegExp(
+    r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$',
+  );
   static final RegExp _idPattern = RegExp(r'^[A-Za-z0-9_-]{1,64}$');
 
   final String stepId;
@@ -68,6 +78,10 @@ final class ActivityStep {
   String encode() => jsonEncode(toJson());
 
   static ActivityStep decode(String source) {
+    // Bound size (and so nesting depth) before jsonDecode allocates anything.
+    if (source.length > maxEncodedLength) {
+      throw const ActivityStepFormatException('encoded step too large');
+    }
     try {
       return fromJson(jsonDecode(source));
     } on ActivityStepFormatException {
@@ -112,12 +126,17 @@ final class ActivityStep {
         confidence is! num) {
       throw const ActivityStepFormatException('invalid field type');
     }
-    // Require explicit UTC Z, not an ambiguous local time or offset.
-    if (!timestamp.endsWith('Z')) {
-      throw const ActivityStepFormatException('timestamp must be UTC');
+    // Only the canonical form is accepted: UTC, exactly three fractional
+    // digits, trailing Z. No offsets, local times, or other precisions.
+    if (!_timestampPattern.hasMatch(timestamp)) {
+      throw const ActivityStepFormatException(
+        'timestamp must be canonical UTC',
+      );
     }
     final parsedTime = DateTime.tryParse(timestamp);
-    if (parsedTime == null || !parsedTime.isUtc) {
+    if (parsedTime == null ||
+        !parsedTime.isUtc ||
+        parsedTime.toIso8601String() != timestamp) {
       throw const ActivityStepFormatException('invalid timestamp');
     }
     final parsedKind = ActivityKind.values
