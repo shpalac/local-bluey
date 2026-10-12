@@ -623,3 +623,11 @@ Existing test_report.dart now counts known test error events even after success,
 ### #601 Existing JSON report canonical output ordering
 
 Existing test_report.dart now sorts equal-duration rows by test ID, failed rows by test ID and unique failed-file paths lexicographically. Two actual offline CLI reversed-completion fixtures fail on previous source and pass after repair;19 focused passes incltiming/lateerror/dartdoc, analyzer/format clean. Output is stable for identical IDs/names/paths/durations despite completion interleaving, not across different runner IDs or environments. Timing/failure counts/CLI exit semantics unchanged; no retry execution/workflow/terminal/JUnit/schema/artifact redaction/privacy or full601 acceptance. Rollback sorting/newtest/map; issue OPEN.
+
+### #610 Fault injection harness (partial)
+
+`test/support/fault_injection.dart` is a small deterministic harness: a `FaultPlan` scripts per-attempt outcomes (disk full, unexpected crash, timeout, permission revoked, hang), with a fake secret path in every thrown message so tests can prove nothing is copied out. `test/fault_injection_retention_test.dart` applies it to the existing pure `RetentionPurger` (BLU-005 groundwork): each fault is reported by exception type only, the other stores still purge, the lock is released, a retry of only the failed id causes no repeated clear on the good stores, persistent faults leave no side effect, and a faulting protected store is never attempted.
+
+Known gap recorded as a test, not fixed: `RetentionPurger` has no per-store timeout, so a hung `clear` keeps it busy and later purges are refused as `busy`.
+
+Not covered: process crash and restart (nothing persists to restart from), real disk or OS permission behavior (needs device validation), and the BLU-016 execution state machine and BLU-019 idempotent retry, which do not exist in the repository yet and are this issue's stated dependencies. AC-1 "no duplicate unsafe side effects" is shown only for the purger. Test-only; no production change.
