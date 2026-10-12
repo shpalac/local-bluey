@@ -1,0 +1,8 @@
+# Team roster. GitHub and Slack handles only: no phone numbers or emails.
+# role: manager | worker. wip = max issues in progress at once (default 3).
+repo: shpalac/local-bluey
+slack_channel: C0C7RMN23FS
+members:
+  - {id: mgr, role: manager, github: shferents, slack: Ferents Coder, wip: 1}
+  - {id: nb, role: worker, github: northbeamventures-cell, slack: Northbeam Ventures, wip: 3}
+  - {id: sp, role: worker, github: shpalac, slack: Alex Ferents, wip: 3}
