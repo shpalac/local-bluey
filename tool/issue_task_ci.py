@@ -43,12 +43,30 @@ def linked_issues(body: str) -> dict[int, bool]:
     return found
 
 
-def validate_issue_body(body: str, number: int) -> None:
+def validate_issue_body(body: str, number: int) -> set[str]:
+    """Return exact AC identifiers for numbered checklists.
+
+    Existing backlog items without AC numbering can still reference legacy
+    evidence during migration, but cannot be auto-closed until normalized.
+    """
     section = ACCEPTANCE_HEADING.search(body)
-    if not section or not CHECKBOX.search(section.group(1)):
+    if not section:
+        raise ContractError(f"#{number}: missing Acceptance criteria section")
+    items = CHECKBOX.findall(section.group(1))
+    if not items:
         raise ContractError(f"#{number}: missing testable Acceptance criteria checklist")
     if not VALIDATION_HEADING.search(body):
         raise ContractError(f"#{number}: missing CI / automated validation plan")
+    ids = []
+    for item in items:
+        match = re.match(r"(?i)AC-([1-9]\d*):\s+", item)
+        if match:
+            ids.append(f"ac_{int(match.group(1))}")
+    if ids and (len(ids) != len(items) or len(ids) != len(set(ids))):
+        raise ContractError(
+            f"#{number}: number every criterion uniquely as AC-1:, AC-2:, ..."
+        )
+    return set(ids)
 
 
 def get_issue_body(repository: str, number: int, token: str) -> str:
@@ -160,9 +178,16 @@ def check(root: Path, repository: str, body: str, token: str, mode: str,
     records = []
     for number, closing in sorted(refs.items()):
         issue_body = issue_fetcher(repository, number, token)
-        validate_issue_body(issue_body, number)
+        acceptance_ids = validate_issue_body(issue_body, number)
         path, stage = select_manifest(root, number)
         record = validate_stage(root, number, path, stage, closing)
+        if closing and not acceptance_ids:
+            raise ContractError(f"#{number}: number all acceptance criteria as AC-1:, AC-2:, ...")
+        if acceptance_ids:
+            mapped_ids = {criterion["id"] for criterion in record["criteria"]}
+            if not acceptance_ids.issubset(mapped_ids):
+                missing = ", ".join(sorted(acceptance_ids - mapped_ids))
+                raise ContractError(f"#{number}: acceptance criteria missing test mappings: {missing}")
         records.append(record)
         print(f"#{number}: {stage} acceptance contract ({path.relative_to(root)})")
     tests = expected_tests(records, mode)
