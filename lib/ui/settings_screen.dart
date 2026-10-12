@@ -450,6 +450,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       // #239: plain message with the real host:port; raw text under Details.
       final failure = describeConnectionFailure(e, url);
+      // Log only the allowlisted code, never the target or raw details.
+      debugPrint(failure.code);
       if (mounted) {
         setState(() {
           _testFailure = failure;
@@ -886,7 +888,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       child: Text(
                         _testFailure == null
                             ? _testResult!
-                            : 'Failed: ${_testResult!}',
+                            : 'Failed [${_testFailure!.code}]: ${_testResult!}',
                         style: TextStyle(
                           color: _testFailure == null && !_testPrivacyFailed
                               ? Colors.greenAccent
