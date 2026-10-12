@@ -39,7 +39,7 @@ class EvidenceTests(unittest.TestCase):
         return ac.load_manifest(self.root, self.manifest)
 
     def test_valid_automated_manual_gap(self):
-        report, markdown = ac.render(self.load(), {'test/sample_test.dart': True})
+        report, markdown = ac.render(self.load(), {('test/sample_test.dart', 'always rejects unknown'): True})
         self.assertTrue(report['automatedSuitesPassed'])
         self.assertFalse(report['issueCompletionCertified'])
         self.assertFalse(report['issues'][0]['acceptanceComplete'])
@@ -48,7 +48,7 @@ class EvidenceTests(unittest.TestCase):
         self.assertIn('do not close automatically', markdown)
 
     def test_automated_failure_returns_failed_evidence(self):
-        report, _ = ac.render(self.load(), {'test/sample_test.dart': False})
+        report, _ = ac.render(self.load(), {('test/sample_test.dart', 'always rejects unknown'): False})
         self.assertFalse(report['automatedSuitesPassed'])
         self.assertEqual(report['issues'][0]['criteria'][0]['status'], 'failed')
 
@@ -90,13 +90,28 @@ class EvidenceTests(unittest.TestCase):
     def test_failure_only_reports_filename_not_stdout(self, run):
         run.return_value = subprocess.CompletedProcess([], 1, stdout=b'password=SECRET')
         with patch('builtins.print') as output:
-            results = ac.run_suites(['test/sample_test.dart'], self.root, 5)
-        self.assertEqual(results, {'test/sample_test.dart': False})
+            results = ac.run_suites({'test/sample_test.dart': {'always rejects unknown'}}, self.root, 5)
+        self.assertEqual(results, {('test/sample_test.dart', 'always rejects unknown'): False})
         emitted = ' '.join(str(x) for x in output.call_args_list)
         self.assertNotIn('SECRET', emitted)
         command = run.call_args.args[0]
         self.assertEqual(command[:3], ['flutter', 'test', 'test/sample_test.dart'])
         self.assertEqual(run.call_args.kwargs['timeout'], 5)
+
+    @patch('acceptance_criteria.subprocess.run')
+    def test_named_case_must_actually_run_pass_and_not_skip(self, run):
+        def events(result='success', skipped=False):
+            return (
+                json.dumps({'type': 'testStart', 'test': {'id': 7, 'name': 'always rejects unknown'}})
+                + '\\n' + json.dumps({'type': 'testDone', 'testID': 7, 'result': result, 'skipped': skipped})
+                + '\\n'
+            ).encode()
+        spec = {'test/sample_test.dart': {'always rejects unknown'}}
+        run.return_value = subprocess.CompletedProcess([], 0, stdout=events())
+        self.assertTrue(ac.run_suites(spec, self.root, 5)[('test/sample_test.dart', 'always rejects unknown')])
+        for output in [events(skipped=True), events(result='failure'), b'', events().replace(b'always rejects unknown', b'other test')]:
+            run.return_value = subprocess.CompletedProcess([], 0, stdout=output)
+            self.assertFalse(ac.run_suites(spec, self.root, 5)[('test/sample_test.dart', 'always rejects unknown')])
 
     def test_cli_writes_report_in_validate_mode(self):
         rc = ac.main(['--root', str(self.root), '--manifest', 'matrix.json', '--out-dir', 'reports'])
