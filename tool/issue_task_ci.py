@@ -45,7 +45,7 @@ def linked_issues(body: str) -> dict[int, bool]:
         # Keep this separate from the positive closing regex to avoid
         # incorrectly completing in-progress issue tasks.
         context = without_inline[max(0, match.start() - 24):match.start()]
-        if re.search(r"(?i)\\b(?:do\\s+not|don't|never|not)\\s+$", context):
+        if re.search(r"(?i)\b(?:do\s+not|don't|never|not)\s+$", context):
             continue
         number = int(raw_number)
         closing = kind.lower().startswith(("close", "fix", "resolve"))
