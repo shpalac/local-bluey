@@ -2,6 +2,7 @@ name: Temporary Dart format preview
 on:
   push:
     branches: [feat/bluey-662-settings-layout]
+  pull_request:
 permissions:
   contents: read
 jobs:
