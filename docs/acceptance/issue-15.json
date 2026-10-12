@@ -22,7 +22,7 @@
         },
         {
           "id": "pairing_fixture",
-          "requirement": "Paired phone end-to-end test in a deterministic host fixture",
+          "requirement": "Phone hold-to-talk reception and separate host pointer backend fixture checks",
           "type": "automated",
           "tests": [
             {
