@@ -77,26 +77,57 @@ def load_manifest(root: Path, source: Path) -> dict:
     return data
 
 
-def run_suites(paths: list[str], root: Path, timeout: int) -> dict[str, bool]:
+def run_suites(expected: dict[str, set[str]], root: Path, timeout: int) -> dict[tuple[str, str], bool]:
+    """Require every named case to be observed as successful, not skipped.
+
+    The JSON event protocol binds test IDs to names and testDone outcomes.
+    Whole-file nonzero exit or missing machine events fails every reference.
+    Raw test messages remain in memory and are never echoed or uploaded.
+    """
     result = {}
-    for path in paths:
-        # Never echo or upload raw stdout: regression fixtures can contain PII.
+    for path, names in sorted(expected.items()):
         print(f"Running acceptance suite: {path}", flush=True)
+        started = {}
+        finished = {}
+        passed_file = False
         try:
             outcome = subprocess.run(
-                ["flutter", "test", path, "--reporter", "expanded"],
+                ["flutter", "test", path, "--reporter", "json"],
                 cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 timeout=timeout, check=False,
             )
-            result[path] = outcome.returncode == 0
+            passed_file = outcome.returncode == 0
+            for raw in outcome.stdout.splitlines():
+                try:
+                    event = json.loads(raw)
+                except (ValueError, TypeError):
+                    continue
+                if not isinstance(event, dict):
+                    continue
+                if event.get("type") == "testStart":
+                    test = event.get("test")
+                    if isinstance(test, dict) and type(test.get("id")) is int and isinstance(test.get("name"), str):
+                        started[test["id"]] = test["name"]
+                elif event.get("type") == "testDone":
+                    test_id = event.get("testID")
+                    finished[test_id] = event.get("result") == "success" and event.get("skipped") is False
         except (OSError, subprocess.TimeoutExpired):
-            result[path] = False
-        if not result[path]:
-            print(f"::error file={path}::Acceptance test suite failed or timed out (output withheld)", flush=True)
+            passed_file = False
+
+        for name in sorted(names):
+            matches = [
+                test_id for test_id, observed in started.items()
+                if observed == name or observed.endswith(" " + name)
+            ]
+            result[(path, name)] = (
+                passed_file and len(matches) == 1 and finished.get(matches[0]) is True
+            )
+            if not result[(path, name)]:
+                print(f"::error file={path}::Named acceptance test missing, skipped, failed or timed out (output withheld)", flush=True)
     return result
 
 
-def render(data: dict, suites: dict[str, bool] | None) -> tuple[dict, str]:
+def render(data: dict, suites: dict[tuple[str, str], bool] | None) -> tuple[dict, str]:
     report = {"schemaVersion": SCHEMA_VERSION, "issues": [], "automatedSuitesPassed": True, "issueCompletionCertified": False}
     md = ["# Acceptance evidence", "", "**Important:** CI validates named automated suites only. `manual_required` and `not_implemented` cannot be marked passed by CI or used to auto-close an issue.", ""]
     for issue in data["issues"]:
@@ -104,10 +135,10 @@ def render(data: dict, suites: dict[str, bool] | None) -> tuple[dict, str]:
         for c in issue["criteria"]:
             if c["type"] == "automated":
                 files = sorted({t["file"] for t in c["tests"]})
-                status = "not_run" if suites is None else ("passed" if all(suites.get(p) is True for p in files) else "failed")
+                status = "not_run" if suites is None else ("passed" if all(suites.get((t["file"], t["name"])) is True for t in c["tests"]) else "failed")
                 if status == "failed":
                     report["automatedSuitesPassed"] = False
-                reason = "Named test cases exist and each containing suite passed" if status == "passed" else "Named cases must run and pass"
+                reason = "Every named case ran successfully and its whole test suite passed" if status == "passed" else "Each named case must run, not skip, and pass"
             else:
                 status, reason = STATUS[c["type"]], c["reason"]
                 files = []
@@ -140,8 +171,13 @@ def main(argv=None) -> int:
         return 1
     suites = None
     if args.run_tests:
-        files = sorted({t["file"] for i in data["issues"] for c in i["criteria"] if c["type"] == "automated" for t in c["tests"]})
-        suites = run_suites(files, root, args.timeout)
+        expected = {}
+        for issue in data["issues"]:
+            for criterion in issue["criteria"]:
+                if criterion["type"] == "automated":
+                    for test in criterion["tests"]:
+                        expected.setdefault(test["file"], set()).add(test["name"])
+        suites = run_suites(expected, root, args.timeout)
     report, markdown = render(data, suites)
     output = (root / args.out_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
