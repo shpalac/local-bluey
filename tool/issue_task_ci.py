@@ -183,7 +183,9 @@ def check(root: Path, repository: str, body: str, token: str, mode: str,
         record = validate_stage(root, number, path, stage, closing)
         if closing and not acceptance_ids:
             raise ContractError(f"#{number}: number all acceptance criteria as AC-1:, AC-2:, ...")
-        if acceptance_ids:
+        # Older baseline maps predate AC numbering; allow Refs during migration.
+        # New temporary/permanent contracts must map every numbered item.
+        if acceptance_ids and stage != "legacy":
             mapped_ids = {criterion["id"] for criterion in record["criteria"]}
             if not acceptance_ids.issubset(mapped_ids):
                 missing = ", ".join(sorted(acceptance_ids - mapped_ids))
