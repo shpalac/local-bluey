@@ -26,8 +26,8 @@ Eliminate the reported failure without changing unrelated behavior.
 
 ## CI and validation
 
-- Add a targeted reproducer in \`test/issues/issue_<number>_test.dart\` and map its exact name in \`docs/acceptance/temporary/issue-<number>.json\`.
-- When fixed, add an end-to-end regression in \`integration_test/features/<feature>_test.dart\` and move coverage to \`docs/acceptance/permanent/issue-<number>.json\`.
+- Add a targeted reproducer in `test/issues/issue_<number>_test.dart` and map its exact name in `docs/acceptance/temporary/issue-<number>.json`.
+- When fixed, add an end-to-end regression in `integration_test/features/<feature>_test.dart` and move coverage to `docs/acceptance/permanent/issue-<number>.json`.
 - Remove temporary CI evidence only after permanent integration validation is green; include real-device review where simulator checks are insufficient.
 
 ## Definition of done
