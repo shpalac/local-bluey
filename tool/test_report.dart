@@ -73,12 +73,16 @@ void main(List<String> args) {
   if (failedFilesOnly) {
     final files = failed.map((id) => suites[suiteOf[id]] ?? '').toSet()
       ..remove('');
-    stdout.writeln(files.map((f) => 'test/$f').join(' '));
+    final ordered = files.toList()..sort();
+    stdout.writeln(ordered.map((f) => 'test/$f').join(' '));
     return;
   }
 
   final sorted = durations.entries.toList()
-    ..sort((a, b) => b.value.compareTo(a.value));
+    ..sort((a, b) {
+      final duration = b.value.compareTo(a.value);
+      return duration != 0 ? duration : a.key.compareTo(b.key);
+    });
   final totalMs = durations.values.fold<int>(0, (a, b) => a + b);
   final b = StringBuffer('## Test report\n\n')
     ..writeln(
@@ -92,7 +96,8 @@ void main(List<String> args) {
   }
   if (failed.isNotEmpty) {
     b.writeln('\n**Failed:**');
-    for (final id in failed) {
+    final orderedFailures = failed.toList()..sort();
+    for (final id in orderedFailures) {
       b.writeln('- ${names[id]} (test/${suites[suiteOf[id]]})');
     }
   }
