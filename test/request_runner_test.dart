@@ -131,6 +131,7 @@ class SpyHooks extends RequestHooks {
   final faces = <Mood>[];
   final sentFaces = <Mood>[];
   final says = <String>[];
+  void Function()? onSay;
 
   @override
   void bubble(String? text) => bubbles.add(text);
@@ -141,7 +142,10 @@ class SpyHooks extends RequestHooks {
   @override
   void sendFace(FaceState face) => sentFaces.add(face.mood);
   @override
-  void say(Packet packet, String spoken) => says.add(spoken);
+  void say(Packet packet, String spoken) {
+    says.add(spoken);
+    onSay?.call();
+  }
 }
 
 const _settings = BrainSettings(
@@ -248,6 +252,22 @@ void main() {
     expect(hooks.faces.last, Mood.listening);
     expect(hooks.sentFaces.last, Mood.listening);
   });
+
+  for (final resume in [false, true]) {
+    test('receipt Stop with resume=$resume prevents new playback', () async {
+      final (runner, brain, gate, _, speech, _, hooks, _) = _rig();
+      brain.replies.add(const BrainReply(spoken: 'fabricated reply'));
+      hooks.onSay = () {
+        gate.killed = !resume;
+        gate.generation++;
+      };
+      await runner.process(file);
+      expect(speech.synthesized, 1);
+      expect(hooks.says, ['fabricated reply']); // Already-entered receipt.
+      expect(speech.played, isNull);
+      expect(hooks.bubbles, contains('Stopped.'));
+    });
+  }
 
   test('asleep companion resets to a sleepy face', () async {
     final (runner, brain, _, _, _, _, hooks, _) = _rig();

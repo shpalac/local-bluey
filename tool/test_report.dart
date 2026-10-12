@@ -11,6 +11,7 @@ void main(List<String> args) {
   final names = <int, String>{};
   final suiteOf = <int, int>{};
   final durations = <int, int>{};
+  final starts = <int, int>{};
   final failed = <int>{};
   var count = 0;
 
@@ -23,13 +24,26 @@ void main(List<String> args) {
             .replaceFirst(RegExp(r'^.*[\\/](test[\\/])'), '');
       case 'testStart':
         final t = e['test'];
-        names[t['id'] as int] = t['name'] as String;
+        final id = t['id'] as int;
+        final started = e['time'] as int;
+        if (started < 0 || starts.containsKey(id)) {
+          stderr.writeln('Invalid test start timing');
+          exit(2);
+        }
+        starts[id] = started;
+        names[id] = t['name'] as String;
         suiteOf[t['id'] as int] = t['suiteID'] as int;
       case 'testDone':
         if ((e['hidden'] as bool?) ?? false) break;
         final id = e['testID'] as int;
+        final started = starts[id];
+        final ended = e['time'] as int;
+        if (started == null || ended < started || durations.containsKey(id)) {
+          stderr.writeln('Invalid test completion timing');
+          exit(2);
+        }
         count++;
-        durations[id] = e['time'] as int;
+        durations[id] = ended - started;
         if (e['result'] == 'failure' || e['result'] == 'error') {
           failed.add(id);
         }
@@ -50,7 +64,7 @@ void main(List<String> args) {
   final b = StringBuffer('## Test report\n\n')
     ..writeln(
       '$count tests, ${failed.length} failed, '
-      '${(totalMs / 1000).toStringAsFixed(1)} s total.\n',
+      '${(totalMs / 1000).toStringAsFixed(1)} s summed test time.\n',
     )
     ..writeln('| Slowest 10 | ms |')
     ..writeln('|---|---:|');
