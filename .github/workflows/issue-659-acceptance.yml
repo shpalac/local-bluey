@@ -37,6 +37,9 @@ jobs:
         run: python3 tool/acceptance_criteria.py --manifest docs/acceptance/issue-659.json --run-tests --out-dir build/issue-659-acceptance
       - name: Verify committed screenshot baselines
         run: flutter test test/screenshots/screenshot_harness_test.dart --reporter expanded
+      - name: Diagnose failed mock-only widget fixtures
+        if: ${{ failure() }}
+        run: flutter test test/screenshots/screenshot_harness_test.dart --reporter expanded
       - name: Preserve sanitized evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
