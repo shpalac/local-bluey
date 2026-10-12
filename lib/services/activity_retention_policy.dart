@@ -26,6 +26,5 @@ abstract final class ActivityRetentionPolicy {
 
   /// Production registry is the only source of store ownership. Do not
   /// register mutable user-supplied paths or ad-hoc deletion targets.
-  static RetentionPurger forApplication() =>
-      fromRegistry(DataRegistry.stores);
+  static RetentionPurger forApplication() => fromRegistry(DataRegistry.stores);
 }
