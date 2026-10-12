@@ -20,7 +20,7 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get --enforce-lockfile
-      - run: dart format lib/ui/settings_screen.dart
+      - run: dart format lib/ui/settings_screen.dart test/settings_responsive_test.dart
       - name: Regenerate settings screenshot fixtures
         shell: bash
         run: |
@@ -28,7 +28,7 @@ jobs:
           flutter test --update-goldens test/screenshots/screenshot_harness_test.dart
           outcome=$?
           set -e
-          git add lib/ui/settings_screen.dart test/screenshots/goldens
+          git add lib/ui/settings_screen.dart test/settings_responsive_test.dart test/screenshots/goldens
           if ! git diff --cached --quiet; then
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
