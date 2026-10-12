@@ -68,6 +68,39 @@ void main() {
     expect(section, contains('BrainHost.brain.value?.provider'));
     expect(section, isNot(contains('brain.ask(')));
   });
+
+  test('production snapshot is fail-closed: no native capture is wired', () {
+    final s = File('lib/main.dart').readAsStringSync();
+    final section = s.substring(
+      s.indexOf('  void _syncWatchDriver()'),
+      s.indexOf('  Future<void> _syncWatchTray()'),
+    );
+    final vision = section.substring(
+      section.indexOf('final vision = WatchVision('),
+      section.indexOf('final pipeline = WatchPipeline('),
+    );
+    expect(vision, contains('Screen-watch vision is disabled'));
+    expect(vision, isNot(contains('NativeControl.snapshot')));
+  });
+
+  test(
+    'empty OCR text means unknown pixels and never reaches the model',
+    () async {
+      for (final blank in ['', '  \n']) {
+        final w = await session(), p = Provider();
+        final v = WatchVision(
+          provider: () => p,
+          foreground: () async =>
+              (app: 'Editor', title: 'Workspace', locked: false),
+          snapshot: () async =>
+              verifiedSnapshot(Uint8List.fromList([1, 2]), text: blank),
+          watch: w,
+        );
+        expect(await v.describe('Editor', 'Workspace'), isNull);
+        expect(p.calls, isEmpty);
+      }
+    },
+  );
   test(
     'fresh readonly snapshots no user history/memory or screen accumulation',
     () async {

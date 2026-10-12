@@ -77,13 +77,16 @@ abstract final class SensitiveContentGate {
   /// OCR evidence MUST describe the exact pixels to be sent to the model.
   ///
   /// The caller is responsible for native OCR verification and focus
-  /// consistency. A successful empty OCR result is distinct from no OCR.
+  /// consistency. Empty or whitespace-only text is denied: text-free pixels
+  /// (an image, a drawing, a blank crop) cannot be classified by OCR, so the
+  /// frame stays unknown and is never sent.
   static SensitiveVerdict beforeEgress({
     required String? text,
     required bool exactFrameVerified,
   }) {
     if (!exactFrameVerified ||
         text == null ||
+        text.trim().isEmpty ||
         text.length > maxEvidenceLength) {
       return SensitiveVerdict.unverifiedText;
     }

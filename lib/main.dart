@@ -395,16 +395,15 @@ class _MacHomeState extends State<MacHome>
       final differ = FrameDiffer();
       final vision = WatchVision(
         provider: () => BrainHost.brain.value?.provider,
-        // The ordinary snapshot contains OCR output but no verified
-        // exact-frame evidence. Use the native crop path instead: it
-        // completes OCR on the exact pixels returned, or throws.
-        snapshot: () async {
-          final size = await NativeControl.snapshot();
-          if (size.width <= 0 || size.height <= 0) {
-            throw StateError('Unable to verify screen bounds');
-          }
-          return NativeControl.snapshotRegion(0, 0, size.width, size.height);
-        },
+        // Production vision is deliberately OFF (BLU-003). The native crop
+        // path reports the app from a cached earlier snapshot, not the focus
+        // at capture time, and a full-display capture can contain background
+        // sensitive pixels. Until exact-crop classification and focus
+        // evidence are verified on a device, this fails closed: no capture,
+        // no model call, no event text. Replace only with verified evidence.
+        snapshot: () async => throw StateError(
+          'Screen-watch vision is disabled until exact-crop evidence exists',
+        ),
         foreground: NativeControl.watchFrontmostInfo,
         watch: watch,
       );

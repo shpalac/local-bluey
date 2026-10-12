@@ -164,8 +164,9 @@ reply + face animation -> action and egress logs updated.
 `WatchPolicy` enforces user allowlisting and a hard denylist;
 `SensitiveContentGate` then rejects unknown/private/sensitive window metadata
 **before** the `WatchPipeline` processes frames or events. `WatchVision`
-requires OCR verified against the exact captured image and rechecks
-foreground identity before sending a picture to the configured provider.
+(pure fixtures only; production vision is wired off and fails closed) requires
+non-empty OCR verified against the exact captured image and rechecks
+foreground identity before it would send a picture to the configured provider.
 
 **Scope and limitations:** This is proactive watch only, not every explicit
 conversational screenshot tool. Keyword/OCR checks are best effort and native

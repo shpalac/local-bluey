@@ -12,7 +12,9 @@
 
 ## Native integration and limitations
 
-The existing `NativeControl.snapshotRegion` macOS bridge performs Vision text recognition for **the same captured image** and sets `cropTextVerified` only after success. The watcher now requests a full-display crop via this bridge rather than forwarding an unverified JPEG from `NativeControl.snapshot`. The extra full-display snapshot supplies dimensions and the app identity; the second snapshot is the only one considered for image egress.
+**Production vision is OFF in this PR.** `lib/main.dart` wires `WatchVision` with a snapshot that throws, so no vision capture, model call or event text happens. Reasons: the native `snapshotRegion` bridge reports the app from a cached earlier snapshot (`lastSnapshot`), not the focus at the moment of the crop, so crop identity and focus are not atomic with the pixels; and a full-display capture can contain background sensitive pixels outside the window that passed the metadata check. The only capture left is the existing frame-diff tick, which now runs only after the metadata gate allows it. `WatchVision`, `SensitiveContentGate.beforeEgress` and their fixtures are pure Dart and only prove the fail-closed logic; turning production vision on needs exact-crop classification and atomic focus evidence validated on a real macOS device (separate owner/device gate).
+
+Empty or whitespace-only OCR text is denied: text-free pixels (an image, a drawing, a blank crop) cannot be classified by OCR, so they stay unknown and are never sent.
 
 This is defense in depth, **not perfect classification or guaranteed data-loss prevention**:
 - Vision OCR can miss text, Hebrew/English regexes have false positives and negatives, and a screen may show sensitive visual content without recognized text.

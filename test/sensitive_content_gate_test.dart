@@ -83,7 +83,7 @@ void main() {
     }
   });
 
-  test('verified benign/blank OCR may pass; missing OCR must fail', () {
+  test('verified benign OCR may pass; blank or missing OCR must deny', () {
     expect(
       SensitiveContentGate.beforeEgress(
         text: 'README — Tasks',
@@ -91,10 +91,16 @@ void main() {
       ),
       SensitiveVerdict.allow,
     );
-    expect(
-      SensitiveContentGate.beforeEgress(text: '', exactFrameVerified: true),
-      SensitiveVerdict.allow,
-    );
+    for (final blank in ['', ' ', '\n\t  ']) {
+      expect(
+        SensitiveContentGate.beforeEgress(
+          text: blank,
+          exactFrameVerified: true,
+        ),
+        SensitiveVerdict.unverifiedText,
+        reason: 'text-free pixels cannot be classified',
+      );
+    }
     for (final verified in [false, true]) {
       expect(
         SensitiveContentGate.beforeEgress(

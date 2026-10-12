@@ -9,9 +9,13 @@ import 'watch_policy.dart';
 /// Read-only, session-bound observation. Every frame sent to the model must
 /// be independently OCR-verified from the exact pixels (BLU-003).
 ///
-/// The snapshot must come from a verified native capture (e.g. the full-screen
-/// snapshotRegion bridge). Ordinary snapshots without verification fail closed.
-/// OCR and regex are not a guarantee that every visual secret is recognized.
+/// The snapshot must come from a verified native capture. Ordinary snapshots
+/// without verification fail closed, as do empty OCR results (text-free pixels
+/// cannot be classified). OCR and regex are not a guarantee that every visual
+/// secret is recognized. NOT enabled in production: the native crop path's
+/// reported app is cached from an earlier snapshot, not atomic with the
+/// crop, so [describe] must stay unwired until real crop/focus evidence
+/// exists. This class is only exercised by pure fixtures.
 class WatchVision {
   WatchVision({
     required this._provider,
