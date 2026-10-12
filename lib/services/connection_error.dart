@@ -9,7 +9,19 @@ enum ConnectionFailureKind {
   unauthorized,
   wrongPath,
   modelMissing,
-  other,
+  other;
+
+  /// Stable serialized identity; independent of enum ordinal and raw text.
+  String get code => switch (this) {
+    refused => 'connection.refused',
+    timeout => 'connection.timeout',
+    unreachableHost => 'connection.unreachable_host',
+    tls => 'connection.tls',
+    unauthorized => 'connection.unauthorized',
+    wrongPath => 'connection.wrong_path',
+    modelMissing => 'connection.model_missing',
+    other => 'connection.other',
+  };
 }
 
 /// A plain-language result for a failed connection test. [summary] is what
@@ -23,6 +35,10 @@ class ConnectionFailure {
   });
 
   final ConnectionFailureKind kind;
+
+  /// Shared machine-readable code for callers, UI and sanitized diagnostics.
+  /// Does not include target, summary or raw exception details.
+  String get code => kind.code;
   final String summary;
   final String details;
 

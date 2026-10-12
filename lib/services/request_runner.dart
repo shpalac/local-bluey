@@ -72,7 +72,18 @@ class RequestRunner {
        matchRoutine = matchRoutine ?? RoutineStore.instance.match,
        addToConversation = addToConversation ?? ConversationStore.instance.add,
        currentVoice =
-           currentVoice ?? (() => CharacterStore.instance.current.value.voice);
+           currentVoice ?? (() => CharacterStore.instance.current.value.voice) {
+    if (maxQueued < 0) throw ArgumentError.value(maxQueued, 'maxQueued');
+    if (maxToolSteps < 0) {
+      throw ArgumentError.value(maxToolSteps, 'maxToolSteps');
+    }
+    if (stepTimeout <= Duration.zero) {
+      throw ArgumentError.value(stepTimeout, 'stepTimeout');
+    }
+    if (jobTimeout <= Duration.zero) {
+      throw ArgumentError.value(jobTimeout, 'jobTimeout');
+    }
+  }
 
   final DateTime Function() _now;
   final Future<void> Function(File) _deleteRecording;
