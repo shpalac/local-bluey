@@ -1,14 +1,22 @@
 # Local-only Routine draft proposal
 
-Audit 2026-10-11, main `fa6548a`. Refs #563. DRAFT/UNADOPTED, sole new doc: source/fabricated-data preparation, not a generator, model deployment, accepted schema/fallback, captured activity, new persistence or runtime consent. #557 is blocked:owner; #561/upstream candidate contracts remain unaccepted. #351/retained-provider/retained-operation decisions stay with the owner. ADR-001/PR651 is a proposal, not permission despite contradictory backlog wording.
+Historical audit:2026-10-11 at main `fa6548a`. Refs #563. DRAFT/UNADOPTED design proposal, not a generator/model deployment/accepted generator schema/fallback/capture/persistence/runtime consent. This audit describes that historical snapshot unless the current-state addendum below says otherwise.
 
-## Decision and current evidence
+## Current-state addendum, 2026-10-12
+
+Verified #654/#561 is MERGED at `d10bfed17dd2bd8a5561730ea106550131f47a01` (2026-10-11T23:11:44Z). It is no longer an OPEN candidate. Its delivered pattern-mining groundwork does not establish a model generator, isolated provider or permission for retained input.
+
+[PR #686](https://github.com/shpalac/local-bluey/pull/686) is MERGED at `07752d446c66a983f6b914d491e89eec1ac90f78` (2026-10-12T08:20:39Z): unwired disabled legacy Routine proposal validation, not a model generator or versioned Workflow DSL. It validates already-decoded fields only and makes no JSON duplicate-key, semantic/privacy or local-isolation guarantee.
+
+At the 2026-10-12T11:05Z check, #557 is OPEN with no blocked label; its listed dependencies are #555 schema and #556 classification, both still under review. Michael approved ADR-001/#651 for implementation planning in his direct instruction of 2026-10-11T20:46:56Z. The issue body or a PR merge is not the source of that approval. The manager has been asked to reconfirm the current technical hold scope; this document makes no new current-hold or release claim. Capture, verified encrypted persistence and runtime consent remain separate gates. No retention value or generator/model/persistence design is adopted by this accuracy repair. Do not treat an old label as current.
+
+## Proposed boundary and historical evidence
 
 Separate a reviewable draft from a stored/enabled Routine and from tool execution. A local endpoint and a model-shaped JSON response establish neither privacy nor a safe instruction. Reuse existing owners only after a reviewed draft contract exists. No model/version, prompt, temperature, numeric budget, fallback content, policy or new storage is selected here. No model, capture, download, endpoint or provider call was made for this plan.
 
-Read complete [Routine/store/import](../lib/services/routines.dart), [OllamaProvider](../lib/llm/ollama_provider.dart), [provider contract/parser](../lib/llm/llm_provider.dart), [retry](../lib/llm/retry.dart), Brain/BrainHost, request-runner routine and safety/privacy paths, existing store/provider/request fixtures and current registry. [PR654/#561](https://github.com/shpalac/local-bluey/pull/654) is an OPEN unwired candidate proposal, not current-main draft input. The approved scoring plan is independent preparation, not an installed prerequisite. No overlapping Routine generator PR was found in the bounded live inventory.
+Read complete [Routine/store/import](../lib/services/routines.dart), [OllamaProvider](../lib/llm/ollama_provider.dart), [provider contract/parser](../lib/llm/llm_provider.dart), [retry](../lib/llm/retry.dart), Brain/BrainHost, request-runner routine and safety/privacy paths, existing store/provider/request fixtures and current registry. [PR654/#561](https://github.com/shpalac/local-bluey/pull/654) was OPEN at the historical audit; see the current-state addendum for its verified merge. The approved scoring plan is independent preparation, not an installed prerequisite. No overlapping Routine generator PR was found in the bounded live inventory.
 
-| Current source | Actual behavior | Missing draft boundary |
+| Source at historical audit | Audited behavior | Missing draft boundary |
 | --- | --- | --- |
 | Routine | name, lowercase trigger, instructions, enabled; constructor/fromJson can default missing fields | No proposed schema/version/provenance/review/approval lifecycle; legacy parsing is not strict model validation |
 | Store/import | Existing routines.json, ordered operations, staged write/rename before memory publication; pack size/count/field limits, whole-pack validation/collision rejection | Not encrypted ActivityStore or new draft store. Import stores data only; add/remove/import/clear are real persistence and must not run during preparation |
@@ -47,11 +55,11 @@ Transport logs/artifacts must use allowlisted safe metadata, never prompts/outpu
 
 For a future reviewed implementation, invalidate publication on cancel/revoke/clear, own entered response/parse/cleanup futures and report termination uncertainty honestly. Keep original attempt evidence; do not retry until valid or silently emit a permissive fallback. Requests that could persist or execute require their own owner/user authority and existing SafetyGate, not consent inferred from candidate acceptance.
 
-Rollback future draft wiring without deleting existing routines or changing their matching/import semantics. Preserve schema/provenance/failed-attempt receipts and verify no late save or action can occur. No rollback, store mutation, new fixture, UI/golden, provider configuration, installed model, workflow/schedule/security/threshold or shared-doc change was performed in this PR.
+Rollback future draft wiring without deleting existing routines or changing their matching/import semantics. Preserve schema/provenance/failed-attempt receipts and verify no late save or action can occur. This proposal and its accuracy follow-up make no store mutation, new fixture, UI/golden, provider configuration, installed model, workflow/schedule/security/threshold or shared-doc change.
 
 ## Validation and primary sources
 
-Fresh unchanged command: `flutter test test/routines_test.dart test/provider_retry_test.dart test/provider_stream_test.dart test/privacy_guard_test.dart test/request_runner_test.dart --reporter expanded`:158 passed,0 new tests. Analyze clean; format273/0 changed, generated SDK paths restored. Existing synthetic/file-temp/mock-client contracts only, not new draft regression coverage or actual isolated model/native acceptance. Exact-head static/test/linux/security/docs and manager APPROVED remain required before auto/squash; this issue stays OPEN/partial preparation.
+Validation at the historical audit snapshot: `flutter test test/routines_test.dart test/provider_retry_test.dart test/provider_stream_test.dart test/privacy_guard_test.dart test/request_runner_test.dart --reporter expanded`:158 passed,0 new tests. Analyze clean; format273/0 changed, generated SDK paths restored. Existing synthetic/file-temp/mock-client contracts only, not new draft regression coverage or actual isolated model/native acceptance. Exact-head static/test/linux/security/docs and manager APPROVED remain required before auto/squash; this issue stays OPEN/partial preparation.
 
 - [Ollama structured outputs](https://docs.ollama.com/capabilities/structured-outputs): schema format and independent validation; current Cloud structured-output limitation, not a tested installed version.
 - [Ollama announcement](https://ollama.com/blog/structured-outputs): dated2024-12-06 historical support, not current deployment proof.
