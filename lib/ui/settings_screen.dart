@@ -563,13 +563,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     final needsKey = _backend == BrainBackend.openAiCompatible;
     return Scaffold(
-      appBar: AppBar(title: const Text('Brain settings')),
+      appBar: AppBar(title: Text(Strings.t('Settings', 'הגדרות'))),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            SegmentedButton<BrainBackend>(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 820),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+              children: [
+                _SettingsSectionHeading(Strings.t('AI brain', 'מנוע בינה מלאכותית')),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: SegmentedButton<BrainBackend>(
               segments: const [
                 ButtonSegment(
                   value: BrainBackend.ollama,
@@ -582,7 +588,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
               selected: {_backend},
               onSelectionChanged: (sel) => setState(() => _backend = sel.first),
-            ),
+                  ),
+                ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -647,8 +654,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
             const SizedBox(height: 24),
-            Text('Language', style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 8),
+            _SettingsSectionHeading(Strings.t('Appearance & language', 'מראה ושפה')),
+            const _AppearanceTile(),
             DropdownButtonFormField<UiLanguage>(
               key: ValueKey('ui-language-$_languageFormRevision'),
               initialValue: _uiLanguage,
@@ -690,6 +697,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             const SizedBox(height: 24),
+            _SettingsSectionHeading(Strings.t('Privacy & safety', 'פרטיות ובטיחות')),
             SwitchListTile(
               title: const Text('Local-only mode'),
               subtitle: Text(
@@ -742,6 +750,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 labelText: 'App allowlist (comma separated, empty = all)',
               ),
             ),
+            const AppLockTile(),
+            _SettingsSectionHeading(Strings.t('Device & controls', 'מכשיר ושליטה')),
             SwitchListTile(
               title: const Text('Performance overlay'),
               subtitle: const Text(
@@ -750,11 +760,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: _perfOverlay,
               onChanged: (v) => setState(() => _perfOverlay = v),
             ),
-            const _AppearanceTile(),
-            const AppLockTile(),
             const _HapticsTile(),
             if (defaultTargetPlatform == TargetPlatform.macOS)
               const HoldKeySection(),
+            _SettingsSectionHeading(Strings.t('Help & diagnostics', 'עזרה ואבחון')),
             ListTile(
               leading: const Icon(Icons.menu_book_outlined),
               title: const Text('User guide'),
@@ -799,10 +808,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            Text(
-              'Transcription',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
+            _SettingsSectionHeading(Strings.t('Voice', 'קול')),
+            Text('Transcription', style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             TextFormField(
               controller: _transcriptionBaseUrl,
@@ -840,6 +847,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               controller: _ttsVoice,
               decoration: const InputDecoration(labelText: 'TTS voice'),
             ),
+            _SettingsSectionHeading(Strings.t('Data & retention', 'נתונים ושמירה')),
             DataPrivacySection(
               externalBusy: _saving,
               onCleared: _onDataCleared,
@@ -848,7 +856,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             const SizedBox(height: 24),
-            Row(
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
                 FilledButton(
                   onPressed:
@@ -860,7 +870,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       : _save,
                   child: const Text('Save'),
                 ),
-                const SizedBox(width: 12),
                 OutlinedButton(
                   onPressed: _testing ? null : _test,
                   child: Text(_testing ? 'Testing…' : 'Test connection'),
@@ -934,11 +943,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ],
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+/// Group headers provide hierarchy without affecting existing control state.
+class _SettingsSectionHeading extends StatelessWidget {
+  const _SettingsSectionHeading(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 24, bottom: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        const Divider(),
+      ],
+    ),
+  );
 }
 
 /// Light/dark/system override (#87), persisted via ThemeController.
