@@ -116,6 +116,13 @@ class IssueTaskTests(unittest.TestCase):
         with self.assertRaisesRegex(task.ContractError, "integration_test/"):
             self.check("Closes #42")
         bad.unlink()
+        self.write_manifest("temporary", [{
+            "id": "invalid_input", "requirement": "Reject malformed input",
+            "type": "automated", "tests": [{
+                "file": "test/issues/issue_42_test.dart",
+                "name": "rejects invalid request",
+            }],
+        }])
         self.promotion()
         self.assertTrue(self.check("Closes #42", mode="integration"))
 
