@@ -59,6 +59,7 @@ class _Session implements ReplySession {
   bool completeInsidePlay = false;
   bool listenedAtPlay = false;
   bool disposed = false;
+  final playEntered = Completer<void>();
 
   @override
   Stream<void> get completions => _FlakyStream(controller.stream, this);
@@ -68,6 +69,7 @@ class _Session implements ReplySession {
     path = p;
     listenedAtPlay = controller.hasListener;
     events.add('play');
+    playEntered.complete();
     if (completeInsidePlay) controller.add(null);
     await holdPlay?.future;
     if (playError != null) throw playError!;
@@ -101,6 +103,21 @@ class _World {
       sessions.where((s) => s.path != null).map((s) => s.path!).toList();
 }
 
+// Own the body completion outside the error zone. A body assertion must
+// fail the test instead of stranding a Future across error-zone boundaries.
+Future<void> _guardedBody(Future<void> Function() body, List<Object> errors) {
+  final completion = Completer<void>();
+  runZonedGuarded(() async {
+    try {
+      await body();
+      completion.complete();
+    } catch (error, stack) {
+      completion.completeError(error, stack);
+    }
+  }, (error, _) => errors.add(error));
+  return completion.future;
+}
+
 String _audio([int n = 32]) => base64Encode(List.filled(n, 5));
 
 void main() {
@@ -116,9 +133,10 @@ void main() {
     Future<void> Function(File, List<int>)? write,
     Future<void> Function(File)? delete,
     Future<Directory> Function()? tempDir,
+    void Function(Packet)? send,
   }) => PhoneReplyReceiver(
     createSession: world.create,
-    send: sent.add,
+    send: send ?? sent.add,
     showText: shown.add,
     isActive: () => active,
     tempDir: tempDir ?? () async => dir,
@@ -321,27 +339,47 @@ void main() {
           s.playError = StateError('late engine failure');
         }
       };
+      final oldEntered = Completer<void>();
+      final newPlaying = Completer<void>();
+      final configure = world.configure!;
+      world.configure = (session, index) {
+        configure(session, index);
+        if (index == 0) {
+          session.playEntered.future.then((_) => oldEntered.complete());
+        }
+      };
+      receiver = build(
+        send: (packet) {
+          sent.add(packet);
+          if (packet.command == 'playing' && packet.speech == ids['new']) {
+            newPlaying.complete();
+          }
+        },
+      );
       receiver.handle(say('old', audio: _audio(), text: 'old text'));
-      await settle();
+      await oldEntered.future;
       receiver.handle(say('new', audio: _audio(), text: 'new text'));
       hold.complete();
-      await settle();
+      await newPlaying.future;
+      await receiver.idle;
       expect(shown, ['old text', 'new text'], reason: 'no old error published');
       expect(receipts(), ['playing:new']);
       // Held old write failure after replacement, too.
       shown.clear();
       final wHold = Completer<void>();
+      final writeEntered = Completer<void>();
       receiver = build(
         write: (f, b) async {
+          writeEntered.complete();
           await wHold.future;
           throw StateError('late write failure');
         },
       );
       receiver.handle(say('o2', audio: _audio(), text: 'old2'));
-      await settle();
+      await writeEntered.future;
       receiver.handle(Packet(command: 'stopSpeech'));
       wHold.complete();
-      await settle();
+      await receiver.idle;
       expect(shown, ['old2']);
     },
   );
@@ -500,14 +538,14 @@ void main() {
         s.disposeError = StateError('cannot dispose');
       };
       final errors = <Object>[];
-      await runZonedGuarded(() async {
+      await _guardedBody(() async {
         receiver.handle(say('a', audio: _audio()));
         await settle();
         await receiver.dispose();
         expect(receiver.cleanupPending.value, 1);
         sess(0).controller.add(null);
         await Future<void>.delayed(const Duration(milliseconds: 50));
-      }, (e, _) => errors.add(e));
+      }, errors);
       expect(errors, isEmpty);
       expect(receipts(), ['playing:a']);
     },
@@ -700,27 +738,50 @@ void main() {
 
   test('a throwing done send still cleans up and never escapes', () async {
     final uncaught = <Object>[];
+    final playing = Completer<void>();
+    final removed = Completer<void>();
     receiver = PhoneReplyReceiver(
       createSession: world.create,
       send: (p) {
         if (p.command == 'done') throw StateError('link down');
         sent.add(p);
+        if (p.command == 'playing') playing.complete();
       },
       showText: shown.add,
       tempDir: () async => dir,
+      delete: (file) async {
+        await file.delete();
+        removed.complete();
+      },
     );
-    await runZonedGuarded(() async {
+    await _guardedBody(() async {
       receiver.handle(say('s', audio: _audio()));
-      await settle();
+      await playing.future;
       expect(receipts(), ['playing:s']);
       sess(0).controller.add(null);
-      await settle();
-    }, (e, _) => uncaught.add(e));
+      await removed.future;
+      await receiver.idle;
+    }, uncaught);
     expect(uncaught, isEmpty);
     expect(dir.listSync(), isEmpty);
     expect(sess(0).controller.hasListener, isFalse);
     expect(sess(0).disposed, isTrue);
   });
+
+  test(
+    'guarded fixture propagates body failure to its owned completion',
+    () async {
+      final errors = <Object>[];
+      final marker = StateError('fabricated body failure');
+      await expectLater(
+        _guardedBody(() async {
+          throw marker;
+        }, errors).timeout(const Duration(milliseconds: 50)),
+        throwsA(same(marker)),
+      );
+      expect(errors, isEmpty);
+    },
+  );
 
   test('listener path: errors from callbacks never escape', () async {
     final uncaught = <Object>[];
@@ -730,7 +791,7 @@ void main() {
       showText: shown.add,
       tempDir: () async => dir,
     );
-    await runZonedGuarded(() async {
+    await _guardedBody(() async {
       final stream = StreamController<Packet>();
       stream.stream.listen(receiver.handle);
       stream.add(say('s', audio: _audio()));
@@ -738,7 +799,7 @@ void main() {
       stream.add(Packet(command: 'stopSpeech'));
       await settle();
       await stream.close();
-    }, (e, _) => uncaught.add(e));
+    }, uncaught);
     expect(uncaught, isEmpty);
     expect(dir.listSync(), isEmpty);
   });
