@@ -35,8 +35,11 @@ class ContractError(ValueError):
 
 def linked_issues(body: str) -> dict[int, bool]:
     """Return {issue number: requests closing} from explicit PR references."""
+    # Documentation/examples in Markdown code must never link or close tasks.
+    without_fences = re.sub(r"(?ms)^\x60\x60\x60.*?^\x60\x60\x60[^\n]*(?:\n|$)", "", body)
+    without_inline = re.sub(r"\x60[^\x60\n]*\x60", "", without_fences)
     found = {}
-    for kind, raw_number in REFERENCE.findall(body):
+    for kind, raw_number in REFERENCE.findall(without_inline):
         number = int(raw_number)
         closing = kind.lower().startswith(("close", "fix", "resolve"))
         found[number] = found.get(number, False) or closing
