@@ -103,8 +103,8 @@ class EvidenceTests(unittest.TestCase):
         def events(result='success', skipped=False):
             return (
                 json.dumps({'type': 'testStart', 'test': {'id': 7, 'name': 'always rejects unknown'}})
-                + '\\n' + json.dumps({'type': 'testDone', 'testID': 7, 'result': result, 'skipped': skipped})
-                + '\\n'
+                + '\n' + json.dumps({'type': 'testDone', 'testID': 7, 'result': result, 'skipped': skipped})
+                + '\n'
             ).encode()
         spec = {'test/sample_test.dart': {'always rejects unknown'}}
         run.return_value = subprocess.CompletedProcess([], 0, stdout=events())
