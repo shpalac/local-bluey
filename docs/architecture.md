@@ -99,6 +99,28 @@ only the most recent `maxSteps` of the rest are mined. The limits are
 engineering input safeguards, not product thresholds. Invalid configuration throws. This is partial, unwired groundwork for
 BLU-008: BLU-004/006 are not merged and nothing here claims the full issue. It reads no screen content and makes no suggestion or policy decision.
 
+## Suggestion ranker (BLU-009 groundwork)
+
+`lib/services/suggestion_ranker.dart` ranks, de-duplicates and suppresses
+`PatternCandidate`s. It is pure Dart and not wired into the app: no I/O, no
+clock (the caller passes `now`), nothing kept between calls, and it never
+acts. Every candidate comes back with a verdict (eligible, duplicate,
+dismissed, neverContext, invalid or overCap). Order is total: distinct days,
+then occurrences, then sequence length, then candidate id, so input order does
+not matter. Those counts are evidence, not a confidence value. Cooldown and
+the display cap are required constructor arguments; this module picks no
+numbers. A dismissal hides the exact candidate id until the cooldown has
+passed, and a dismissal dated after `now` (clock moved back) stays hidden. A
+never-context choice hides every candidate in that exact context.
+
+Suppression state is a caller-supplied in-memory `SuppressionSnapshot` (copied
+and immutable). This module does not store, load or delete anything: who
+persists dismissals, where and for how long is a separate owner decision, and
+unavailable state must be passed as a failure, never as an empty snapshot.
+This is partial groundwork for BLU-009 (#562): no persistence, no UI, no app
+wiring, no restart or deletion behavior, and no claim that ADR-001 or any
+retention policy is adopted.
+
 ## Action events (BLU-006)
 
 `lib/services/action_events.dart` maps `WatchEvent`s from `WatchPipeline` into
