@@ -58,6 +58,63 @@ result -> brain -> reply -> TTS (lib/services/tts via provider)
   executed actions, one run id per brain turn (#57). Startup recovery and
   record/load/delete are ordered; unknown/corrupt disk history is not overwritten.
 
+## Capture monitor (BLU-007)
+
+`lib/services/capture_monitor.dart` sits on top of `ScreenWatch`. It exposes
+an indicator (off, active, paused), pause and resume, refusal counters by
+reason (paused, not allowed, hard denied, private window, locked), an
+immediate `stop`, and `attachLock`, which stops capture when a lock signal
+says locked. It never starts a session: `resume` only lifts a pause inside a
+running session, and ending the session forgets the pause. State is in memory
+only, so after a restart the indicator is off. The counters are integers; no
+app names, titles or screen content are recorded. It is not wired into the
+app yet and makes no privacy or retention decision.
+
+`runIfAllowed` fences each request by a monitor epoch and the `ScreenWatch`
+generation captured before its first gate: stop, restart, pause, resume or
+dispose in between refuses the request or drops its result. Pausing during a
+running operation drops that result but cannot cancel the operation itself.
+Refusal reasons are best effort: the watch is asked twice, and a denial by the
+second ask is counted as not allowed without a finer reason. After `dispose`,
+`attachLock` and `resetRefusals` do nothing (counts are left as they were) and
+`stop` still stops without notifying. This is partial, unwired groundwork for BLU-007: BLU-001 is not
+resolved and nothing here claims the full issue.
+
+## Pattern miner (BLU-008)
+
+`lib/services/pattern_miner.dart` finds repeated step sequences in a list of
+`ObservedStep`s (an opaque fingerprint, a time and an optional context). It is
+pure Dart: no I/O, no clock, no randomness, nothing kept between calls, and it
+is not wired into the app. A sequence is reported only when it reaches both the
+occurrence and the distinct-UTC-day thresholds, so a burst on one day never
+qualifies. Runs split on a long pause or a context change, sequences never span
+contexts, a shorter sequence with the same counts as a longer one that contains
+it is dropped, and the result order is fixed. Steps are ordered by time and
+equal-time steps keep the caller's input order, so that order can change the
+result. Occurrences are counted with overlap and belong to the UTC day of their
+first step. At most `maxInputSteps` input steps are visited per call, valid or not (one more
+throws with a count only, so iteration is always finite). Steps with an empty or
+too long fingerprint or a too long context (`maxContextLength`) are dropped, and
+only the most recent `maxSteps` of the rest are mined. The limits are
+engineering input safeguards, not product thresholds. Invalid configuration throws. This is partial, unwired groundwork for
+BLU-008: BLU-004/006 are not merged and nothing here claims the full issue. It reads no screen content and makes no suggestion or policy decision.
+
+## Action events (BLU-006)
+
+`lib/services/action_events.dart` maps `WatchEvent`s from `WatchPipeline` into
+`ActionEvent`s: a stable kind (app activated, screen changed, screen
+described), the allowlisted app, the source time, a fixed per-kind confidence,
+a sequence number and a session id. It is pure Dart and in memory only. It is
+not wired into the app, persists nothing, keeps no window titles or vision
+text, and records no keystrokes. The allowlist is asked again per event and a
+throwing check drops the event. Duplicates of the same kind and app inside a
+debounce window collapse even when other events arrive between them (per-key
+debounce, hard-capped to `maxEvents` tracked keys: past the cap the least recently accepted key is evicted and is no longer debounced), invalid configuration is rejected, timestamps must stay monotonic even across `endSession` (an older event is dropped in the new session; only `clear` forgets the last time), a silence longer than the session gap or a call to
+`endSession` starts a new session, and the retained list is capped. It makes
+no privacy or retention decision; those stay with the blocked policy items.
+This is partial, unwired groundwork for BLU-006: BLU-002/003 are not merged
+and nothing here claims the full issue.
+
 ## Known gaps
 
 Tracked openly rather than claimed as done: Android/Linux ports
