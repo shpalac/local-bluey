@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""Check issue-linked test evidence without claiming manual sign-off.
+
+Only emits bounded identifiers and test filenames; never stores test stdout,
+fixture secrets, screenshots or model responses in reports. A passing CI job
+means automated tests passed, not that every acceptance criterion is complete.
+"""
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+SCHEMA_VERSION = 1
+STATUS = {"automated": "not_run", "manual": "manual_required", "gap": "not_implemented"}
+CASE = re.compile(r"\btest(?:Widgets)?\s*\(\s*(['\"])([^'\"\n]+)\1")
+ID = re.compile(r"^[a-z][a-z0-9_]{2,63}$")
+
+
+class ManifestError(ValueError):
+    """A manifest's claimed evidence cannot be trusted."""
+
+
+def load_manifest(root: Path, source: Path) -> dict:
+    try:
+        data = json.loads(source.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ManifestError(f"invalid manifest ({type(exc).__name__})") from None
+    if set(data) != {"version", "issues"} or data["version"] != SCHEMA_VERSION:
+        raise ManifestError("unknown manifest schema")
+    if not isinstance(data["issues"], list) or not data["issues"]:
+        raise ManifestError("issues must be a non-empty list")
+    seen_issues = set()
+    for issue in data["issues"]:
+        if not isinstance(issue, dict) or set(issue) != {"number", "title", "criteria"}:
+            raise ManifestError("invalid issue record")
+        number = issue["number"]
+        if type(number) is not int or number <= 0 or number in seen_issues:
+            raise ManifestError("invalid or duplicate issue number")
+        seen_issues.add(number)
+        if not isinstance(issue["title"], str) or not issue["title"].strip():
+            raise ManifestError("empty issue title")
+        if not isinstance(issue["criteria"], list) or not issue["criteria"]:
+            raise ManifestError("issue must declare criteria")
+        seen_criteria = set()
+        for c in issue["criteria"]:
+            if not isinstance(c, dict) or not {"id", "requirement", "type"} <= set(c):
+                raise ManifestError(f"#{number}: invalid criterion")
+            if c["type"] not in STATUS or not isinstance(c["requirement"], str) or not c["requirement"].strip():
+                raise ManifestError(f"#{number}: invalid requirement/type")
+            identifier = c["id"]
+            if not isinstance(identifier, str) or not ID.fullmatch(identifier) or identifier in seen_criteria:
+                raise ManifestError(f"#{number}: invalid/duplicate criterion id")
+            seen_criteria.add(identifier)
+            if c["type"] == "automated":
+                if set(c) != {"id", "requirement", "type", "tests"} or not isinstance(c["tests"], list) or not c["tests"]:
+                    raise ManifestError(f"#{number}/{identifier}: automated evidence required")
+                for test in c["tests"]:
+                    if not isinstance(test, dict) or set(test) != {"file", "name"}:
+                        raise ManifestError(f"#{number}/{identifier}: invalid test reference")
+                    path, name = test["file"], test["name"]
+                    if not isinstance(path, str) or not re.fullmatch(r"test/[A-Za-z0-9_/]+_test\.dart", path):
+                        raise ManifestError(f"#{number}/{identifier}: unsafe test path")
+                    if not isinstance(name, str) or not name or len(name) > 200:
+                        raise ManifestError(f"#{number}/{identifier}: invalid test name")
+                    candidate = (root / path).resolve()
+                    if not candidate.is_relative_to((root / "test").resolve()) or not candidate.is_file():
+                        raise ManifestError(f"#{number}/{identifier}: test file missing or outside repository")
+                    source_text = candidate.read_text(encoding="utf-8")
+                    if name not in {m.group(2) for m in CASE.finditer(source_text)}:
+                        raise ManifestError(f"#{number}/{identifier}: declared test name missing in {path}")
+            else:
+                if set(c) != {"id", "requirement", "type", "reason"} or not isinstance(c["reason"], str) or not c["reason"].strip():
+                    raise ManifestError(f"#{number}/{identifier}: explicit gap/manual reason required")
+    return data
+
+
+def run_suites(paths: list[str], root: Path, timeout: int) -> dict[str, bool]:
+    result = {}
+    for path in paths:
+        # Never echo or upload raw stdout: regression fixtures can contain PII.
+        print(f"Running acceptance suite: {path}", flush=True)
+        try:
+            outcome = subprocess.run(
+                ["flutter", "test", path, "--reporter", "expanded"],
+                cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                timeout=timeout, check=False,
+            )
+            result[path] = outcome.returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            result[path] = False
+        if not result[path]:
+            print(f"::error file={path}::Acceptance test suite failed or timed out (output withheld)", flush=True)
+    return result
+
+
+def render(data: dict, suites: dict[str, bool] | None) -> tuple[dict, str]:
+    report = {"schemaVersion": SCHEMA_VERSION, "issues": [], "automatedSuitesPassed": True, "issueCompletionCertified": False}
+    md = ["# Acceptance evidence", "", "**Important:** CI validates named automated suites only. `manual_required` and `not_implemented` cannot be marked passed by CI or used to auto-close an issue.", ""]
+    for issue in data["issues"]:
+        rows = []
+        for c in issue["criteria"]:
+            if c["type"] == "automated":
+                files = sorted({t["file"] for t in c["tests"]})
+                status = "not_run" if suites is None else ("passed" if all(suites.get(p) is True for p in files) else "failed")
+                if status == "failed":
+                    report["automatedSuitesPassed"] = False
+                reason = "Named test cases exist and each containing suite passed" if status == "passed" else "Named cases must run and pass"
+            else:
+                status, reason = STATUS[c["type"]], c["reason"]
+                files = []
+            rows.append({"id": c["id"], "requirement": c["requirement"], "status": status, "evidenceFiles": files, "reason": reason})
+        incomplete = any(row["status"] != "passed" for row in rows)
+        report["issues"].append({"number": issue["number"], "title": issue["title"], "acceptanceComplete": not incomplete, "criteria": rows})
+        md += [f"## #{issue['number']} — {issue['title']}", "", "| Criterion | Evidence | Result |", "|---|---|---|"]
+        for row in rows:
+            evidence = ", ".join(f"`{p}`" for p in row["evidenceFiles"]) or row["reason"].replace("|", "\\|")
+            md.append(f"| `{row['id']}` — {row['requirement'].replace('|', '\\|')} | {evidence} | **{row['status']}** |")
+        md += ["", "**Issue acceptance:** " + ("All declared criteria passed; maintainer review still required" if not incomplete else "Incomplete — do not close automatically"), ""]
+    return report, "\n".join(md) + "\n"
+
+
+def main(argv=None) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
+    ap.add_argument("--manifest", type=Path, default=Path("docs/acceptance/criteria.json"))
+    ap.add_argument("--out-dir", type=Path, default=Path("build/acceptance"))
+    ap.add_argument("--run-tests", action="store_true")
+    ap.add_argument("--timeout", type=int, default=150)
+    args = ap.parse_args(argv)
+    root = args.root.resolve()
+    if args.timeout < 1 or args.timeout > 300:
+        ap.error("--timeout must be between 1 and 300 seconds")
+    try:
+        data = load_manifest(root, (root / args.manifest).resolve())
+    except ManifestError as exc:
+        print(f"::error::Acceptance manifest invalid: {exc}", file=sys.stderr)
+        return 1
+    suites = None
+    if args.run_tests:
+        files = sorted({t["file"] for i in data["issues"] for c in i["criteria"] if c["type"] == "automated" for t in c["tests"]})
+        suites = run_suites(files, root, args.timeout)
+    report, markdown = render(data, suites)
+    output = (root / args.out_dir).resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    (output / "acceptance.json").write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    (output / "acceptance.md").write_text(markdown, encoding="utf-8")
+    summary = os.environ.get("GITHUB_STEP_SUMMARY")
+    if summary:
+        with open(summary, "a", encoding="utf-8") as fh:
+            fh.write(markdown)
+    print("Acceptance report written. Automated evidence: " + ("PASSED" if report["automatedSuitesPassed"] else "FAILED") + ". Unfinished criteria remain visible.")
+    return 0 if report["automatedSuitesPassed"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
