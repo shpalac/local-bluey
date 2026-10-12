@@ -130,8 +130,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tool/issue_task_ci.py --mode unit
-      - name: Execute issue-linked test suites and report incomplete criteria
-        run: python3 tool/acceptance_criteria.py --run-tests --out-dir build/acceptance
+      - name: Check BLU-001..003 acceptance mapping and no-false-pass rules
+        run: python3 -m unittest discover -s tool -p test_blu_001_003_acceptance.py
+      - name: Execute BLU-001..003 named acceptance suites (with manual gaps recorded)
+        run: python3 tool/blu_001_003_acceptance.py --run-tests --out-dir build/acceptance/blu-001-003
+      - name: Execute other issue-linked test suites and report incomplete criteria
+        run: python3 tool/acceptance_criteria.py --run-tests --out-dir build/acceptance/other-issues
       - name: Upload sanitized issue acceptance report
         if: ${{ always() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 554,
+      "title": "BLU-001 observation privacy policy — bounded CI evidence",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Real session restart, sensitive/private window refusal and signed policy approval",
+          "type": "manual",
+          "reason": "Pure Dart policy tests do not prove real OS permission/capture behavior or provide the required signed privacy review; maintainer must validate physical Mac and approval."
+        },
+        {
+          "id": "ac_1_contract",
+          "requirement": "Modeled session is off on restart or cancelled and private/unknown windows are refused",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/observation_policy_test.dart",
+              "name": "default-off, restart, revoked consent and cancellation deny"
+            },
+            {
+              "file": "test/observation_policy_test.dart",
+              "name": "private and sensitive windows deny even with consent"
+            },
+            {
+              "file": "test/observation_policy_test.dart",
+              "name": "unknown classification fails closed"
+            },
+            {
+              "file": "test/screen_watch_test.dart",
+              "name": "off by default - nothing may observe on a fresh launch"
+            },
+            {
+              "file": "test/screen_watch_test.dart",
+              "name": "a session never survives a restart - nothing is persisted"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Deterministic safe-path, missing-consent, missing-allowlist, permission-denial, cancellation and timeout contracts; network-offline not applicable to the pure decision policy",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/observation_policy_test.dart",
+              "name": "explicit safe active session may proceed"
+            },
+            {
+              "file": "test/observation_policy_test.dart",
+              "name": "missing permission denies"
+            },
+            {
+              "file": "test/screen_watch_test.dart",
+              "name": "start refuses without consent, local-only, or an allowlist"
+            },
+            {
+              "file": "test/screen_watch_test.dart",
+              "name": "allowlisted app observed only while the session is on"
+            },
+            {
+              "file": "test/screen_watch_test.dart",
+              "name": "stop cancels in-flight work and drops its result"
+            },
+            {
+              "file": "test/screen_watch_test.dart",
+              "name": "session expires on its own after the fixed length"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No unintended egress, secret retention or unsafe capture/execution in the physical macOS implementation",
+          "type": "manual",
+          "reason": "Hosted unit tests prove modeled deny paths, not the native Screen Recording/TCC pixels or real network behavior. Require recorded hardware/network/privacy evidence and safety review."
+        },
+        {
+          "id": "ac_3_contract",
+          "requirement": "Simulated observation guards disallow excluded surfaces and no-production-vision egress",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/watch_pipeline_test.dart",
+              "name": "nothing runs while the session is off"
+            },
+            {
+              "file": "test/watch_pipeline_test.dart",
+              "name": "unknown window metadata blocks all frame and event work"
+            },
+            {
+              "file": "test/watch_pipeline_test.dart",
+              "name": "sensitive English and Hebrew titles never enter event storage"
+            },
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "production watch has no vision callback and no WatchVision"
+            },
+            {
+              "file": "test/watch_vision_test.dart",
+              "name": "tightened local-only after capture prevents inference"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Exact-head flutter analyze, acceptance CI links, PR commands and reviewed evidence",
+          "type": "manual",
+          "reason": "The existing static/test/acceptance-evidence jobs run independently; a maintainer must link exact PR head checks and review issue-level evidence, not infer sign-off from tests alone."
+        }
+      ]
+    }
+  ]
+}
