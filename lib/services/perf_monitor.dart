@@ -28,12 +28,20 @@ class PerfMonitor {
     DateTime Function()? clock,
     Future<void> Function(File file, String line)? appendLine,
     Future<void> Function(File file)? deleteFile,
+    this.maxRetainedSamplesPerStage = defaultMaxRetainedSamplesPerStage,
   }) : _fileProvider = file,
        _now = clock ?? DateTime.now,
        _appendLine =
            appendLine ??
            ((f, line) => f.writeAsString(line, mode: FileMode.append)),
-       _deleteFile = deleteFile ?? ((f) => f.delete());
+       _deleteFile = deleteFile ?? ((f) => f.delete()) {
+    if (maxRetainedSamplesPerStage < 1) {
+      throw ArgumentError.value(
+        maxRetainedSamplesPerStage,
+        'maxRetainedSamplesPerStage',
+      );
+    }
+  }
 
   /// A monitor with injected storage and clock, for tests.
   @visibleForTesting
@@ -42,11 +50,13 @@ class PerfMonitor {
     DateTime Function()? clock,
     Future<void> Function(File file, String line)? appendLine,
     Future<void> Function(File file)? deleteFile,
+    int maxRetainedSamplesPerStage = defaultMaxRetainedSamplesPerStage,
   }) : this._(
          file: file,
          clock: clock,
          appendLine: appendLine,
          deleteFile: deleteFile,
+         maxRetainedSamplesPerStage: maxRetainedSamplesPerStage,
        );
 
   /// The app-wide instance.
@@ -56,7 +66,17 @@ class PerfMonitor {
   final DateTime Function() _now;
   final Future<void> Function(File file, String line) _appendLine;
   final Future<void> Function(File file) _deleteFile;
+
+  /// At most 1024 recent samples per stage. Selected conservative default;
+  /// median is now the retained-window median, not a lifetime median.
+  /// Does not bound stage cardinality, pending writes or the persisted file.
+  static const defaultMaxRetainedSamplesPerStage = 1024;
+  final int maxRetainedSamplesPerStage;
   final Map<String, List<int>> _samplesMs = {};
+
+  /// Number of retained timing values, not total completed operations.
+  @visibleForTesting
+  int retainedSampleCount(String stage) => _samplesMs[stage]?.length ?? 0;
 
   /// Bumped by every [clear]. A measurement that started in an older
   /// generation neither records a sample nor writes to disk, so pre-clear
@@ -137,7 +157,10 @@ class PerfMonitor {
     } finally {
       if (generation == _generation) {
         final ms = _now().difference(start).inMilliseconds;
-        _samplesMs.putIfAbsent(stage, () => []).add(ms);
+        final samples = _samplesMs.putIfAbsent(stage, () => []);
+        final limit = maxRetainedSamplesPerStage;
+        if (samples.length == limit) samples.removeAt(0);
+        samples.add(ms);
         unawaited(_append(stage, ms, generation));
       }
     }
