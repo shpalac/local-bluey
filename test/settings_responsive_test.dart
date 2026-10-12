@@ -14,30 +14,30 @@ void main() {
     Strings.uiLanguage = UiLanguage.english;
   });
 
-  for (final size in <Size>[
-    const Size(320, 720),
-    const Size(800, 1100),
-    const Size(1280, 850),
-  ]) {
-    testWidgets('settings usable across phone, tablet and desktop sizes', (
-      tester,
-    ) async {
-      tester.view.physicalSize = size;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+  testWidgets('settings usable across phone, tablet and desktop sizes', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
 
+    for (final size in <Size>[
+      const Size(320, 720),
+      const Size(800, 1100),
+      const Size(1280, 850),
+    ]) {
+      tester.view.physicalSize = size;
       await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 200)),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-
       expect(find.text('Settings'), findsOneWidget);
       expect(find.text('AI brain'), findsOneWidget);
       expect(tester.takeException(), isNull);
-    });
-  }
+    }
+  });
+
 
   testWidgets('settings use a scrollable provider picker at narrow width', (
     tester,
