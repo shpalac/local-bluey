@@ -1,0 +1,38 @@
+name: Temporary settings baseline refresh
+on:
+  push:
+    branches: [feat/bluey-662-settings-layout]
+permissions:
+  contents: write
+jobs:
+  refresh:
+    if: "!contains(github.event.head_commit.message, '[baseline-refresh]')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: true
+      - run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format lib/ui/settings_screen.dart
+      - name: Regenerate settings screenshot fixtures
+        shell: bash
+        run: |
+          set +e
+          flutter test --update-goldens test/screenshots/screenshot_harness_test.dart
+          outcome=$?
+          set -e
+          git add lib/ui/settings_screen.dart test/screenshots/goldens
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: apply formatting and refresh settings goldens [baseline-refresh]"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+          exit "$outcome"
