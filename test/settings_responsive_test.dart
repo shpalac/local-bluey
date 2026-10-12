@@ -50,9 +50,7 @@ void main() {
     );
     await tester.pump();
     expect(
-      find.byWidgetPredicate(
-        (widget) => widget is SegmentedButton<BrainBackend>,
-      ),
+      find.byWidgetPredicate((widget) => widget is SegmentedButton<BrainBackend>),
       findsOneWidget,
     );
     expect(find.byType(SingleChildScrollView), findsWidgets);
@@ -69,9 +67,9 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: const TextScaler.linear(2)),
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(2),
+          ),
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: child!,
