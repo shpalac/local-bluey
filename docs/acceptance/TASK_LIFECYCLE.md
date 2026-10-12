@@ -7,7 +7,9 @@ completed merely because a PR merges or an unrelated CI check turns green.
 ## Lifecycle
 
 1. **Triage.** Create from the task, bug, or feature template. Replace all
-   placeholders with testable outcomes. Specify real platform/device limits,
+   placeholders with testable outcomes. Number every checklist item as
+   `AC-1:`, `AC-2:`, etc.; the matching manifest IDs must be
+   `ac_1`, `ac_2`, etc. Specify real platform/device limits,
    negative cases (bad inputs, permission denial, offline, restart,
    cancellation) and explicit exclusions.
 2. **Start work.** Reference the issue with `Refs #123` in the PR body. Add
@@ -50,7 +52,7 @@ Create `docs/acceptance/temporary/issue-123.json`:
     "title": "Example feature",
     "criteria": [
       {
-        "id": "user_journey",
+        "id": "ac_1",
         "requirement": "A valid user action reaches the expected result",
         "type": "automated",
         "tests": [{
@@ -59,7 +61,7 @@ Create `docs/acceptance/temporary/issue-123.json`:
         }]
       },
       {
-        "id": "native_permission",
+        "id": "ac_2",
         "requirement": "Physical macOS permission revocation works",
         "type": "manual",
         "reason": "Requires a real Mac TCC grant/revoke scenario and signed evidence"
