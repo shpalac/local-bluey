@@ -57,3 +57,11 @@ class MetricsTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+# The existing static lane discovers this module explicitly. Keep the golden
+# inventory fixtures in that same hosted invocation without changing workflows.
+def load_tests(loader, tests, pattern):
+    import test_golden_failure_manifest
+    tests.addTests(loader.loadTestsFromModule(test_golden_failure_manifest))
+    return tests
