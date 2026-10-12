@@ -1,6 +1,6 @@
 # ADR-002 — Observation consent, screen frames, retention and threat model
 
-**Status:** Accepted for implementation planning, 2026-10-11. **Issue:** [BLU-001 #554](https://github.com/shpalac/local-bluey/issues/554). **Decision authority:** repository owner delegated decisions in issue discussion. **Scope:** proposed activity observation/Teach Mode; **not** a claim that the feature is shipped.
+**Status:** Proposed, 2026-10-11; not ratified by a recorded owner decision. **Issue:** [BLU-001 #554](https://github.com/shpalac/local-bluey/issues/554). **Decision authority:** none recorded here. Any delegated or owner approval must be cited from a verifiable source before this ADR is treated as accepted. **Scope:** proposed activity observation/Teach Mode; **not** a claim that the feature is shipped.
 
 ## Context and source audit
 
@@ -16,7 +16,7 @@
 1. **Default off and no auto-resume.** Observation requires an explicit user action in each session and active OS permissions. A process restart, permission loss, user revocation, timeout or cancellation ends the session. No background collection or persistent opt-in to active capture.
 2. **Fail closed before capture, model and disk.** Private/incognito windows, password/authentication surfaces, known sensitive content and unknown/unavailable classification are denied. A user granting observation permission does not override this policy. Classify from safe OS window metadata before requesting pixels when possible; if the metadata cannot be trusted, do not capture.
 3. **Frame lifetime.** Frames may exist only in volatile memory for the minimal operation; never write raw frames to disk, logs, telemetry, crash artifacts, action history or an LLM endpoint as part of observation. On cancel/revoke, invalidate pending work and release resources. `FrameDiffer` is an optimization only, never evidence of safety.
-4. **Retention.** No durable activity storage until BLU-004 verifies genuine at-rest encryption, protected keys, WAL/journal/backup behavior and deletion. Future retention is opt-in, finite (proposed default 7 days) and visible in Settings; disabling must stop writers and purge retained activity and derived caches. Unrelated user-created Routines are not deleted by activity-only purge.
+4. **Retention.** No durable activity storage until BLU-004 verifies genuine at-rest encryption, protected keys, WAL/journal/backup behavior and deletion. Future retention is opt-in, finite (the TTL value is undecided: ADR-001 proposes 14 days for redacted opted-in metadata, and no number is fixed here) and visible in Settings; disabling must stop writers and purge retained activity and derived caches. Unrelated user-created Routines are not deleted by activity-only purge.
 5. **Safety.** Observation cannot execute actions. Any later replay/automation passes the existing SafetyGate and explicit approval, including local-only endpoint checks. Failures must never silently downgrade security.
 6. **Metadata.** Audit may record sanitized reason codes, timestamp and session identifier only; never window title, raw OCR, screenshot bytes, prompts, secrets or unbounded free text.
 
