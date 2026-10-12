@@ -12,9 +12,10 @@ PatternCandidate c(String ctx, List<String> seq, int occ, int days) =>
 
 void main() {
   final now = DateTime.utc(2030, 1, 10, 12);
-  SuggestionRanker ranker({int cap = 5, Duration? cd}) => SuggestionRanker(
-    cooldown: cd ?? const Duration(hours: 24),
+  SuggestionRanker ranker({int cap = 5, int limit = 100}) => SuggestionRanker(
+    cooldown: const Duration(hours: 24),
     maxEligible: cap,
+    maxCandidates: limit,
   );
 
   List<String> ids(List<SuggestionDecision> r, SuggestionVerdict v) =>
@@ -145,6 +146,7 @@ void main() {
       () => SuggestionRanker(
         cooldown: const Duration(seconds: -1),
         maxEligible: 1,
+        maxCandidates: 1,
       ),
       throwsArgumentError,
     );
