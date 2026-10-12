@@ -14,19 +14,52 @@ void main(List<String> args) {
   final found = <String, int>{};
   final hit = <String, int>{};
   var current = '';
+  int? recordFound;
+  int? recordHit;
+  void finishRecord() {
+    if (current.isEmpty) return;
+    if (recordFound == null || recordHit == null || recordHit > recordFound) {
+      stderr.writeln('Invalid coverage counts for $current');
+      exit(2);
+    }
+    found[current] = (found[current] ?? 0) + recordFound;
+    hit[current] = (hit[current] ?? 0) + recordHit;
+  }
+
+  int count(String value) {
+    final parsed = int.tryParse(value);
+    if (parsed == null || parsed < 0) {
+      stderr.writeln('Invalid coverage count');
+      exit(2);
+    }
+    return parsed;
+  }
+
   for (final line in file.readAsLinesSync()) {
     if (line.startsWith('SF:')) {
+      finishRecord();
+      recordFound = null;
+      recordHit = null;
       final path = line.substring(3);
       current = thresholds.keys.firstWhere(
         (dir) => path.startsWith('$dir/'),
         orElse: () => '',
       );
     } else if (current.isNotEmpty && line.startsWith('LF:')) {
-      found[current] = (found[current] ?? 0) + int.parse(line.substring(3));
+      if (recordFound != null) {
+        stderr.writeln('Duplicate coverage count');
+        exit(2);
+      }
+      recordFound = count(line.substring(3));
     } else if (current.isNotEmpty && line.startsWith('LH:')) {
-      hit[current] = (hit[current] ?? 0) + int.parse(line.substring(3));
+      if (recordHit != null) {
+        stderr.writeln('Duplicate coverage count');
+        exit(2);
+      }
+      recordHit = count(line.substring(3));
     }
   }
+  finishRecord();
   var failed = false;
   for (final entry in thresholds.entries) {
     final lf = found[entry.key] ?? 0;
