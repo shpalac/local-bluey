@@ -26,13 +26,13 @@ class IssueTaskTests(unittest.TestCase):
         )
         self.body = (
             "## Acceptance criteria\n"
-            "- [ ] Reject invalid request without side effects.\n"
+            "- [ ] AC-1: Reject invalid request without side effects.\n"
             "\n## CI and validation\n"
             "Run named acceptance suites.\n"
         )
         self.write_manifest("temporary", [
             {
-                "id": "invalid_input",
+                "id": "ac_1",
                 "requirement": "Reject malformed input",
                 "type": "automated",
                 "tests": [{
@@ -54,7 +54,7 @@ class IssueTaskTests(unittest.TestCase):
         (self.root / "docs/acceptance/temporary/issue-42.json").unlink()
         return self.write_manifest("permanent", [
             {
-                "id": "feature_journey",
+                "id": "ac_1",
                 "requirement": "Complete the full user journey",
                 "type": "automated",
                 "tests": [{
@@ -82,6 +82,23 @@ class IssueTaskTests(unittest.TestCase):
     def test_requires_checklisted_acceptance_criteria(self):
         with self.assertRaises(task.ContractError):
             task.validate_issue_body("## Acceptance criteria\nUnknown\n## CI plan\n", 42)
+
+    def test_numbered_criteria_must_map_to_evidence(self):
+        self.assertTrue(self.check("Refs #42"))
+        self.body = self.body.replace("AC-1:", "AC-2:")
+        with self.assertRaisesRegex(task.ContractError, "missing test mappings"):
+            self.check("Refs #42")
+
+    def test_unnumbered_backlog_cannot_auto_close(self):
+        self.promotion()
+        self.body = self.body.replace("AC-1:", "Expected:")
+        with self.assertRaisesRegex(task.ContractError, "number all acceptance"):
+            self.check("Closes #42")
+
+    def test_partially_numbered_acceptance_is_rejected(self):
+        self.body += "- [ ] Another criterion without a number.\n"
+        with self.assertRaisesRegex(task.ContractError, "number every criterion"):
+            self.check("Refs #42")
 
     def test_requires_ci_plan(self):
         with self.assertRaises(task.ContractError):
@@ -117,7 +134,7 @@ class IssueTaskTests(unittest.TestCase):
             self.check("Closes #42")
         bad.unlink()
         self.write_manifest("temporary", [{
-            "id": "invalid_input", "requirement": "Reject malformed input",
+            "id": "ac_1", "requirement": "Reject malformed input",
             "type": "automated", "tests": [{
                 "file": "test/issues/issue_42_test.dart",
                 "name": "rejects invalid request",
