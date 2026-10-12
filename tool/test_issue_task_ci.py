@@ -81,8 +81,8 @@ class IssueTaskTests(unittest.TestCase):
 
     def test_markdown_examples_are_not_live_issue_links(self):
         tick = chr(96)
-        sample = (f"Example: {tick}Closes #123{tick}\\n"
-                  f"{tick * 3}text\\nRefs #234\\n{tick * 3}\\n"
+        sample = (f"Example: {tick}Closes #123{tick}\n"
+                  f"{tick * 3}text\nRefs #234\n{tick * 3}\n"
                   "Refs #42")
         self.assertEqual(task.linked_issues(sample), {42: False})
 
