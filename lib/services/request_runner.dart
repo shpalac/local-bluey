@@ -372,6 +372,9 @@ class RequestRunner {
             ),
             reply.spoken,
           );
+          // A synchronous receipt hook may Stop or Stop/resume this run.
+          // Do not start a new playback action after that revocation.
+          check();
           unawaited(speech.playBytes(audio));
         } on SpeechException catch (e) {
           check();
