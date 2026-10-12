@@ -61,12 +61,12 @@ def load_manifest(root: Path, source: Path) -> dict:
                     if not isinstance(test, dict) or set(test) != {"file", "name"}:
                         raise ManifestError(f"#{number}/{identifier}: invalid test reference")
                     path, name = test["file"], test["name"]
-                    if not isinstance(path, str) or not re.fullmatch(r"test/[A-Za-z0-9_/]+_test\.dart", path):
+                    if not isinstance(path, str) or not re.fullmatch(r"(?:test|integration_test)/[A-Za-z0-9_/]+_test\.dart", path):
                         raise ManifestError(f"#{number}/{identifier}: unsafe test path")
                     if not isinstance(name, str) or not name or len(name) > 200:
                         raise ManifestError(f"#{number}/{identifier}: invalid test name")
                     candidate = (root / path).resolve()
-                    if not candidate.is_relative_to((root / "test").resolve()) or not candidate.is_file():
+                    if not candidate.is_relative_to((root / path.split("/")[0]).resolve()) or not candidate.is_file():
                         raise ManifestError(f"#{number}/{identifier}: test file missing or outside repository")
                     source_text = candidate.read_text(encoding="utf-8")
                     if name not in {m.group(2) for m in CASE.finditer(source_text)}:
@@ -95,6 +95,10 @@ def run_suites(expected: dict[str, set[str]], root: Path, timeout: int) -> dict[
                 ["flutter", "test", path, "--reporter", "json"],
                 cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                 timeout=timeout, check=False,
+                # Never expose the GitHub API token to untrusted test processes.
+                env={k: v for k, v in os.environ.items() if k not in {
+                    "GITHUB_TOKEN", "GH_TOKEN", "ACTIONS_RUNTIME_TOKEN"
+                }},
             )
             passed_file = outcome.returncode == 0
             for raw in outcome.stdout.splitlines():

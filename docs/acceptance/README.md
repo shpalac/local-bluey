@@ -1,5 +1,7 @@
 # Issue acceptance evidence (BLU backlog)
 
+For the required task lifecycle, issue-linked temporary CI and promotion to permanent end-to-end tests, see [TASK_LIFECYCLE.md](TASK_LIFECYCLE.md). The existing manifest below remains a legacy baseline and is not evidence that every open issue has passed.
+
 This is **bounded verification**, not automatic sign-off. CI now runs [BLU-001..003](BLU_001_003_AUDIT.md) from separate issue-specific manifests (`issue-554.json`, `issue-555.json`, `issue-556.json`) and uses `criteria.json` for #558, #563 and #608. It runs each named suite only once in its lane. The issue's actual acceptance criteria take precedence if they change.
 
 ## What CI proves
