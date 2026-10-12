@@ -50,7 +50,7 @@ void main() {
     );
     await tester.pump();
     expect(
-      find.byWidgetPredicate((widget) => widget is SegmentedButton<BrainBackend>),
+      find.byType(SegmentedButton<BrainBackend>),
       findsOneWidget,
     );
     expect(find.byType(SingleChildScrollView), findsWidgets);
