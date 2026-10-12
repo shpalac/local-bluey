@@ -109,10 +109,11 @@ class EvidenceTests(unittest.TestCase):
             ).encode()
         spec = {'test/sample_test.dart': {'always rejects unknown'}}
         run.return_value = subprocess.CompletedProcess([], 0, stdout=events())
-        self.assertTrue(ac.run_suites(spec, self.root, 5)[('test/sample_test.dart', 'always rejects unknown')])
-        for output in [events(skipped=True), events(result='failure'), b'', events().replace(b'always rejects unknown', b'other test')]:
-            run.return_value = subprocess.CompletedProcess([], 0, stdout=output)
-            self.assertFalse(ac.run_suites(spec, self.root, 5)[('test/sample_test.dart', 'always rejects unknown')])
+        with patch('builtins.print'):
+            self.assertTrue(ac.run_suites(spec, self.root, 5)[('test/sample_test.dart', 'always rejects unknown')])
+            for output in [events(skipped=True), events(result='failure'), b'', events().replace(b'always rejects unknown', b'other test')]:
+                run.return_value = subprocess.CompletedProcess([], 0, stdout=output)
+                self.assertFalse(ac.run_suites(spec, self.root, 5)[('test/sample_test.dart', 'always rejects unknown')])
 
     def test_cli_writes_report_in_validate_mode(self):
         rc = ac.main(['--root', str(self.root), '--manifest', 'matrix.json', '--out-dir', 'reports'])
