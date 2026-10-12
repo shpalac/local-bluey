@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 660,
+      "title": "Android Bluey face visual parity",
+      "criteria": [
+        {
+          "id": "viewport_matrix",
+          "requirement": "Character bounded on small phone, portrait, landscape and tablet",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/android_face_parity_test.dart",
+              "name": "Android viewport face remains within bounds"
+            }
+          ]
+        },
+        {
+          "id": "rtl_reduced_motion",
+          "requirement": "Arabic/Hebrew RTL, large text and reduced motion",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/android_face_parity_test.dart",
+              "name": "Android: RTL, large text and reduced motion"
+            }
+          ]
+        },
+        {
+          "id": "android_emulator",
+          "requirement": "Validate Android emulator screenshots against actual reference",
+          "type": "manual",
+          "reason": "Existing CI Android emulator integration jobs are independent and must provide evidence at exact head; widget tests alone do not establish parity"
+        },
+        {
+          "id": "physical_android",
+          "requirement": "Validate on real Android, TalkBack, gestures, low-end performance",
+          "type": "manual",
+          "reason": "Physical device, screenshots and accessibility review required"
+        },
+        {
+          "id": "visual_reference",
+          "requirement": "Match owner's reference character on Android",
+          "type": "manual",
+          "reason": "Human visual sign-off required; using the same Flutter renderer alone is insufficient"
+        }
+      ]
+    }
+  ]
+}
