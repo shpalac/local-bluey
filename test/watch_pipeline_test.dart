@@ -273,4 +273,30 @@ void main() {
       watch.dispose();
     },
   );
+
+  test('without a vision callback ticks keep running and nothing is sent', () {
+    fakeAsync((async) {
+      () async {
+        final watch = await liveWatch();
+        final p = pipe(
+          watch,
+          [at('Safari'), at('Xcode'), at('Xcode'), at('Safari')],
+          [0.5],
+        );
+        final kinds = <WatchEventKind>[];
+        p.stream.listen((e) => kinds.add(e.kind));
+        for (var n = 0; n < 4; n++) {
+          await p.tick();
+          async.elapse(const Duration(seconds: 60));
+        }
+        expect(kinds, isNotEmpty, reason: 'app-switch events keep flowing');
+        expect(kinds.contains(WatchEventKind.visionCall), isFalse);
+        expect(
+          p.events.every((e) => e.kind != WatchEventKind.visionCall),
+          isTrue,
+        );
+      }();
+      async.flushMicrotasks();
+    });
+  });
 }
