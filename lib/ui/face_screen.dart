@@ -57,7 +57,7 @@ class _FaceScreenState extends State<FaceScreen>
     super.initState();
     _breathing = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 3200),
     );
   }
 
