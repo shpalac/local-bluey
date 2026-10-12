@@ -25,9 +25,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        const MaterialApp(home: SettingsScreen()),
-      );
+      await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
       await tester.runAsync(
         () => Future<void>.delayed(const Duration(milliseconds: 200)),
       );
