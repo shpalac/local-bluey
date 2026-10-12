@@ -156,3 +156,19 @@ Mac transcribes -> brain returns `open_app(name: "mail")` -> safety gate
 checks the allowlist and asks on the Mac screen -> user approves ->
 native control launches Mail -> result goes back to the brain -> spoken
 reply + face animation -> action and egress logs updated.
+
+## Proactive observation sensitive-content gate (BLU-003, pending PR)
+
+[BLU-003 implementation and risk register](BLU_003_SENSITIVE_CONTENT_GATE.md):
+`ScreenWatch` checks explicit session consent and local-only mode;
+`WatchPolicy` enforces user allowlisting and a hard denylist;
+`SensitiveContentGate` then rejects unknown/private/sensitive window metadata
+**before** the `WatchPipeline` processes frames or events. `WatchVision`
+(pure fixtures only; production vision is wired off and fails closed) requires
+non-empty OCR verified against the exact captured image and rechecks
+foreground identity before it would send a picture to the configured provider.
+
+**Scope and limitations:** This is proactive watch only, not every explicit
+conversational screenshot tool. Keyword/OCR checks are best effort and native
+window-switch races remain for physical validation. No new persistence or
+unattended capture is enabled. The current `SafetyGate` remains in force.

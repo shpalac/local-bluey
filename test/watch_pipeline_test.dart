@@ -50,7 +50,7 @@ void main() {
 
   ({String app, String title, bool locked}) at(
     String app, [
-    String title = '',
+    String title = 'Workspace',
     bool locked = false,
   ]) => (app: app, title: title, locked: locked);
 
@@ -229,4 +229,74 @@ void main() {
       watch.dispose();
     },
   );
+  test('unknown window metadata blocks all frame and event work', () async {
+    final watch = await liveWatch();
+    var frameCalls = 0;
+    final p = WatchPipeline(
+      watch: watch,
+      frontmost: () async => (app: 'Safari', title: '', locked: false),
+      frameDiff: () async {
+        frameCalls++;
+        return 0.9;
+      },
+    );
+    expect(await p.tick(), isNull);
+    expect(await p.tick(), isNull);
+    expect(frameCalls, 0);
+    expect(p.events, isEmpty);
+    await p.dispose();
+    watch.dispose();
+  });
+
+  test(
+    'sensitive English and Hebrew titles never enter event storage',
+    () async {
+      final watch = await liveWatch();
+      final titles = ['Sign in', 'כרטיס אשראי', 'Private Window'];
+      var index = 0;
+      var frameCalls = 0;
+      final p = WatchPipeline(
+        watch: watch,
+        frontmost: () async =>
+            (app: 'Safari', title: titles[index++], locked: false),
+        frameDiff: () async {
+          frameCalls++;
+          return 0.9;
+        },
+      );
+      for (final _ in titles) {
+        expect(await p.tick(), isNull);
+      }
+      expect(frameCalls, 0);
+      expect(p.events, isEmpty);
+      await p.dispose();
+      watch.dispose();
+    },
+  );
+
+  test('without a vision callback ticks keep running and nothing is sent', () {
+    fakeAsync((async) {
+      () async {
+        final watch = await liveWatch();
+        final p = pipe(
+          watch,
+          [at('Safari'), at('Xcode'), at('Xcode'), at('Safari')],
+          [0.5],
+        );
+        final kinds = <WatchEventKind>[];
+        p.stream.listen((e) => kinds.add(e.kind));
+        for (var n = 0; n < 4; n++) {
+          await p.tick();
+          async.elapse(const Duration(seconds: 60));
+        }
+        expect(kinds, isNotEmpty, reason: 'app-switch events keep flowing');
+        expect(kinds.contains(WatchEventKind.visionCall), isFalse);
+        expect(
+          p.events.every((e) => e.kind != WatchEventKind.visionCall),
+          isTrue,
+        );
+      }();
+      async.flushMicrotasks();
+    });
+  });
 }

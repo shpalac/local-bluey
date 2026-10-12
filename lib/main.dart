@@ -72,7 +72,6 @@ import 'ui/tray_publication_notice.dart';
 import 'ui/watch_banner.dart';
 import 'services/watch_pipeline.dart';
 import 'services/watch_driver.dart';
-import 'services/watch_vision.dart';
 import 'services/watch_suggestions.dart';
 import 'ui/watch_suggestion_card.dart';
 import 'services/frame_differ.dart';
@@ -393,11 +392,6 @@ class _MacHomeState extends State<MacHome>
     final watch = ScreenWatch.instance;
     if (watch.isActive && _watchDriver == null) {
       final differ = FrameDiffer();
-      final vision = WatchVision(
-        provider: () => BrainHost.brain.value?.provider,
-        snapshot: () async => (await NativeControl.snapshot()).jpeg,
-        watch: watch,
-      );
       final pipeline = WatchPipeline(
         // The cheap signal read enforces exclusions; heavier work below
         // runs only when the gate allows it.
@@ -409,7 +403,12 @@ class _MacHomeState extends State<MacHome>
           final snap = await NativeControl.snapshot();
           return differ.diff(snap.jpeg);
         },
-        onVision: vision.describe,
+        // No vision callback: production vision is deliberately OFF (BLU-003). The
+        // native crop path reports the app from a cached earlier snapshot,
+        // not the focus at capture time, and a full-display capture can hold
+        // background sensitive pixels. Ticks keep diffing and emitting
+        // metadata-gated app events; nothing is captured for a model and
+        // nothing is sent. Re-enable only with verified exact-crop evidence.
       );
       _watchDriver = WatchDriver(pipeline: pipeline, differ: differ)..start();
       _watchSuggestions.resetSession();

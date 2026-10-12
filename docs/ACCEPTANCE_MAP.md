@@ -544,6 +544,13 @@ Verified manager coordination still states both owner questions pending: whether
 
 After another related merge, compare the original criterion against current source and exact-head evidence, add its delivery to the ledger, and revise only the affected unmet criterion/disposition. Keep historical failures and proof limits attached to their claims. Manager decides issue disposition; a ready row does not authorize issue closure/status/assignee edits.
 
+## BLU-003 source-level acceptance entry (unmerged proposal)
+
+| Issue | Source evidence | Verification still required |
+| --- | --- | --- |
+| [BLU-003 #556](https://github.com/shpalac/local-bluey/issues/556) | Proposed `SensitiveContentGate` before watch pipeline pixel work and verified exact-frame OCR before watch vision egress; [contract](BLU_003_SENSITIVE_CONTENT_GATE.md) | Required CI/PR review, macOS native permission and focus-change tests, regex/OCR corpus expansion. This entry does **not** override the historical acceptance ledger above. |
+
+
 ### #627 Capability matrix first code slice
 
 [Eleven new contracts](../test/capability_matrix_contract_test.dart): exact roles/capability sets for Mac/iOS/Android/Linux/Windows/unknown, unknown capability false, immutable shared capability set; all15UnsupportedHostControl methods fail explicitly on iOS/Android/Windows/unknown before native/platform/network calls. Controlled Linux factory environment selects unsupported/X11/Wayland while public SupportMatrix role remains unsupported; constructed bridge is not permission/readiness/platform parity. Fresh capability/support/host/unsupported-widget batch23passes(11new), analyze clean, format274/0changed. No production/matrix policy/default/host implementation changed; native TCC/device/Linux executable readiness not tested. Rollback this test and map section only. Refs #627/issueOPEN/partial acceptance; native/runtime consent gates unchanged.

@@ -18,6 +18,7 @@ import 'package:local_bluey/services/request_interfaces.dart';
 import 'package:local_bluey/services/request_runner.dart';
 import 'package:local_bluey/services/safety_gate.dart';
 import 'package:local_bluey/services/screen_watch.dart';
+import 'package:local_bluey/services/native_control.dart';
 import 'package:local_bluey/services/settings_store.dart';
 import 'package:local_bluey/services/stt.dart';
 import 'package:local_bluey/services/watch_vision.dart';
@@ -249,7 +250,15 @@ class Fixture {
     Future<Uint8List> Function()? snapshot,
   }) => WatchVision(
     provider: () => host.brain.value?.provider,
-    snapshot: snapshot ?? () async => Uint8List.fromList([1, 2]),
+    foreground: () async => (app: 'Editor', title: 'Workspace', locked: false),
+    snapshot: () async => ScreenSnapshot(
+      jpeg: snapshot == null ? Uint8List.fromList([1, 2]) : await snapshot(),
+      targets: 'Workspace tasks',
+      width: 320,
+      height: 240,
+      cropTextVerified: true,
+      frontApp: 'Editor',
+    ),
     watch: watch,
   );
 
@@ -413,7 +422,9 @@ void main() {
         final brain = await f.retained('load');
         final before = brain.history.map((m) => m.toJson()).toList();
         final watch = await f.watch();
-        final result = await f.track(f.vision(watch).describe('Editor', ''));
+        final result = await f.track(
+          f.vision(watch).describe('Editor', 'Workspace'),
+        );
         expect(result, 'fixture answer');
         expect(f.privacy.value, true);
         expect(f.client.requests.single.url.toString(), f.endpoint(oldUrl));
@@ -437,7 +448,7 @@ void main() {
             return capture.future;
           },
         );
-        final work = f.track(vision.describe('Editor', ''));
+        final work = f.track(vision.describe('Editor', 'Workspace'));
         await entered.future;
         await f.replace();
         await f.privacy.set(
@@ -447,7 +458,7 @@ void main() {
         capture.complete(Uint8List.fromList([1, 2]));
         expect(await work, 'fixture answer');
         expect(
-          await f.track(f.vision(watch).describe('Editor', '')),
+          await f.track(f.vision(watch).describe('Editor', 'Workspace')),
           'fixture answer',
         );
         expect(f.client.requests.map((r) => r.url.toString()), [
@@ -464,7 +475,10 @@ void main() {
       await f.retained('load');
       final watch = await f.watch();
       f.readFails = true;
-      expect(await f.track(f.vision(watch).describe('Editor', '')), isNull);
+      expect(
+        await f.track(f.vision(watch).describe('Editor', 'Workspace')),
+        isNull,
+      );
       expect(watch.isActive, false);
       expect(f.privacy.value, isNull);
       expect(f.client.requests, isEmpty);
@@ -476,7 +490,7 @@ void main() {
       f.readFails = false;
       expect(await watch.start(consentConfirmed: true), isNull);
       expect(
-        await f.track(f.vision(watch).describe('Editor', '')),
+        await f.track(f.vision(watch).describe('Editor', 'Workspace')),
         'fixture answer',
       );
       expect(f.client.requests, hasLength(1));
@@ -500,7 +514,7 @@ void main() {
                   return capture.future;
                 },
               )
-              .describe('Editor', ''),
+              .describe('Editor', 'Workspace'),
         );
         await entered.future;
         if (uncertain) {
@@ -534,7 +548,7 @@ void main() {
                 return Uint8List(2);
               },
             )
-            .describe('Editor', ''),
+            .describe('Editor', 'Workspace'),
       );
       expect(result, isNull);
       expect(captures, 0);
@@ -552,16 +566,16 @@ void main() {
     final watch = await f.watch();
     f.client.hold = Completer<void>();
     final vision = f.vision(watch);
-    final work = f.track(vision.describe('Editor', ''));
+    final work = f.track(vision.describe('Editor', 'Workspace'));
     await f.client.entered.future;
     watch.stop();
     expect(await watch.start(consentConfirmed: true), isNull);
     f.client.release();
     expect(await work, isNull);
-    expect(await f.track(vision.describe('Editor', '')), isNull);
+    expect(await f.track(vision.describe('Editor', 'Workspace')), isNull);
     expect(f.client.requests, hasLength(1));
     expect(
-      await f.track(f.vision(watch).describe('Editor', '')),
+      await f.track(f.vision(watch).describe('Editor', 'Workspace')),
       'fixture answer',
     );
     expect(f.client.requests, hasLength(2));
