@@ -26,18 +26,21 @@ void main() {
 
   setUp(() => clock = DateTime.utc(2026, 10, 12, 10));
 
-  test('observation cannot record without per-session consent and approval', () {
-    final history = store();
-    expect(history.isActive, isFalse);
-    expect(history.startSession(consentConfirmed: false), isFalse);
-    expect(history.add(step('a'), approved: true), isFalse);
-    expect(history.startSession(consentConfirmed: true), isTrue);
-    expect(history.add(step('a'), approved: false), isFalse);
-    expect(history.snapshot, isEmpty);
-    expect(history.add(step('a'), approved: true), isTrue);
-    expect(history.snapshot.single.stepId, 'a');
-    history.dispose();
-  });
+  test(
+    'observation cannot record without per-session consent and approval',
+    () {
+      final history = store();
+      expect(history.isActive, isFalse);
+      expect(history.startSession(consentConfirmed: false), isFalse);
+      expect(history.add(step('a'), approved: true), isFalse);
+      expect(history.startSession(consentConfirmed: true), isTrue);
+      expect(history.add(step('a'), approved: false), isFalse);
+      expect(history.snapshot, isEmpty);
+      expect(history.add(step('a'), approved: true), isTrue);
+      expect(history.snapshot.single.stepId, 'a');
+      history.dispose();
+    },
+  );
 
   test('stop and fresh instance never resurrect observation data', () {
     final history = store();
@@ -70,8 +73,20 @@ void main() {
   test('TTL prunes stale records and refuses future timestamps', () {
     final history = store();
     expect(history.startSession(consentConfirmed: true), isTrue);
-    expect(history.add(step('old', at: clock.subtract(const Duration(hours: 1))), approved: true), isFalse);
-    expect(history.add(step('future', at: clock.add(const Duration(seconds: 1))), approved: true), isFalse);
+    expect(
+      history.add(
+        step('old', at: clock.subtract(const Duration(hours: 1))),
+        approved: true,
+      ),
+      isFalse,
+    );
+    expect(
+      history.add(
+        step('future', at: clock.add(const Duration(seconds: 1))),
+        approved: true,
+      ),
+      isFalse,
+    );
     expect(history.add(step('recent'), approved: true), isTrue);
     clock = clock.add(const Duration(minutes: 1));
     expect(history.snapshot, hasLength(1));
