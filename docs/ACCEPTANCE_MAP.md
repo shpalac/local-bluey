@@ -604,3 +604,7 @@ Existing test_report.dart now subtracts per-test start time from completion time
 ### #629 Receipt-to-playback stop boundary
 
 Existing RequestRunner now rechecks generation and whole-job deadline after the synchronous say/receipt hook before starting local playback. Two fake-host regressions revoke during that hook (Stop and Stop/resume); synthesized audio and already-entered receipt remain, but new playback is not started and Stopped is reported.56 focused passes including request budgets/dartdoc, analyzer/format clean. This is one admission boundary, not undo of delivered receipt, cancellation of already-playing audio/native/network operations, full leak/backpressure proof or full629 acceptance. No new persistence/capture/provider policy. Rollback check/two fixtures/map; issue OPEN.
+
+### #628 Existing settings connection-code consumers
+
+Settings Test connection now displays the existing failure.code beside the unchanged summary and emits only that allowlisted code to Flutter diagnostics. Actual fabricated refused-connection widget fixture verifies UI/log agreement and exclusion of target/raw socket details/port/fabricated secret from diagnostics;18 focused passes inclsettingsUX/dartdoc, analyzer/format clean. [Inspected Linux pixels and limits](evidence/issue628/README.md). Existing opt-in raw Details unchanged, not redaction/privacy proof; no new persisted log/telemetry/cross-domain capture/storage/MCP/executor mapper or full628 acceptance. Privacy preflight unchanged. Rollback UI consumer/test/evidence/map; issue OPEN.
