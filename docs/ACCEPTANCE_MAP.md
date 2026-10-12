@@ -577,3 +577,7 @@ Follow-up [sequence corpus](../test/screen_watch_sequence_corpus_test.dart): all
 ### #628 Existing connection-failure stable codes, first slice
 
 ConnectionFailureKind now exposes explicit unique namespaced codes; ConnectionFailure.code delegates to that same owner, independent of enum ordinal/target/raw details. Two new fixtures cover every kind and unchanged timeout classification/details;15 focused passes, analyzer clean. Existing settings UI/messages/raw Details unchanged, no new logging or cross-domain mapper. This is an available code contract, not proof UI/logs already serialize it, nor capture/storage/MCP/executor taxonomy acceptance. Rollback getter/enum mapping/test/map; issue OPEN/Refs #628.
+
+### #629 RequestRunner configuration bounds, first slice
+
+Existing RequestRunner rejects negative maxQueued/maxToolSteps and nonpositive stage/job timeouts at construction. Zero waiting/tool budgets remain valid. Five budget fixtures and one actual fake-runner zero-queue overlap fixture verify overflow recording deletion/no transcription and fresh-run reuse;53 focused passes, analyzer clean. Existing valid configuration behavior and generation checks unchanged. No underlying transport cancellation, entered-action undo, workflow event queue or full leak/backpressure proof. Rollback constructor guards/new budget test/added existing fixture/map; issue OPEN/Refs #629.

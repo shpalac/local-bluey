@@ -162,6 +162,7 @@ const _settings = BrainSettings(
 )
 _rig({
   bool withBrain = true,
+  int maxQueued = 2,
   Duration? jobTimeout,
   DateTime Function()? now,
   Future<void> Function(File)? deleteRecording,
@@ -189,6 +190,7 @@ _rig({
     addToConversation: (role, text) => conversation.add([role, text]),
     currentVoice: () => 'alloy',
     hooks: hooks,
+    maxQueued: maxQueued,
     jobTimeout: jobTimeout ?? const Duration(minutes: 3),
     now: now,
     deleteRecording: deleteRecording,
@@ -787,6 +789,36 @@ void main() {
   }
 
   group('#366 one active request', () {
+    test('zero queue rejects overlap without entering transcription, then reuses runner', () async {
+      final deleted = <String>[];
+      final (runner, brain, _, _, _, transcriber, hooks, _) = _rig(
+        maxQueued: 0,
+        deleteRecording: (file) async => deleted.add(file.path),
+      );
+      var transcriptions = 0;
+      transcriber.onTranscribe = () async => transcriptions++;
+      brain.asking = Completer<BrainReply>();
+      final active = runner.process(File('fabricated-active'));
+      await brain.askEntered.future;
+      await runner.process(File('fabricated-overflow'));
+      expect(transcriptions, 1);
+      expect(runner.queuedCount, 0);
+      expect(deleted, ['fabricated-overflow']);
+      expect(hooks.bubbles, contains('Busy - try again in a moment.'));
+      final pending = brain.asking!;
+      brain.asking = null;
+      pending.complete(const BrainReply(spoken: 'done'));
+      await active;
+      brain.replies.add(const BrainReply(spoken: 'fresh'));
+      await runner.process(File('fabricated-next'));
+      expect(transcriptions, 2);
+      expect(deleted, [
+        'fabricated-overflow',
+        'fabricated-active',
+        'fabricated-next',
+      ]);
+    });
+
     test('overlapping utterances run one at a time, in order', () async {
       final deleted = <String>[];
       final (runner, brain, _, _, _, transcriber, hooks, conversation) = _rig(
