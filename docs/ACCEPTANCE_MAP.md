@@ -623,3 +623,9 @@ Existing test_report.dart now counts known test error events even after success,
 ### #601 Existing JSON report canonical output ordering
 
 Existing test_report.dart now sorts equal-duration rows by test ID, failed rows by test ID and unique failed-file paths lexicographically. Two actual offline CLI reversed-completion fixtures fail on previous source and pass after repair;19 focused passes incltiming/lateerror/dartdoc, analyzer/format clean. Output is stable for identical IDs/names/paths/durations despite completion interleaving, not across different runner IDs or environments. Timing/failure counts/CLI exit semantics unchanged; no retry execution/workflow/terminal/JUnit/schema/artifact redaction/privacy or full601 acceptance. Rollback sorting/newtest/map; issue OPEN.
+
+### #609 Seeded fuzzing of event normalization (partial)
+
+`test/event_normalization_fuzz_test.dart` adds deterministic, offline, seeded fuzz tests (five fixed seeds; a failure reports its seed and index) over three existing pure paths: `ActionEventNormalizer` (Unicode and lone-surrogate app names, oversized and empty apps, backwards and gapped timestamps, a throwing allowlist, endSession/clear mid-stream), `ActivityStep.decode` (random text, deep nesting, single-character mutations) and `SensitiveContentGate` (unverified, blank and oversized OCR; fake tokens buried in noise; maximum-length repetitive input). Asserted: nothing throws except the typed format exception, retained events and debounce keys stay capped, retained timestamps and sequences stay ordered, the source `detail` text never appears in a retained event, results are identical for the same seed.
+
+Not covered: native OCR output, real screen frames, the WatchPipeline/WatchDriver timing path, and any storage. Property-based shrinking is not used; reproduction is by seed. This is test-only and changes no production behavior.
