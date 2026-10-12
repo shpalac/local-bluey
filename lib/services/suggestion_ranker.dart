@@ -2,8 +2,10 @@ import 'pattern_miner.dart';
 
 /// Why a candidate was not offered (BLU-009 groundwork).
 enum SuggestionVerdict {
-  /// Passed every check; safe to show as a read-only suggestion.
-  eligible,
+  /// Passed ranking and suppression checks only. This is NOT permission to
+  /// show anything: the caller must still apply its own allowlist, privacy
+  /// and consent gates before any display.
+  rankEligible,
 
   /// Same candidate id appeared earlier in the input.
   duplicate,
@@ -18,7 +20,7 @@ enum SuggestionVerdict {
   /// Empty id parts or non-positive counts; never shown.
   invalid,
 
-  /// Eligible, but beyond the display cap.
+  /// Rank-eligible, but beyond the display cap.
   overCap,
 }
 
@@ -29,7 +31,18 @@ class SuggestionDecision {
   final PatternCandidate candidate;
   final SuggestionVerdict verdict;
 
-  bool get isEligible => verdict == SuggestionVerdict.eligible;
+  bool get isRankEligible => verdict == SuggestionVerdict.rankEligible;
+}
+
+/// Thrown when more than `maxCandidates` candidates are supplied. Carries
+/// the limit only, never candidate content.
+class CandidateLimitExceeded implements Exception {
+  const CandidateLimitExceeded(this.limit);
+
+  final int limit;
+
+  @override
+  String toString() => 'CandidateLimitExceeded(limit: $limit)';
 }
 
 /// Caller-supplied, in-memory suppression state. This module stores nothing:
@@ -52,6 +65,10 @@ class SuppressionSnapshot {
 
 /// Pure ranking, de-duplication and suppression of mined candidates.
 ///
+/// Rank-eligible only means "not suppressed by this module". It checks no
+/// allowlist, privacy or consent state; callers must apply those separately
+/// before showing anything.
+///
 /// It reads no clock (the caller passes [now]), does no I/O, keeps no state
 /// and never acts: an eligible result is only something a UI may show. All
 /// numbers are required constructor arguments; this class selects no
@@ -59,7 +76,14 @@ class SuppressionSnapshot {
 /// then sequence length, then id, so the order is total and does not depend
 /// on input order. Those counts are evidence, not a confidence value.
 class SuggestionRanker {
-  SuggestionRanker({required this.cooldown, required this.maxEligible}) {
+  SuggestionRanker({
+    required this.cooldown,
+    required this.maxEligible,
+    required this.maxCandidates,
+  }) {
+    if (maxCandidates < 0) {
+      throw ArgumentError.value(maxCandidates, 'maxCandidates', 'must be >= 0');
+    }
     if (cooldown.isNegative) {
       throw ArgumentError.value(cooldown, 'cooldown', 'must not be negative');
     }
@@ -71,8 +95,13 @@ class SuggestionRanker {
   /// How long a dismissal hides the same candidate.
   final Duration cooldown;
 
-  /// At most this many results are eligible; the rest are [overCap].
+  /// At most this many results are rank-eligible; the rest are [overCap].
   final int maxEligible;
+
+  /// Most input candidates visited per call. One more throws a
+  /// [CandidateLimitExceeded] before anything is sorted, so an unbounded or
+  /// endless iterable can neither exhaust memory nor hang the call.
+  final int maxCandidates;
 
   /// Returns every input candidate with a verdict, eligible ones first in
   /// display order, then the rest in the same total order.
@@ -81,7 +110,14 @@ class SuggestionRanker {
     SuppressionSnapshot suppression,
     DateTime now,
   ) {
-    final sorted = candidates.toList()..sort(_compare);
+    final sorted = <PatternCandidate>[];
+    for (final c in candidates) {
+      if (sorted.length >= maxCandidates) {
+        throw CandidateLimitExceeded(maxCandidates);
+      }
+      sorted.add(c);
+    }
+    sorted.sort(_compare);
     final seen = <String>{};
     final out = <SuggestionDecision>[];
     var eligible = 0;
@@ -99,14 +135,14 @@ class SuggestionRanker {
         v = SuggestionVerdict.overCap;
       } else {
         eligible++;
-        v = SuggestionVerdict.eligible;
+        v = SuggestionVerdict.rankEligible;
       }
       out.add(SuggestionDecision(c, v));
     }
     // Stable partition: eligible first, order inside each group is kept.
     return [
-      ...out.where((d) => d.isEligible),
-      ...out.where((d) => !d.isEligible),
+      ...out.where((d) => d.isRankEligible),
+      ...out.where((d) => !d.isRankEligible),
     ];
   }
 
