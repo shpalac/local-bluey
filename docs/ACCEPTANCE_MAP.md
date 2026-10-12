@@ -581,3 +581,7 @@ ConnectionFailureKind now exposes explicit unique namespaced codes; ConnectionFa
 ### #629 RequestRunner configuration bounds, first slice
 
 Existing RequestRunner rejects negative maxQueued/maxToolSteps and nonpositive stage/job timeouts at construction. Zero waiting/tool budgets remain valid. Five budget fixtures and one actual fake-runner zero-queue overlap fixture verify overflow recording deletion/no transcription and fresh-run reuse;53 focused passes, analyzer clean. Existing valid configuration behavior and generation checks unchanged. No underlying transport cancellation, entered-action undo, workflow event queue or full leak/backpressure proof. Rollback constructor guards/new budget test/added existing fixture/map; issue OPEN/Refs #629.
+
+### #563 Disabled legacy Routine proposal boundary, first code slice
+
+Unwired RoutineProposal validates already-decoded exact name/trigger/instructions fields using existing RoutineStore limits, rejects activation/unknown/missing/wrong/empty/oversized fields and always constructs disabled Routine. Seven fabricated fixtures/33 focused passes, analyzer clean. Hebrew fields retained, trigger lowercased; disabled proposal cannot match in the existing store fixture. No JSON parser, duplicate-key handling, versioned DSL, model/local-isolation/generation/fallback, capture, persistence, approval or execution implemented or certified. Field validity is not content/privacy safety. Runtime/upstream gates unchanged. Rollback new class/test/map; existing legacy import/default/matching unchanged. Refs #563/issue OPEN.
