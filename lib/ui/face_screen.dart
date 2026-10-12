@@ -50,24 +50,38 @@ class FaceScreen extends StatefulWidget {
 class _FaceScreenState extends State<FaceScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _breathing;
+  bool _reduceMotion = false;
 
   @override
   void initState() {
     super.initState();
     _breathing = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3200),
+      duration: const Duration(milliseconds: 350),
     );
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (MediaQuery.of(context).disableAnimations) {
+    _reduceMotion = MediaQuery.of(context).disableAnimations;
+    if (_reduceMotion) {
       _breathing.stop();
       _breathing.value = 0;
-    } else if (!_breathing.isAnimating) {
-      _breathing.repeat();
+    } else if (widget.awake && _breathing.value == 0) {
+      // A finite transition preserves pumpAndSettle and avoids idle CPU work.
+      _breathing.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(FaceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_reduceMotion &&
+        widget.awake &&
+        (oldWidget.awake != widget.awake ||
+            !identical(oldWidget.face, widget.face))) {
+      _breathing.forward(from: 0);
     }
   }
 
