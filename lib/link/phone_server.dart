@@ -18,6 +18,7 @@ const String kServiceType = '_googly._tcp';
 class PhoneServer {
   final _phones = <LineConnection, String?>{};
   final _authenticated = <LineConnection>{};
+  final _requestOrigins = Expando<LineConnection>('request-origin');
   FaceState? _lastSent;
   DateTime _lastSentAt = DateTime.fromMillisecondsSinceEpoch(0);
 
@@ -62,13 +63,18 @@ class PhoneServer {
   final _requests = StreamController<Packet>.broadcast();
   Stream<Packet> get requests => _requests.stream;
 
-  /// Replies to the phone that sent [request].
+  /// Replies only to the live authenticated origin of this exact delivered
+  /// [request] object. Unknown/copy/disconnected requests are refused.
+  /// Weak association does not retain packets after callers release them.
   void reply(Packet request, Packet response) {
-    for (final entry in _phones.entries) {
-      // Replies ride the same connection; keyed by callID when present.
-      entry.key.send(response);
-      break; // single-phone use today; extend with per-connection routing later
+    final origin = _requestOrigins[request];
+    if (origin == null ||
+        origin.isClosed ||
+        !_phones.containsKey(origin) ||
+        !_authenticated.contains(origin)) {
+      return;
     }
+    origin.send(response);
   }
 
   /// [advertise] registers the Bonjour service; tests pass false to stay
@@ -106,6 +112,7 @@ class PhoneServer {
           return;
         }
         if (!allowedRemoteCommands.contains(command)) return;
+        _requestOrigins[packet] = link;
         _requests.add(packet);
       });
       link.done.listen((_) {
