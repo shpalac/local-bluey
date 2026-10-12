@@ -13,8 +13,8 @@ void main() {
     Size(800, 1280),
   ];
 
-  for (final size in sizes) {
-    testWidgets('Android viewport face remains within bounds', (tester) async {
+  testWidgets('Android viewport face remains within bounds', (tester) async {
+    for (final size in sizes) {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -45,8 +45,8 @@ void main() {
       expect(rect.right, lessThanOrEqualTo(size.width));
       expect(rect.bottom, lessThanOrEqualTo(size.height));
       expect(tester.takeException(), isNull);
-    });
-  }
+    }
+  });
 
   testWidgets('Android: RTL, large text and reduced motion', (tester) async {
     tester.view.physicalSize = const Size(320, 568);
