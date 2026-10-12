@@ -23,6 +23,14 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get --enforce-lockfile
+      - name: Load reviewed acceptance tooling from main
+        shell: bash
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          echo "Acceptance runner base: $(git rev-parse FETCH_HEAD)"
+          mkdir -p tool
+          git show FETCH_HEAD:tool/acceptance_criteria.py > tool/acceptance_criteria.py
+          git show FETCH_HEAD:tool/test_acceptance_criteria.py > tool/test_acceptance_criteria.py
       - name: Verify manifest contract
         run: python3 -m unittest discover -s tool -p test_acceptance_criteria.py
       - name: Execute exact named acceptance tests
