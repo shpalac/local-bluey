@@ -73,6 +73,12 @@ class IssueTaskTests(unittest.TestCase):
             }),
         )
 
+    def test_negated_close_keywords_do_not_link_or_close(self):
+        self.assertEqual(
+            task.linked_issues("Refs #554. Do not close #557. Never fix #558."),
+            {554: False},
+        )
+
     def test_references_do_not_implicitly_close(self):
         self.assertEqual(
             task.linked_issues("Refs #42\nCloses #42\nRefs #43\nFixes #44"),
