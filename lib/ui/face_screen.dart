@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 
@@ -6,9 +8,10 @@ import '../link/models.dart';
 import '../services/characters.dart';
 import '../services/conversation.dart';
 import '../services/strings.dart';
+import 'bluey_character.dart';
 import 'motion.dart';
 
-/// Bluey's face: two eyes that follow the gaze, colored by mood.
+/// Bluey's responsive character with gaze, mood and speech animation.
 /// Gestures (ported from the iOS SwiftUI face):
 /// - double-tap: wake / put to sleep
 /// - long-press hold: hold to talk (release ends the ask)
@@ -44,7 +47,50 @@ class FaceScreen extends StatefulWidget {
   State<FaceScreen> createState() => _FaceScreenState();
 }
 
-class _FaceScreenState extends State<FaceScreen> {
+class _FaceScreenState extends State<FaceScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _breathing;
+  bool _reduceMotion = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _breathing = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.of(context).disableAnimations;
+    if (_reduceMotion) {
+      _breathing.stop();
+      _breathing.value = 0;
+    } else if (widget.awake && _breathing.value == 0) {
+      // A finite transition preserves pumpAndSettle and avoids idle CPU work.
+      _breathing.forward();
+    }
+  }
+
+  @override
+  void didUpdateWidget(FaceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_reduceMotion &&
+        widget.awake &&
+        (oldWidget.awake != widget.awake ||
+            !identical(oldWidget.face, widget.face))) {
+      _breathing.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _breathing.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final face = widget.face;
@@ -84,31 +130,27 @@ class _FaceScreenState extends State<FaceScreen> {
           child: Stack(
             children: [
               Center(
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 400),
-                  width: 220,
-                  height: 160,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: widget.awake ? 0.25 : 0.08),
-                    borderRadius: BorderRadius.circular(80),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      _Eye(
-                        gazeX: face.gazeX,
-                        gazeY: face.gazeY,
-                        color: color,
-                        dim: !widget.awake,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final extent = math.min(
+                      500.0,
+                      math.min(constraints.maxWidth, constraints.maxHeight) *
+                          0.82,
+                    );
+                    return SizedBox.square(
+                      dimension: math.max(0.0, extent),
+                      child: AnimatedBuilder(
+                        animation: _breathing,
+                        builder: (context, _) => BlueyCharacter(
+                          key: const ValueKey('bluey-character'),
+                          face: face,
+                          awake: widget.awake,
+                          tint: color,
+                          phase: _breathing.value,
+                        ),
                       ),
-                      _Eye(
-                        gazeX: face.gazeX,
-                        gazeY: face.gazeY,
-                        color: color,
-                        dim: !widget.awake,
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
               Positioned(
@@ -265,42 +307,6 @@ class _AnswerLog extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _Eye extends StatelessWidget {
-  const _Eye({
-    required this.gazeX,
-    required this.gazeY,
-    required this.color,
-    required this.dim,
-  });
-
-  final double gazeX;
-  final double gazeY;
-  final Color color;
-  final bool dim;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 64,
-      height: 64,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: dim ? 0.3 : 0.95),
-      ),
-      child: Center(
-        child: Transform.translate(
-          offset: Offset(gazeX * 14, gazeY * 14),
-          child: Container(
-            width: 26,
-            height: 26,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-          ),
-        ),
-      ),
     );
   }
 }

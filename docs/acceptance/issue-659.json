@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 659,
+      "title": "Flutter FaceScreen visual parity",
+      "criteria": [
+        {
+          "id": "responsive_geometry",
+          "requirement": "Render character within phone and desktop bounds",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/bluey_character_test.dart",
+              "name": "character is responsive in portrait and landscape"
+            }
+          ]
+        },
+        {
+          "id": "gaze_mood_speech",
+          "requirement": "Reflect incoming mood, gaze and speech values",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/bluey_character_test.dart",
+              "name": "mood, gaze and speech follow incoming FaceState"
+            }
+          ]
+        },
+        {
+          "id": "reduced_motion",
+          "requirement": "Respect reduced-motion accessibility preference",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/bluey_character_test.dart",
+              "name": "reduced motion suppresses idle animation"
+            }
+          ]
+        },
+        {
+          "id": "gestures",
+          "requirement": "Wake and hold-to-talk interactions remain usable",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/bluey_character_test.dart",
+              "name": "wake and hold-to-talk gestures remain available"
+            }
+          ]
+        },
+        {
+          "id": "face_goldens",
+          "requirement": "Deterministic face screenshot fixtures",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/screenshots/screenshot_harness_test.dart",
+              "name": "face listening"
+            },
+            {
+              "file": "test/screenshots/screenshot_harness_test.dart",
+              "name": "face dark theme"
+            },
+            {
+              "file": "test/screenshots/screenshot_harness_test.dart",
+              "name": "face sleepy"
+            }
+          ]
+        },
+        {
+          "id": "reference_review",
+          "requirement": "Match approved shipped iPhone and Mac character appearance",
+          "type": "manual",
+          "reason": "Independent human comparison to owner reference is required; current vector artwork is not certified pixel-parity"
+        },
+        {
+          "id": "real_devices",
+          "requirement": "Real iPhone/Mac runtime checks and accessibility",
+          "type": "manual",
+          "reason": "Real hardware screenshots, VoiceOver and animation behavior are not verified by widget goldens"
+        }
+      ]
+    }
+  ]
+}
