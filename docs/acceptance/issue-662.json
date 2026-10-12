@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 662,
+      "title": "Settings responsive UI/UX",
+      "criteria": [
+        {
+          "id": "screen_sizes",
+          "requirement": "Settings render at phone tablet desktop viewports",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/settings_responsive_test.dart",
+              "name": "settings usable across phone, tablet and desktop sizes"
+            }
+          ]
+        },
+        {
+          "id": "narrow_provider",
+          "requirement": "Provider control remains accessible at narrow width",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/settings_responsive_test.dart",
+              "name": "settings use a scrollable provider picker at narrow width"
+            }
+          ]
+        },
+        {
+          "id": "hebrew_scale",
+          "requirement": "Hebrew RTL at 200 percent font size",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/settings_responsive_test.dart",
+              "name": "Hebrew RTL and 200 percent text fit a compact screen"
+            }
+          ]
+        },
+        {
+          "id": "settings_goldens",
+          "requirement": "Deterministic settings screenshot baselines",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/screenshots/screenshot_harness_test.dart",
+              "name": "settings default"
+            },
+            {
+              "file": "test/screenshots/screenshot_harness_test.dart",
+              "name": "settings dark"
+            }
+          ]
+        },
+        {
+          "id": "review_copy",
+          "requirement": "Privacy wording, accessibility descriptions, and platform-specific control review",
+          "type": "manual",
+          "reason": "Human UX/security review and assistive-technology inspection required"
+        },
+        {
+          "id": "device_controls",
+          "requirement": "Real Android/iOS/macOS settings controls work as intended",
+          "type": "manual",
+          "reason": "Platform-specific switches, persistence and native permissions need hardware/manual verification"
+        }
+      ]
+    }
+  ]
+}
