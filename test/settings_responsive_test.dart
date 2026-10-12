@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:local_bluey/llm/llm_provider.dart';
+import 'package:local_bluey/services/settings_store.dart';
 import 'package:local_bluey/services/strings.dart';
 import 'package:local_bluey/ui/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
