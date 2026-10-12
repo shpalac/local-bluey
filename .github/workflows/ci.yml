@@ -93,6 +93,36 @@ jobs:
             exit 1
           fi
 
+  # Bounded BLU issue acceptance evidence. The job proves named test cases
+  # execute; it reports native/manual and missing features as INCOMPLETE.
+  # Never close an issue solely because this job is green.
+  acceptance-evidence:
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - name: Validate acceptance manifest and no-false-pass behavior
+        run: python3 -m unittest discover -s tool -p test_acceptance_criteria.py
+      - name: Execute issue-linked test suites and report incomplete criteria
+        run: python3 tool/acceptance_criteria.py --run-tests --out-dir build/acceptance
+      - name: Upload sanitized issue acceptance report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: acceptance-evidence
+          path: build/acceptance/
+          if-no-files-found: warn
+          retention-days: 14
+
   # Test lane (#153): unit/widget tests with coverage (thresholds + lcov
   # artifact) and machine-readable results uploaded on every run (#159).
   test:
@@ -258,7 +288,7 @@ jobs:
   # either build failed or was cancelled.
   build:
     if: ${{ always() && github.event_name != 'schedule' }}
-    needs: [build-macos, build-ios]
+    needs: [build-macos, build-ios, acceptance-evidence]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -266,10 +296,12 @@ jobs:
         env:
           MACOS_RESULT: ${{ needs.build-macos.result }}
           IOS_RESULT: ${{ needs.build-ios.result }}
+          ACCEPTANCE_RESULT: ${{ needs.acceptance-evidence.result }}
         run: |
           echo "build-macos: $MACOS_RESULT"
           echo "build-ios: $IOS_RESULT"
-          [ "$MACOS_RESULT" = "success" ] && [ "$IOS_RESULT" = "success" ]
+          echo "acceptance-evidence: $ACCEPTANCE_RESULT"
+          [ "$MACOS_RESULT" = "success" ] && [ "$IOS_RESULT" = "success" ] && [ "$ACCEPTANCE_RESULT" = "success" ]
 
   # Android debug APK on ubuntu - no Xcode needed (#153). Runs in parallel
   # with the fast lanes for the same reason as the macOS builds.
