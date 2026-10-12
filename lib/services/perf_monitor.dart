@@ -71,6 +71,7 @@ class PerfMonitor {
   /// median is now the retained-window median, not a lifetime median.
   /// Does not bound stage cardinality, pending writes or the persisted file.
   static const defaultMaxRetainedSamplesPerStage = 1024;
+  /// Maximum timing values retained per stage for the in-memory median.
   final int maxRetainedSamplesPerStage;
   final Map<String, List<int>> _samplesMs = {};
 
