@@ -22,11 +22,11 @@ Describe the observable result and the user or system behavior that must change.
 
 ## CI and validation
 
-- **Temporary issue test file:** \`test/issues/issue_<number>_test.dart\`
-- **Temporary manifest:** \`docs/acceptance/temporary/issue-<number>.json\`
+- **Temporary issue test file:** `test/issues/issue_<number>_test.dart`
+- **Temporary manifest:** `docs/acceptance/temporary/issue-<number>.json`
 - **Required negative/edge tests:** Document applicable cases and explicitly justify exclusions.
-- **Permanent feature integration test:** \`integration_test/features/<feature>_test.dart\`
-- **Permanent manifest:** \`docs/acceptance/permanent/issue-<number>.json\`
+- **Permanent feature integration test:** `integration_test/features/<feature>_test.dart`
+- **Permanent manifest:** `docs/acceptance/permanent/issue-<number>.json`
 - **Runner:** Ubuntu unit/widget and Android emulator integration; macOS/iOS where applicable.
 - **Manual or device-only criteria:** Name the device, evidence and reviewer; never claim hosted CI proves them.
 
