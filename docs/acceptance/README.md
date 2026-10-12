@@ -1,5 +1,7 @@
 # Issue acceptance evidence (BLU backlog)
 
+For the required task lifecycle, issue-linked temporary CI and promotion to permanent end-to-end tests, see [TASK_LIFECYCLE.md](TASK_LIFECYCLE.md). The existing manifest below remains a legacy baseline and is not evidence that every open issue has passed.
+
 This is **bounded verification**, not automatic sign-off. It covers #554, #555, #556, #558, #563 and #608 as of its introduction; extend the manifest when new implementation work lands. Sources: those issues' acceptance criteria and merged PRs #665, #666, #668, #678, #663 and #683. The issue's actual acceptance criteria take precedence if they change.
 
 ## What CI proves
