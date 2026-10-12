@@ -1,4 +1,10 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:flutter/foundation.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -124,14 +130,34 @@ void main() {
       tester,
     ) async {
       SharedPreferences.setMockInitialValues({});
+      final pixels = Platform.environment['CONNECTION_PIXELS'];
+      if (pixels != null) {
+        final bytes = File('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+            .readAsBytesSync();
+        await (FontLoader(
+          'ConnectionCapture',
+        )..addFont(Future.value(ByteData.sublistView(bytes)))).load();
+      }
+      final diagnostics = <String?>[];
+      final previousPrint = debugPrint;
+      debugPrint = (String? text, {int? wrapWidth}) => diagnostics.add(text);
+      addTearDown(() => debugPrint = previousPrint);
       await tester.binding.setSurfaceSize(const Size(900, 3000));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       SettingsScreen.debugTestChat = (_) async => throw Exception(
         'ClientException with SocketException: Connection refused '
-        '(OS Error: Connection refused, errno = 61), port = 51229',
+        '(OS Error: Connection refused, errno = 61), port = 51229 '
+        'fabricated-api-key=secret-fixture',
       );
       addTearDown(() => SettingsScreen.debugTestChat = null);
-      await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: pixels == null
+              ? null
+              : ThemeData(fontFamily: 'ConnectionCapture'),
+          home: const SettingsScreen(),
+        ),
+      );
       await tester.runAsync(() async {
         await Future<void>.delayed(const Duration(milliseconds: 300));
       });
@@ -159,10 +185,35 @@ void main() {
       );
       expect(find.textContaining('SocketException'), findsNothing);
       expect(
+        find.textContaining('Failed [connection.refused]:'),
+        findsOneWidget,
+      );
+      expect(diagnostics, contains('connection.refused'));
+      expect(diagnostics.join(), isNot(contains('SocketException')));
+      expect(diagnostics.join(), isNot(contains('127.0.0.1')));
+      expect(diagnostics.join(), isNot(contains('51229')));
+      expect(diagnostics.join(), isNot(contains('secret-fixture')));
+      if (pixels != null) {
+        await tester.ensureVisible(
+          find.textContaining('Failed [connection.refused]:'),
+        );
+        await tester.pumpAndSettle();
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byType(RepaintBoundary).first,
+        );
+        await tester.runAsync(() async {
+          final image = await boundary.toImage(pixelRatio: 1);
+          final png = await image.toByteData(format: ui.ImageByteFormat.png);
+          await File(pixels).writeAsBytes(png!.buffer.asUint8List());
+          image.dispose();
+        });
+      }
+      expect(
         find.text('Detect local Ollama', skipOffstage: false),
         findsWidgets,
       );
       expect(find.text('Details', skipOffstage: false), findsOneWidget);
+      debugPrint = previousPrint;
     });
   });
 }
