@@ -76,6 +76,7 @@ class _FaceScreenState extends State<FaceScreen>
     _breathing.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     final face = widget.face;
@@ -295,4 +296,3 @@ class _AnswerLog extends StatelessWidget {
     );
   }
 }
-

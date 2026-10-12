@@ -37,10 +37,14 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('character is responsive in portrait and landscape', (tester) async {
+  testWidgets('character is responsive in portrait and landscape', (
+    tester,
+  ) async {
     for (final size in [const Size(390, 844), const Size(844, 390)]) {
       await showFace(tester, size: size);
-      final character = tester.getRect(find.byKey(const ValueKey('bluey-character')));
+      final character = tester.getRect(
+        find.byKey(const ValueKey('bluey-character')),
+      );
       expect(character.width, greaterThan(0));
       expect(character.height, closeTo(character.width, 0.01));
       expect(character.left, greaterThanOrEqualTo(0));
@@ -51,7 +55,9 @@ void main() {
     }
   });
 
-  testWidgets('mood, gaze and speech follow incoming FaceState', (tester) async {
+  testWidgets('mood, gaze and speech follow incoming FaceState', (
+    tester,
+  ) async {
     final face = FaceState(
       gazeX: 0.8,
       gazeY: -0.7,
@@ -59,7 +65,9 @@ void main() {
       talk: 0.9,
     );
     await showFace(tester, face: face);
-    final character = tester.widget<BlueyCharacter>(find.byType(BlueyCharacter));
+    final character = tester.widget<BlueyCharacter>(
+      find.byType(BlueyCharacter),
+    );
     expect(character.face.mood, Mood.talking);
     expect(character.face.gazeX, 0.8);
     expect(character.face.talk, 0.9);
@@ -74,7 +82,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('wake and hold-to-talk gestures remain available', (tester) async {
+  testWidgets('wake and hold-to-talk gestures remain available', (
+    tester,
+  ) async {
     final wakes = <bool>[];
     var starts = 0;
     var ends = 0;

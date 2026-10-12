@@ -121,7 +121,9 @@ class _BlueyPainter extends CustomPainter {
     for (final x in <double>[91, 229]) {
       canvas.drawOval(
         Rect.fromCenter(center: Offset(x, 213), width: 33, height: 19),
-        Paint()..color = const Color(0xFFF69AAA).withValues(alpha: sleepy ? 0.13 : 0.46),
+        Paint()
+          ..color = const Color(0xFFF69AAA)
+              .withValues(alpha: sleepy ? 0.13 : 0.46),
       );
     }
     _stroke(
