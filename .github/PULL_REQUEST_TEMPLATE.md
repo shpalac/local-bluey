@@ -1,6 +1,6 @@
 ## Objective
 
-Describe the deliverable and its linked task issue. Use `Refs #123` while work is in progress; `Closes #123` only when permanent integration evidence and all required reviews are complete.
+Describe the deliverable and its linked task issue. Use `Refs #<issue-number>` while work is in progress; `Closes #<issue-number>` only when permanent integration evidence and all required reviews are complete.
 
 ## Scope and implementation
 
