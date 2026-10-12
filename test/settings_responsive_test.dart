@@ -38,7 +38,6 @@ void main() {
     }
   });
 
-
   testWidgets('settings use a scrollable provider picker at narrow width', (
     tester,
   ) async {
