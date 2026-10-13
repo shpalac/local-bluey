@@ -5,7 +5,9 @@ void main() {
   const builder = TeachDraftBuilder();
 
   test('typed happy path remains non-executable', () {
-    final draft = builder.build([{'action': 'click', 'target': 'submit'}]);
+    final draft = builder.build([
+      {'action': 'click', 'target': 'submit'},
+    ]);
     expect(draft.steps.single.kind, DraftStepKind.click);
     expect(draft.warnings, isEmpty);
     expect(draft.canAutoExecute, isFalse);
@@ -27,7 +29,9 @@ void main() {
     final draft = builder.build([]);
     expect(draft.steps, isEmpty);
     expect(draft.canAutoExecute, isFalse);
-    expect(() => draft.steps.add(const DraftStep(DraftStepKind.click, 'x')),
-        throwsUnsupportedError);
+    expect(
+      () => draft.steps.add(const DraftStep(DraftStepKind.click, 'x')),
+      throwsUnsupportedError,
+    );
   });
 }
