@@ -32,12 +32,17 @@ class SyntheticMetrics {
   final int trueNegative;
   final Duration totalElapsed;
 
-  int get count => truePositive + falsePositive + falseNegative + trueNegative;
+  int get count =>
+      truePositive + falsePositive + falseNegative + trueNegative;
   double get precision => _ratio(truePositive, truePositive + falsePositive);
   double get recall => _ratio(truePositive, truePositive + falseNegative);
   double get accuracy => _ratio(truePositive + trueNegative, count);
-  double get f1 => _ratio(2 * truePositive, 2 * truePositive + falsePositive + falseNegative);
-  double get meanLatencyMicros => _ratio(totalElapsed.inMicroseconds, count);
+  double get f1 => _ratio(
+    2 * truePositive,
+    2 * truePositive + falsePositive + falseNegative,
+  );
+  double get meanLatencyMicros =>
+      _ratio(totalElapsed.inMicroseconds, count);
 
   static double _ratio(int numerator, int denominator) =>
       denominator == 0 ? 0 : numerator / denominator;
@@ -51,10 +56,18 @@ class SyntheticBenchmark {
     final ids = <String>{};
     for (final sample in samples) {
       if (sample.id.trim().isEmpty || !ids.add(sample.id)) {
-        throw ArgumentError.value(sample.id, 'id', 'Must be nonempty and unique');
+        throw ArgumentError.value(
+          sample.id,
+          'id',
+          'Must be nonempty and unique',
+        );
       }
       if (sample.elapsed.isNegative) {
-        throw ArgumentError.value(sample.elapsed, 'elapsed', 'Cannot be negative');
+        throw ArgumentError.value(
+          sample.elapsed,
+          'elapsed',
+          'Cannot be negative',
+        );
       }
       micros += sample.elapsed.inMicroseconds;
       if (sample.expected == SyntheticOutcome.positive) {
