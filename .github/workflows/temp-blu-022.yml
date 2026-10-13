@@ -4,6 +4,8 @@ on:
     paths:
       - 'docs/MAC_PILOT_PROTOCOL.md'
       - '.github/workflows/temp-blu-022.yml'
+      - 'test/blu_022_protocol_test.dart'
+      - 'docs/acceptance/temporary/issue-578.json'
   workflow_dispatch:
 permissions:
   contents: read
