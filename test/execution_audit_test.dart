@@ -136,7 +136,9 @@ void auditIntegrationTests() {
     final running = execution.run();
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(body: ExecutionAuditPanel(execution: execution, audit: audit)),
+        home: Scaffold(
+          body: ExecutionAuditPanel(execution: execution, audit: audit),
+        ),
       ),
     );
     await tester.tap(find.text('Export diagnostics'));
