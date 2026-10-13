@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 609,
+      "title": "BLU-053 seeded fuzzing of event normalization (partial)",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "No crashes or secret persistence across the complete event and storage pipeline",
+          "type": "gap",
+          "reason": "Fuzzing covers pure normalizer, decoder and OCR gate only; persistent storage, real screen frames and the native pipeline are not exercised."
+        },
+        {
+          "id": "ac_1_contract",
+          "requirement": "Pure normalization, parsing and OCR gates tolerate malformed and oversized input without unexpected exceptions",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/event_normalization_fuzz_test.dart",
+              "name": "arbitrary text only ever fails with ActivityStepFormatException"
+            },
+            {
+              "file": "test/event_normalization_fuzz_test.dart",
+              "name": "garbage text and metadata never throw; fake secrets always deny"
+            },
+            {
+              "file": "test/event_normalization_fuzz_test.dart",
+              "name": "maximum-length repetitive input completes and is classified"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Seeded pure-code fuzz cases reproduce traces and reject malformed records with typed failures",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/event_normalization_fuzz_test.dart",
+              "name": "the same seed gives the identical retained trace"
+            },
+            {
+              "file": "test/event_normalization_fuzz_test.dart",
+              "name": "different seeds actually exercise different streams"
+            },
+            {
+              "file": "test/event_normalization_fuzz_test.dart",
+              "name": "valid steps round-trip and random mutations never escape typed"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No real secrets, personal data, raw screenshots or unapproved network egress in production paths and CI artifacts",
+          "type": "gap",
+          "reason": "Fabricated local unit inputs do not prove end-to-end log/artifact scrubbing, screenshot handling or network isolation; require full pipeline evidence."
+        },
+        {
+          "id": "ac_3_contract",
+          "requirement": "Pure OCR gate denies unverified, blank, oversized and fake-token-bearing text",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/event_normalization_fuzz_test.dart",
+              "name": "unverified, blank and oversized OCR is never allowed"
+            },
+            {
+              "file": "test/event_normalization_fuzz_test.dart",
+              "name": "garbage text and metadata never throw; fake secrets always deny"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Backwards compatibility, native Android/iOS/macOS behavior and capabilities are reviewed",
+          "type": "manual",
+          "reason": "Pure Dart unit fuzz cases are not proof of platform integration, physical host permissions, device behavior or backwards compatibility; maintainer review and appropriate integration checks remain required."
+        }
+      ]
+    }
+  ]
+}

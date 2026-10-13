@@ -151,4 +151,14 @@ void main() {
       expect(other.cleared, 0, reason: 'nothing after the hung store ran');
     });
   });
+
+  test('failed outcomes never reveal fake secret paths', () async {
+    final bad = _Store('private', FaultPlan.first(Fault.diskFull));
+    final result = await RetentionPurger([bad.target]).purge(['private']);
+    expect(result.failed, {'private': 'FileSystemException'});
+    final errors = result.failed.values.join();
+    expect(errors, isNot(contains(FaultPlan.secretPath)));
+    expect(errors, isNot(contains('No space left on device')));
+    expect(bad.cleared, 0);
+  });
 }

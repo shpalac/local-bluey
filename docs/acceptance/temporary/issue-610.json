@@ -60,7 +60,7 @@
           "tests": [
             {
               "file": "test/fault_injection_retention_test.dart",
-              "name": "every store failing differently is reported per store"
+              "name": "failed outcomes never reveal fake secret paths"
             }
           ]
         },
