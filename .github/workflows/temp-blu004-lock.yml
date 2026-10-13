@@ -1,0 +1,32 @@
+name: BLU-004 lockfile bootstrap (temporary)
+
+on:
+  pull_request:
+    paths:
+      - pubspec.yaml
+      - .github/workflows/temp-blu004-lock.yml
+
+permissions:
+  contents: read
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Resolve new SQLCipher dependencies
+        run: flutter pub get
+      - name: Publish nonsecret lockfile for regeneration
+        run: |
+          echo BEGIN_RESOLVED_LOCK
+          base64 -w0 pubspec.lock
+          echo
+          echo END_RESOLVED_LOCK
