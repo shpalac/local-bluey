@@ -638,6 +638,15 @@ Known gap recorded as a test, not fixed: `RetentionPurger` has no per-store time
 
 Not covered: process crash and restart (nothing persists to restart from), real disk or OS permission behavior (needs device validation), and the BLU-016 execution state machine and BLU-019 idempotent retry, which do not exist in the repository yet and are this issue's stated dependencies. AC-1 "no duplicate unsafe side effects" is shown only for the purger. Test-only; no production change.
 
+
+### #617 Latency p50/p95 summary tool (partial)
+
+New `tool/perf_summary.dart` turns PerfMonitor's perf.jsonl into per-stage count, p50 and p95 (nearest-rank). `test/perf_summary_test.dart` runs the actual CLI on fabricated files: percentile values, order independence, blank lines, six invalid-line shapes (exit 2, line number only, no content echoed), empty and missing file. Covers latency only. CPU, RAM, disk and cold start remain unmeasured, no device baseline numbers are claimed, and no target is enforced in CI. No change to what PerfMonitor records or stores. Rollback: remove the tool, test, doc paragraph and this entry. Issue stays OPEN.
+
+### #637 Incident and release rollback runbook (partial)
+
+New `docs/INCIDENT_RUNBOOK.md` covers bad release, leaked secret, broken CI and privacy-affecting defect, grounded in the existing release.yml, RELEASE.md and SECRETS.md. External-service steps are marked owner actions. `test/incident_runbook_test.dart` (5 cases) checks the headings, the release.yml facts it cites, the approval and no-bypass rules, the honesty section and that linked docs exist. This is documentation plus a text guard: no rehearsal of a rollback was run, and signing/notarization, store, user-notice, on-call and device incidents are explicitly not covered. Retention policy remains the open #351 decision. Rollback: revert the doc, test and this entry. Issue stays OPEN.
+
 ### #599 Workflow security static guard (partial)
 
 New `test/workflow_security_guard_test.dart` (26 cases) runs in the normal `flutter test` lane and checks, for every file in `.github/workflows`: a top-level `permissions:` block exists; top-level write scopes are limited to an in-test allowlist (issues: write for ci-metrics, flutter-version-check, issue-task-hygiene; nothing else), no `write-all`; no `pull_request_target`; no `secrets: inherit`. It also runs the existing `.github/scripts/check-pinned-actions.sh` against the real workflows and against fabricated movable-tag, short-SHA and full-SHA fixtures. This guards workflow text only. It cannot see repository settings (default token policy, branch protection, push protection), does not check job-level permissions, artifact handling or fork-PR isolation, and no workflow file was changed. Full #599 acceptance is not claimed. Rollback: delete the test and this entry. Issue stays OPEN.
