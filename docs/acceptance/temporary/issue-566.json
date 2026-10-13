@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 566,
+      "title": "BLU-013 Teach Mode draft workflow builder",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Unknown steps flagged and generated drafts cannot auto-execute",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/teach_mode/draft_builder_test.dart",
+              "name": "typed happy path remains non-executable"
+            },
+            {
+              "file": "test/teach_mode/draft_builder_test.dart",
+              "name": "unknown and malformed observations require review"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Happy path and malformed input tested; host-dependent failure scenarios require integration",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/teach_mode/draft_builder_test.dart",
+              "name": "empty observations are safe and immutable"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Pure draft builder discards unrecognized data and never invokes host or network",
+          "type": "gap",
+          "reason": "Isolated non-executable module tested; real capture, data registry, safety gate and host integration not yet connected."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Flutter analysis and relevant tests pass with reproducible CI evidence",
+          "type": "manual",
+          "reason": "CI runs static analysis and named tests; reviewer must verify final CI and native behavior when integrated."
+        }
+      ]
+    }
+  ]
+}
