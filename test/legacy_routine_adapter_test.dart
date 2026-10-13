@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/routines.dart';
-import 'package:local_bluey/workflows/legacy_routine_LegacyRoutineAdapter.dart';
+import 'package:local_bluey/workflows/legacy_routine_adapter.dart';
 import 'package:local_bluey/workflows/workflow_dsl.dart';
 
 void main() {
