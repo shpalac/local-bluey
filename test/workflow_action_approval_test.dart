@@ -108,7 +108,7 @@ void main() {
     expect(gate.calls, 0);
   });
 
-  test('safety explicit user refusal has zero side effects', () async {
+  test('safety gate rejection blocks host action', () async {
     gate.allowed = false;
     expect(await run(), WorkflowStatus.failed);
     expect(delegate.actions, 0);
