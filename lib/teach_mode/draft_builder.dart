@@ -35,12 +35,15 @@ class TeachDraftBuilder {
         _ => DraftStepKind.unknown,
       };
       // Reject payloads and untrusted target data rather than retaining secrets.
-      final safeTarget = target is String &&
+      final safeTarget =
+          target is String &&
               target.isNotEmpty &&
               RegExp(r'^[a-zA-Z0-9_.-]{1,80}$').hasMatch(target)
           ? target
           : '';
-      final uncertain = kind == DraftStepKind.unknown || safeTarget.isEmpty ||
+      final uncertain =
+          kind == DraftStepKind.unknown ||
+          safeTarget.isEmpty ||
           item.keys.any((key) => key != 'action' && key != 'target');
       if (uncertain) warnings.add('Step ${index + 1} needs review');
       steps.add(DraftStep(kind, safeTarget, uncertain: uncertain));
