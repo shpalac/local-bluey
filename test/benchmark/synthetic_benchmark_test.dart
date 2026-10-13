@@ -8,10 +8,30 @@ void main() {
 
   test('deterministic precision, recall and fake elapsed time', () {
     const samples = [
-      SyntheticSample(id: 'tp', expected: positive, actual: positive, elapsed: Duration(milliseconds: 10)),
-      SyntheticSample(id: 'fp', expected: negative, actual: positive, elapsed: Duration(milliseconds: 20)),
-      SyntheticSample(id: 'fn', expected: positive, actual: negative, elapsed: Duration(milliseconds: 30)),
-      SyntheticSample(id: 'tn', expected: negative, actual: negative, elapsed: Duration(milliseconds: 40)),
+      SyntheticSample(
+        id: 'tp',
+        expected: positive,
+        actual: positive,
+        elapsed: Duration(milliseconds: 10),
+      ),
+      SyntheticSample(
+        id: 'fp',
+        expected: negative,
+        actual: positive,
+        elapsed: Duration(milliseconds: 20),
+      ),
+      SyntheticSample(
+        id: 'fn',
+        expected: positive,
+        actual: negative,
+        elapsed: Duration(milliseconds: 30),
+      ),
+      SyntheticSample(
+        id: 'tn',
+        expected: negative,
+        actual: negative,
+        elapsed: Duration(milliseconds: 40),
+      ),
     ];
     final first = benchmark.evaluate(samples);
     final second = benchmark.evaluate(samples);
@@ -33,10 +53,23 @@ void main() {
   });
 
   test('rejects duplicate ids and negative durations', () {
-    const sample = SyntheticSample(id: 'a', expected: positive, actual: positive, elapsed: Duration.zero);
+    const sample = SyntheticSample(
+      id: 'a',
+      expected: positive,
+      actual: positive,
+      elapsed: Duration.zero,
+    );
     expect(() => benchmark.evaluate([sample, sample]), throwsArgumentError);
-    expect(() => benchmark.evaluate([
-      const SyntheticSample(id: 'a', expected: positive, actual: positive, elapsed: Duration(microseconds: -1)),
-    ]), throwsArgumentError);
+    expect(
+      () => benchmark.evaluate([
+        const SyntheticSample(
+          id: 'a',
+          expected: positive,
+          actual: positive,
+          elapsed: Duration(microseconds: -1),
+        ),
+      ]),
+      throwsArgumentError,
+    );
   });
 }
