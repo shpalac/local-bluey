@@ -34,8 +34,11 @@ final class Postcondition {
     };
     final key = source.substring(first + 1, second).trim();
     final expected = source.substring(second + 1).trim();
-    if (key.isEmpty || expected.isEmpty || key.contains('..') ||
-        key.contains('/') || key.contains('\\')) {
+    if (key.isEmpty ||
+        expected.isEmpty ||
+        key.contains('..') ||
+        key.contains('/') ||
+        key.contains('\\')) {
       throw const FormatException('Invalid postcondition key or value');
     }
     return Postcondition(kind: kind, key: key, expected: expected);
@@ -73,10 +76,10 @@ final class PostconditionVerifier {
       return VerificationOutcome.inconclusive;
     }
     try {
-      final result = await _check(conditions, cancellation).timeout(
-        timeout,
-        onTimeout: () => VerificationOutcome.inconclusive,
-      );
+      final result = await _check(
+        conditions,
+        cancellation,
+      ).timeout(timeout, onTimeout: () => VerificationOutcome.inconclusive);
       if (cancellation?.isCancelled ?? false) {
         return VerificationOutcome.cancelled;
       }
