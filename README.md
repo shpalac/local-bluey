@@ -251,3 +251,11 @@ Local Bluey is forked from [**Bluey by Riley Brown**](https://github.com/rbrown1
 [Back to top ↑](#-local-bluey)
 
 </div>
+
+### Synthetic benchmark harness (BLU-021)
+
+Run `flutter test test/benchmark` for deterministic, local-only precision,
+recall, F1, accuracy, and simulated latency metrics. The fake clock and
+synthetic exit fixtures never require network, device permissions, or a model.
+This is test infrastructure only; it does not execute workflows or authorize
+real actions. The temporary CI workflow is `.github/workflows/temp-issue-577.yml`.
