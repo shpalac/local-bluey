@@ -83,6 +83,7 @@ void main() {
   ).run();
 
   test('preview declares target, permissions and risk without side effects', () {
+
     final action = host.preview(0);
     expect(action.workflowId, 'workflow');
     expect(action.stepIndex, 0);
