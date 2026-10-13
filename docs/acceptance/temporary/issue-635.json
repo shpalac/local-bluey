@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 635,
+      "title": "BLU-077 Issue templates and PR checklists (partial)",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Consistent triage and review template contract",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/github_templates_test.dart",
+              "name": "has acceptance evidence, security, rollback and device sections"
+            },
+            {
+              "file": "test/github_templates_test.dart",
+              "name": "links work with Refs and reserves Closes for full acceptance"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "No silent failures, secrets, unapproved egress or approval bypass",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/github_templates_test.dart",
+              "name": "forbids privacy gate bypass and unapproved egress"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "CI and relevant tests green with documented reproduction commands",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/github_templates_test.dart",
+              "name": "issue template config exists and keeps blank issues explicit"
+            }
+          ]
+        },
+        {
+          "id": "template_enforcement_gap",
+          "requirement": "Contributors actually complete required fields and security/privacy review",
+          "type": "gap",
+          "reason": "Template text tests cannot prove contributor completion, approval or real security review; issue remains open."
+        }
+      ]
+    }
+  ]
+}
