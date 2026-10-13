@@ -57,6 +57,19 @@ jobs:
         run: python3 -m pip install --user Pillow==11.3.0
       - name: Compose screenshot-based showcase
         run: python3 tool/build_readme_showcase.py
+      - name: Verify all local README images exist
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          readme = Path("README.md").read_text(encoding="utf-8")
+          sources = re.findall(r'<img\\s+[^>]*src="([^"]+)"', readme)
+          missing = [source for source in sources if not source.startswith(("http:", "https:")) and not Path(source).is_file()]
+          if missing:
+              raise SystemExit("Missing README images: " + ", ".join(missing))
+          print(f"Verified {len(sources)} README image references")
+          PY
       - name: Upload screenshots as run artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
