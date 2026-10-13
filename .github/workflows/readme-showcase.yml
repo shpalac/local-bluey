@@ -12,6 +12,16 @@ on:
       - 'docs/screenshots/**'
       - '.flutter-version'
       - 'pubspec.*'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/readme-showcase.yml'
+      - 'tool/build_readme_showcase.py'
+      - 'tool/regenerate_screenshots.sh'
+      - 'test/screenshots/**'
+      - 'README.md'
+      - '.flutter-version'
+      - 'pubspec.*'
   workflow_dispatch:
     inputs:
       publish:
@@ -88,7 +98,7 @@ jobs:
     needs: render
     # Only explicit manual dispatch may write to the owner's README branch.
     # PR rendering uses a read-only token and never creates bot approval loops.
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.publish && github.ref_name == 'main' }}
+    if: ${{ github.ref_name == 'main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.publish)) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
