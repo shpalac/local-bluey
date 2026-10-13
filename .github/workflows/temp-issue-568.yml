@@ -21,7 +21,11 @@ jobs:
         with:
           channel: stable
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib/workflows/legacy_routine_adapter.dart test/legacy_routine_adapter_test.dart
+      - name: Check issue files formatting
+        run: |
+          dart format lib/workflows/legacy_routine_adapter.dart test/legacy_routine_adapter_test.dart
+          git diff -- lib/workflows/legacy_routine_adapter.dart test/legacy_routine_adapter_test.dart
+          git diff --exit-code -- lib/workflows/legacy_routine_adapter.dart test/legacy_routine_adapter_test.dart
       - run: dart analyze lib/workflows/legacy_routine_adapter.dart test/legacy_routine_adapter_test.dart
       - run: flutter test test/legacy_routine_adapter_test.dart test/workflow_dsl_test.dart test/routines_test.dart
       - run: flutter analyze
