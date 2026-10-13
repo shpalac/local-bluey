@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 571,
+      "title": "BLU-018 Postcondition verification engine",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "unchanged UI after click is not confirmed"
+            },
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "timeout is inconclusive, including late successful evidence"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "typed postconditions accept AX, file and tool evidence"
+            },
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "malformed contracts fail before reading"
+            },
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "permission denial prevents action"
+            },
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "cancelled or late-cancelled observation cannot confirm"
+            },
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "missing offline evidence stays inconclusive"
+            },
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "missing postconditions fail closed after process restart"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "exceptions are inconclusive and never leak exception messages"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/postcondition_verifier_test.dart",
+              "name": "confirmed evidence permits state machine completion"
+            }
+          ]
+        },
+        {
+          "id": "end_to_end_gap",
+          "type": "gap",
+          "reason": "Production SafetyGate/HostControl readers, TCC permissions and persisted restart integration are not implemented; temporary CI remains."
+        }
+      ]
+    }
+  ]
+}
