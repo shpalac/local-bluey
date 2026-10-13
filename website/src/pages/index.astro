@@ -1,0 +1,246 @@
+---
+import '../styles/global.css';
+import CompanionScene from '../components/CompanionScene';
+import RiveMascot from '../components/RiveMascot';
+import ApprovalDemo from '../components/ApprovalDemo';
+
+const base = import.meta.env.BASE_URL;
+const asset = (name: string) => base + 'media/' + name;
+const github = 'https://github.com/shpalac/local-bluey';
+const doc = github + '#-quick-start';
+const sceneSteps = [
+  {
+    number: '01', verb: 'Wake', eyebrow: 'A little tap goes a long way',
+    title: 'Say hello.', copy: 'Double-tap his face to wake him. Hold to talk. Suddenly your desktop feels a little less like a desktop.',
+    image: asset('bluey-desktop.png'), alt: 'Original Bluey desktop character artwork'
+  },
+  {
+    number: '02', verb: 'Ask', eyebrow: 'A question, out loud',
+    title: 'Ask anything on screen.', copy: 'Ask “What’s this?” Bluey can use configured screen-reading and AI services to help interpret what you’re looking at.',
+    image: asset('onboarding.png'), alt: 'Deterministic Flutter onboarding test capture'
+  },
+  {
+    number: '03', verb: 'Approve', eyebrow: 'A big deal, made very clear',
+    title: 'You call the shots.', copy: 'Actions that change your Mac go through a SafetyGate and require confirmation. There is a kill switch, too.',
+    image: asset('settings-dark.png'), alt: 'Deterministic Flutter settings test capture in dark mode'
+  },
+  {
+    number: '04', verb: 'Go', eyebrow: 'Small helper, real tools',
+    title: 'Then Bluey helps.', copy: 'With the Mac as host, approved tools can point, click, type, scroll, drag or open apps. No invisible autopilot.',
+    image: asset('showcase-gallery.png'), alt: 'Gallery assembled from deterministic Flutter test captures'
+  }
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#14142e" />
+    <meta name="description" content="Meet Local Bluey, a playful local-first AI companion for your Mac. Talk naturally, understand your screen, and approve actions before Bluey helps." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Local Bluey — A little company for your computer" />
+    <meta property="og:description" content="Your Mac has a new sidekick. Meet the little blueberry who listens, helps, and always asks first." />
+    <meta property="og:image" content={new URL(asset('showcase-hero.png'), Astro.site)} />
+    <link rel="icon" href={asset('bluey-mobile.png')} type="image/png" />
+    <link rel="canonical" href={new URL(base, Astro.site)} />
+    <title>Local Bluey — A little company for your computer</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="site-shell">
+      <header class="site-header" id="top">
+        <a class="wordmark" href="#top" aria-label="Local Bluey — back to top"><span class="wordmark-orb"></span>local<span class="wordmark-blue">bluey</span><span class="wordmark-dot">.</span></a>
+        <nav aria-label="Primary navigation">
+          <a href="#meet">Meet Bluey</a>
+          <a href="#how">The magic</a>
+          <a href="#look">A closer look</a>
+        </nav>
+        <a class="nav-cta" href={github} target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+      </header>
+
+      <main id="main">
+        <section class="hero section-wrap" aria-labelledby="hero-title">
+          <span class="orbit-label orbit-label-a" aria-hidden="true">A FRIEND IN YOUR CORNER</span>
+          <span class="hero-label"><span class="status-light"></span> HELLO FROM YOUR DESKTOP</span>
+          <div class="hero-copy">
+            <h1 id="hero-title">YOUR MAC<br/>HAS A NEW<br/><em>sidekick.</em></h1>
+            <p class="hero-lede">Meet Bluey. A tiny blueberry with a big personality — and a surprisingly helpful set of hands.</p>
+            <div class="hero-actions">
+              <a class="pill-button pill-button-primary" href={doc} target="_blank" rel="noopener noreferrer">Get started <span aria-hidden="true">↗</span></a>
+              <a class="text-link" href="#meet">Get to know him <span aria-hidden="true">↓</span></a>
+            </div>
+            <p class="hero-honesty">An open-source project in active development. Real-device validation is still pending.</p>
+          </div>
+          <div class="hero-art" aria-label="Bluey original character illustration">
+            <div class="hero-scribble scribble-one" aria-hidden="true">☼</div>
+            <div class="hero-scribble scribble-two" aria-hidden="true">✳</div>
+            <div class="scene-orbit" aria-hidden="true">
+              <CompanionScene client:only="react" />
+            </div>
+            <div class="mascot-stage">
+              <div class="mascot-halo"></div>
+              <RiveMascot client:visible src={import.meta.env.PUBLIC_BLUEY_RIVE_URL ?? ''} fallbackSrc={asset('bluey-desktop.png')} />
+            </div>
+            <div class="hero-sticker hero-sticker-top"><span class="sticker-star">✷</span> cute, but capable</div>
+            <div class="hero-sticker hero-sticker-bottom">100% blueberry energy <span aria-hidden="true">↗</span></div>
+            <div class="hero-ring ring-one"></div>
+            <div class="hero-ring ring-two"></div>
+            <span class="hero-caption">FIG. 01 — YOUR NEW LITTLE BUDDY</span>
+          </div>
+          <a href="#meet" class="scroll-cue" aria-label="Scroll to meet Bluey"><span>SCROLL TO MEET</span><span aria-hidden="true">↓</span></a>
+        </section>
+
+        <div class="ticker" aria-hidden="true"><div class="ticker-inner"><span>CURIOUS BY NATURE</span> <b>✳</b> <span>YOU ASK</span> <b>✳</b> <span>BLUEY LISTENS</span> <b>✳</b> <span>YOU APPROVE</span> <b>✳</b> <span>HE HELPS</span> <b>✳</b> <span>CURIOUS BY NATURE</span> <b>✳</b> <span>YOU ASK</span> <b>✳</b> <span>BLUEY LISTENS</span> <b>✳</b></div></div>
+
+        <section class="intro section-wrap" id="meet" aria-labelledby="intro-title">
+          <div class="section-index"><span>01 / MEET YOUR LITTLE BUDDY</span><span>● ● ●</span></div>
+          <div class="intro-grid">
+            <div class="intro-type">
+              <h2 id="intro-title">A little<br/><span>company</span><br/>for your<br/><i>computer.</i></h2>
+            </div>
+            <div class="intro-aside">
+              <span class="hand-drawn-arrow" aria-hidden="true">↙</span>
+              <p>Not another chatbot tab. Not another dashboard. Just a small, expressive companion you can actually talk to.</p>
+              <div class="intro-quote"><span class="quote-symbol">“</span><span>Hey Bluey, what's this?</span><span class="quote-asterisk">✺</span></div>
+              <p class="aside-note">Ask about what’s on screen, or have Bluey help with your Mac — with permission before computer-changing actions.</p>
+            </div>
+          </div>
+          <div class="intro-foot"><span>MADE FOR CURIOUS HUMANS</span><span>AND VERY BUSY COMPUTERS</span></div>
+        </section>
+
+        <section class="story" id="how" aria-labelledby="story-title">
+          <div class="story-head section-wrap"><span class="section-index">02 / HOW THE MAGIC HAPPENS</span><h2 id="story-title">A whole lot of <em>help.</em><br/>One little face.</h2><p>Four beats. One very good sidekick.</p></div>
+          <div class="story-pin">
+            <div class="story-track">
+              {sceneSteps.map((step) => (
+                <article class="story-step" aria-label={step.number + ' ' + step.verb}>
+                  <div class="story-step-copy">
+                    <span class="story-step-number">{step.number} / 04 <span>✳</span></span>
+                    <span class="story-eyebrow">{step.eyebrow}</span>
+                    <h3>{step.title}</h3>
+                    <p>{step.copy}</p>
+                    <span class="story-step-footer">{step.verb.toUpperCase()} WITH BLUEY <span>↗</span></span>
+                  </div>
+                  <div class="story-image-wrap"><img src={step.image} alt={step.alt} loading="lazy" width="640" height="480" /></div>
+                </article>
+              ))}
+            </div>
+            <div class="story-progress" aria-hidden="true"><span class="story-progress-bar"></span></div>
+          </div>
+          <p class="story-disclaimer section-wrap">Interactive storytelling explains features present in the codebase; it is not a recording of verified device operation.</p>
+        </section>
+
+        <section class="control section-wrap" aria-labelledby="control-title">
+          <div class="section-index"><span>03 / YOUR MAC. YOUR RULES.</span><span>✱</span></div>
+          <div class="control-grid">
+            <div class="control-copy">
+              <h2 id="control-title">SUPER<br/>HELPFUL.<br/><span>SUPER</span><br/><i>respectful.</i></h2>
+              <p>Bluey can help with clicks, typing, shortcuts and more — but meaningful actions go through a confirmation gate. You stay in charge.</p>
+              <a class="text-link text-link-dark" href={github + '/blob/main/docs/DATA_PRIVACY_HELP.md'} target="_blank" rel="noopener noreferrer">Read the safety details <span aria-hidden="true">↗</span></a>
+            </div>
+            <div class="approval-space">
+              <div class="approval-ring" aria-hidden="true"></div>
+              <div class="approval-tag" aria-hidden="true">HUMAN IN THE LOOP <span>↘</span></div>
+              <ApprovalDemo client:visible />
+              <p class="demo-disclosure">Illustrative interaction only. This button does not control a real Mac.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="features section-wrap" aria-labelledby="features-title">
+          <div class="section-index"><span>04 / WHAT BLUEY CAN DO</span><span>YOU PICK THE BRAIN</span></div>
+          <h2 id="features-title">Small face.<br/><em>Big ideas.</em></h2>
+          <div class="feature-list" id="features">
+            <div class="feature-row"><span>✦ 01</span><h3>Bring your own brain.</h3><p>Use local Ollama or configure an OpenAI-compatible endpoint. Speech and transcription are configured separately.</p><span class="feature-end">↗</span></div>
+            <div class="feature-row"><span>✦ 02</span><h3>Look at the screen.</h3><p>Bluey can inspect screenshots and recognized text when allowed. Pattern-based redaction is helpful, not infallible.</p><span class="feature-end">↗</span></div>
+            <div class="feature-row"><span>✦ 03</span><h3>Talk it through.</h3><p>Hold to talk and hear responses with compatible configured endpoints. Native offline transcription is not shipped.</p><span class="feature-end">↗</span></div>
+            <div class="feature-row"><span>✦ 04</span><h3>Make it feel yours.</h3><p>Light and dark themes, English and Hebrew RTL, moods, haptics and optional biometric app lock.</p><span class="feature-end">↗</span></div>
+          </div>
+        </section>
+
+        <section class="gallery" id="look" aria-labelledby="gallery-title">
+          <div class="section-wrap">
+            <div class="section-index"><span>05 / A CLOSER LOOK</span><span>REAL PROJECT ASSETS</span></div>
+            <div class="gallery-head"><h2 id="gallery-title">Peek inside<br/><em>Bluey's world.</em></h2><p>Captured from the project's deterministic Flutter screenshot tests. No imaginary app screens here.</p></div>
+            <div class="gallery-mosaic">
+              <figure class="gallery-large"><img src={asset('showcase-hero.png')} alt="Composed showcase with authentic Bluey icon and Flutter test screenshots" loading="lazy" width="1200" height="700" /><figcaption><span>01 — THE BIG PICTURE</span><span>↗</span></figcaption></figure>
+              <figure class="gallery-small"><img src={asset('settings-dark.png')} alt="Dark settings screen from Flutter test capture" loading="lazy" width="560" height="720" /><figcaption><span>02 — DARK MODE</span><span>↗</span></figcaption></figure>
+              <figure class="gallery-small"><img src={asset('onboarding-rtl.png')} alt="Hebrew right-to-left onboarding test capture" loading="lazy" width="560" height="720" /><figcaption><span>03 — HEBREW &amp; RTL</span><span>↗</span></figcaption></figure>
+            </div>
+            <p class="gallery-disclosure"><strong>Screenshots are deterministic</strong> mock captures generated from Flutter tests, not photographs of a running device. Native permission flows and end-to-end behavior still need real-device verification. <a href={github + '/issues/15'} target="_blank" rel="noopener noreferrer">Track validation ↗</a></p>
+          </div>
+        </section>
+
+        <section class="privacy section-wrap" aria-labelledby="privacy-title">
+          <div class="privacy-mark" aria-hidden="true">✳</div>
+          <p class="section-index">06 / PRIVATE BY CHOICE</p>
+          <h2 id="privacy-title">Your Mac.<br/><em>Your rules.</em></h2>
+          <p>Local-first means you can choose local endpoints. Connecting remote AI or speech services may send data to those providers. Bluey has explicit permissions, confirmation gates and documented limits — not magic privacy promises.</p>
+          <a class="pill-button pill-button-outline" href={github + '/blob/main/docs/README_TECHNICAL_REFERENCE.md#privacy-what-stays-local'} target="_blank" rel="noopener noreferrer">The honest details <span aria-hidden="true">↗</span></a>
+        </section>
+
+        <section class="last-call" aria-labelledby="last-title">
+          <div class="last-call-inner section-wrap">
+            <div class="last-doodle" aria-hidden="true">↘</div>
+            <span class="last-eyebrow">THE NEXT GOOD THING ON YOUR MAC</span>
+            <h2 id="last-title">GO ON.<br/><em>SAY HELLO.</em></h2>
+            <div class="last-bottom">
+              <p>Curious? Build from source, follow the journey, or help this little blueberry grow.</p>
+              <a class="pill-button pill-button-final" href={doc} target="_blank" rel="noopener noreferrer">Get started on GitHub <span aria-hidden="true">↗</span></a>
+            </div>
+            <img class="last-mascot" src={asset('bluey-desktop.png')} alt="Bluey waving hello in the original app artwork" loading="lazy" width="340" height="340" />
+          </div>
+        </section>
+      </main>
+      <footer class="site-footer section-wrap">
+        <a class="wordmark footer-logo" href="#top">local<span class="wordmark-blue">bluey</span><span class="wordmark-dot">.</span></a>
+        <p>Made with curiosity. Built in the open.</p>
+        <div><a href={github} target="_blank" rel="noopener noreferrer">GitHub ↗</a><a href={github + '/issues'} target="_blank" rel="noopener noreferrer">Roadmap ↗</a><a href={github + '/blob/main/LICENSE'} target="_blank" rel="noopener noreferrer">License ↗</a></div>
+        <small>© 2026 Local Bluey · Inspired by Bluey by Riley Brown.</small>
+      </footer>
+    </div>
+    <script>
+      import { gsap } from 'gsap';
+      import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+      gsap.registerPlugin(ScrollTrigger);
+      const media = gsap.matchMedia();
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (!reduceMotion) {
+        media.add('(min-width: 900px)', () => {
+          const track = document.querySelector<HTMLElement>('.story-track');
+          const pin = document.querySelector<HTMLElement>('.story-pin');
+          const progress = document.querySelector<HTMLElement>('.story-progress-bar');
+          if (!track || !pin || !progress) return;
+          const getDistance = () => Math.max(0, track.scrollWidth - pin.clientWidth);
+          const tween = gsap.to(track, {
+            x: () => -getDistance(),
+            ease: 'none',
+            scrollTrigger: {
+              trigger: pin,
+              start: 'top top',
+              end: () => '+=' + getDistance(),
+              pin: true,
+              scrub: 0.8,
+              anticipatePin: 1,
+              invalidateOnRefresh: true,
+              onUpdate: self => { progress.style.transform = 'scaleX(' + self.progress + ')'; }
+            }
+          });
+          return () => { tween.scrollTrigger?.kill(); tween.kill(); };
+        });
+        gsap.utils.toArray<HTMLElement>('.section-index, .intro-aside, .feature-row, .gallery-head, .gallery-mosaic figure').forEach((item) => {
+          gsap.fromTo(item, { y: 36, opacity: 0 }, {
+            y: 0, opacity: 1, duration: 0.85, ease: 'power2.out',
+            scrollTrigger: { trigger: item, start: 'top 88%', once: true }
+          });
+        });
+        gsap.to('.mascot-stage', { y: -17, rotation: 2.5, duration: 3.1, yoyo: true, repeat: -1, ease: 'sine.inOut' });
+        gsap.to('.ring-one', { rotation: 360, duration: 36, repeat: -1, ease: 'none' });
+      }
+      document.addEventListener('astro:before-swap', () => media.revert(), { once: true });
+    </script>
+  </body>
+</html>
