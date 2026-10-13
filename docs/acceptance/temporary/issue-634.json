@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 634,
+      "title": "BLU-076 Architecture decision records",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Each ADR and numbered decision is linked to an existing code boundary, a regression test and an issue; planned work is not represented as shipped.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/issues/issue_634_test.dart",
+              "name": "indexes all numbered decisions with real implementation boundaries"
+            },
+            {
+              "file": "test/issues/issue_634_test.dart",
+              "name": "preserves proposals and planning status without claiming approval"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "ADR authoring and traceability fail on invalid links and explicitly preserve privacy, approval and rollback requirements; no runtime behavior is changed.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/issues/issue_634_test.dart",
+              "name": "rejects unsafe paths duplicate IDs and missing decisions"
+            },
+            {
+              "file": "test/issues/issue_634_test.dart",
+              "name": "acceptance map and ADR template document review and rollback"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Reproducible focused tests and links documented; required CI must pass at the exact PR commit.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/issues/issue_634_test.dart",
+              "name": "acceptance map and ADR template document review and rollback"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

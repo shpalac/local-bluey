@@ -1,0 +1,163 @@
+{
+  "version": 1,
+  "adrs": [
+    {
+      "id": "ADR-001",
+      "path": "docs/adr/ADR-001-bluey-delivery-decisions.md",
+      "status": "planning",
+      "decisions": [
+        {
+          "number": 1,
+          "decision": "Explicit observation consent",
+          "coverage": "contract",
+          "issue": 554,
+          "source": "lib/services/observation_policy.dart",
+          "test": "test/observation_policy_test.dart"
+        },
+        {
+          "number": 2,
+          "decision": "Sensitive frame exclusion before processing",
+          "coverage": "planned",
+          "issue": 556,
+          "source": "lib/services/privacy_guard.dart",
+          "test": "test/privacy_guard_test.dart"
+        },
+        {
+          "number": 3,
+          "decision": "Encrypted activity retention and deletion",
+          "coverage": "planned",
+          "issue": 557,
+          "source": "lib/services/data_registry.dart",
+          "test": "test/data_registry_test.dart"
+        },
+        {
+          "number": 4,
+          "decision": "Approval and execution boundaries",
+          "coverage": "contract",
+          "issue": 570,
+          "source": "lib/services/safety_gate.dart",
+          "test": "test/safety_gate_test.dart"
+        },
+        {
+          "number": 5,
+          "decision": "Safe retries and crash recovery",
+          "coverage": "planned",
+          "issue": 572,
+          "source": "lib/workflows/workflow_dsl.dart",
+          "test": "test/workflow_dsl_test.dart"
+        },
+        {
+          "number": 6,
+          "decision": "Local-only model fallback",
+          "coverage": "planned",
+          "issue": 630,
+          "source": "lib/services/privacy_guard.dart",
+          "test": "test/privacy_guard_test.dart"
+        },
+        {
+          "number": 7,
+          "decision": "MCP tool containment and validation",
+          "coverage": "planned",
+          "issue": 582,
+          "source": "lib/services/tool_executor.dart",
+          "test": "test/tool_executor_test.dart"
+        },
+        {
+          "number": 8,
+          "decision": "Supported platform roles",
+          "coverage": "contract",
+          "issue": 661,
+          "source": "lib/services/support_matrix.dart",
+          "test": "test/support_matrix_test.dart"
+        },
+        {
+          "number": 9,
+          "decision": "Least-privilege CI checks",
+          "coverage": "contract",
+          "issue": 599,
+          "source": ".github/workflows/ci.yml",
+          "test": "tool/test_ci_impact.py"
+        },
+        {
+          "number": 10,
+          "decision": "Versioned workflow schema",
+          "coverage": "contract",
+          "issue": 567,
+          "source": "lib/workflows/workflow_dsl.dart",
+          "test": "test/workflow_dsl_test.dart"
+        },
+        {
+          "number": 11,
+          "decision": "Measured performance budgets",
+          "coverage": "planned",
+          "issue": 617,
+          "source": "lib/services/action_log.dart",
+          "test": "test/action_log_test.dart"
+        },
+        {
+          "number": 12,
+          "decision": "Sequenced issue delivery and release gates",
+          "coverage": "planned",
+          "issue": 638,
+          "source": "lib/services/support_matrix.dart",
+          "test": "test/support_matrix_test.dart"
+        }
+      ]
+    },
+    {
+      "id": "ADR-002",
+      "path": "docs/adr/002-observation-privacy.md",
+      "status": "proposed",
+      "decisions": [
+        {
+          "number": 1,
+          "decision": "Default-off capture and no auto-resume",
+          "coverage": "contract",
+          "issue": 554,
+          "source": "lib/services/observation_policy.dart",
+          "test": "test/observation_policy_test.dart"
+        },
+        {
+          "number": 2,
+          "decision": "Fail closed on unknown screen classification",
+          "coverage": "contract",
+          "issue": 554,
+          "source": "lib/services/observation_policy.dart",
+          "test": "test/observation_policy_test.dart"
+        },
+        {
+          "number": 3,
+          "decision": "Memory-only frame handling",
+          "coverage": "planned",
+          "issue": 565,
+          "source": "lib/services/frame_differ.dart",
+          "test": "test/frame_differ_test.dart"
+        },
+        {
+          "number": 4,
+          "decision": "Encrypted retention and purge",
+          "coverage": "planned",
+          "issue": 557,
+          "source": "lib/services/data_registry.dart",
+          "test": "test/data_registry_test.dart"
+        },
+        {
+          "number": 5,
+          "decision": "Separate capture consent from action approval",
+          "coverage": "contract",
+          "issue": 570,
+          "source": "lib/services/safety_gate.dart",
+          "test": "test/safety_gate_test.dart"
+        },
+        {
+          "number": 6,
+          "decision": "Sanitized observation audit metadata",
+          "coverage": "planned",
+          "issue": 573,
+          "source": "lib/services/action_log.dart",
+          "test": "test/action_log_test.dart"
+        }
+      ]
+    }
+  ]
+}

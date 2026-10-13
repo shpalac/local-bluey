@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 569,
+      "title": "BLU-016 Workflow execution state machine",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Ordered transitions, single-flight, timeout and cancellation with fake host",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "ordered happy path and single-flight"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "cancelled execution never verifies"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "timeout fails closed"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Malformed input and permission denial, verification failure with fake host",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "invalid DSL is rejected before execution"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "permission denied fails closed"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "verification failure stops workflow"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Execution has no built-in network or storage and requires host approval",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "permission denied fails closed"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Dart analyze and focused unit tests pass in CI",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "ordered happy path and single-flight"
+            }
+          ]
+        },
+        {
+          "id": "runtime_integration_gap",
+          "requirement": "Production SafetyGate, local permissions, offline, restart and host cancellation integration",
+          "type": "gap",
+          "reason": "This PR supplies an isolated in-memory execution core only. HostControl and SafetyGate production integration with end-to-end CI remains outstanding; do not close the issue."
+        }
+      ]
+    }
+  ]
+}
