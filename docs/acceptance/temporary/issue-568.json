@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 568,
+      "title": "BLU-015 Legacy Routine compatibility adapter",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Legacy Routine fixture remains unchanged and converted workflow is manual and declarative",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/legacy_routine_adapter_test.dart",
+              "name": "compatible routine round-trips without executing or persisting"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Reject malformed, disabled and unsupported conversions deterministically",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/legacy_routine_adapter_test.dart",
+              "name": "malformed legacy input is rejected"
+            },
+            {
+              "file": "test/legacy_routine_adapter_test.dart",
+              "name": "disabled routines are not accidentally enabled"
+            },
+            {
+              "file": "test/legacy_routine_adapter_test.dart",
+              "name": "permissioned, scheduled or multi-step workflows cannot convert"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Conversion never interprets free-form instructions as privileged host execution and never echoes secrets in errors",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/legacy_routine_adapter_test.dart",
+              "name": "generic free-form legacy instructions fail closed"
+            },
+            {
+              "file": "test/legacy_routine_adapter_test.dart",
+              "name": "host actions and missing trigger metadata are rejected"
+            },
+            {
+              "file": "test/legacy_routine_adapter_test.dart",
+              "name": "errors do not echo secrets"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Static analysis and focused tests execute in temporary CI; end-to-end application integration is still outstanding",
+          "type": "gap",
+          "reason": "Temporary CI covers format, dart analyze, flutter analyze and focused unit tests. A persistent UI and runtime adapter with consent, SafetyGate, restart and native/manual validation does not yet exist."
+        }
+      ]
+    }
+  ]
+}
