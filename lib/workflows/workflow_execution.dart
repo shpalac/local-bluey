@@ -2,7 +2,15 @@ import 'dart:async';
 
 import 'workflow_dsl.dart';
 
-enum WorkflowStatus { pending, running, approval, verifying, completed, failed, cancelled }
+enum WorkflowStatus {
+  pending,
+  running,
+  approval,
+  verifying,
+  completed,
+  failed,
+  cancelled,
+}
 
 abstract interface class WorkflowHost {
   Future<bool> approve(WorkflowStep step);
@@ -38,11 +46,14 @@ final class WorkflowExecution {
       return status;
     }
     try {
-      return await _execute().timeout(deadline, onTimeout: () {
-        _cancelled = true;
-        status = WorkflowStatus.failed;
-        return status;
-      });
+      return await _execute().timeout(
+        deadline,
+        onTimeout: () {
+          _cancelled = true;
+          status = WorkflowStatus.failed;
+          return status;
+        },
+      );
     } catch (_) {
       if (!_cancelled) status = WorkflowStatus.failed;
       return status;
