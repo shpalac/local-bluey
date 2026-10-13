@@ -217,7 +217,7 @@ jobs:
         env:
           TEST_FILES: ${{ needs.detect.outputs.test_files }}
         run: |
-          mapfile -t test_files < <(python3 -c 'import json, os; print("\\n".join(json.loads(os.environ["TEST_FILES"])))')
+          mapfile -t test_files < <(python3 -c 'import json, os; print("\n".join(json.loads(os.environ["TEST_FILES"])))')
           if [ "${#test_files[@]}" -eq 0 ]; then
             echo "::error::no impacted tests selected; fail closed"
             exit 1
