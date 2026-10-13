@@ -33,7 +33,7 @@ are shown locally, not transmitted or automatically copied.
 
 Temporary PR CI: `flutter pub get`, `dart format` (focused files),
 `flutter analyze`, `flutter test test/execution_audit_test.dart
-test/workflow_execution_test.dart`, `flutter build web --release`.
+test/workflow_execution_test.dart`, `flutter build apk --debug`.
 
 Tests cover multi-step success, stop during a pending host action, denied
 permission, redacted fields, bounded event memory, export consent, widget
