@@ -40,6 +40,18 @@ void main() {
     await expectLater(recovery.beforeEffect(0), throwsStateError);
   });
 
+
+  test('completed workflow cannot replay an earlier effect', () async {
+    final store = MemoryRecoveryStore();
+    final recovery = WorkflowRecovery(definition, store);
+    await recovery.beforeEffect(0);
+    await recovery.markVerified(0);
+    await recovery.beforeEffect(1);
+    await recovery.markVerified(1);
+    expect(await WorkflowRecovery(definition, store).nextSafeStep(), 2);
+    await expectLater(recovery.beforeEffect(1), throwsStateError);
+  });
+
   test('malformed checkpoint rejected', () {
     expect(
       () => RecoveryCheckpoint.fromJson({
