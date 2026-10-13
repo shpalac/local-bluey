@@ -39,5 +39,5 @@ flutter pub get
 dart format --output=none --set-exit-if-changed lib/workflows/postcondition_verifier.dart test/postcondition_verifier_test.dart
 dart analyze lib/workflows/postcondition_verifier.dart test/postcondition_verifier_test.dart
 flutter test test/postcondition_verifier_test.dart test/workflow_execution_test.dart
-flutter build web --release
+flutter build bundle --release
 ```
