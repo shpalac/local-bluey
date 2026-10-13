@@ -14,7 +14,7 @@ Talk to Bluey, ask about what's on your screen, and let him help with computer t
 ![iOS + Android](https://img.shields.io/badge/Clients-iOS%20%2B%20Android-4B9E78)
 ![Local-first](https://img.shields.io/badge/Privacy-local--first-7755BB)
 
-**[Get started](#-quick-start)** · **[See it in action](#-meet-bluey)** · **[Features](#-what-bluey-can-do)** · **[Roadmap](#-whats-next)** · **[Documentation](#-documentation)**
+**[Visit the website](https://shpalac.github.io/local-bluey/)** · **[Get started](#-quick-start)** · **[See it in action](#-meet-bluey)** · **[Features](#-what-bluey-can-do)** · **[Roadmap](#-whats-next)** · **[Documentation](#-documentation)**
 
 </div>
 
@@ -235,7 +235,8 @@ Before opening a PR, read [CONTRIBUTING.md](CONTRIBUTING.md). Please don't publi
 | [Platform support](docs/SUPPORT.md) | Supported roles and experimental backends |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common failures and fixes |
 | [Technical reference](docs/README_TECHNICAL_REFERENCE.md) | Detailed privacy, retention, CI, OS integration and test limitations |
-| [Project site](docs/index.html) | Landing-page source |
+| [Project website](https://shpalac.github.io/local-bluey/) | Cinematic landing page (GitHub Pages) |
+| [Previous landing-page source](docs/index.html) | Original static landing page |
 
 ## 💙 Credits
 
