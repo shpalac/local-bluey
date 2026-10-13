@@ -1,0 +1,22 @@
+name: TEMP BLU-013 draft builder acceptance
+on:
+  pull_request:
+    paths:
+      - 'lib/teach_mode/draft_builder.dart'
+      - 'test/teach_mode/draft_builder_test.dart'
+      - '.github/workflows/temp-issue-566.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  blu-013:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib/teach_mode/draft_builder.dart test/teach_mode/draft_builder_test.dart
+      - run: dart analyze lib/teach_mode/draft_builder.dart test/teach_mode/draft_builder_test.dart
+      - run: flutter test test/teach_mode/draft_builder_test.dart
