@@ -637,3 +637,8 @@ Not covered: native OCR output, real screen frames, the WatchPipeline/WatchDrive
 Known gap recorded as a test, not fixed: `RetentionPurger` has no per-store timeout, so a hung `clear` keeps it busy and later purges are refused as `busy`.
 
 Not covered: process crash and restart (nothing persists to restart from), real disk or OS permission behavior (needs device validation), and the BLU-016 execution state machine and BLU-019 idempotent retry, which do not exist in the repository yet and are this issue's stated dependencies. AC-1 "no duplicate unsafe side effects" is shown only for the purger. Test-only; no production change.
+
+
+### #617 Latency p50/p95 summary tool (partial)
+
+New `tool/perf_summary.dart` turns PerfMonitor's perf.jsonl into per-stage count, p50 and p95 (nearest-rank). `test/perf_summary_test.dart` runs the actual CLI on fabricated files: percentile values, order independence, blank lines, six invalid-line shapes (exit 2, line number only, no content echoed), empty and missing file. Covers latency only. CPU, RAM, disk and cold start remain unmeasured, no device baseline numbers are claimed, and no target is enforced in CI. No change to what PerfMonitor records or stores. Rollback: remove the tool, test, doc paragraph and this entry. Issue stays OPEN.
