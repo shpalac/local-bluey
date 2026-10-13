@@ -18,6 +18,6 @@ jobs:
         with:
           channel: stable
       - run: flutter pub get
-      - run: dart format --output=none --set-exit-if-changed lib/workflows/workflow_execution.dart test/workflow_execution_test.dart
+      - run: dart format lib/workflows/workflow_execution.dart test/workflow_execution_test.dart && git diff -- lib/workflows/workflow_execution.dart test/workflow_execution_test.dart && git diff --exit-code -- lib/workflows/workflow_execution.dart test/workflow_execution_test.dart
       - run: dart analyze lib/workflows/workflow_execution.dart test/workflow_execution_test.dart
       - run: flutter test test/workflow_execution_test.dart
