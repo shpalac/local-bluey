@@ -126,7 +126,8 @@ final class EncryptedActivityStore {
     } catch (_) {
       throw const EncryptedActivityException('secure key storage unavailable');
     }
-    if (!_keyPattern.hasMatch(key)) {
+    final rawKey = key;
+    if (rawKey == null || !_keyPattern.hasMatch(rawKey)) {
       throw const EncryptedActivityException('invalid protected key');
     }
 
@@ -135,7 +136,7 @@ final class EncryptedActivityStore {
       await file.parent.create(recursive: true);
       database = sqlite3.open(file.path);
       // SQLCipher raw-key syntax: no password interpolation or KDF ambiguity.
-      database.execute('PRAGMA key = "x\'$key\'"');
+      database.execute('PRAGMA key = "x\'$rawKey\'"');
       final cipher = database.select('PRAGMA cipher_version');
       if (cipher.isEmpty || cipher.first.values.first.toString().isEmpty) {
         throw const EncryptedActivityException('SQLCipher unavailable');
