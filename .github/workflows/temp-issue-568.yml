@@ -1,0 +1,27 @@
+name: Temporary BLU-015 acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'lib/workflows/legacy_routine_adapter.dart'
+      - 'test/legacy_routine_adapter_test.dart'
+      - 'docs/blu-015-legacy-routine-adapter.md'
+      - '.github/workflows/temp-issue-568.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  blu-015:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib/workflows/legacy_routine_adapter.dart test/legacy_routine_adapter_test.dart
+      - run: dart analyze lib/workflows/legacy_routine_adapter.dart test/legacy_routine_adapter_test.dart
+      - run: flutter test test/legacy_routine_adapter_test.dart test/workflow_dsl_test.dart test/routines_test.dart
+      - run: flutter analyze
