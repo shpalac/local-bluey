@@ -4,7 +4,7 @@ import 'dart:io';
 /// Summarizes PerfMonitor samples (#617): per-stage count, p50 and p95 of the
 /// latency in milliseconds, using nearest-rank percentiles.
 ///
-/// Usage: dart tool/perf_summary.dart <perf.jsonl>
+/// Usage: dart tool/perf_summary.dart `<perf.jsonl>`
 ///
 /// Exit codes: 0 summary printed, 2 missing file, empty input or an invalid
 /// line. Errors name only the line number, never the line content. This reads
