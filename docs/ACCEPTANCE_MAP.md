@@ -642,3 +642,11 @@ Not covered: process crash and restart (nothing persists to restart from), real 
 ### #617 Latency p50/p95 summary tool (partial)
 
 New `tool/perf_summary.dart` turns PerfMonitor's perf.jsonl into per-stage count, p50 and p95 (nearest-rank). `test/perf_summary_test.dart` runs the actual CLI on fabricated files: percentile values, order independence, blank lines, six invalid-line shapes (exit 2, line number only, no content echoed), empty and missing file. Covers latency only. CPU, RAM, disk and cold start remain unmeasured, no device baseline numbers are claimed, and no target is enforced in CI. No change to what PerfMonitor records or stores. Rollback: remove the tool, test, doc paragraph and this entry. Issue stays OPEN.
+
+## BLU-076 / #634 — Architecture decision register (2026-10-14)
+
+- **Scope audited:** existing `docs/adr/ADR-001-bluey-delivery-decisions.md` (accepted only for planning), `docs/adr/002-observation-privacy.md` (proposed); policy and support boundaries in `lib/services/observation_policy.dart`, `privacy_guard.dart`, `safety_gate.dart`, `support_matrix.dart`, `data_registry.dart` and existing regression tests.
+- **AC-1 evidence:** `docs/adr/traceability.json` links every numbered ADR decision to an actual code boundary, named test file and remaining BLU issue. `contract` means tested component only; `planned` means integration incomplete. `docs/adr/README.md` indexes decisions and statuses; `docs/adr/ADR-TEMPLATE.md` specifies approval and alternatives.
+- **AC-2 evidence:** Template requires permission, cancellation, offline, retention, Egress/SafetyGate, rollback and human review. No runtime permissions, network calls, storage or feature flags changed. Proposed decisions remain proposed; no approval is inferred.
+- **AC-3 reproduction:** `flutter pub get --enforce-lockfile && flutter test test/issues/issue_634_test.dart && flutter analyze`. PR temporary acceptance: `docs/acceptance/temporary/issue-634.json`; await exact-head CI evidence.
+- **Limit:** This is documentation governance, not native verification, product rollout, blanket decision ratification, or completed BLU-001–080 implementation. Rollback: revert this registry/template/test change; retain pre-existing ADRs. Do not treat a green doc test as authority to deploy or close dependent feature tasks.
