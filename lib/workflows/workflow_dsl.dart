@@ -105,7 +105,8 @@ String _requiredString(Object? value, String field) {
 
 List<String> _stringList(Object? value) {
   if (value == null) return const [];
-  if (value is! List || value.any((item) => item is! String || item.trim().isEmpty)) {
+  if (value is! List ||
+      value.any((item) => item is! String || item.trim().isEmpty)) {
     throw const FormatException('Invalid string list');
   }
   return List.unmodifiable(value.cast<String>());
