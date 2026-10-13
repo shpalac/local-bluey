@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 610,
+      "title": "BLU-054 deterministic fault injection harness (partial)",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "No duplicate unsafe side effects across executor, retry and restart flows",
+          "type": "gap",
+          "reason": "Only the existing in-process RetentionPurger is exercised. Workflow execution and idempotent retry dependencies BLU-016 and BLU-019, plus restart recovery, are not implemented or validated in this PR."
+        },
+        {
+          "id": "ac_1_contract",
+          "requirement": "Failed or protected RetentionPurger stores are not cleared, and retried failed entries do not repeat successful clears",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/fault_injection_retention_test.dart",
+              "name": "a persistent fault keeps failing without side effects or a stuck lock"
+            },
+            {
+              "file": "test/fault_injection_retention_test.dart",
+              "name": "a faulting protected store is refused and never even attempted"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Scripted faults have reproducible typed outcomes and failures remain explicit",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/fault_injection_retention_test.dart",
+              "name": "every store failing differently is reported per store"
+            },
+            {
+              "file": "test/fault_injection_retention_test.dart",
+              "name": "a persistent fault keeps failing without side effects or a stuck lock"
+            }
+          ]
+        },
+        {
+          "id": "ac_2_timeout_gap",
+          "requirement": "Hung operations finish within a bounded timeout and allow subsequent purges",
+          "type": "gap",
+          "reason": "The existing purger has no per-store timeout. The regression test documents that a simulated hang keeps it busy; the production timeout/cancellation policy is outside this test-only PR."
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secrets, personal data, raw screenshots or unauthorized egress across the full app and CI artifacts",
+          "type": "gap",
+          "reason": "Tests use fabricated paths and offline in-memory stores. They do not certify end-to-end log/artifact redaction, screenshots, or system-wide network isolation."
+        },
+        {
+          "id": "ac_3_contract",
+          "requirement": "Pure RetentionPurger failure results expose exception types only and no underlying file paths",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/fault_injection_retention_test.dart",
+              "name": "failed outcomes never reveal fake secret paths"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Cross-platform compatibility and limitations of in-process simulation reviewed",
+          "type": "manual",
+          "reason": "No production code or OS permissions are changed. Process crash/restart, real disk-full, real permission revocation and physical-device behavior still require platform-specific validation and maintainer review."
+        }
+      ]
+    }
+  ]
+}
