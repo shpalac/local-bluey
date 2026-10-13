@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 570,
+      "title": "BLU-017 Workflow action preview and approval",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Deny has no side effects; revocation prevents host execution",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "explicit user refusal has zero side effects"
+            },
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "revocation during asynchronous gate prevents execution"
+            },
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "revocation prevents reuse of an already granted action"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Happy path, malformed DSL, offline policy, permission denied and restart in isolated host",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "explicit approval and safety gate allow one action"
+            },
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "malformed workflow fails before prompting"
+            },
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "offline prompt fails closed"
+            },
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "restart has no persisted grant"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Ephemeral grants require explicit consent and safety check; no built-in storage or network",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "safety gate rejection blocks host action"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Focused tests, analyzer and Android build execute in temporary CI",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "preview includes action details without side effects"
+            }
+          ]
+        },
+        {
+          "id": "runtime_integration_gap",
+          "requirement": "Production SafetyGate/HostControl, native cancellation and visible preview UI with redaction and RTL verification",
+          "type": "gap",
+          "reason": "This PR adds an opt-in, memory-only WorkflowHost wrapper; production native adapter, UI and end-to-end hardware tests remain unimplemented. Do not close issue #570."
+        }
+      ]
+    }
+  ]
+}
