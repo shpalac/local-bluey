@@ -48,6 +48,7 @@ final class SecureActivityKeyVault implements ActivityKeyVault {
 /// write. It is deliberately not wired to automatic observation/capture.
 final class EncryptedActivityStore {
   EncryptedActivityStore._(
+    this._path,
     this._database,
     this._now,
     this.retention,
@@ -59,6 +60,11 @@ final class EncryptedActivityStore {
   static const String fileName = 'activity-v1.sqlite3';
   static const Duration defaultRetention = Duration(days: 7);
 
+  // A delete must fence every live writer before unlinking ciphertext.
+  static final Set<EncryptedActivityStore> _activeStores = {};
+  static final Set<String> _deletingPaths = {};
+
+  final String _path;
   final Database _database;
   final DateTime Function() _now;
   final Duration retention;
@@ -102,6 +108,9 @@ final class EncryptedActivityStore {
     Duration sessionLength = const Duration(minutes: 5),
     int capacity = 500,
   }) async {
+    if (_deletingPaths.contains(file.path)) {
+      throw const EncryptedActivityException('activity deletion in progress');
+    }
     if (!retentionConsent) {
       throw const EncryptedActivityException('retention not authorized');
     }
@@ -135,6 +144,9 @@ final class EncryptedActivityStore {
     Database? database;
     try {
       await file.parent.create(recursive: true);
+      if (_deletingPaths.contains(file.path)) {
+        throw const EncryptedActivityException('activity deletion in progress');
+      }
       database = sqlite3.open(file.path);
       // SQLCipher raw-key syntax: no password interpolation or KDF ambiguity.
       database.execute('PRAGMA key = "x\'$rawKey\'"');
@@ -203,6 +215,7 @@ final class EncryptedActivityStore {
       }
 
       final result = EncryptedActivityStore._(
+        file.path,
         database,
         now ?? DateTime.now,
         retention,
@@ -210,6 +223,7 @@ final class EncryptedActivityStore {
         sessionLength,
       );
       result.purgeExpired();
+      _activeStores.add(result);
       return result;
     } on EncryptedActivityException {
       database?.close();
@@ -344,6 +358,7 @@ final class EncryptedActivityStore {
     if (_closed) return;
     stopSession();
     _closed = true;
+    _activeStores.remove(this);
     _database.close();
   }
 
@@ -362,14 +377,23 @@ final class EncryptedActivityStore {
     required File file,
     required ActivityKeyVault vault,
   }) async {
+    if (!_deletingPaths.add(file.path)) {
+      throw const EncryptedActivityException('activity deletion in progress');
+    }
     try {
+      for (final store in _activeStores.toList()) {
+        if (store._path == file.path) store.close();
+      }
       for (final suffix in ['', '-wal', '-shm', '-journal']) {
         final artifact = File('${file.path}$suffix');
         if (await artifact.exists()) await artifact.delete();
       }
+      // Keep the key if a file deletion fails; never conceal a partial wipe.
       await vault.delete();
     } catch (_) {
       throw const EncryptedActivityException('activity deletion incomplete');
+    } finally {
+      _deletingPaths.remove(file.path);
     }
   }
 }
