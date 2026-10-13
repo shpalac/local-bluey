@@ -630,6 +630,14 @@ Existing test_report.dart now sorts equal-duration rows by test ID, failed rows 
 
 Not covered: native OCR output, real screen frames, the WatchPipeline/WatchDriver timing path, and any storage. Property-based shrinking is not used; reproduction is by seed. This is test-only and changes no production behavior.
 
+### #610 Fault injection harness (partial)
+
+`test/support/fault_injection.dart` is a small deterministic harness: a `FaultPlan` scripts per-attempt outcomes (disk full, unexpected crash, timeout, permission revoked, hang), with a fake secret path in every thrown message so tests can prove nothing is copied out. `test/fault_injection_retention_test.dart` applies it to the existing pure `RetentionPurger` (BLU-005 groundwork): each fault is reported by exception type only, the other stores still purge, the lock is released, a retry of only the failed id causes no repeated clear on the good stores, persistent faults leave no side effect, and a faulting protected store is never attempted.
+
+Known gap recorded as a test, not fixed: `RetentionPurger` has no per-store timeout, so a hung `clear` keeps it busy and later purges are refused as `busy`.
+
+Not covered: process crash and restart (nothing persists to restart from), real disk or OS permission behavior (needs device validation), and the BLU-016 execution state machine and BLU-019 idempotent retry, which do not exist in the repository yet and are this issue's stated dependencies. AC-1 "no duplicate unsafe side effects" is shown only for the purger. Test-only; no production change.
+
 ### #635 Issue and PR template contract (partial)
 
 The existing task, feature and bug issue templates and the PR template already carried objective, AC-1..AC-3, temporary/permanent manifest and Definition of Done fields. This slice adds two PR template sections (security, privacy and rollback; manual and device-only evidence), an issue template config.yml that keeps blank issues enabled, and `test/github_templates_test.dart` (8 cases) that fails if those fields are removed. This guards the text of the templates only. It does not prove contributors fill them in, add label automation, a security assessment workflow, release or incident runbooks (BLU-079), or full #635 acceptance. Rollback: revert the template edits, config.yml, test and this entry. Issue stays OPEN.
