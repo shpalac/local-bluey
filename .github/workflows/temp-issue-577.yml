@@ -1,0 +1,24 @@
+name: Temporary BLU-021 synthetic benchmark
+on:
+  pull_request:
+    paths:
+      - 'lib/benchmark/**'
+      - 'test/benchmark/**'
+      - '.github/workflows/temp-issue-577.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: dart format --output=none --set-exit-if-changed lib/benchmark test/benchmark
+      - run: flutter pub get
+      - run: flutter analyze lib/benchmark test/benchmark
+      - run: flutter test test/benchmark
+      - run: flutter build web --release
