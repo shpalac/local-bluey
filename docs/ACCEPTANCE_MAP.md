@@ -624,6 +624,21 @@ Existing test_report.dart now counts known test error events even after success,
 
 Existing test_report.dart now sorts equal-duration rows by test ID, failed rows by test ID and unique failed-file paths lexicographically. Two actual offline CLI reversed-completion fixtures fail on previous source and pass after repair;19 focused passes incltiming/lateerror/dartdoc, analyzer/format clean. Output is stable for identical IDs/names/paths/durations despite completion interleaving, not across different runner IDs or environments. Timing/failure counts/CLI exit semantics unchanged; no retry execution/workflow/terminal/JUnit/schema/artifact redaction/privacy or full601 acceptance. Rollback sorting/newtest/map; issue OPEN.
 
+### #609 Seeded fuzzing of event normalization (partial)
+
+`test/event_normalization_fuzz_test.dart` adds deterministic, offline, seeded fuzz tests (five fixed seeds; a failure reports its seed and index) over three existing pure paths: `ActionEventNormalizer` (Unicode and lone-surrogate app names, oversized and empty apps, backwards and gapped timestamps, a throwing allowlist, endSession/clear mid-stream), `ActivityStep.decode` (random text, deep nesting, single-character mutations) and `SensitiveContentGate` (unverified, blank and oversized OCR; fake tokens buried in noise; maximum-length repetitive input). Asserted: nothing throws except the typed format exception, retained events and debounce keys stay capped, retained timestamps and sequences stay ordered, the source `detail` text never appears in a retained event, results are identical for the same seed.
+
+Not covered: native OCR output, real screen frames, the WatchPipeline/WatchDriver timing path, and any storage. Property-based shrinking is not used; reproduction is by seed. This is test-only and changes no production behavior.
+
+### #610 Fault injection harness (partial)
+
+`test/support/fault_injection.dart` is a small deterministic harness: a `FaultPlan` scripts per-attempt outcomes (disk full, unexpected crash, timeout, permission revoked, hang), with a fake secret path in every thrown message so tests can prove nothing is copied out. `test/fault_injection_retention_test.dart` applies it to the existing pure `RetentionPurger` (BLU-005 groundwork): each fault is reported by exception type only, the other stores still purge, the lock is released, a retry of only the failed id causes no repeated clear on the good stores, persistent faults leave no side effect, and a faulting protected store is never attempted.
+
+Known gap recorded as a test, not fixed: `RetentionPurger` has no per-store timeout, so a hung `clear` keeps it busy and later purges are refused as `busy`.
+
+Not covered: process crash and restart (nothing persists to restart from), real disk or OS permission behavior (needs device validation), and the BLU-016 execution state machine and BLU-019 idempotent retry, which do not exist in the repository yet and are this issue's stated dependencies. AC-1 "no duplicate unsafe side effects" is shown only for the purger. Test-only; no production change.
+
+
 ### #617 Latency p50/p95 summary tool (partial)
 
 New `tool/perf_summary.dart` turns PerfMonitor's perf.jsonl into per-stage count, p50 and p95 (nearest-rank). `test/perf_summary_test.dart` runs the actual CLI on fabricated files: percentile values, order independence, blank lines, six invalid-line shapes (exit 2, line number only, no content echoed), empty and missing file. Covers latency only. CPU, RAM, disk and cold start remain unmeasured, no device baseline numbers are claimed, and no target is enforced in CI. No change to what PerfMonitor records or stores. Rollback: remove the tool, test, doc paragraph and this entry. Issue stays OPEN.
