@@ -638,6 +638,11 @@ Known gap recorded as a test, not fixed: `RetentionPurger` has no per-store time
 
 Not covered: process crash and restart (nothing persists to restart from), real disk or OS permission behavior (needs device validation), and the BLU-016 execution state machine and BLU-019 idempotent retry, which do not exist in the repository yet and are this issue's stated dependencies. AC-1 "no duplicate unsafe side effects" is shown only for the purger. Test-only; no production change.
 
+
+### #617 Latency p50/p95 summary tool (partial)
+
+New `tool/perf_summary.dart` turns PerfMonitor's perf.jsonl into per-stage count, p50 and p95 (nearest-rank). `test/perf_summary_test.dart` runs the actual CLI on fabricated files: percentile values, order independence, blank lines, six invalid-line shapes (exit 2, line number only, no content echoed), empty and missing file. Covers latency only. CPU, RAM, disk and cold start remain unmeasured, no device baseline numbers are claimed, and no target is enforced in CI. No change to what PerfMonitor records or stores. Rollback: remove the tool, test, doc paragraph and this entry. Issue stays OPEN.
+
 ### #635 Issue and PR template contract (partial)
 
 The existing task, feature and bug issue templates and the PR template already carried objective, AC-1..AC-3, temporary/permanent manifest and Definition of Done fields. This slice adds two PR template sections (security, privacy and rollback; manual and device-only evidence), an issue template config.yml that keeps blank issues enabled, and `test/github_templates_test.dart` (8 cases) that fails if those fields are removed. This guards the text of the templates only. It does not prove contributors fill them in, add label automation, a security assessment workflow, release or incident runbooks (BLU-079), or full #635 acceptance. Rollback: revert the template edits, config.yml, test and this entry. Issue stays OPEN.
