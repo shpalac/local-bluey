@@ -1,6 +1,5 @@
 import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
-import tailwindcss from '@tailwindcss/vite';
 
 // This base path is required when publishing to shpalac.github.io/local-bluey/.
 export default defineConfig({
@@ -8,5 +7,4 @@ export default defineConfig({
   base: '/local-bluey/',
   output: 'static',
   integrations: [react()],
-  vite: { plugins: [tailwindcss()] },
 });
