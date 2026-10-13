@@ -101,14 +101,14 @@ void main() {
     expect(delegate.verifications, 1);
   });
 
-  test('denial causes zero side effects', () async {
+  test('explicit user refusal has zero side effects', () async {
     prompt.accepted = false;
     expect(await run(), WorkflowStatus.failed);
     expect(delegate.actions, 0);
     expect(gate.calls, 0);
   });
 
-  test('safety denial causes zero side effects', () async {
+  test('safety explicit user refusal has zero side effects', () async {
     gate.allowed = false;
     expect(await run(), WorkflowStatus.failed);
     expect(delegate.actions, 0);
