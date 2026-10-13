@@ -69,9 +69,10 @@ final class EncryptedActivityStore {
 
   static String _randomKey() {
     final random = Random.secure();
-    return List<int>.generate(32, (_) => random.nextInt(256))
-        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
-        .join();
+    return List<int>.generate(
+      32,
+      (_) => random.nextInt(256),
+    ).map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
   }
 
   static final RegExp _keyPattern = RegExp(r'^[0-9a-f]{64}$');
@@ -127,7 +128,7 @@ final class EncryptedActivityStore {
       throw const EncryptedActivityException('secure key storage unavailable');
     }
     final rawKey = key;
-    if (rawKey == null || !_keyPattern.hasMatch(rawKey)) {
+    if (!_keyPattern.hasMatch(rawKey)) {
       throw const EncryptedActivityException('invalid protected key');
     }
 
@@ -161,8 +162,10 @@ final class EncryptedActivityStore {
       if (version == 0) {
         // Version zero is valid only for an empty, freshly created database.
         if (database
-            .select("SELECT name FROM sqlite_master WHERE type='table' "
-                "AND name NOT LIKE 'sqlite_%'")
+            .select(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name NOT LIKE 'sqlite_%'",
+            )
             .isNotEmpty) {
           throw const EncryptedActivityException('unknown legacy schema');
         }
@@ -187,8 +190,10 @@ final class EncryptedActivityStore {
               encoded_step TEXT NOT NULL
             )
           ''');
-          database.execute('CREATE INDEX idx_activity_time '
-              'ON activity_steps(timestamp_ms)');
+          database.execute(
+            'CREATE INDEX idx_activity_time '
+            'ON activity_steps(timestamp_ms)',
+          );
           database.execute('PRAGMA user_version = 1');
           database.execute('COMMIT');
         } catch (_) {
@@ -248,10 +253,9 @@ final class EncryptedActivityStore {
     final boundary = _now().toUtc().subtract(retention).millisecondsSinceEpoch;
     _database.execute('BEGIN IMMEDIATE');
     try {
-      _database.execute(
-        'DELETE FROM activity_steps WHERE timestamp_ms <= ?',
-        [boundary],
-      );
+      _database.execute('DELETE FROM activity_steps WHERE timestamp_ms <= ?', [
+        boundary,
+      ]);
       final changed = _database.updatedRows;
       _database.execute('COMMIT');
       return changed;
@@ -274,14 +278,12 @@ final class EncryptedActivityStore {
     _database.execute('BEGIN IMMEDIATE');
     try {
       final timestamp = step.timestamp.millisecondsSinceEpoch;
-      _database.execute(
-        'DELETE FROM activity_steps WHERE timestamp_ms <= ?',
-        [now.subtract(retention).millisecondsSinceEpoch],
-      );
-      if (_database.select(
-        'SELECT 1 FROM activity_steps WHERE step_id = ?',
-        [step.stepId],
-      ).isNotEmpty) {
+      _database.execute('DELETE FROM activity_steps WHERE timestamp_ms <= ?', [
+        now.subtract(retention).millisecondsSinceEpoch,
+      ]);
+      if (_database.select('SELECT 1 FROM activity_steps WHERE step_id = ?', [
+        step.stepId,
+      ]).isNotEmpty) {
         _database.execute('ROLLBACK');
         return false;
       }
@@ -312,8 +314,10 @@ final class EncryptedActivityStore {
     try {
       return List<ActivityStep>.unmodifiable(
         _database
-            .select('SELECT encoded_step FROM activity_steps '
-                'ORDER BY timestamp_ms, step_id')
+            .select(
+              'SELECT encoded_step FROM activity_steps '
+              'ORDER BY timestamp_ms, step_id',
+            )
             .map((row) => ActivityStep.decode(row['encoded_step'] as String)),
       );
     } catch (_) {
@@ -342,7 +346,6 @@ final class EncryptedActivityStore {
     _closed = true;
     _database.close();
   }
-
 
   /// Registry deletion does not create a new DB or require retention opt-in.
   static Future<void> deleteDefault() async {
