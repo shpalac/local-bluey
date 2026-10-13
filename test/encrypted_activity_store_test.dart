@@ -133,8 +133,6 @@ void main() {
     );
     expect(await file.exists(), isFalse);
     expect(vault.key, isNull);
-    expect(() => store.add(step('after_deletion'), approved: true),
-        throwsA(isA<EncryptedActivityException>()));
     vault.unavailable = true;
     await expectLater(open(), throwsA(isA<EncryptedActivityException>()));
     expect(await file.exists(), isFalse);
@@ -217,13 +215,18 @@ void main() {
     'explicit deletion removes owned sidecars and revokes the key',
     () async {
       final store = await open();
-      store.close();
+      expect(store.startSession(consentConfirmed: true), isTrue);
+      expect(store.add(step('before_deletion'), approved: true), isTrue);
       for (final suffix in ['-wal', '-shm', '-journal']) {
         await File('${file.path}$suffix').writeAsString('test sidecar');
       }
       await EncryptedActivityStore.deleteFiles(file: file, vault: vault);
       expect(await file.exists(), isFalse);
       expect(vault.key, isNull);
+      expect(
+        () => store.add(step('after_deletion'), approved: true),
+        throwsA(isA<EncryptedActivityException>()),
+      );
       for (final suffix in ['-wal', '-shm', '-journal']) {
         expect(await File('${file.path}$suffix').exists(), isFalse);
       }
