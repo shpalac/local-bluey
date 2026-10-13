@@ -26,6 +26,16 @@ What changed and why? Note any migration, privacy/security considerations and ro
 - [ ] Temporary manifest and redundant issue-only validation are removed after promotion.
 - [ ] Hardware/manual criteria have separate reviewed evidence (or remain incomplete).
 
+## Security, privacy and rollback
+
+- [ ] No secrets, personal data or unsanitized logs in code, tests, fixtures or artifacts.
+- [ ] No new network egress, permission or SafetyGate bypass; human approval paths are unchanged (or the change is described above).
+- [ ] Rollback: describe how to revert this change safely (or write "revert the PR" if nothing is persisted).
+
+## Manual and device-only evidence
+
+List any criterion that hosted CI cannot prove (device, OS permission, hardware). Name the device, the evidence and the reviewer. Write "none" if all criteria are covered by automated tests. Hosted CI never proves these.
+
 ## CI and merge
 
 - [ ] Existing repository tests, static analysis, security and platform builds pass.
