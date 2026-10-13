@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 567,
+      "title": "BLU-014 Versioned Workflow DSL",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Schema round-trip, invalid steps rejected and old Routine unchanged",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_dsl_test.dart",
+              "name": "schema round-trip is stable"
+            },
+            {
+              "file": "test/workflow_dsl_test.dart",
+              "name": "invalid steps fail closed"
+            },
+            {
+              "file": "test/workflow_dsl_test.dart",
+              "name": "unsupported schema is rejected"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Malformed input rejection; runtime timeout, cancellation, permission, offline and restart coverage remains pending executor integration",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_dsl_test.dart",
+              "name": "invalid retry policy is rejected"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Deserialization has no automatic execution; full executor security review remains pending",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_dsl_test.dart",
+              "name": "parsing is declarative and never executes host actions"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Dart static analysis and focused tests must pass",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_dsl_test.dart",
+              "name": "schema round-trip is stable"
+            }
+          ]
+        },
+        {
+          "id": "runtime_integration_gap",
+          "requirement": "End-to-end SafetyGate, fake-host permission, timeout, cancel, offline and restart integration",
+          "type": "gap",
+          "reason": "This PR defines the parser only; no action executor or persistence boundary is enabled. These require separate runtime work before promotion to permanent CI."
+        }
+      ]
+    }
+  ]
+}
