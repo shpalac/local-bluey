@@ -342,6 +342,16 @@ final class EncryptedActivityStore {
     _database.close();
   }
 
+
+  /// Registry deletion does not create a new DB or require retention opt-in.
+  static Future<void> deleteDefault() async {
+    final support = await getApplicationSupportDirectory();
+    await deleteFiles(
+      file: File('${support.path}${Platform.pathSeparator}$fileName'),
+      vault: const SecureActivityKeyVault(),
+    );
+  }
+
   /// Explicit deletion of this dedicated database and key. Never delete
   /// unrelated user data or claim physical/backup cryptographic erasure.
   static Future<void> deleteFiles({
