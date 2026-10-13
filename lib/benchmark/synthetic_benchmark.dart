@@ -32,8 +32,7 @@ class SyntheticMetrics {
   final int trueNegative;
   final Duration totalElapsed;
 
-  int get count =>
-      truePositive + falsePositive + falseNegative + trueNegative;
+  int get count => truePositive + falsePositive + falseNegative + trueNegative;
   double get precision => _ratio(truePositive, truePositive + falsePositive);
   double get recall => _ratio(truePositive, truePositive + falseNegative);
   double get accuracy => _ratio(truePositive + trueNegative, count);
@@ -41,8 +40,7 @@ class SyntheticMetrics {
     2 * truePositive,
     2 * truePositive + falsePositive + falseNegative,
   );
-  double get meanLatencyMicros =>
-      _ratio(totalElapsed.inMicroseconds, count);
+  double get meanLatencyMicros => _ratio(totalElapsed.inMicroseconds, count);
 
   static double _ratio(int numerator, int denominator) =>
       denominator == 0 ? 0 : numerator / denominator;
