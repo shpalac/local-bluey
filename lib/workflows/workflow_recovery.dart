@@ -24,8 +24,12 @@ final class RecoveryCheckpoint {
     final id = json['workflowId'];
     final index = json['stepIndex'];
     final phase = json['phase'];
-    if (id is! String || id.trim().isEmpty || index is! int || index < 0 ||
-        phase is! String || !RecoveryPhase.values.any((p) => p.name == phase)) {
+    if (id is! String ||
+        id.trim().isEmpty ||
+        index is! int ||
+        index < 0 ||
+        phase is! String ||
+        !RecoveryPhase.values.any((p) => p.name == phase)) {
       throw const FormatException('Invalid recovery checkpoint');
     }
     return RecoveryCheckpoint(
@@ -58,7 +62,9 @@ final class WorkflowRecovery {
       throw const FormatException('Checkpoint does not match workflow');
     }
     if (checkpoint.phase != RecoveryPhase.verified) {
-      throw StateError('External effect outcome unknown: manual reconciliation required');
+      throw StateError(
+        'External effect outcome unknown: manual reconciliation required',
+      );
     }
     return checkpoint.stepIndex + 1;
   }
@@ -80,7 +86,8 @@ final class WorkflowRecovery {
 
   Future<void> markVerified(int index) async {
     final checkpoint = await store.read(definition.id);
-    if (checkpoint == null || checkpoint.stepIndex != index ||
+    if (checkpoint == null ||
+        checkpoint.stepIndex != index ||
         checkpoint.phase != RecoveryPhase.dispatched) {
       throw StateError('Missing dispatched checkpoint');
     }
