@@ -60,7 +60,8 @@ class _ExecutionAuditPanelState extends State<ExecutionAuditPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final stopped = widget.audit.stopRequested ||
+    final stopped =
+        widget.audit.stopRequested ||
         widget.execution.status == WorkflowStatus.completed ||
         widget.execution.status == WorkflowStatus.failed ||
         widget.execution.status == WorkflowStatus.cancelled;
