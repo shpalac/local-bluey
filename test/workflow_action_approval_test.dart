@@ -149,10 +149,7 @@ void main() {
       prompt: prompt,
       safetyGate: gate,
     );
-    await expectLater(
-      fresh.execute(definition.steps.single),
-      throwsStateError,
-    );
+    await expectLater(fresh.execute(definition.steps.single), throwsStateError);
     expect(delegate.actions, 0);
   });
 
