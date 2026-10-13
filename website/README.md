@@ -1,6 +1,6 @@
 # Local Bluey — cinematic product site
 
-A handcrafted, static Astro + React site using the project's real Bluey icon and deterministic Flutter screenshots.
+A handcrafted, static Astro + React site (Tailwind via PostCSS for Astro 6 compatibility) using the project's real Bluey icon and deterministic Flutter screenshots.
 
 ## Development
 
