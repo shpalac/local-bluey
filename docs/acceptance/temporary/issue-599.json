@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 599,
+      "title": "BLU-043 GitHub Actions security hardening (partial)",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "AC-1: Untrusted PR cannot access secrets (static trigger/permission guard only; full isolation not proven)",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_security_guard_test.dart",
+              "name": "finds the workflow files"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "AC-2: Deterministic, reproducible and actionable failures (pinned-action test fixtures and real workflow scan)",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflow_security_guard_test.dart",
+              "name": "real workflows pass"
+            },
+            {
+              "file": "test/workflow_security_guard_test.dart",
+              "name": "movable tag fails in list and bare forms"
+            },
+            {
+              "file": "test/workflow_security_guard_test.dart",
+              "name": "short SHA fails"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "AC-3: No secrets, PII or raw screenshots in logs/artifacts and no unapproved egress",
+          "type": "gap",
+          "reason": "Static workflow text checks cannot verify runtime logs, artifact contents, or all network egress; further CI hardening and validation required."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "AC-4: Backwards compatibility and cross-platform behavior reviewed without unsupported capability claims",
+          "type": "gap",
+          "reason": "No runtime behavior changed in this PR; cross-platform review and validation remain outstanding."
+        },
+        {
+          "id": "security_hardening_gap",
+          "requirement": "Job-level permissions, artifact protection, fork PR isolation and repository settings",
+          "type": "gap",
+          "reason": "This PR only adds a static guard. Remaining repository and runtime security review is outstanding; do not close issue #599."
+        }
+      ]
+    }
+  ]
+}
