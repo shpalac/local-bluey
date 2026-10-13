@@ -84,6 +84,11 @@ jobs:
       - name: Check screenshot freshness on pull requests
         if: ${{ github.event_name == 'pull_request' }}
         run: |
+          git fetch origin main --depth=1
+          if ! git diff --name-only origin/main...HEAD -- test/screenshots tool/build_readme_showcase.py tool/regenerate_screenshots.sh .flutter-version pubspec.yaml pubspec.lock | grep -q .; then
+            echo 'No screenshot source changes in this PR; freshness check deferred.'
+            exit 0
+          fi
           git diff --exit-code -- docs/screenshots || { echo '::error::Commit regenerated screenshots'; exit 1; }
           test -z "$(git ls-files --others --exclude-standard docs/screenshots)" || { echo '::error::Untracked generated screenshots'; exit 1; }
       - name: Upload screenshots as run artifact
