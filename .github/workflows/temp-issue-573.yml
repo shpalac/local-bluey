@@ -25,4 +25,4 @@ jobs:
         run: dart format lib/services/execution_audit.dart lib/workflows/workflow_execution.dart lib/ui/execution_audit_panel.dart test/execution_audit_test.dart
       - run: flutter analyze
       - run: flutter test test/execution_audit_test.dart test/workflow_execution_test.dart
-      - run: flutter build web --release
+      - run: flutter build apk --debug
