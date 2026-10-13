@@ -14,10 +14,14 @@ final class LegacyRoutineAdapter {
   static WorkflowDefinition toWorkflow(Routine routine) {
     _validateRoutine(routine);
     if (!routine.enabled) {
-      throw const LegacyRoutineConversionException('Disabled routine cannot be converted');
+      throw const LegacyRoutineConversionException(
+        'Disabled routine cannot be converted',
+      );
     }
     if (!routine.instructions.startsWith(_prefix)) {
-      throw const LegacyRoutineConversionException('Unsupported legacy instructions');
+      throw const LegacyRoutineConversionException(
+        'Unsupported legacy instructions',
+      );
     }
     final message = routine.instructions.substring(_prefix.length).trim();
     if (message.isEmpty) {
@@ -45,9 +49,13 @@ final class LegacyRoutineAdapter {
         validated.retryLimit != 0 ||
         validated.preconditions.length != 1 ||
         !validated.preconditions.single.startsWith(_triggerPrefix)) {
-      throw const LegacyRoutineConversionException('Unsupported workflow conversion');
+      throw const LegacyRoutineConversionException(
+        'Unsupported workflow conversion',
+      );
     }
-    final trigger = validated.preconditions.single.substring(_triggerPrefix.length);
+    final trigger = validated.preconditions.single.substring(
+      _triggerPrefix.length,
+    );
     final routine = Routine(
       name: validated.id,
       trigger: trigger,
