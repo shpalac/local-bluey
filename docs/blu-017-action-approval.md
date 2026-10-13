@@ -29,7 +29,7 @@ flutter pub get
 dart format --output=none --set-exit-if-changed lib/workflows/workflow_action_approval.dart test/workflow_action_approval_test.dart
 dart analyze lib/workflows/workflow_action_approval.dart test/workflow_action_approval_test.dart
 flutter test test/workflow_action_approval_test.dart test/workflow_execution_test.dart
-flutter build web --release
+flutter build apk --debug
 ```
 
 Rollback: remove the opt-in adapter, its tests and temporary CI. Keep the
