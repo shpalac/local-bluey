@@ -22,4 +22,4 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed lib/workflows/postcondition_verifier.dart test/postcondition_verifier_test.dart
       - run: dart analyze lib/workflows/postcondition_verifier.dart test/postcondition_verifier_test.dart
       - run: flutter test test/postcondition_verifier_test.dart test/workflow_execution_test.dart
-      - run: flutter build web --release
+      - run: flutter build bundle --release
