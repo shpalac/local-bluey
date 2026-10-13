@@ -127,6 +127,8 @@ void main() {
       open(consent: false),
       throwsA(isA<EncryptedActivityException>()),
     );
+    await expectLater(open(retention: const Duration(days: 8)),
+        throwsArgumentError);
     expect(await file.exists(), isFalse);
     expect(vault.key, isNull);
     expect(() => store.add(step('after_deletion'), approved: true),
