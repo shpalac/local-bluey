@@ -318,7 +318,6 @@ jobs:
   # automatable slice of the real-device checklist; hardware-only items
   # (permissions, pairing, kill switch) stay manual.
   simulator:
-    needs: detect
     if: ${{ github.event_name != 'schedule' && needs.detect.outputs.simulator == 'true' }}
     needs: [detect, static, test]
     runs-on: macos-latest
