@@ -1,0 +1,26 @@
+name: Temporary BLU-014 acceptance
+
+on:
+  pull_request:
+    paths:
+      - 'lib/workflows/workflow_dsl.dart'
+      - 'test/workflow_dsl_test.dart'
+      - 'docs/blu-014-workflow-dsl.md'
+      - '.github/workflows/temp-issue-567.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  blu-014:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib/workflows/workflow_dsl.dart test/workflow_dsl_test.dart
+      - run: dart analyze lib/workflows/workflow_dsl.dart test/workflow_dsl_test.dart
+      - run: flutter test test/workflow_dsl_test.dart
