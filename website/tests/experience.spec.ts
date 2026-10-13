@@ -11,8 +11,29 @@ test('hero, genuine screenshots, trust disclosures and navigation render', async
   expect(await image.evaluate((el: HTMLImageElement) => el.naturalWidth)).toBeGreaterThan(0);
   const overflowing = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 2);
   expect(overflowing).toBe(false);
+  // Capture actual on-scroll states rather than a misleading, never-scrolled
+  // full-page image (ScrollTrigger deliberately reveals scenes as they enter).
+  await page.screenshot({ path: testInfo.outputPath('hero.png'), animations: 'disabled' });
+  const scenes = [
+    ['meet', '#meet'],
+    ['story', '#how'],
+    ['control', '.control'],
+    ['features', '.features'],
+    ['gallery', '#look'],
+    ['privacy', '.privacy'],
+    ['final', '.last-call']
+  ] as const;
+
+  for (const [name, selector] of scenes) {
+    await page.locator(selector).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300); // allow scrubbing and reveal animations to settle
+    await page.screenshot({
+      path: testInfo.outputPath(name + '.png'),
+      animations: 'disabled'
+    });
+  }
   await page.screenshot({
-    path: testInfo.outputPath('homepage.png'),
+    path: testInfo.outputPath('full-page-after-scroll.png'),
     fullPage: true,
     animations: 'disabled'
   });
