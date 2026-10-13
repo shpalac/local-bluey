@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 637,
+      "title": "Incident and release rollback runbook (partial)",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Dry-run checklist documented; actual rollback rehearsal remains unverified",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/incident_runbook_test.dart",
+              "name": "covers the four incident classes"
+            },
+            {
+              "file": "test/incident_runbook_test.dart",
+              "name": "describes the pipeline that release.yml actually has"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Document owner approval, no bypass, and privacy limitations; operational verification remains outstanding",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/incident_runbook_test.dart",
+              "name": "requires owner approval for external changes and bans bypasses"
+            },
+            {
+              "file": "test/incident_runbook_test.dart",
+              "name": "states what it does not cover and invents no privacy policy"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Document dependencies and test references; CI must run green",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/incident_runbook_test.dart",
+              "name": "linked docs exist"
+            }
+          ]
+        },
+        {
+          "id": "operational_rehearsal",
+          "requirement": "Perform actual rollback and incident dry run with owner approval",
+          "type": "manual",
+          "reason": "Documentation-only PR cannot certify live release rollback or credential rotation."
+        }
+      ]
+    }
+  ]
+}
