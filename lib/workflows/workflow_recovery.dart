@@ -42,6 +42,7 @@ final class RecoveryCheckpoint {
 
 abstract interface class RecoveryStore {
   Future<RecoveryCheckpoint?> read(String workflowId);
+
   /// Implementations must atomically persist before returning.
   Future<void> write(RecoveryCheckpoint checkpoint);
 }
@@ -77,11 +78,13 @@ final class WorkflowRecovery {
     if (next != index) {
       throw StateError('Duplicate or out-of-order effect');
     }
-    await store.write(RecoveryCheckpoint(
-      workflowId: definition.id,
-      stepIndex: index,
-      phase: RecoveryPhase.dispatched,
-    ));
+    await store.write(
+      RecoveryCheckpoint(
+        workflowId: definition.id,
+        stepIndex: index,
+        phase: RecoveryPhase.dispatched,
+      ),
+    );
   }
 
   Future<void> markVerified(int index) async {
@@ -91,10 +94,12 @@ final class WorkflowRecovery {
         checkpoint.phase != RecoveryPhase.dispatched) {
       throw StateError('Missing dispatched checkpoint');
     }
-    await store.write(RecoveryCheckpoint(
-      workflowId: definition.id,
-      stepIndex: index,
-      phase: RecoveryPhase.verified,
-    ));
+    await store.write(
+      RecoveryCheckpoint(
+        workflowId: definition.id,
+        stepIndex: index,
+        phase: RecoveryPhase.verified,
+      ),
+    );
   }
 }
