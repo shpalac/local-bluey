@@ -658,3 +658,16 @@ New `test/workflow_security_guard_test.dart` (26 cases) runs in the normal `flut
 ### #635 Issue and PR template contract (partial)
 
 The existing task, feature and bug issue templates and the PR template already carried objective, AC-1..AC-3, temporary/permanent manifest and Definition of Done fields. This slice adds two PR template sections (security, privacy and rollback; manual and device-only evidence), an issue template config.yml that keeps blank issues enabled, and `test/github_templates_test.dart` (8 cases) that fails if those fields are removed. This guards the text of the templates only. It does not prove contributors fill them in, add label automation, a security assessment workflow, release or incident runbooks (BLU-079), or full #635 acceptance. Rollback: revert the template edits, config.yml, test and this entry. Issue stays OPEN.
+
+
+## BLU-021 / #577 synthetic benchmark evidence (partial)
+
+PR #737 introduces the pure in-memory benchmark and fake-clock trace harness.
+AC-1: deterministic confusion-matrix metrics and duration fixtures in
+`test/benchmark/`. AC-2: synthetic exit classifications exercised for success,
+invalid input, offline, timeout, permission denial, cancellation, and restart;
+these are not production end-to-end device tests. AC-3: no transport, IO,
+secret storage or action executor in these modules. AC-4: not applicable to
+this non-user-facing module. Temporary CI:
+`.github/workflows/temp-issue-577.yml`. BLU-006/BLU-008 integration and
+end-to-end regression evidence remain outstanding; #577 must remain OPEN.
