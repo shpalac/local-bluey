@@ -77,10 +77,12 @@ class AuditEntry {
   final int? stepIndex;
   final String? diagnostic;
 
-  Map<String, Object> toJson() => {
-    'step': step,
-    'status': status,
-    if (stepIndex != null) 'stepIndex': stepIndex!,
-    if (diagnostic != null) 'diagnostic': diagnostic!,
-  };
+  Map<String, Object> toJson() {
+    final data = <String, Object>{'step': step, 'status': status};
+    final index = stepIndex;
+    final details = diagnostic;
+    if (index != null) data['stepIndex'] = index;
+    if (details != null) data['diagnostic'] = details;
+    return data;
+  }
 }
