@@ -34,12 +34,14 @@ final class WorkflowDefinition {
     if (rawSteps is! List || rawSteps.isEmpty) {
       throw const FormatException('Workflow requires steps');
     }
-    final steps = rawSteps.map((step) {
-      if (step is! Map<String, dynamic>) {
-        throw const FormatException('Invalid step');
-      }
-      return WorkflowStep.fromJson(step);
-    }).toList(growable: false);
+    final steps = rawSteps
+        .map((step) {
+          if (step is! Map<String, dynamic>) {
+            throw const FormatException('Invalid step');
+          }
+          return WorkflowStep.fromJson(step);
+        })
+        .toList(growable: false);
     final retry = json['retryLimit'] ?? 0;
     if (retry is! int || retry < 0 || retry > 3) {
       throw const FormatException('Invalid retry limit');
