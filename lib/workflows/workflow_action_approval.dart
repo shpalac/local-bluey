@@ -24,8 +24,7 @@ final class WorkflowActionPreview {
 
 /// An ephemeral, exact-action grant. A fresh process starts without grants.
 final class WorkflowApprovalGrant {
-  WorkflowApprovalGrant._(this._token);
-  final Object _token;
+  WorkflowApprovalGrant._();
   bool _revoked = false;
 
   void revoke() => _revoked = true;
@@ -63,6 +62,7 @@ final class WorkflowApprovalHost implements WorkflowHost {
   final WorkflowSafetyCheck _safetyGate;
   final Map<int, WorkflowApprovalGrant> _grants = {};
   bool _cancelled = false;
+  int _stepIndex = 0;
 
   void revokeAll() {
     _cancelled = true;
@@ -92,11 +92,15 @@ final class WorkflowApprovalHost implements WorkflowHost {
   }
 
   int _index(WorkflowStep step) {
-    // Identity, not equality: repeated identical actions are separate grants.
-    for (var i = 0; i < _definition.steps.length; i++) {
-      if (identical(_definition.steps[i], step)) return i;
+    // Steps are validated copies; only the currently active step can act.
+    if (_stepIndex >= _definition.steps.length) {
+      throw StateError('Workflow already completed');
     }
-    throw StateError('Action is not part of this workflow');
+    final expected = _definition.steps[_stepIndex];
+    if (expected.type != step.type || expected.target != step.target) {
+      throw StateError('Unexpected workflow action');
+    }
+    return _stepIndex;
   }
 
   @override
@@ -108,7 +112,7 @@ final class WorkflowApprovalHost implements WorkflowHost {
     // All actions need explicit consent; risky actions additionally need gate.
     final accepted = await _prompt.request(action);
     if (_cancelled || !accepted) return false;
-    final grant = WorkflowApprovalGrant._(Object());
+    final grant = WorkflowApprovalGrant._();
     _grants[index] = grant;
     return true;
   }
@@ -144,6 +148,7 @@ final class WorkflowApprovalHost implements WorkflowHost {
       return await _delegate.verify(step);
     } finally {
       revokeStep(index);
+      _stepIndex++;
     }
   }
 }
