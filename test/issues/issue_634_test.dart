@@ -81,42 +81,47 @@ Map<String, dynamic> _registry() =>
         as Map<String, dynamic>;
 
 void main() {
-  test('indexes all numbered decisions with real implementation boundaries', () {
-    final registry = _registry();
-    expect(() => _validateRegistry(registry), returnsNormally);
+  test(
+    'indexes all numbered decisions with real implementation boundaries',
+    () {
+      final registry = _registry();
+      expect(() => _validateRegistry(registry), returnsNormally);
 
-    final adrs = registry['adrs'] as List;
-    final tracked = <String>{};
-    for (final raw in adrs) {
-      final adr = raw as Map<String, dynamic>;
-      final path = adr['path'] as String;
-      expect(File(path).existsSync(), isTrue, reason: path);
-      tracked.add(path);
-      final doc = File(path).readAsStringSync();
-      for (final rawDecision in adr['decisions'] as List) {
-        final decision = rawDecision as Map<String, dynamic>;
-        final number = decision['number'] as int;
-        expect(
-          doc,
-          contains(RegExp('(?m)^$number\\. ')),
-          reason: '${adr['id']} decision $number must exist in its ADR',
-        );
-        for (final key in ['source', 'test']) {
-          final linked = decision[key] as String;
-          expect(File(linked).existsSync(), isTrue, reason: linked);
+      final adrs = registry['adrs'] as List;
+      final tracked = <String>{};
+      for (final raw in adrs) {
+        final adr = raw as Map<String, dynamic>;
+        final path = adr['path'] as String;
+        expect(File(path).existsSync(), isTrue, reason: path);
+        tracked.add(path);
+        final doc = File(path).readAsStringSync();
+        for (final rawDecision in adr['decisions'] as List) {
+          final decision = rawDecision as Map<String, dynamic>;
+          final number = decision['number'] as int;
+          expect(
+            doc,
+            contains(RegExp('^$number\\. ', multiLine: true)),
+            reason: '${adr['id']} decision $number must exist in its ADR',
+          );
+          for (final key in ['source', 'test']) {
+            final linked = decision[key] as String;
+            expect(File(linked).existsSync(), isTrue, reason: linked);
+          }
         }
       }
-    }
 
-    final committed = Directory('docs/adr')
-        .listSync()
-        .whereType<File>()
-        .map((file) => file.path.replaceAll('\\', '/'))
-        .where((path) =>
-            RegExp(r'docs/adr/(ADR-\d{3}|\d{3})-.*\.md$').hasMatch(path))
-        .toSet();
-    expect(tracked, committed, reason: 'No ADR may escape the registry');
-  });
+      final committed = Directory('docs/adr')
+          .listSync()
+          .whereType<File>()
+          .map((file) => file.path.replaceAll('\\', '/'))
+          .where(
+            (path) =>
+                RegExp(r'docs/adr/(ADR-\d{3}|\d{3})-.*\.md$').hasMatch(path),
+          )
+          .toSet();
+      expect(tracked, committed, reason: 'No ADR may escape the registry');
+    },
+  );
 
   test('preserves proposals and planning status without claiming approval', () {
     final registry = _registry();
@@ -127,15 +132,14 @@ void main() {
     expect((byId['ADR-001'] as Map)['status'], 'planning');
     expect((byId['ADR-002'] as Map)['status'], 'proposed');
 
-    final planning = File(
-      'docs/adr/ADR-001-bluey-delivery-decisions.md',
-    ).readAsStringSync();
-    final proposed =
-        File('docs/adr/002-observation-privacy.md').readAsStringSync();
+    final planning = File('docs/adr/ADR-001-bluey-delivery-decisions.md')
+        .readAsStringSync();
+    final proposed = File('docs/adr/002-observation-privacy.md')
+        .readAsStringSync();
     expect(planning, contains('Accepted for implementation planning'));
     expect(proposed, contains('not ratified'));
     final index = File('docs/adr/README.md').readAsStringSync();
-    expect(index, contains('not necessarily a complete feature'));
+    expect(index, contains('**not** necessarily a complete feature'));
     expect(index, contains('not ratified'));
   });
 
@@ -152,14 +156,16 @@ void main() {
     expect(() => _validateRegistry(duplicate), throwsFormatException);
 
     final missing = jsonDecode(jsonEncode(registry)) as Map<String, dynamic>;
-    final decisions = ((missing['adrs'] as List).first
-        as Map<String, dynamic>)['decisions'] as List;
+    final decisions =
+        ((missing['adrs'] as List).first as Map<String, dynamic>)['decisions']
+            as List;
     decisions.removeAt(1);
     expect(() => _validateRegistry(missing), throwsFormatException);
 
     final traversal = jsonDecode(jsonEncode(registry)) as Map<String, dynamic>;
-    final first = ((traversal['adrs'] as List).first
-        as Map<String, dynamic>)['decisions'] as List;
+    final first =
+        ((traversal['adrs'] as List).first as Map<String, dynamic>)['decisions']
+            as List;
     (first.first as Map<String, dynamic>)['source'] = '../outside.dart';
     expect(() => _validateRegistry(traversal), throwsFormatException);
   });
