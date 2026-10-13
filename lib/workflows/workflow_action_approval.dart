@@ -44,15 +44,26 @@ abstract interface class WorkflowSafetyCheck {
 /// The delegate must separately enforce SafetyGate and cooperate with
 /// cancellation while performing long-running native actions.
 final class WorkflowApprovalHost implements WorkflowHost {
-  WorkflowApprovalHost({
+  factory WorkflowApprovalHost({
     required WorkflowDefinition definition,
     required WorkflowHost delegate,
     required WorkflowApprovalPrompt prompt,
     required WorkflowSafetyCheck safetyGate,
-  }) : _definition = WorkflowDefinition.fromJson(definition.toJson()),
-       _delegate = delegate,
-       _prompt = prompt,
-       _safetyGate = safetyGate;
+  }) {
+    return WorkflowApprovalHost._(
+      WorkflowDefinition.fromJson(definition.toJson()),
+      delegate,
+      prompt,
+      safetyGate,
+    );
+  }
+
+  WorkflowApprovalHost._(
+    this._definition,
+    this._delegate,
+    this._prompt,
+    this._safetyGate,
+  );
 
   final WorkflowDefinition _definition;
   final WorkflowHost _delegate;
