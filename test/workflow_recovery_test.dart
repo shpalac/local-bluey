@@ -40,7 +40,6 @@ void main() {
     await expectLater(recovery.beforeEffect(0), throwsStateError);
   });
 
-
   test('completed workflow cannot replay an earlier effect', () async {
     final store = MemoryRecoveryStore();
     final recovery = WorkflowRecovery(definition, store);
