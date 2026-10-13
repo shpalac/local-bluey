@@ -623,3 +623,7 @@ Existing test_report.dart now counts known test error events even after success,
 ### #601 Existing JSON report canonical output ordering
 
 Existing test_report.dart now sorts equal-duration rows by test ID, failed rows by test ID and unique failed-file paths lexicographically. Two actual offline CLI reversed-completion fixtures fail on previous source and pass after repair;19 focused passes incltiming/lateerror/dartdoc, analyzer/format clean. Output is stable for identical IDs/names/paths/durations despite completion interleaving, not across different runner IDs or environments. Timing/failure counts/CLI exit semantics unchanged; no retry execution/workflow/terminal/JUnit/schema/artifact redaction/privacy or full601 acceptance. Rollback sorting/newtest/map; issue OPEN.
+
+### #637 Incident and release rollback runbook (partial)
+
+New `docs/INCIDENT_RUNBOOK.md` covers bad release, leaked secret, broken CI and privacy-affecting defect, grounded in the existing release.yml, RELEASE.md and SECRETS.md. External-service steps are marked owner actions. `test/incident_runbook_test.dart` (5 cases) checks the headings, the release.yml facts it cites, the approval and no-bypass rules, the honesty section and that linked docs exist. This is documentation plus a text guard: no rehearsal of a rollback was run, and signing/notarization, store, user-notice, on-call and device incidents are explicitly not covered. Retention policy remains the open #351 decision. Rollback: revert the doc, test and this entry. Issue stays OPEN.
