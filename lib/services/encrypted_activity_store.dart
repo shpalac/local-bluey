@@ -116,6 +116,7 @@ final class EncryptedActivityStore {
     }
     if (capacity < 1 ||
         retention <= Duration.zero ||
+        retention > defaultRetention ||
         sessionLength <= Duration.zero) {
       throw ArgumentError('invalid storage limits');
     }
