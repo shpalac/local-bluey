@@ -93,9 +93,8 @@ void main() {
 
   test('missing offline evidence stays inconclusive', () async {
     expect(
-      await PostconditionVerifier(
-        MemoryReader({}),
-      ).verify([ax], timeout: const Duration(seconds: 1)),
+      await PostconditionVerifier(MemoryReader({}))
+          .verify([ax], timeout: const Duration(seconds: 1)),
       VerificationOutcome.inconclusive,
     );
   });
@@ -170,13 +169,16 @@ void main() {
     );
   });
 
-  test('exceptions are inconclusive and never leak exception messages', () async {
-    final verifier = PostconditionVerifier(_ThrowingReader());
-    expect(
-      await verifier.verify([ax], timeout: const Duration(seconds: 1)),
-      VerificationOutcome.inconclusive,
-    );
-  });
+  test(
+    'exceptions are inconclusive and never leak exception messages',
+    () async {
+      final verifier = PostconditionVerifier(_ThrowingReader());
+      expect(
+        await verifier.verify([ax], timeout: const Duration(seconds: 1)),
+        VerificationOutcome.inconclusive,
+      );
+    },
+  );
 }
 
 class _ThrowingReader implements PostconditionReader {
