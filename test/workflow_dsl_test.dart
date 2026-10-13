@@ -13,7 +13,10 @@ void main() {
 
   test('schema round-trip is stable', () {
     final workflow = WorkflowDefinition.fromJson(valid);
-    expect(WorkflowDefinition.decode(workflow.encode()).toJson(), workflow.toJson());
+    expect(
+      WorkflowDefinition.decode(workflow.encode()).toJson(),
+      workflow.toJson(),
+    );
   });
 
   test('invalid steps fail closed', () {
