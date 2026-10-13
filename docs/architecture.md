@@ -188,3 +188,16 @@ foreground identity before it would send a picture to the configured provider.
 conversational screenshot tool. Keyword/OCR checks are best effort and native
 window-switch races remain for physical validation. No new persistence or
 unattended capture is enabled. The current `SafetyGate` remains in force.
+
+## BLU-021 synthetic benchmark harness
+
+`lib/benchmark/synthetic_benchmark.dart` computes confusion-matrix metrics
+from validated, unique synthetic samples. `synthetic_trace_harness.dart`
+accepts a caller-supplied monotonic clock (a deterministic fake is provided)
+and records success, invalid-input, offline, timeout, permission-denied,
+cancellation and restart classifications. Inputs are in-memory only; no
+network, persistence, user interface or action execution is performed.
+Zero denominators yield zero metrics, never NaN. Duplicate/blank IDs and
+negative elapsed times fail closed. Rollback is removal of this isolated test
+harness, its tests and temporary workflow. Production workflow integration
+requires a separately reviewed adapter and privacy/safety boundaries.
