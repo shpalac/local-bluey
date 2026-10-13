@@ -67,28 +67,31 @@ void main() {
     await dir.delete(recursive: true);
   });
 
-  test('real SQLCipher encrypts on-disk records and excludes raw text', () async {
-    final store = await open();
-    expect(vault.key, matches(RegExp(r'^[0-9a-f]{64}$')));
-    expect(store.startSession(consentConfirmed: true), isTrue);
-    expect(store.add(step('unique_secret_marker'), approved: true), isTrue);
-    expect(store.snapshot.single.stepId, 'unique_secret_marker');
-    store.close();
+  test(
+    'real SQLCipher encrypts on-disk records and excludes raw text',
+    () async {
+      final store = await open();
+      expect(vault.key, matches(RegExp(r'^[0-9a-f]{64}$')));
+      expect(store.startSession(consentConfirmed: true), isTrue);
+      expect(store.add(step('unique_secret_marker'), approved: true), isTrue);
+      expect(store.snapshot.single.stepId, 'unique_secret_marker');
+      store.close();
 
-    final bytes = await file.readAsBytes();
-    expect(bytes, isNotEmpty);
-    expect(bytes.take(16).toList(), isNot('SQLite format 3\u0000'.codeUnits));
-    expect(
-      String.fromCharCodes(bytes).contains('unique_secret_marker'),
-      isFalse,
-    );
-    final restarted = await open();
-    expect(restarted.isActive, isFalse);
-    expect(restarted.snapshot, isEmpty); // fresh consent after restart
-    expect(restarted.startSession(consentConfirmed: true), isTrue);
-    expect(restarted.snapshot.single.stepId, 'unique_secret_marker');
-    restarted.close();
-  });
+      final bytes = await file.readAsBytes();
+      expect(bytes, isNotEmpty);
+      expect(bytes.take(16).toList(), isNot('SQLite format 3\u0000'.codeUnits));
+      expect(
+        String.fromCharCodes(bytes).contains('unique_secret_marker'),
+        isFalse,
+      );
+      final restarted = await open();
+      expect(restarted.isActive, isFalse);
+      expect(restarted.snapshot, isEmpty); // fresh consent after restart
+      expect(restarted.startSession(consentConfirmed: true), isTrue);
+      expect(restarted.snapshot.single.stepId, 'unique_secret_marker');
+      restarted.close();
+    },
+  );
 
   test('wrong key fails closed and preserves original ciphertext', () async {
     final store = await open();
@@ -120,7 +123,10 @@ void main() {
   });
 
   test('key unavailable and no opt-in never create a database', () async {
-    await expectLater(open(consent: false), throwsA(isA<EncryptedActivityException>()));
+    await expectLater(
+      open(consent: false),
+      throwsA(isA<EncryptedActivityException>()),
+    );
     expect(await file.exists(), isFalse);
     expect(vault.key, isNull);
     vault.unavailable = true;
@@ -140,8 +146,13 @@ void main() {
     expect(store.startSession(consentConfirmed: false), isFalse);
     expect(store.startSession(consentConfirmed: true), isTrue);
     expect(store.add(step('denied'), approved: false), isFalse);
-    expect(store.add(step('future', time: clock.add(const Duration(minutes: 1))),
-      approved: true), isFalse);
+    expect(
+      store.add(
+        step('future', time: clock.add(const Duration(minutes: 1))),
+        approved: true,
+      ),
+      isFalse,
+    );
     expect(store.add(step('a'), approved: true), isTrue);
     expect(store.add(step('a'), approved: true), isFalse);
     expect(store.add(step('b'), approved: true), isTrue);
@@ -155,52 +166,61 @@ void main() {
     reopened.close();
   });
 
-  test('clear revokes session, erases rows and leaves no WAL/journal', () async {
-    final store = await open();
-    expect(store.startSession(consentConfirmed: true), isTrue);
-    expect(store.add(step('clear_me'), approved: true), isTrue);
-    await store.clear();
-    expect(store.isActive, isFalse);
-    expect(store.add(step('no_second_capture'), approved: true), isFalse);
-    expect(store.startSession(consentConfirmed: true), isTrue);
-    expect(store.snapshot, isEmpty);
-    store.close();
-    for (final suffix in ['-wal', '-shm', '-journal']) {
-      expect(await File('${file.path}$suffix').exists(), isFalse);
-    }
-    final restarted = await open();
-    expect(restarted.startSession(consentConfirmed: true), isTrue);
-    expect(restarted.snapshot, isEmpty);
-    restarted.close();
-  });
+  test(
+    'clear revokes session, erases rows and leaves no WAL/journal',
+    () async {
+      final store = await open();
+      expect(store.startSession(consentConfirmed: true), isTrue);
+      expect(store.add(step('clear_me'), approved: true), isTrue);
+      await store.clear();
+      expect(store.isActive, isFalse);
+      expect(store.add(step('no_second_capture'), approved: true), isFalse);
+      expect(store.startSession(consentConfirmed: true), isTrue);
+      expect(store.snapshot, isEmpty);
+      store.close();
+      for (final suffix in ['-wal', '-shm', '-journal']) {
+        expect(await File('${file.path}$suffix').exists(), isFalse);
+      }
+      final restarted = await open();
+      expect(restarted.startSession(consentConfirmed: true), isTrue);
+      expect(restarted.snapshot, isEmpty);
+      restarted.close();
+    },
+  );
 
-  test('schema rejects unknown versions without migrating or dropping data', () async {
-    final store = await open();
-    store.close();
-    final db = sqlite3.open(file.path);
-    try {
-      db.execute('PRAGMA key = "x\'${vault.key}\'"');
-      expect(db.select('PRAGMA cipher_version'), isNotEmpty);
-      db.execute('PRAGMA user_version = 99');
-    } finally {
-      db.close();
-    }
-    final original = await file.readAsBytes();
-    await expectLater(open(), throwsA(isA<EncryptedActivityException>()));
-    expect(await file.readAsBytes(), original);
-  });
+  test(
+    'schema rejects unknown versions without migrating or dropping data',
+    () async {
+      final store = await open();
+      store.close();
+      final db = sqlite3.open(file.path);
+      try {
+        db.execute('PRAGMA key = "x\'${vault.key}\'"');
+        expect(db.select('PRAGMA cipher_version'), isNotEmpty);
+        db.execute('PRAGMA user_version = 99');
+      } finally {
+        db.close();
+      }
+      final original = await file.readAsBytes();
+      await expectLater(open(), throwsA(isA<EncryptedActivityException>()));
+      expect(await file.readAsBytes(), original);
+    },
+  );
 
-  test('explicit deletion removes owned sidecars and revokes the key', () async {
-    final store = await open();
-    store.close();
-    for (final suffix in ['-wal', '-shm', '-journal']) {
-      await File('${file.path}$suffix').writeAsString('test sidecar');
-    }
-    await EncryptedActivityStore.deleteFiles(file: file, vault: vault);
-    expect(await file.exists(), isFalse);
-    expect(vault.key, isNull);
-    for (final suffix in ['-wal', '-shm', '-journal']) {
-      expect(await File('${file.path}$suffix').exists(), isFalse);
-    }
-  });
+  test(
+    'explicit deletion removes owned sidecars and revokes the key',
+    () async {
+      final store = await open();
+      store.close();
+      for (final suffix in ['-wal', '-shm', '-journal']) {
+        await File('${file.path}$suffix').writeAsString('test sidecar');
+      }
+      await EncryptedActivityStore.deleteFiles(file: file, vault: vault);
+      expect(await file.exists(), isFalse);
+      expect(vault.key, isNull);
+      for (final suffix in ['-wal', '-shm', '-journal']) {
+        expect(await File('${file.path}$suffix').exists(), isFalse);
+      }
+    },
+  );
 }
