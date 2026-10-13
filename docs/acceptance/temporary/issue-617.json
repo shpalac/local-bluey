@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 617,
+      "title": "BLU-060 performance baseline (latency summary groundwork)",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Document latency summary baseline scope and outstanding CPU/RAM/disk/cold-start budgets",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/perf_summary_test.dart",
+              "name": "prints nearest-rank p50 and p95 per stage, sorted by name"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Deterministic results and explicit errors",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/perf_summary_test.dart",
+              "name": "order of samples does not change the result"
+            },
+            {
+              "file": "test/perf_summary_test.dart",
+              "name": "empty input and missing file fail with exit 2"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Review privacy and no unexpected output of input contents",
+          "type": "manual",
+          "reason": "Privacy review required for arbitrary stage labels and CI artifacts; invalid-line tests provide partial evidence."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Existing Routines and platform behavior remain compatible",
+          "type": "manual",
+          "reason": "Platform and Routines compatibility need integration validation; CLI tests alone do not certify them."
+        },
+        {
+          "id": "remaining_baselines",
+          "requirement": "CPU, RAM, disk, cold start and real device budgets",
+          "type": "gap",
+          "reason": "PR implements latency-only CLI; remaining performance baselines not yet implemented."
+        }
+      ]
+    }
+  ]
+}
