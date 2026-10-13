@@ -20,16 +20,19 @@ void main() {
     clear: onClear ?? () async {},
   );
 
-  test('real app registry limits scoped purge to encrypted activity database', () {
-    final overview = ActivityRetentionPolicy.forApplication().overview;
-    expect(
-      overview.where((row) => row.purgeable),
-      hasLength(1),
-      reason: 'Only the encrypted activity database may be purged',
-    );
-    expect(overview.any((row) => row.id == 'routines'), isTrue);
-    expect(overview.any((row) => row.id == 'settings'), isTrue);
-  });
+  test(
+    'real app registry limits scoped purge to encrypted activity database',
+    () {
+      final overview = ActivityRetentionPolicy.forApplication().overview;
+      expect(
+        overview.where((row) => row.purgeable),
+        hasLength(1),
+        reason: 'Only the encrypted activity database may be purged',
+      );
+      expect(overview.any((row) => row.id == 'routines'), isTrue);
+      expect(overview.any((row) => row.id == 'settings'), isTrue);
+    },
+  );
 
   test('scoped purge leaves routines and credentials untouched', () async {
     final erased = <String>[];
