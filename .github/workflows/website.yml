@@ -70,6 +70,7 @@ jobs:
         with:
           name: bluey-site-lighthouse
           path: website/.lighthouseci/
+          include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
       - name: Upload preview build for PR review
