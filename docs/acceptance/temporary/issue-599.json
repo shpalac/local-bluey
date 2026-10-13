@@ -7,7 +7,7 @@
       "criteria": [
         {
           "id": "ac_1",
-          "requirement": "Static workflow permissions and trigger checks",
+          "requirement": "AC-1: Untrusted PR cannot access secrets (static trigger/permission guard only; full isolation not proven)",
           "type": "automated",
           "tests": [
             {
@@ -18,7 +18,7 @@
         },
         {
           "id": "ac_2",
-          "requirement": "Pinned action SHA validation against real workflows",
+          "requirement": "AC-2: Deterministic, reproducible and actionable failures (pinned-action test fixtures and real workflow scan)",
           "type": "automated",
           "tests": [
             {
@@ -34,6 +34,18 @@
               "name": "short SHA fails"
             }
           ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "AC-3: No secrets, PII or raw screenshots in logs/artifacts and no unapproved egress",
+          "type": "gap",
+          "reason": "Static workflow text checks cannot verify runtime logs, artifact contents, or all network egress; further CI hardening and validation required."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "AC-4: Backwards compatibility and cross-platform behavior reviewed without unsupported capability claims",
+          "type": "gap",
+          "reason": "No runtime behavior changed in this PR; cross-platform review and validation remain outstanding."
         },
         {
           "id": "security_hardening_gap",
