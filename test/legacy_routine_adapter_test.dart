@@ -1,10 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/routines.dart';
-import 'package:local_bluey/workflows/legacy_routine_adapter.dart';
+import 'package:local_bluey/workflows/legacy_routine_LegacyRoutineAdapter.dart';
 import 'package:local_bluey/workflows/workflow_dsl.dart';
 
 void main() {
-  const adapter = LegacyRoutineAdapter;
   const original = Routine(
     name: 'Reminder',
     trigger: 'remind me',
@@ -13,17 +12,17 @@ void main() {
 
   test('compatible routine round-trips without executing or persisting', () {
     final before = original.toJson();
-    final workflow = adapter.toWorkflow(original);
+    final workflow = LegacyRoutineAdapter.toWorkflow(original);
     expect(workflow.trigger, 'manual');
     expect(workflow.steps.single.type, 'notify');
-    final restored = adapter.toRoutine(WorkflowDefinition.decode(workflow.encode()));
+    final restored = LegacyRoutineAdapter.toRoutine(WorkflowDefinition.decode(workflow.encode()));
     expect(restored.toJson(), before);
     expect(original.toJson(), before);
   });
 
   test('generic free-form legacy instructions fail closed', () {
     expect(
-      () => adapter.toWorkflow(const Routine(
+      () => LegacyRoutineAdapter.toWorkflow(const Routine(
         name: 'unsafe',
         trigger: 'go',
         instructions: 'run shell command',
@@ -34,7 +33,7 @@ void main() {
 
   test('disabled routines are not accidentally enabled', () {
     expect(
-      () => adapter.toWorkflow(const Routine(
+      () => LegacyRoutineAdapter.toWorkflow(const Routine(
         name: 'disabled',
         trigger: 'go',
         instructions: 'notify:hello',
@@ -46,7 +45,7 @@ void main() {
 
   test('malformed legacy input is rejected', () {
     expect(
-      () => adapter.toWorkflow(const Routine(
+      () => LegacyRoutineAdapter.toWorkflow(const Routine(
         name: '',
         trigger: 'go',
         instructions: 'notify:hello',
@@ -56,7 +55,7 @@ void main() {
   });
 
   test('permissioned, scheduled or multi-step workflows cannot convert', () {
-    final base = adapter.toWorkflow(original).toJson();
+    final base = LegacyRoutineAdapter.toWorkflow(original).toJson();
     for (final changes in <Map<String, dynamic>>[
       {'trigger': 'scheduled'},
       {'permissions': ['hostControl']},
@@ -69,23 +68,23 @@ void main() {
     ]) {
       final workflow = WorkflowDefinition.fromJson({...base, ...changes});
       expect(
-        () => adapter.toRoutine(workflow),
+        () => LegacyRoutineAdapter.toRoutine(workflow),
         throwsA(isA<LegacyRoutineConversionException>()),
       );
     }
   });
 
   test('host actions and missing trigger metadata are rejected', () {
-    final base = adapter.toWorkflow(original).toJson();
+    final base = LegacyRoutineAdapter.toWorkflow(original).toJson();
     expect(
-      () => adapter.toRoutine(WorkflowDefinition.fromJson({
+      () => LegacyRoutineAdapter.toRoutine(WorkflowDefinition.fromJson({
         ...base,
         'steps': [{'type': 'hostAction', 'target': 'openApp'}],
       })),
       throwsA(isA<LegacyRoutineConversionException>()),
     );
     expect(
-      () => adapter.toRoutine(WorkflowDefinition.fromJson({
+      () => LegacyRoutineAdapter.toRoutine(WorkflowDefinition.fromJson({
         ...base,
         'preconditions': <String>[],
       })),
@@ -96,7 +95,7 @@ void main() {
   test('errors do not echo secrets', () {
     const secret = 'token-secret-123';
     try {
-      adapter.toWorkflow(const Routine(
+      LegacyRoutineAdapter.toWorkflow(const Routine(
         name: 'test',
         trigger: 'go',
         instructions: secret,
