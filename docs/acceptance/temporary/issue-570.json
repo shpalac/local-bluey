@@ -54,7 +54,7 @@
           "tests": [
             {
               "file": "test/workflow_action_approval_test.dart",
-              "name": "safety explicit user refusal has zero side effects"
+              "name": "safety gate rejection blocks host action"
             }
           ]
         },
