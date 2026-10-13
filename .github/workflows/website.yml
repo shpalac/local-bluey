@@ -56,6 +56,30 @@ jobs:
         run: echo "CHROME_PATH=$(node -e 'console.log(require("playwright").chromium.executablePath())')" >> "$GITHUB_ENV"
       - name: Lighthouse accessibility and performance audit
         run: npm run test:lighthouse
+      - name: Upload rendered browser screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bluey-site-browser-evidence
+          path: website/test-results/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload Lighthouse audit report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bluey-site-lighthouse
+          path: website/.lighthouseci/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload preview build for PR review
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bluey-site-preview
+          path: website/dist/
+          if-no-files-found: error
+          retention-days: 14
       - name: Configure GitHub Pages
         if: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
