@@ -29,9 +29,44 @@ permissions:
   contents: read
 
 jobs:
+  # Fail-closed impact routing; the required check names remain stable.
+  detect:
+    if: ${{ github.event_name != 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      plan: ${{ steps.impact.outputs.plan }}
+      static: ${{ steps.impact.outputs.static }}
+      docs: ${{ steps.impact.outputs.docs }}
+      acceptance: ${{ steps.impact.outputs.acceptance }}
+      test: ${{ steps.impact.outputs.test }}
+      build_macos: ${{ steps.impact.outputs.build_macos }}
+      build_ios: ${{ steps.impact.outputs.build_ios }}
+      simulator: ${{ steps.impact.outputs.simulator }}
+      android: ${{ steps.impact.outputs.android }}
+      android_integration: ${{ steps.impact.outputs.android_integration }}
+      linux: ${{ steps.impact.outputs.linux }}
+      full_tests: ${{ steps.impact.outputs.full_tests }}
+      test_files: ${{ steps.impact.outputs.test_files }}
+      android_matrix: ${{ steps.impact.outputs.android_matrix }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Verify impact selection and merge gate fail closed
+        run: |
+          python3 -m unittest discover -s tool -p test_ci_impact.py
+          python3 -m unittest discover -s tool -p test_ci_gate.py
+      - name: Select affected CI lanes
+        id: impact
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python3 tool/ci_impact.py
+
   # Fast lane on Linux: format and static analysis only (#153).
   static:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.static == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -68,7 +103,8 @@ jobs:
   # public contract files, alongside the in-repo coverage test
   # (test/dartdoc_contracts_test.dart).
   docs:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.docs == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -103,7 +139,8 @@ jobs:
   # execute; it reports native/manual and missing features as INCOMPLETE.
   # Never close an issue solely because this job is green.
   acceptance-evidence:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.acceptance == 'true' }}
     permissions:
       contents: read
       issues: read
@@ -131,10 +168,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 tool/issue_task_ci.py --mode unit
       - name: Check BLU-001..003 acceptance mapping and no-false-pass rules
+        if: ${{ github.event_name != 'pull_request' }}
         run: python3 -m unittest discover -s tool -p test_blu_001_003_acceptance.py
       - name: Execute BLU-001..003 named acceptance suites (with manual gaps recorded)
+        if: ${{ github.event_name != 'pull_request' }}
         run: python3 tool/blu_001_003_acceptance.py --run-tests --out-dir build/acceptance/blu-001-003
       - name: Execute other issue-linked test suites and report incomplete criteria
+        if: ${{ github.event_name != 'pull_request' }}
         run: python3 tool/acceptance_criteria.py --run-tests --out-dir build/acceptance/other-issues
       - name: Upload sanitized issue acceptance report
         if: ${{ always() }}
@@ -148,7 +188,8 @@ jobs:
   # Test lane (#153): unit/widget tests with coverage (thresholds + lcov
   # artifact) and machine-readable results uploaded on every run (#159).
   test:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.test == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -166,14 +207,30 @@ jobs:
 
       - run: flutter pub get --enforce-lockfile
 
-      - name: Unit + widget tests (mocked contracts)
+      - name: Full unit + widget tests (coverage enforced)
+        if: ${{ needs.detect.outputs.full_tests == 'true' }}
         run: flutter test --coverage --reporter expanded 2>&1 | tee test-output.log
         timeout-minutes: 8
 
+      - name: Impacted unit + widget tests
+        if: ${{ needs.detect.outputs.full_tests != 'true' }}
+        env:
+          TEST_FILES: ${{ needs.detect.outputs.test_files }}
+        run: |
+          mapfile -t test_files < <(python3 -c 'import json, os; print("\\n".join(json.loads(os.environ["TEST_FILES"])))')
+          if [ "${#test_files[@]}" -eq 0 ]; then
+            echo "::error::no impacted tests selected; fail closed"
+            exit 1
+          fi
+          flutter test "${test_files[@]}" --reporter expanded 2>&1 | tee test-output.log
+        timeout-minutes: 8
+
       - name: Coverage thresholds (services/, link/) (#136)
+        if: ${{ needs.detect.outputs.full_tests == 'true' }}
         run: dart run tool/check_coverage.dart
 
       - name: Upload coverage report
+        if: ${{ needs.detect.outputs.full_tests == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage
@@ -193,7 +250,8 @@ jobs:
   # test results, so gating on them only added wall-clock (#144, #153).
   # Docs-only changes skip this 25-minute lane entirely.
   build-macos:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.build_macos == 'true' }}
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -224,7 +282,8 @@ jobs:
           retention-days: 3
 
   build-ios:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.build_ios == 'true' }}
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -259,8 +318,9 @@ jobs:
   # automatable slice of the real-device checklist; hardware-only items
   # (permissions, pairing, kill switch) stay manual.
   simulator:
-    if: ${{ github.event_name != 'schedule' }}
-    needs: [static, test]
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.simulator == 'true' }}
+    needs: [detect, static, test]
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -305,30 +365,26 @@ jobs:
           path: build-simulator.log
           retention-days: 3
 
-  # Aggregate gate named `build`: branch protection requires a check with
-  # this name, and the macOS and iOS builds are now separate jobs. Fails if
-  # either build failed or was cancelled.
+  # Stable aggregate required check: selected jobs must pass; skips are
+  # allowed only for non-applicable lanes. Security is required on every PR.
   build:
     if: ${{ always() && github.event_name != 'schedule' }}
-    needs: [build-macos, build-ios, acceptance-evidence]
+    needs: [detect, static, docs, acceptance-evidence, test, build-macos, build-ios, simulator, android, android-integration, linux, security, pinned-actions]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require both native builds
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Require every selected lane and security check
         env:
-          MACOS_RESULT: ${{ needs.build-macos.result }}
-          IOS_RESULT: ${{ needs.build-ios.result }}
-          ACCEPTANCE_RESULT: ${{ needs.acceptance-evidence.result }}
-        run: |
-          echo "build-macos: $MACOS_RESULT"
-          echo "build-ios: $IOS_RESULT"
-          echo "acceptance-evidence: $ACCEPTANCE_RESULT"
-          [ "$MACOS_RESULT" = "success" ] && [ "$IOS_RESULT" = "success" ] && [ "$ACCEPTANCE_RESULT" = "success" ]
+          CI_PLAN_JSON: ${{ needs.detect.outputs.plan }}
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python3 tool/ci_gate.py
 
   # Android debug APK on ubuntu - no Xcode needed (#153). Runs in parallel
   # with the fast lanes for the same reason as the macOS builds.
   android:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.android == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -377,7 +433,8 @@ jobs:
   # emulator and runs integration_test/ against it. The native MethodChannel
   # is mocked in-Dart, so no macOS host is needed.
   android-integration:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.android_integration == 'true' }}
     permissions:
       contents: read
       issues: read
@@ -386,7 +443,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        api-level: [29, 34]
+        api-level: ${{ fromJSON(needs.detect.outputs.android_matrix) }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -433,7 +490,8 @@ jobs:
   # flutter_secure_storage (libsecret, libjsoncpp), nsd (Avahi),
   # record/audioplayers (ALSA), window_manager (GTK).
   linux:
-    if: ${{ github.event_name != 'schedule' }}
+    needs: detect
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.linux == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -472,8 +530,7 @@ jobs:
 
       - run: flutter pub get --enforce-lockfile
 
-      - name: Unit + widget tests
-        run: flutter test --reporter expanded
+      # Dedicated test lane handles unit tests; Linux still exercises X11 E2E.
 
       # Phone <-> Linux host E2E under a real X server (#154): the link
       # protocol pairs over loopback TCP and the X11 backend drives
