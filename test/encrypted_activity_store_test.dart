@@ -129,6 +129,8 @@ void main() {
     );
     expect(await file.exists(), isFalse);
     expect(vault.key, isNull);
+    expect(() => store.add(step('after_deletion'), approved: true),
+        throwsA(isA<EncryptedActivityException>()));
     vault.unavailable = true;
     await expectLater(open(), throwsA(isA<EncryptedActivityException>()));
     expect(await file.exists(), isFalse);
