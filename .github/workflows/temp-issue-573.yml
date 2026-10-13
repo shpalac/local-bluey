@@ -3,7 +3,10 @@ on:
   pull_request:
     paths:
       - 'lib/services/execution_audit.dart'
+      - 'lib/workflows/workflow_execution.dart'
+      - 'lib/ui/execution_audit_panel.dart'
       - 'test/execution_audit_test.dart'
+      - 'docs/blu-020-execution-audit.md'
       - '.github/workflows/temp-issue-573.yml'
   workflow_dispatch:
 permissions:
@@ -16,8 +19,9 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
-      - run: dart format --output=none --set-exit-if-changed lib/services/execution_audit.dart test/execution_audit_test.dart
       - run: flutter pub get
+      - name: Format BLU-020 files
+        run: dart format lib/services/execution_audit.dart lib/workflows/workflow_execution.dart lib/ui/execution_audit_panel.dart test/execution_audit_test.dart
       - run: flutter analyze
-      - run: flutter test test/execution_audit_test.dart
+      - run: flutter test test/execution_audit_test.dart test/workflow_execution_test.dart
       - run: flutter build web --release
