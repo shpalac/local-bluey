@@ -1,0 +1,23 @@
+name: Temporary BLU-022 pilot protocol validation
+on:
+  pull_request:
+    paths:
+      - 'docs/MAC_PILOT_PROTOCOL.md'
+      - '.github/workflows/temp-blu-022.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check protocol sections and safety gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          file=docs/MAC_PILOT_PROTOCOL.md
+          test -s "$file"
+          for phrase in 'consent' 'SafetyGate' 'Permission denied' 'Offline' 'timeout' 'restart' 'retention' 'CPU' 'RTL' 'Rollback' 'NO-GO' 'sign-off'; do
+            grep -iq "$phrase" "$file" || { echo "Missing: $phrase"; exit 1; }
+          done
