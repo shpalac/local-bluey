@@ -24,6 +24,20 @@ jobs:
           cache: true
       - name: Resolve new SQLCipher dependencies
         run: flutter pub get
+      - name: Format changed Dart sources
+        run: dart format lib/services/encrypted_activity_store.dart lib/services/activity_retention_policy.dart lib/services/data_registry.dart test/encrypted_activity_store_test.dart test/activity_retention_policy_test.dart
+      - name: Capture formatter output for handoff
+        run: |
+          for file in lib/services/encrypted_activity_store.dart lib/services/activity_retention_policy.dart lib/services/data_registry.dart test/encrypted_activity_store_test.dart test/activity_retention_policy_test.dart; do
+            echo "BEGIN_FORMATTED_FILE $file"
+            base64 -w0 "$file"
+            echo
+            echo "END_FORMATTED_FILE $file"
+          done
+      - name: Focused SQLite and policy tests
+        run: flutter test test/encrypted_activity_store_test.dart test/activity_store_test.dart test/activity_retention_policy_test.dart --reporter expanded
+      - name: Analyze
+        run: flutter analyze
       - name: Publish nonsecret lockfile for regeneration
         run: |
           echo BEGIN_RESOLVED_LOCK
