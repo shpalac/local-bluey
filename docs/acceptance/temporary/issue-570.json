@@ -12,7 +12,7 @@
           "tests": [
             {
               "file": "test/workflow_action_approval_test.dart",
-              "name": "denial causes zero side effects"
+              "name": "explicit user refusal has zero side effects"
             },
             {
               "file": "test/workflow_action_approval_test.dart",
@@ -54,7 +54,7 @@
           "tests": [
             {
               "file": "test/workflow_action_approval_test.dart",
-              "name": "safety denial causes zero side effects"
+              "name": "safety explicit user refusal has zero side effects"
             }
           ]
         },
