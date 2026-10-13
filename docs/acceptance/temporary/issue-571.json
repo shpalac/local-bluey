@@ -17,7 +17,8 @@
               "file": "test/postcondition_verifier_test.dart",
               "name": "timeout is inconclusive, including late successful evidence"
             }
-          ]
+          ],
+          "requirement": "Verify BLU-018 ac_1 with named deterministic tests"
         },
         {
           "id": "ac_2",
@@ -47,7 +48,8 @@
               "file": "test/postcondition_verifier_test.dart",
               "name": "missing postconditions fail closed after process restart"
             }
-          ]
+          ],
+          "requirement": "Verify BLU-018 ac_2 with named deterministic tests"
         },
         {
           "id": "ac_3",
@@ -57,7 +59,8 @@
               "file": "test/postcondition_verifier_test.dart",
               "name": "exceptions are inconclusive and never leak exception messages"
             }
-          ]
+          ],
+          "requirement": "Verify BLU-018 ac_3 with named deterministic tests"
         },
         {
           "id": "ac_4",
@@ -67,12 +70,14 @@
               "file": "test/postcondition_verifier_test.dart",
               "name": "confirmed evidence permits state machine completion"
             }
-          ]
+          ],
+          "requirement": "Verify BLU-018 ac_4 with named deterministic tests"
         },
         {
           "id": "end_to_end_gap",
           "type": "gap",
-          "reason": "Production SafetyGate/HostControl readers, TCC permissions and persisted restart integration are not implemented; temporary CI remains."
+          "reason": "Production SafetyGate/HostControl readers, TCC permissions and persisted restart integration are not implemented; temporary CI remains.",
+          "requirement": "Production SafetyGate, HostControl and restart integration"
         }
       ]
     }
