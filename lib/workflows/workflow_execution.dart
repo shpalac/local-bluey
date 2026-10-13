@@ -21,7 +21,12 @@ abstract interface class WorkflowHost {
 
 /// In-memory, single-flight executor. Host implementations must enforce SafetyGate.
 final class WorkflowExecution {
-  WorkflowExecution(this.definition, this.host, {required this.deadline, this.audit});
+  WorkflowExecution(
+    this.definition,
+    this.host, {
+    required this.deadline,
+    this.audit,
+  });
 
   final WorkflowDefinition definition;
   final WorkflowHost host;
