@@ -2,8 +2,10 @@ import '../services/local_semantic_file_retrieval.dart';
 
 /// One offline query with its expected local paths.
 class SyntheticBenchmarkCase {
-  SyntheticBenchmarkCase({required this.query, required Set<String> expectedPaths})
-    : expectedPaths = Set.unmodifiable(expectedPaths);
+  SyntheticBenchmarkCase({
+    required this.query,
+    required Set<String> expectedPaths,
+  }) : expectedPaths = Set.unmodifiable(expectedPaths);
 
   final String query;
   final Set<String> expectedPaths;
@@ -114,12 +116,14 @@ class SyntheticBenchmarkHarness {
       final item = cases[index];
       final start = elapsedClockMicroseconds();
       if (isCancelled?.call() ?? false) {
-        traces.add(SyntheticBenchmarkTrace(
-          query: item.query,
-          status: 'cancelled',
-          elapsedMicroseconds: 0,
-          predictedPaths: const [],
-        ));
+        traces.add(
+          SyntheticBenchmarkTrace(
+            query: item.query,
+            status: 'cancelled',
+            elapsedMicroseconds: 0,
+            predictedPaths: const [],
+          ),
+        );
         break;
       }
 
@@ -134,28 +138,29 @@ class SyntheticBenchmarkHarness {
       final status = elapsed > timeoutMicroseconds
           ? 'timeout'
           : result is LocalSemanticSuccess
-              ? 'success'
-              : result is LocalSemanticNotFound
-                  ? 'notFound'
-                  : 'invalidInput';
+          ? 'success'
+          : result is LocalSemanticNotFound
+          ? 'notFound'
+          : 'invalidInput';
       final predicted = status == 'success'
-          ? ((result as LocalSemanticSuccess)
-              .hits
-              .map((hit) => hit.path)
-              .toSet()
-              .toList()
-            ..sort())
+          ? ((result as LocalSemanticSuccess).hits
+                .map((hit) => hit.path)
+                .toSet()
+                .toList()
+              ..sort())
           : <String>[];
       final actual = predicted.toSet();
       truePositives += actual.intersection(item.expectedPaths).length;
       falsePositives += actual.difference(item.expectedPaths).length;
       falseNegatives += item.expectedPaths.difference(actual).length;
-      traces.add(SyntheticBenchmarkTrace(
-        query: item.query,
-        status: status,
-        elapsedMicroseconds: elapsed,
-        predictedPaths: List.unmodifiable(predicted),
-      ));
+      traces.add(
+        SyntheticBenchmarkTrace(
+          query: item.query,
+          status: status,
+          elapsedMicroseconds: elapsed,
+          predictedPaths: List.unmodifiable(predicted),
+        ),
+      );
       if (status == 'timeout') {
         break;
       }
