@@ -29,10 +29,7 @@ class RecoveryCountingHost implements WorkflowHost {
   }
 }
 
-WorkflowExecution recoveryExecution(
-  File file,
-  RecoveryCountingHost host,
-) {
+WorkflowExecution recoveryExecution(File file, RecoveryCountingHost host) {
   return WorkflowExecution(
     WorkflowDefinition.fromJson({
       'version': 1,
