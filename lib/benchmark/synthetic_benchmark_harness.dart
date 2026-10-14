@@ -139,12 +139,12 @@ class SyntheticBenchmarkHarness {
                   ? 'notFound'
                   : 'invalidInput';
       final predicted = status == 'success'
-          ? (result as LocalSemanticSuccess)
+          ? ((result as LocalSemanticSuccess)
               .hits
               .map((hit) => hit.path)
               .toSet()
               .toList()
-            ..sort()
+            ..sort())
           : <String>[];
       final actual = predicted.toSet();
       truePositives += actual.intersection(item.expectedPaths).length;
