@@ -71,7 +71,7 @@ void main() {
     await execution.reconcileStartup();
     expect(execution.requiresManualRecovery, isTrue);
 
-    execution.acknowledgeRecovery();
+    await execution.acknowledgeRecovery();
     final restarted = recoveryExecution(file, RecoveryCountingHost());
     await restarted.reconcileStartup();
 
