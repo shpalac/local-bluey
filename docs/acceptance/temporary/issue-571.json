@@ -16,6 +16,10 @@
             {
               "file": "test/postcondition_verifier_test.dart",
               "name": "timeout is inconclusive, including late successful evidence"
+            },
+            {
+              "file": "test/host_ax_postcondition_reader_test.dart",
+              "name": "live AX mismatch cannot certify attempted workflow action"
             }
           ],
           "requirement": "Verify BLU-018 ac_1 with named deterministic tests"
@@ -47,6 +51,10 @@
             {
               "file": "test/postcondition_verifier_test.dart",
               "name": "missing postconditions fail closed after process restart"
+            },
+            {
+              "file": "test/host_ax_postcondition_reader_test.dart",
+              "name": "live AX reader requires explicit consent and trusted host"
             }
           ],
           "requirement": "Verify BLU-018 ac_2 with named deterministic tests"
@@ -58,6 +66,10 @@
             {
               "file": "test/postcondition_verifier_test.dart",
               "name": "exceptions are inconclusive and never leak exception messages"
+            },
+            {
+              "file": "test/host_ax_postcondition_reader_test.dart",
+              "name": "kill and reset during AX observation cannot certify success"
             }
           ],
           "requirement": "Verify BLU-018 ac_3 with named deterministic tests"
