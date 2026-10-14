@@ -26,9 +26,7 @@ class OfflineProviderFallbackPolicy {
         try {
           return await local.chat(messages);
         } catch (_) {
-          throw const OfflineProviderException(
-            DegradedMode.brainUnreachable,
-          );
+          throw const OfflineProviderException(DegradedMode.brainUnreachable);
         }
       }
       throw const OfflineProviderException(DegradedMode.brainUnreachable);
