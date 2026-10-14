@@ -224,7 +224,15 @@ final class WorkflowApprovalHost implements WorkflowHost {
         return false;
       }
     }
-    return !_cancelled && !grant.isRevoked;
+    if (_cancelled || grant.isRevoked) {
+      try {
+        await revokeStep(index);
+      } catch (_) {
+        _cancelled = true;
+      }
+      return false;
+    }
+    return true;
   }
 
   @override
