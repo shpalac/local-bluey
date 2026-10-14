@@ -16,7 +16,7 @@ one remediation comment; it never invents the missing requirements.
    `ac_1`, `ac_2`, etc. Specify real platform/device limits,
    negative cases (bad inputs, permission denial, offline, restart,
    cancellation) and explicit exclusions.
-2. **Start work.** Reference the issue with `Refs #123` in the PR body. Add
+2. **Start work.** Reference incomplete work with `Refs #123` in the PR body. Use a separate line `AutoClose #123` only when the PR proves **every** numbered acceptance criterion and should be automatically squash-merged and closed after green main CI. Add
    `docs/acceptance/temporary/issue-123.json` and real issue-only tests in
    `test/issues/issue_123_test.dart` (or a suitable existing `test/` file).
    Each automated criterion names exact file and test case, not only a path.
@@ -24,25 +24,31 @@ one remediation comment; it never invents the missing requirements.
    manifest and runs each named temporary test on PRs. A skipped, missing,
    timed-out or failing test blocks issue acceptance. General static, coverage,
    native build, security and Android integration jobs still run.
-4. **Promote.** Add an end-to-end feature journey with error/regression cases
+4. **Promote when useful.** Add an end-to-end feature journey with error/regression cases
    in `integration_test/features/<feature>_test.dart`. Create a permanent
    `docs/acceptance/permanent/issue-123.json` mapping the issue to actual
    named integration tests. These run on the existing Android emulator matrix.
    Keep relevant smaller unit tests in the ordinary `test/` suite.
-5. **Remove temporary evidence.** In the same change, delete the temporary
+5. **Remove redundant temporary evidence after promotion.** In the same change, delete the temporary
    manifest and issue-only tests that are genuinely redundant. Do not remove
    production regression tests. The gate rejects both manifests being present.
-6. **Finish.** Use `Closes #123` only after the permanent mapping exists,
-   automated tests pass at the exact PR head, and every remaining criterion
-   is genuinely resolved. Human/device-only criteria require separate
-   maintainer evidence; the gate intentionally rejects automatic closing when
-   any such criterion is still declared manual or unimplemented.
+6. **Finish automatically.** The issue-scoped CI requires exact test names,
+   successful unskipped execution and an exact match between all live issue
+   AC identifiers and the temporary **or** permanent manifest. Any `manual`
+   or `gap` criterion, legacy manifest, missing test or skipped result blocks
+   `AutoClose`. For opted-in PRs the trusted workflow enables GitHub squash
+   auto-merge only after CI succeeds at the exact PR head. After merge, a
+   separate trusted workflow waits for successful CI on the merge commit in
+   `main`, rechecks the live issue and manifest and then closes the issue.
+   GitHub-native `Closes #123` closes **immediately on merge** and bypasses
+   this post-main-CI delay: use `AutoClose #123` for this automation.
 
 Do not add a GitHub Actions YAML file per issue. The existing permanent
 `acceptance-evidence` job is the lightweight dispatcher. **Temporary CI**
 means temporary issue-only acceptance tests and the issue manifest, not a
 permanent job in the Actions UI. The issue's named assertions disappear from
-that dispatcher only when permanent tests replace them.
+that dispatcher only when permanent tests replace them, or when the targeted feature suite continues to
+run under the normal regression CI.
 
 ## Manifest example (temporary)
 
@@ -102,7 +108,7 @@ issue-specific test manifests. That is **work remaining**, not proof they
 have passed. The baseline `docs/acceptance/criteria.json` and older
 `docs/acceptance/issue-N.json` entries remain supported for incremental
 migration. Those *legacy* mappings are useful evidence for `Refs` PRs, but
-do not authorize issue-closing keywords.
+do not authorize automated issue closure.
 
 **Boundaries:** Android emulators verify the flows they can actually run.
 macOS Screen Recording/Accessibility (TCC), physical audio behavior, real
@@ -113,6 +119,25 @@ from a simulation-only run. Research, security review, documentation and
 native-only issues may require specific non-Flutter checks or human sign-off
 rather than an artificial app integration test; introduce a suitable audited
 verification contract for those before trying to auto-close them.
+
+## Automatic merge and closure contract
+
+- No automation is enabled for existing `Refs` PRs. Authors choose
+  `AutoClose #N` only after completing **all** the requirements; this is an
+  explicit machine-readable opt-in, not an issue closure shortcut.
+- Both workflows execute trusted `main` code only. Neither checks out or
+  executes a contributor branch with a privileged token.
+- The PR CI must succeed at the exact head SHA, including issue-specific
+  test evidence and the required aggregate gate. Main CI must succeed at the
+  exact merged SHA before the issue is closed. Documentation-only merges also
+  trigger main CI.
+- Permanent integration tests are recommended for real user journeys, but
+  not mandatory for narrowly scoped pure-Dart or documentation issues with
+  complete temporary automated evidence. Real-device/TCC criteria remain
+  open until a valid automated verification exists; no CI mock is a substitute.
+- Branch protection should require the repository `build` aggregate and
+  relevant platform/security checks. Auto-merge obeys GitHub protection rules;
+  absent rules, a green CI workflow can trigger immediate merge.
 
 ## Security
 

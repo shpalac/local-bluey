@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches: [main]
-    paths-ignore: ['**.md', 'docs/**']
   # No paths-ignore on pull_request: the required checks must report on
   # docs-only PRs too, or branch protection leaves them unmergeable.
   pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
   # Weekly dependency/vulnerability scan so new advisories against an
   # unchanged lockfile are noticed (#144). Only the security and
   # pinned-actions jobs run on schedule.
@@ -160,6 +160,10 @@ jobs:
         run: python3 -m unittest discover -s tool -p test_acceptance_criteria.py
       - name: Validate issue task lifecycle test fixtures
         run: python3 -m unittest discover -s tool -p test_issue_task_ci.py
+      - name: Validate acceptance-driven merge and closure fixtures
+        run: |
+          python3 -m unittest discover -s tool -p test_issue_auto_merge.py
+          python3 -m unittest discover -s tool -p test_issue_auto_close.py
       - name: Validate issue creation and edit hygiene fixtures
         run: python3 -m unittest discover -s tool -p test_issue_task_hygiene.py
       - name: Enforce issue contracts and run temporary acceptance tests

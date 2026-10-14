@@ -7,69 +7,57 @@
       "criteria": [
         {
           "id": "ac_1",
-          "requirement": "Ordered transitions, single-flight, timeout and cancellation with fake host",
           "type": "automated",
+          "requirement": "Exact ordering; timeout/cancel safe with fake HostControl",
           "tests": [
             {
-              "file": "test/workflow_execution_test.dart",
-              "name": "ordered happy path and single-flight"
+              "file": "test/workflow_execution_integration_test.dart",
+              "name": "WorkflowExecution integrates approval host and audit happy path"
             },
             {
-              "file": "test/workflow_execution_test.dart",
-              "name": "cancelled execution never verifies"
-            },
-            {
-              "file": "test/workflow_execution_test.dart",
-              "name": "timeout fails closed"
+              "file": "test/workflow_execution_integration_test.dart",
+              "name": "WorkflowExecution stops after cancellation and does not continue"
             }
           ]
         },
         {
           "id": "ac_2",
-          "requirement": "Malformed input and permission denial, verification failure with fake host",
           "type": "automated",
+          "requirement": "Happy path, malformed input, timeout, cancellation, permission denied, offline and restart cases are tested where applicable",
           "tests": [
             {
-              "file": "test/workflow_execution_test.dart",
-              "name": "invalid DSL is rejected before execution"
-            },
-            {
-              "file": "test/workflow_execution_test.dart",
-              "name": "permission denied fails closed"
-            },
-            {
-              "file": "test/workflow_execution_test.dart",
-              "name": "verification failure stops workflow"
+              "file": "test/workflow_execution_integration_test.dart",
+              "name": "WorkflowExecution rejects interrupted restart without replay"
             }
           ]
         },
         {
           "id": "ac_3",
-          "requirement": "Execution has no built-in network or storage and requires host approval",
           "type": "automated",
+          "requirement": "No unintended egress, secret retention, or unsafe auto-execution",
           "tests": [
             {
-              "file": "test/workflow_execution_test.dart",
-              "name": "permission denied fails closed"
+              "file": "test/workflow_execution_integration_test.dart",
+              "name": "WorkflowExecution rejects interrupted restart without replay"
             }
           ]
         },
         {
           "id": "ac_4",
-          "requirement": "Dart analyze and focused unit tests pass in CI",
           "type": "automated",
+          "requirement": "Dart analyze and focused tests pass in CI",
           "tests": [
             {
-              "file": "test/workflow_execution_test.dart",
-              "name": "ordered happy path and single-flight"
+              "file": "test/workflow_execution_integration_test.dart",
+              "name": "WorkflowExecution integrates approval host and audit happy path"
             }
           ]
         },
         {
           "id": "runtime_integration_gap",
-          "requirement": "Production SafetyGate, local permissions, offline, restart and host cancellation integration",
           "type": "gap",
-          "reason": "This PR supplies an isolated in-memory execution core only. HostControl and SafetyGate production integration with end-to-end CI remains outstanding; do not close the issue."
+          "requirement": "Native iOS simulator TCC grant UX validation",
+          "reason": "Requires macOS simulator lane with simctl privacy execution evidence."
         }
       ]
     }

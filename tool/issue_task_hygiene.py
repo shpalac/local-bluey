@@ -61,7 +61,13 @@ def main() -> int:
         body = issue.get("body") or ""
         if not isinstance(number, int) or not isinstance(body, str):
             raise ContractError("invalid issue event")
-        validate_issue_body(body, number)
+        criteria = validate_issue_body(body, number)
+        # Preserve migration of older issues, but never accept a newly opened
+        # unnumbered task that could not obtain exact AC-to-test coverage.
+        if event.get("action") == "opened" and not criteria:
+            raise ContractError(
+                f"#{number}: new issues require numbered AC-1:, AC-2:, ... criteria"
+            )
         print(f"#{number}: acceptance criteria and CI plan present.")
         return 0
     except ContractError as exc:

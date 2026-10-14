@@ -13,6 +13,7 @@ import 'characters.dart';
 import 'haptics.dart';
 import 'conversation.dart';
 import 'egress_monitor.dart';
+import 'encrypted_activity_store.dart';
 import 'model_store.dart';
 import 'perf_monitor.dart';
 import 'permission_watchdog.dart';
@@ -81,6 +82,16 @@ class DataRegistry {
       retentionEn: 'Until revoked or app restart',
       retentionHe: 'עד לביטול ההרשאה או להפעלה מחדש',
       clear: () async => FileIndex.instance.revoke(),
+    ),
+    DataStoreInfo(
+      id: 'activity_store',
+      sourceFile: 'lib/services/encrypted_activity_store.dart',
+      whatEn: 'Opt-in redacted activity metadata',
+      whatHe: 'מטא-דאטה של פעילות שאושרה לשמירה',
+      where: 'Application Support (encrypted SQLCipher database, Keychain key)',
+      retentionEn: 'Off unless opted in; up to 7 days',
+      retentionHe: 'כבוי עד לאישור מפורש; עד 7 ימים',
+      clear: EncryptedActivityStore.deleteDefault,
     ),
     DataStoreInfo(
       id: 'hold_key_pref',

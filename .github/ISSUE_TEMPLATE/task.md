@@ -25,8 +25,8 @@ Describe the observable result and the user or system behavior that must change.
 - **Temporary issue test file:** `test/issues/issue_<number>_test.dart`
 - **Temporary manifest:** `docs/acceptance/temporary/issue-<number>.json`
 - **Required negative/edge tests:** Document applicable cases and explicitly justify exclusions.
-- **Permanent feature integration test:** `integration_test/features/<feature>_test.dart`
-- **Permanent manifest:** `docs/acceptance/permanent/issue-<number>.json`
+- **Permanent feature integration test (when relevant):** `integration_test/features/<feature>_test.dart`
+- **Permanent manifest (when promoted):** `docs/acceptance/permanent/issue-<number>.json`
 - **Runner:** Ubuntu unit/widget and Android emulator integration; macOS/iOS where applicable.
 - **Manual or device-only criteria:** Name the device, evidence and reviewer; never claim hosted CI proves them.
 
@@ -34,7 +34,7 @@ Describe the observable result and the user or system behavior that must change.
 
 - [ ] Every applicable acceptance criterion has observed evidence on the exact PR head.
 - [ ] Temporary tests fail before the fix and pass afterwards (when feasible).
-- [ ] Permanent integration tests cover the complete feature journey and regression cases.
+- [ ] Every AC is proven by temporary or permanent named tests; feature journeys have integration coverage when relevant.
 - [ ] Temporary manifest and redundant temporary tests are removed only after promotion.
-- [ ] Existing required CI, security checks and reviewers pass.
-- [ ] Docs, rollback notes and traceability are updated; close only after review.
+- [ ] Existing required CI and security checks pass. `AutoClose #N` enables automated squash merge and post-main-CI closure only when all ACs are automated.
+- [ ] Docs, rollback notes and traceability are updated; any manual/device or implementation gap blocks automatic closure.

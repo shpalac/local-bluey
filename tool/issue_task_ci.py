@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Enforce per-issue acceptance evidence on linked pull requests.
 
-A temporary issue manifest runs targeted tests during implementation. Its
-permanent replacement must contain end-to-end coverage before a PR can use
-a closing keyword. This gate never certifies human-only or hardware checks.
+A temporary issue manifest runs targeted tests during implementation. A
+closing PR may use temporary or permanent evidence, but every acceptance
+criterion must have executable coverage; no manual/gap entries can close.
+This gate never certifies human-only or hardware checks.
 """
 import argparse
 import json
@@ -17,7 +18,7 @@ from urllib.request import Request, urlopen
 import acceptance_criteria as acceptance
 
 REFERENCE = re.compile(
-    r"(?i)\b(closes?|fix(?:es|ed)?|resolves?|refs?)\s+#([1-9]\d*)"
+    r"(?i)\b(auto-?closes?|closes?|fix(?:es|ed)?|resolves?|refs?)\s+#([1-9]\d*)"
 )
 ACCEPTANCE_HEADING = re.compile(
     r"(?ims)^##\s+Acceptance criteria\s*$([\s\S]*?)(?=^##\s+|\Z)"
@@ -48,7 +49,7 @@ def linked_issues(body: str) -> dict[int, bool]:
         if re.search(r"(?i)\b(?:do\s+not|don't|never|not)\s+$", context):
             continue
         number = int(raw_number)
-        closing = kind.lower().startswith(("close", "fix", "resolve"))
+        closing = kind.lower().startswith(("auto", "close", "fix", "resolve"))
         found[number] = found.get(number, False) or closing
     return found
 
@@ -152,15 +153,26 @@ def validate_stage(root: Path, number: int, path: Path,
                 f"#{number}: remove temporary manifest after permanent coverage is added"
             )
     if closing:
-        if stage != "permanent":
+        # Do not count one unrelated test case as independent evidence for
+        # several acceptance criteria. Each AC needs its own named assertion.
+        ownership = {}
+        for criterion in automated:
+            for case in criterion["tests"]:
+                key = (case["file"], case["name"])
+                previous = ownership.setdefault(key, criterion["id"])
+                if previous != criterion["id"]:
+                    raise ContractError(
+                        f"#{number}: one named test cannot certify multiple ACs"
+                    )
+        if stage == "legacy":
             raise ContractError(
-                f"#{number}: use Refs until permanent feature integration coverage exists"
+                f"#{number}: closing requires an issue-specific temporary or permanent manifest"
             )
         if any(item["type"] == "gap" for item in criteria):
             raise ContractError(f"#{number}: outstanding implementation gaps")
         if any(item["type"] == "manual" for item in criteria):
             raise ContractError(
-                f"#{number}: manual criteria require separate maintainer verification; "
+                f"#{number}: manual criteria require separate verification; "
                 "do not auto-close this issue"
             )
     return record
@@ -190,6 +202,17 @@ def check(root: Path, repository: str, body: str, token: str, mode: str,
         issue_body = issue_fetcher(repository, number, token)
         acceptance_ids = validate_issue_body(issue_body, number)
         path, stage = select_manifest(root, number)
+        # Native GitHub closing keywords close at merge time, before main CI.
+        # All automated issue closures must opt in to deferred AutoClose.
+        if closing:
+            clean_body = re.sub(
+                r"(?ms)^\x60\x60\x60.*?^\x60\x60\x60[^\n]*(?:\n|$)",
+                "", body,
+            )
+            if not re.search(rf"(?im)^\s*AutoClose\s+#{number}\s*$", clean_body):
+                raise ContractError(
+                    f"#{number}: automatic closing requires a standalone AutoClose marker"
+                )
         record = validate_stage(root, number, path, stage, closing)
         if closing and not acceptance_ids:
             raise ContractError(f"#{number}: number all acceptance criteria as AC-1:, AC-2:, ...")
@@ -200,6 +223,9 @@ def check(root: Path, repository: str, body: str, token: str, mode: str,
             if not acceptance_ids.issubset(mapped_ids):
                 missing = ", ".join(sorted(acceptance_ids - mapped_ids))
                 raise ContractError(f"#{number}: acceptance criteria missing test mappings: {missing}")
+            if closing and mapped_ids != acceptance_ids:
+                extra = ", ".join(sorted(mapped_ids - acceptance_ids))
+                raise ContractError(f"#{number}: unmapped issue contract criteria: {extra}")
         records.append(record)
         print(f"#{number}: {stage} acceptance contract ({path.relative_to(root)})")
     tests = expected_tests(records, mode)

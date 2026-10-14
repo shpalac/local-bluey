@@ -35,9 +35,11 @@ void main() {
   group('pull request template', () {
     final text = read('.github/PULL_REQUEST_TEMPLATE.md');
 
-    test('links work with Refs and reserves Closes for full acceptance', () {
+    test('Refs for partial work and AutoClose for complete work', () {
       expect(text, contains('Refs #<issue-number>'));
-      expect(text, contains('Closes #<issue-number>'));
+      expect(text, contains('AutoClose #<issue-number>'));
+      expect(text, contains('Closes'));
+      expect(text, contains('closes immediately on merge'));
     });
 
     test('has acceptance evidence, security, rollback and device sections', () {
@@ -45,7 +47,7 @@ void main() {
       expect(text, contains('## Security, privacy and rollback'));
       expect(text, contains('Rollback:'));
       expect(text, contains('## Manual and device-only evidence'));
-      expect(text, contains('## CI and merge'));
+      expect(text, contains('## CI and automatic closure'));
     });
 
     test('forbids privacy gate bypass and unapproved egress', () {
