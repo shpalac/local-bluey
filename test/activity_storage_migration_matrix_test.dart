@@ -32,7 +32,7 @@ void main() {
   void editEncryptedDatabase(void Function(Database db) edit) {
     final db = sqlite3.open(file.path);
     try {
-    db.execute("PRAGMA key = \"x'${vault.key}'\"");
+      db.execute("PRAGMA key = \"x'${vault.key}'\"");
       expect(db.select('PRAGMA cipher_version'), isNotEmpty);
       edit(db);
     } finally {
@@ -58,9 +58,7 @@ void main() {
     editEncryptedDatabase((db) {
       expect(db.select('PRAGMA user_version').single.values.first, 1);
       expect(
-        db.select(
-          "SELECT name FROM sqlite_master WHERE name='activity_steps'",
-        ),
+        db.select("SELECT name FROM sqlite_master WHERE name='activity_steps'"),
         hasLength(1),
       );
     });
@@ -68,25 +66,28 @@ void main() {
     second.close();
   });
 
-  test('future schema downgrade refuses without rewriting ciphertext', () async {
-    final first = await open();
-    first.close();
-    editEncryptedDatabase((db) {
-      db.execute('PRAGMA user_version = 2');
-    });
-    final original = await file.readAsBytes();
-    await expectLater(
-      open(),
-      throwsA(
-        isA<EncryptedActivityException>().having(
-          (error) => error.reason,
-          'reason',
-          'unsupported schema version',
+  test(
+    'future schema downgrade refuses without rewriting ciphertext',
+    () async {
+      final first = await open();
+      first.close();
+      editEncryptedDatabase((db) {
+        db.execute('PRAGMA user_version = 2');
+      });
+      final original = await file.readAsBytes();
+      await expectLater(
+        open(),
+        throwsA(
+          isA<EncryptedActivityException>().having(
+            (error) => error.reason,
+            'reason',
+            'unsupported schema version',
+          ),
         ),
-      ),
-    );
-    expect(await file.readAsBytes(), original);
-  });
+      );
+      expect(await file.readAsBytes(), original);
+    },
+  );
 
   test('unknown legacy schema refuses instead of migrating', () async {
     final first = await open();
@@ -95,10 +96,7 @@ void main() {
       db.execute('PRAGMA user_version = 0');
     });
     final original = await file.readAsBytes();
-    await expectLater(
-      open(),
-      throwsA(isA<EncryptedActivityException>()),
-    );
+    await expectLater(open(), throwsA(isA<EncryptedActivityException>()));
     expect(await file.readAsBytes(), original);
   });
 

@@ -17,10 +17,12 @@ final class ActivitySchemaPreflight {
       throw StateError('database schema migration is unavailable');
     }
     if (version == 0 &&
-        database.select(
-          "SELECT name FROM sqlite_master WHERE type='table' "
-          "AND name NOT LIKE 'sqlite_%'",
-        ).isNotEmpty) {
+        database
+            .select(
+              "SELECT name FROM sqlite_master WHERE type='table' "
+              "AND name NOT LIKE 'sqlite_%'",
+            )
+            .isNotEmpty) {
       throw StateError('unrecognized legacy database schema');
     }
   }
