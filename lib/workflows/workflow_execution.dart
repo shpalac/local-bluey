@@ -71,11 +71,14 @@ final class WorkflowExecution {
       return status;
     }
     try {
-      return await _execute().timeout(deadline, onTimeout: () {
-        _cancelled = true;
-        status = WorkflowStatus.failed;
-        return status;
-      });
+      return await _execute().timeout(
+        deadline,
+        onTimeout: () {
+          _cancelled = true;
+          status = WorkflowStatus.failed;
+          return status;
+        },
+      );
     } catch (_) {
       status = WorkflowStatus.failed;
       return status;
