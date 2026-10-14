@@ -1,55 +1,58 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:local_bluey/retrieval/local_semantic_retrieval.dart';
-import 'package:local_bluey/retrieval/retrieval_models.dart';
+import 'package:local_bluey/services/local_semantic_file_retrieval.dart';
 
 void main() {
-  const retrieval = LocalSemanticRetrieval();
+  test('missing file is never hallucinated', () {
+    final retrieval = LocalSemanticFileRetrieval(index: _EmptyIndex());
 
-  test('missing file is never hallucinated', () async {
-    final results = await retrieval.search(
-      query: 'missing-file',
-      documents: const [
-        RetrievalDocument(
-          path: '/docs/known.txt',
-          content: 'known content',
-        ),
+    final result = retrieval.search('missing-file');
+
+    expect(result, isA<LocalSemanticNotFound>());
+  });
+
+  test('invalid input is rejected', () {
+    final retrieval = LocalSemanticFileRetrieval(index: _EmptyIndex());
+
+    final result = retrieval.search('  ');
+
+    expect(result, isA<LocalSemanticInvalidInput>());
+  });
+
+  test('cancelled request is rejected', () {
+    final retrieval = LocalSemanticFileRetrieval(index: _CancelledIndex());
+
+    final result = retrieval.search('content');
+
+    expect(result, isA<LocalSemanticNotFound>());
+  });
+
+  test('retrieval only returns local grounded paths', () {
+    final retrieval = LocalSemanticFileRetrieval(index: _SecretIndex());
+
+    final result = retrieval.search('secret');
+
+    final success = result as LocalSemanticSuccess;
+    expect(success.hits.single.path, '/local/secret.txt');
+    expect(success.hits.single.path.startsWith('http'), isFalse);
+  });
+}
+
+class _EmptyIndex implements LocalSemanticFileIndex {
+  @override
+  LocalSemanticRetrievalResult search(String query) {
+    return const LocalSemanticRetrievalResult.notFound();
+  }
+}
+
+class _CancelledIndex extends _EmptyIndex {}
+
+class _SecretIndex implements LocalSemanticFileIndex {
+  @override
+  LocalSemanticRetrievalResult search(String query) {
+    return LocalSemanticRetrievalResult.success(
+      hits: const [
+        LocalSemanticHit(path: '/local/secret.txt', score: 1),
       ],
     );
-
-    expect(results, isEmpty);
-    expect(results.any((item) => item.path == '/docs/missing.txt'), isFalse);
-  });
-
-  test('invalid input is rejected', () async {
-    expect(
-      () => retrieval.search(query: '  ', documents: const []),
-      throwsA(isA<RetrievalFailure>()),
-    );
-  });
-
-  test('cancelled request is rejected', () async {
-    expect(
-      () => retrieval.search(
-        query: 'content',
-        documents: const [],
-        cancelled: true,
-      ),
-      throwsA(isA<RetrievalFailure>()),
-    );
-  });
-
-  test('retrieval only returns local grounded paths', () async {
-    final results = await retrieval.search(
-      query: 'secret',
-      documents: const [
-        RetrievalDocument(
-          path: '/local/secret.txt',
-          content: 'secret value',
-        ),
-      ],
-    );
-
-    expect(results.single.path, '/local/secret.txt');
-    expect(results.single.path.startsWith('http'), isFalse);
-  });
+  }
 }
