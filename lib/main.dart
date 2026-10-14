@@ -97,8 +97,12 @@ void main() async {
   final recoveryStore = FileDurableRecoveryStore(
     File('${recoveryDirectory.path}/workflow_recovery.json'),
   );
-  await recoveryStore
-      .load(); // Corrupt metadata stops startup; never auto-resume.
+  try {
+    await recoveryStore.load(); // Fail closed: never auto-resume.
+  } on FormatException {
+    // Corrupt metadata blocks recovery, not app startup.
+    await recoveryStore.clear();
+  }
   final profile = SupportMatrix.profile();
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
