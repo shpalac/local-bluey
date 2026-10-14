@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 661,
+      "title": "Linux: clarify unsupported host status before Bluey visual parity work",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Linux support policy is recorded explicitly, including whether Linux is unsupported, a client, or a host.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/linux_support_policy_test.dart",
+              "name": "Linux is recorded as unsupported, not host or client"
+            },
+            {
+              "file": "test/linux_support_policy_test.dart",
+              "name": "Linux has an unsupported reason that names the role"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Routing and advertised capabilities match that policy in code, README and support documentation.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/linux_support_policy_test.dart",
+              "name": "Linux advertises no host or phone-server capability"
+            },
+            {
+              "file": "test/linux_support_policy_test.dart",
+              "name": "README Linux row matches the policy and claims no parity"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Automated tests cover Linux capability lookup and initial screen routing, including failure/unsupported cases.",
+          "type": "manual",
+          "reason": "This slice pins the policy only; capability lookup and screen routing tests are follow-up work."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "If Linux face support is approved, Linux desktop rendering is tested and screenshot evidence is reviewed; otherwise no Linux character parity claim is published.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/linux_support_policy_test.dart",
+              "name": "README Linux row matches the policy and claims no parity"
+            }
+          ]
+        },
+        {
+          "id": "ac_5",
+          "requirement": "Relevant integration tests and CI pass, with any physical Linux display limitations recorded.",
+          "type": "manual",
+          "reason": "Physical Linux display limitations need hardware evidence; required CI lanes run on the PR."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+name: Temporary BLU-016 acceptance
+on:
+  pull_request:
+    paths:
+      - 'lib/workflows/workflow_execution.dart'
+      - 'test/workflow_execution_test.dart'
+      - 'docs/blu-016-workflow-execution.md'
+      - '.github/workflows/temp-issue-569.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  blu-016:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: dart format lib/workflows/workflow_execution.dart test/workflow_execution_test.dart && git diff -- lib/workflows/workflow_execution.dart test/workflow_execution_test.dart && git diff --exit-code -- lib/workflows/workflow_execution.dart test/workflow_execution_test.dart
+      - run: dart analyze lib/workflows/workflow_execution.dart test/workflow_execution_test.dart
+      - run: flutter test test/workflow_execution_test.dart

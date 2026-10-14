@@ -654,3 +654,49 @@ New `tool/perf_summary.dart` turns PerfMonitor's perf.jsonl into per-stage count
 ### #599 Workflow security static guard (partial)
 
 New `test/workflow_security_guard_test.dart` (26 cases) runs in the normal `flutter test` lane and checks, for every file in `.github/workflows`: a top-level `permissions:` block exists; top-level write scopes are limited to an in-test allowlist (issues: write for ci-metrics, flutter-version-check, issue-task-hygiene; nothing else), no `write-all`; no `pull_request_target`; no `secrets: inherit`. It also runs the existing `.github/scripts/check-pinned-actions.sh` against the real workflows and against fabricated movable-tag, short-SHA and full-SHA fixtures. This guards workflow text only. It cannot see repository settings (default token policy, branch protection, push protection), does not check job-level permissions, artifact handling or fork-PR isolation, and no workflow file was changed. Full #599 acceptance is not claimed. Rollback: delete the test and this entry. Issue stays OPEN.
+
+### #635 Issue and PR template contract (partial)
+
+The existing task, feature and bug issue templates and the PR template already carried objective, AC-1..AC-3, temporary/permanent manifest and Definition of Done fields. This slice adds two PR template sections (security, privacy and rollback; manual and device-only evidence), an issue template config.yml that keeps blank issues enabled, and `test/github_templates_test.dart` (8 cases) that fails if those fields are removed. This guards the text of the templates only. It does not prove contributors fill them in, add label automation, a security assessment workflow, release or incident runbooks (BLU-079), or full #635 acceptance. Rollback: revert the template edits, config.yml, test and this entry. Issue stays OPEN.
+
+### #661 Linux support policy pinned (partial)
+
+New `test/linux_support_policy_test.dart` (4 cases) pins the current policy: Linux profile role is `unsupported`, it advertises no host, window-management, phone-server or Mac-link capability, it has an unsupported reason, and the README Linux row says unsupported and makes no parity claim. Initial-screen routing for Linux to `UnsupportedScreen` was already covered in `test/unsupported_screen_test.dart`. This records the existing policy only. Whether Linux should become a host or client is an owner decision that is not made here; no Linux face rendering, screenshot evidence or `docs/acceptance` JSON promotion was done, so AC-4 and AC-5 are not met. Full #661 acceptance is not claimed. Rollback: delete the test and this entry. Issue stays OPEN.
+
+
+## BLU-021 / #577 synthetic benchmark evidence (partial)
+
+PR #737 introduces the pure in-memory benchmark and fake-clock trace harness.
+AC-1: deterministic confusion-matrix metrics and duration fixtures in
+`test/benchmark/`. AC-2: synthetic exit classifications exercised for success,
+invalid input, offline, timeout, permission denial, cancellation, and restart;
+these are not production end-to-end device tests. AC-3: no transport, IO,
+secret storage or action executor in these modules. AC-4: not applicable to
+this non-user-facing module. Temporary CI:
+`.github/workflows/temp-issue-577.yml`. BLU-006/BLU-008 integration and
+end-to-end regression evidence remain outstanding; #577 must remain OPEN.
+
+## BLU-022 protocol-only tracking (Refs #578)
+
+This entry does not revise the historical reconciliation above. The
+[macOS pilot protocol](MAC_PILOT_PROTOCOL.md) and scoped temporary docs CI
+are proposed in PR #738. AC-1 signed pilot review, AC-2 physical macOS
+permission/restart and cancellation cases, AC-3 actual egress/retention
+verification, and AC-4 real accessibility/RTL verification remain **deferred**.
+There is no claim of pilot execution, green native checks, or issue closure.
+Dependencies: BLU-011 and BLU-020. A reviewer must record exact build SHA,
+manual evidence and a go/no-go decision before disposition.
+
+
+## BLU-028 — opt-in file indexing (partial; Refs #584)
+
+See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.
+
+
+## BLU-034 Playwright MCP (issue #590)
+
+The temporary [acceptance manifest](acceptance/temporary/issue-590.json) maps AC-1 through AC-4. Deterministic fake tests cover hostile pages, blocked hosts and failure/session paths. Production MCP transport, download sandbox, ActionLog/privacy registry integration and accessible RTL consent require manual verification before enabling browser execution. This isolated contract does not establish native readiness.
+
+### BLU-031 voice verification (#587)
+
+Temporary criterion-by-criterion evidence: [`docs/acceptance/temporary/issue-587.json`](acceptance/temporary/issue-587.json). Fake-only Dart tests cover spoofed/matched speakers retaining SafetyGate confirmation, invalid scores, absent spoof evidence, denied permission, offline, timeout, cancellation, revocation and restart. The default-off module makes no network or persistence calls. Accessibility/RTL device UI, calibrated anti-spoof accuracy, real enrollment and device permission evidence remain **manual gaps**. Keep #587 open pending native verification.

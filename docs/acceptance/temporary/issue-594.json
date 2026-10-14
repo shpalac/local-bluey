@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 594,
+      "title": "BLU-038 macOS native build lane",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "macOS build smoke and native tests",
+          "type": "manual",
+          "reason": "Requires macOS GitHub runner execution evidence; the lane's own CI run is the evidence, not a repository test."
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Results are deterministic and reproducible; all failures are explicit and actionable",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/macos_build_lane_manifest_test.dart",
+              "name": "macOS build lane manifest is deterministic"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/macos_build_lane_manifest_test.dart",
+              "name": "macOS build lane manifest contains no secrets or network requirements"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Backwards compatibility and cross-platform behavior reviewed; no unsupported capability falsely advertised",
+          "type": "manual",
+          "reason": "Cross-platform compatibility review requires maintainers to validate supported platform behavior."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 764,
+      "title": "BLU-020 follow-up durable recovery persistence and WorkflowExecution wiring",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Recovery metadata survives a simulated restart",
+          "tests": [
+            {
+              "file": "test/durable_recovery_store_test.dart",
+              "name": "recovery metadata survives simulated restart"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "WorkflowExecution startup surfaces interrupted executions for manual acknowledgement",
+          "tests": [
+            {
+              "file": "test/workflow_execution_recovery_test.dart",
+              "name": "interrupted execution surfaces for manual acknowledgement"
+            },
+            {
+              "file": "test/workflow_execution_recovery_test.dart",
+              "name": "acknowledged recovery allows execution to proceed"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "automated",
+          "requirement": "No automatic replay of host actions",
+          "tests": [
+            {
+              "file": "test/workflow_execution_recovery_test.dart",
+              "name": "pending recovery blocks run and never replays host actions"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "type": "gap",
+          "requirement": "SafetyGate/TCC device validation",
+          "reason": "Requires native macOS hardware validation and remains a manual gap."
+        }
+      ]
+    }
+  ]
+}

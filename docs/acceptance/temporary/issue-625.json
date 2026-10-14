@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 625,
+      "title": "BLU-068 Permission center",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Revocation blocks next action immediately.",
+          "tests": [
+            {
+              "file": "test/permission_center_test.dart",
+              "name": "grant then allows true and revoke immediately blocks action"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Deterministic results with explicit permission failures.",
+          "tests": [
+            {
+              "file": "test/permission_center_test.dart",
+              "name": "expired grant does not silently allow action"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "gap",
+          "requirement": "Native privacy and device permission validation.",
+          "reason": "Requires native device permission surfaces and remains a manual gap."
+        },
+        {
+          "id": "ac_4",
+          "type": "gap",
+          "requirement": "Platform-specific behavior compatibility.",
+          "reason": "Requires supported native platform validation."
+        }
+      ]
+    }
+  ]
+}

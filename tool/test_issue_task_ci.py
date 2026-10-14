@@ -84,6 +84,10 @@ class IssueTaskTests(unittest.TestCase):
             task.linked_issues("Refs #42\nCloses #42\nRefs #43\nFixes #44"),
             {42: True, 43: False, 44: True},
         )
+        self.assertEqual(
+            task.linked_issues("AutoClose #42. Refs #43"),
+            {42: True, 43: False},
+        )
 
     def test_markdown_examples_are_not_live_issue_links(self):
         tick = chr(96)
@@ -106,7 +110,7 @@ class IssueTaskTests(unittest.TestCase):
         self.promotion()
         self.body = self.body.replace("AC-1:", "Expected:")
         with self.assertRaisesRegex(task.ContractError, "number all acceptance"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
 
     def test_partially_numbered_acceptance_is_rejected(self):
         self.body = self.body.replace("\n## CI and validation", "\n- [ ] Another criterion without a number.\n\n## CI and validation")
@@ -127,9 +131,56 @@ class IssueTaskTests(unittest.TestCase):
             "test/issues/issue_42_test.dart": {"rejects invalid request"},
         }])
 
-    def test_temporary_manifest_cannot_close(self):
-        with self.assertRaisesRegex(task.ContractError, "permanent"):
+    def test_complete_temporary_manifest_can_close(self):
+        self.assertTrue(self.check("AutoClose #42"))
+
+    def test_native_close_keyword_cannot_bypass_main_ci(self):
+        with self.assertRaisesRegex(task.ContractError, "standalone AutoClose"):
             self.check("Closes #42")
+
+    def test_closing_rejects_unmapped_extra_criterion(self):
+        path = self.root / "docs/acceptance/temporary/issue-42.json"
+        test_path = self.root / "test/issues/issue_42_test.dart"
+        test_path.write_text(
+            test_path.read_text() + "test('another assertion', () {});\n"
+        )
+        manifest = json.loads(path.read_text())
+        manifest["issues"][0]["criteria"].append({
+            "id": "ac_2", "requirement": "Another assertion", "type": "automated",
+            "tests": [{"file": "test/issues/issue_42_test.dart",
+                       "name": "another assertion"}],
+        })
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(task.ContractError, "unmapped issue contract"):
+            self.check("AutoClose #42")
+
+    def test_one_test_cannot_certify_multiple_criteria(self):
+        path = self.root / "docs/acceptance/temporary/issue-42.json"
+        self.body = self.body.replace(
+            "## CI and validation",
+            "- [ ] AC-2: Reject malformed data without side effects.\n\n"
+            "## CI and validation",
+        )
+        manifest = json.loads(path.read_text())
+        manifest["issues"][0]["criteria"].append({
+            "id": "ac_2", "requirement": "Second behavior", "type": "automated",
+            "tests": [{"file": "test/issues/issue_42_test.dart",
+                       "name": "rejects invalid request"}],
+        })
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(task.ContractError, "one named test"):
+            self.check("AutoClose #42")
+
+    def test_temporary_manual_gap_blocks_closing(self):
+        path = self.root / "docs/acceptance/temporary/issue-42.json"
+        manifest = json.loads(path.read_text())
+        manifest["issues"][0]["criteria"].append({
+            "id": "native_gap", "requirement": "OS-level validation",
+            "type": "manual", "reason": "Physical TCC permissions are not covered",
+        })
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(task.ContractError, "manual"):
+            self.check("AutoClose #42")
 
     def test_permanent_requires_real_named_integration_test(self):
         temporary = self.root / "docs/acceptance/temporary/issue-42.json"
@@ -144,7 +195,7 @@ class IssueTaskTests(unittest.TestCase):
             }],
         }])
         with self.assertRaisesRegex(task.ContractError, "integration_test/"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
         bad.unlink()
         self.write_manifest("temporary", [{
             "id": "ac_1", "requirement": "Reject malformed input",
@@ -154,7 +205,7 @@ class IssueTaskTests(unittest.TestCase):
             }],
         }])
         self.promotion()
-        self.assertTrue(self.check("Closes #42", mode="integration"))
+        self.assertTrue(self.check("AutoClose #42", mode="integration"))
 
     def test_temporary_not_allowed_after_promotion(self):
         self.write_manifest("permanent", [{
@@ -167,7 +218,7 @@ class IssueTaskTests(unittest.TestCase):
             }],
         }])
         with self.assertRaisesRegex(task.ContractError, "remove temporary"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
 
     def test_incomplete_gap_cannot_close(self):
         path = self.promotion()
@@ -180,7 +231,7 @@ class IssueTaskTests(unittest.TestCase):
         })
         path.write_text(json.dumps(manifest))
         with self.assertRaisesRegex(task.ContractError, "outstanding"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
         self.assertTrue(self.check("Refs #42", mode="integration"))
 
     def test_manual_evidence_never_auto_certified(self):
@@ -194,7 +245,7 @@ class IssueTaskTests(unittest.TestCase):
         })
         path.write_text(json.dumps(manifest))
         with self.assertRaisesRegex(task.ContractError, "manual"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
 
     def test_failed_or_skipped_test_blocks(self):
         self.assertFalse(self.check(

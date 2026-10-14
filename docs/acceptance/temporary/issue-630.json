@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 630,
+      "title": "BLU-073 offline provider fallback policy",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Cloud-disabled fallback selects local LlmProvider without cloud requests",
+          "tests": [
+            {
+              "file": "test/offline_provider_fallback_policy_test.dart",
+              "name": "disabled cloud selects local provider and makes zero cloud requests"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Fallback behavior is deterministic and provider failures are explicit",
+          "tests": [
+            {
+              "file": "test/offline_provider_fallback_policy_test.dart",
+              "name": "cloud failure falls back locally without silent success failure"
+            },
+            {
+              "file": "test/offline_provider_fallback_policy_test.dart",
+              "name": "unusable providers expose explicit degraded failure"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "automated",
+          "requirement": "Policy tests do not expose secrets or perform unapproved network calls",
+          "tests": [
+            {
+              "file": "test/offline_provider_fallback_policy_test.dart",
+              "name": "disabled cloud selects local provider and makes zero cloud requests"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "type": "gap",
+          "requirement": "Existing platform behavior compatibility validation",
+          "reason": "Requires native device validation and remains a manual gap."
+        }
+      ]
+    }
+  ]
+}

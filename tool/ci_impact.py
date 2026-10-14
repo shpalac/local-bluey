@@ -165,6 +165,11 @@ def plan(paths: list[str], event_name: str, root: Path) -> dict:
         # Unrecognized file, symlink or generated code: do not silently skip.
         run_full = True
 
+    # Every PR needs an acceptance result, including docs-only changes and
+    # a PR body-only edit adding an AutoClose marker.
+    if event_name == "pull_request":
+        flags["acceptance"] = True
+
     selected_tests = None if run_full else impacted_tests(root, normalized)
     if run_full:
         flags = dict.fromkeys(LANES, True)

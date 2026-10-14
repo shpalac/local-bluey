@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 582,
+      "title": "BLU-026 MCP ToolSpec adapter and SafetyGate",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Hostile tool descriptions cannot bypass SafetyGate approval",
+          "tests": [
+            {
+              "file": "test/mcp_safety_gate_runtime_integration_test.dart",
+              "name": "hostile tool description remains display only and cannot bypass permission"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Bounded hostile fixtures cover invalid input, timeout and cancellation paths",
+          "tests": [
+            {
+              "file": "test/mcp_safety_gate_runtime_integration_test.dart",
+              "name": "runtime rejects invalid input and timeout via safety gate"
+            },
+            {
+              "file": "test/mcp_safety_gate_runtime_integration_test.dart",
+              "name": "runtime cancellation fixture fails closed"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "automated",
+          "requirement": "Fake transport proves no unintended egress and returned secrets are redacted",
+          "tests": [
+            {
+              "file": "test/mcp_safety_gate_runtime_integration_test.dart",
+              "name": "fake transport stays in approved path and redacts secrets"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "type": "gap",
+          "requirement": "User-facing accessibility, RTL and reversible UI validation",
+          "reason": "No UI changes are introduced by this CI acceptance slice."
+        }
+      ]
+    }
+  ]
+}

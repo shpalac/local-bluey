@@ -1,0 +1,32 @@
+name: Temporary BLU-034 Playwright MCP acceptance
+on:
+  pull_request:
+    paths:
+      - 'lib/mcp/playwright_browser_adapter.dart'
+      - 'test/mcp/playwright_browser_adapter_test.dart'
+      - 'docs/acceptance/temporary/issue-590.json'
+      - '.github/workflows/temp-issue-590.yml'
+      - 'docs/blu-034-playwright-mcp.md'
+      - 'README.md'
+      - 'docs/architecture.md'
+      - 'docs/ACCEPTANCE_MAP.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  playwright-mcp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - name: Formatting
+        run: dart format --output=none --set-exit-if-changed lib/mcp/playwright_browser_adapter.dart test/mcp/playwright_browser_adapter_test.dart
+      - name: Lint and analysis
+        run: flutter analyze
+      - name: Fake security and browser contract tests
+        run: flutter test test/mcp
+      - name: Build
+        run: flutter build bundle --release

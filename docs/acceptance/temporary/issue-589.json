@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 589,
+      "title": "BLU-033 Home Assistant MCP adapter",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Locks require approval; unknown entities blocked",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "approved lock dispatches once"
+            },
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "denied permission and physical approval block transport"
+            },
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "unknown entity and invalid service fail closed"
+            },
+            {
+              "file": "test/mcp/home_assistant_mcp_policy_test.dart",
+              "name": "approved local allowed lock passes policy"
+            },
+            {
+              "file": "test/mcp/home_assistant_mcp_policy_test.dart",
+              "name": "unknown entities fail closed"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "approved lock dispatches once"
+            },
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "unknown entity and invalid service fail closed"
+            },
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "offline fails closed"
+            },
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "timeout denies before transport when approval stalls"
+            },
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "denied permission and physical approval block transport"
+            },
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "cancellation and restart never inherit an approval"
+            },
+            {
+              "file": "test/mcp/home_assistant_mcp_policy_test.dart",
+              "name": "remote endpoint and disabled adapter are denied"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
+          "type": "manual",
+          "reason": "Adapter has no HTTP implementation, tokens, persistence, or automatic dispatch and rejects nonlocal configuration via injected policy. Actual transport egress and ActionLog integration need end-to-end review before production wiring."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Accessible, RTL-compatible and reversible user-facing states",
+          "type": "manual",
+          "reason": "No new UI is installed; accessible Hebrew/RTL confirmation and reversal are pending host integration and device review."
+        },
+        {
+          "id": "integration_gap",
+          "requirement": "Production transport, ActionLog and privacy registry integration",
+          "type": "gap",
+          "reason": "Isolated opt-in fake-backed slice only; keep #589 open until full integration and device evidence."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 573,
+      "title": "BLU-020 Execution audit timeline and stop UX",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Stop prevents subsequent steps and diagnostics redact secrets",
+          "tests": [
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "stop during host action prevents second step"
+            },
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "unknown fields and diagnostics are redacted"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Success, malformed input, timeout, cancellation, permission denial and restart tests",
+          "tests": [
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "success produces only allowlisted step events"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "invalid DSL is rejected before execution"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "timeout fails closed"
+            },
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "stop UI cancels and export requires explicit consent"
+            },
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "permission denial redacts and fails closed"
+            },
+            {
+              "file": "test/file_durable_recovery_store_test.dart",
+              "name": "restart reconciliation blocks all host actions"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "automated",
+          "requirement": "Redacted diagnostics require explicit consent and recovery cannot auto-replay host actions",
+          "tests": [
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "export fails closed without consent"
+            },
+            {
+              "file": "test/file_durable_recovery_store_test.dart",
+              "name": "restart reconciliation blocks all host actions"
+            },
+            {
+              "file": "test/file_durable_recovery_store_test.dart",
+              "name": "corrupt recovery metadata fails closed"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "type": "automated",
+          "requirement": "Flutter static analysis and relevant tests run in GitHub CI",
+          "tests": [
+            {
+              "file": "test/file_durable_recovery_store_test.dart",
+              "name": "file recovery metadata survives new store instance"
+            }
+          ]
+        },
+        {
+          "id": "native_tcc_gap",
+          "type": "gap",
+          "requirement": "Real macOS host accessibility/TCC hardware validation and production HostControl integration",
+          "reason": "iOS simulator privacy grants cannot prove macOS Accessibility/TCC or native HostControl enforcement. Requires device evidence before closing #573."
+        }
+      ]
+    }
+  ]
+}

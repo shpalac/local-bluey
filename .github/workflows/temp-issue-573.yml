@@ -1,0 +1,58 @@
+name: Temporary BLU-020 acceptance
+on:
+  pull_request:
+    paths:
+      - 'lib/services/execution_audit.dart'
+      - 'lib/services/file_durable_recovery_store.dart'
+      - 'lib/services/durable_recovery_store.dart'
+      - 'lib/main.dart'
+      - 'lib/workflows/workflow_execution.dart'
+      - 'lib/ui/execution_audit_panel.dart'
+      - 'test/execution_audit_test.dart'
+      - 'test/file_durable_recovery_store_test.dart'
+      - 'docs/blu-020-execution-audit.md'
+      - 'docs/acceptance/temporary/issue-573.json'
+      - '.github/workflows/temp-issue-573.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version-file: .flutter-version
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter analyze
+      - run: flutter test test/execution_audit_test.dart test/workflow_execution_test.dart test/file_durable_recovery_store_test.dart
+  ios-grant:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version-file: .flutter-version
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - name: Boot the simulator
+        run: tool/simulator_smoke.sh preboot
+      - run: flutter build ios --simulator --debug --no-codesign
+      - name: Verify simulator privacy grant and app launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          UDID=$(xcrun simctl list devices booted -j | jq -r '[.devices[][] | select(.state == "Booted") | .udid] | first')
+          test -n "$UDID"
+          test "$UDID" != "null"
+          APP="build/ios/iphonesimulator/Runner.app"
+          BUNDLE="com.localbluey.localBluey"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl privacy "$UDID" grant microphone "$BUNDLE"
+          xcrun simctl launch "$UDID" "$BUNDLE"
+          xcrun simctl privacy "$UDID" revoke microphone "$BUNDLE"
+          xcrun simctl privacy "$UDID" grant microphone "$BUNDLE"
