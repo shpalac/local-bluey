@@ -266,3 +266,5 @@ real actions. The temporary CI workflow is `.github/workflows/temp-issue-577.yml
 
 
 **Playwright MCP (experimental, disabled):** A fake-tested, allowlisted, read-only browser contract is documented in [BLU-034](docs/blu-034-playwright-mcp.md). No live browser, automatic downloads or silent WebResearch fallback are enabled.
+
+**Voice verification (experimental, disabled):** BLU-031 adds a memory-only, fake-testable speaker-confidence contract. No speaker model, biometric enrollment or user-facing verification is enabled. A voice match never authorizes a computer action or bypasses SafetyGate; spoof and missing-liveness evidence deny verification. See [voice-verification design and limitations](docs/blu-031-voice-verification.md).

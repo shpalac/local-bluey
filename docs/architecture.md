@@ -224,3 +224,15 @@ See [the isolated engine and limitations](blu-028-file-index.md). Directory scan
 ## Experimental Playwright MCP browser boundary (BLU-034)
 
 `lib/mcp/playwright_browser_adapter.dart` is a disabled-by-default read-only contract above `McpToolSafetyGate`. Host allowlists, session cancellation, hostile page data and failure paths are fake-tested without network access. The existing Swift WebResearch is a separate cloud integration; no production browser transport, consent UI, privacy registry write or download sandbox is shipped. See [BLU-034 design and limitations](blu-034-playwright-mcp.md).
+
+## Experimental secondary voice verification (BLU-031)
+
+`lib/services/voice_verification.dart` defines a default-off, in-memory,
+injectable local-only speaker-assessment boundary. A provider supplies a bounded
+similarity score and spoof-check verdict. Typed failure paths cover lack of
+consent, denied microphone permission, offline, timeout, cancellation,
+revocation and restart. It has no tool-execution capability, stores no voice
+biometrics and does not modify `SafetyGate.authorize`. Its fake-based tests
+confirm that even a matched or spoofed voice must pass the existing human
+approval gate. No production speaker/anti-spoof model is integrated; see
+[BLU-031 notes](blu-031-voice-verification.md).
