@@ -36,7 +36,9 @@ class RetryCancellation {
   Future<void> get whenCancelled => _cancelled.future;
 
   void cancel() {
-    if (!_cancelled.isCompleted) _cancelled.complete();
+    if (!_cancelled.isCompleted) {
+      _cancelled.complete();
+    }
   }
 }
 
@@ -61,7 +63,9 @@ class IdempotentRetryExecutor {
     if (timeout != null && timeout <= Duration.zero) {
       throw ArgumentError.value(timeout, 'timeout', 'Must be positive');
     }
-    if (cancellation?.isCancelled ?? false) throw const RetryCancelled();
+    if (cancellation?.isCancelled ?? false) {
+      throw const RetryCancelled();
+    }
 
     // Never infer safety from a read/write pair: claims must be atomic.
     if (!await _store.claim(operationId)) {
@@ -70,7 +74,9 @@ class IdempotentRetryExecutor {
 
     // After the claim any error is an uncertain external outcome, including
     // cancellation and timeout. It must never cause automatic replay.
-    if (cancellation?.isCancelled ?? false) throw const RetryCancelled();
+    if (cancellation?.isCancelled ?? false) {
+      throw const RetryCancelled();
+    }
 
     final sendFuture = Future<T>.sync(send);
     Future<T> outcome = sendFuture;
@@ -80,13 +86,17 @@ class IdempotentRetryExecutor {
     if (cancellation != null) {
       outcome = Future.any<T>([
         outcome,
-        cancellation.whenCancelled.then<T>((_) => throw const RetryCancelled()),
+        cancellation.whenCancelled.then<T>(
+          (_) => throw const RetryCancelled(),
+        ),
       ]);
     }
 
     final result = await outcome;
     // A cancellation after send completion still cannot invalidate the claim.
-    if (cancellation?.isCancelled ?? false) throw const RetryCancelled();
+    if (cancellation?.isCancelled ?? false) {
+      throw const RetryCancelled();
+    }
     await _store.write(
       RetryCheckpoint(operationId: operationId, phase: 'completed'),
     );
