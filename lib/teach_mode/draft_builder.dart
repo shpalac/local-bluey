@@ -56,27 +56,26 @@ class TeachDraftBuilder {
   }
 }
 
-  
 /// A review-only projection of captured observations. It deliberately has no
 /// conversion to WorkflowDefinition or host execution API.
 final class TeachDraftPreview {
   TeachDraftPreview(TeachDraft draft)
-      : steps = List.unmodifiable(
-          draft.steps.asMap().entries.map((entry) {
-            final step = entry.value;
-            return DraftPreviewStep(
-              ordinal: entry.key + 1,
-              kind: step.kind,
-              target: step.target,
-              requiresReview: step.uncertain,
-              variablePlaceholder: step.kind == DraftStepKind.type &&
-                      !step.uncertain
-                  ? 'input_${entry.key + 1}'
-                  : null,
-            );
-          }),
-        ),
-        warnings = List.unmodifiable(draft.warnings);
+    : steps = List.unmodifiable(
+        draft.steps.asMap().entries.map((entry) {
+          final step = entry.value;
+          return DraftPreviewStep(
+            ordinal: entry.key + 1,
+            kind: step.kind,
+            target: step.target,
+            requiresReview: step.uncertain,
+            variablePlaceholder:
+                step.kind == DraftStepKind.type && !step.uncertain
+                ? 'input_${entry.key + 1}'
+                : null,
+          );
+        }),
+      ),
+      warnings = List.unmodifiable(draft.warnings);
 
   final List<DraftPreviewStep> steps;
   final List<String> warnings;
