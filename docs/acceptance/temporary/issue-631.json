@@ -1,0 +1,23 @@
+{
+  "issue": 631,
+  "criteria": {
+    "AC-1": {
+      "status": "automated",
+      "test_file": "test/workflows_import_test.dart",
+      "test_name": "imports workflow without enabling it"
+    },
+    "AC-2": {
+      "status": "automated",
+      "test_file": "test/workflows_import_test.dart",
+      "test_name": "rejects malformed workflow JSON with explicit error"
+    },
+    "AC-3": {
+      "status": "manual/gap",
+      "reason": "No proof in this slice for full secret scanning, privacy registry integration, or network action enforcement."
+    },
+    "AC-4": {
+      "status": "manual/gap",
+      "reason": "Compatibility with every supported platform routine path requires broader integration validation."
+    }
+  }
+}
