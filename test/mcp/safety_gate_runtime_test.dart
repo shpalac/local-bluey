@@ -66,17 +66,17 @@ void main() {
             'safe': 'visible',
             'children': [
               {'password': '[REDACTED]', 'value': 42},
-              {
-                'private_key': '[REDACTED]',
-                'secretHint': '[REDACTED]',
-              },
+              {'private_key': '[REDACTED]', 'secretHint': '[REDACTED]'},
             ],
           },
         },
       ],
       'safe': true,
     });
-    expect((original['items'] as List).first.toString(), contains('secret-token'));
+    expect(
+      (original['items'] as List).first.toString(),
+      contains('secret-token'),
+    );
   });
 
   test('runtime redacts top-level list results', () async {
