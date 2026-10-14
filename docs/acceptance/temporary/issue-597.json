@@ -1,33 +1,45 @@
 {
-  "issue": 597,
-  "acceptance": [
+  "version": 1,
+  "issues": [
     {
-      "id": "AC-1",
-      "description": "Unsupported host explicitly handled.",
-      "type": "automated",
-      "test_file": "test/windows_ci_lane_manifest_test.dart",
-      "test_name": "Windows CI lane manifest is deterministic"
-    },
-    {
-      "id": "AC-2",
-      "description": "Results are deterministic and reproducible; all failures are explicit and actionable.",
-      "type": "automated",
-      "test_file": "test/windows_ci_lane_manifest_test.dart",
-      "test_name": "Windows CI lane manifest is deterministic"
-    },
-    {
-      "id": "AC-3",
-      "description": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress.",
-      "type": "automated",
-      "test_file": "test/windows_ci_lane_manifest_test.dart",
-      "test_name": "Windows CI lane manifest is least privilege and pinned"
-    },
-    {
-      "id": "AC-4",
-      "description": "Backwards compatibility and cross-platform behavior reviewed; no unsupported capability falsely advertised.",
-      "type": "automated",
-      "test_file": "test/windows_ci_lane_manifest_test.dart",
-      "test_name": "Windows CI lane manifest is deterministic"
+      "number": 597,
+      "title": "BLU-041 Windows compatibility CI",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Unsupported host explicitly handled.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/windows_ci_lane_manifest_test.dart",
+              "name": "Windows CI lane manifest is deterministic"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Results are deterministic and reproducible; all failures are explicit and actionable.",
+          "type": "manual",
+          "reason": "Determinism of the Windows lane depends on the GitHub Actions runner image; CI run history is the evidence, not a repository test."
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/windows_ci_lane_manifest_test.dart",
+              "name": "Windows CI lane manifest is least privilege and pinned"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Backwards compatibility and cross-platform behavior reviewed; no unsupported capability falsely advertised.",
+          "type": "manual",
+          "reason": "Cross-platform compatibility review requires maintainers to validate supported platform behavior."
+        }
+      ]
     }
   ]
 }
