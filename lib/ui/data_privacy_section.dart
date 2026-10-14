@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/data_registry.dart';
+import 'file_index_section.dart';
 import '../services/strings.dart';
 
 /// Settings > Data and privacy (#83): every registered store with its
@@ -130,6 +131,8 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
           ),
           style: theme.textTheme.bodySmall,
         ),
+        const SizedBox(height: 12),
+        const FileIndexSection(),
         const SizedBox(height: 12),
         for (final store in DataRegistry.stores)
           ListTile(

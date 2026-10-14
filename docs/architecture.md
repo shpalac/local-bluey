@@ -201,3 +201,8 @@ not proof of a complete network audit. Physical macOS TCC, accessibility,
 RTL, CPU usage, network egress and retention deletion require manual test
 artifacts and signed review before pilot expansion. CI checks documentation
 only; BLU-011 and BLU-020 are prerequisites for the live pilot.
+
+
+## BLU-028 — opt-in file indexing (partial; Refs #584)
+
+See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.

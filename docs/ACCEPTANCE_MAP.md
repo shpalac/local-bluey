@@ -669,3 +669,8 @@ verification, and AC-4 real accessibility/RTL verification remain **deferred**.
 There is no claim of pilot execution, green native checks, or issue closure.
 Dependencies: BLU-011 and BLU-020. A reviewer must record exact build SHA,
 manual evidence and a go/no-go decision before disposition.
+
+
+## BLU-028 — opt-in file indexing (partial; Refs #584)
+
+See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.

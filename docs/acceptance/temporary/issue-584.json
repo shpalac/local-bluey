@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 584,
+      "title": "BLU-028 Opt-in file indexing",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Only selected files indexed; revocation purges",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/file_index_test.dart",
+              "name": "explicit consent only; revoke purges all matches"
+            },
+            {
+              "file": "test/file_index_test.dart",
+              "name": "hidden files and folders excluded"
+            },
+            {
+              "file": "test/file_index_test.dart",
+              "name": "incremental edits and deletions"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart paths",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/file_index_test.dart",
+              "name": "invalid directory does not enable access"
+            },
+            {
+              "file": "test/file_index_test.dart",
+              "name": "restart has no durable grant"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/file_index_test.dart",
+              "name": "explicit consent only; revoke purges all matches"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "User-facing states accessible, RTL-compatible and reversible",
+          "type": "manual",
+          "reason": "Flutter text includes English and Hebrew, but macOS VoiceOver, RTL layout and native confirmation require device evidence"
+        },
+        {
+          "id": "integration_gap",
+          "requirement": "Physical macOS chooser, permission-denial, timeout, cancellation and offline evidence",
+          "type": "gap",
+          "reason": "Native picker exists but no device-side TCC or actual end-to-end evidence; keep #584 open"
+        }
+      ]
+    }
+  ]
+}
