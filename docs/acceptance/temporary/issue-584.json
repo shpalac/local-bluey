@@ -1,0 +1,33 @@
+{
+  "issue": 584,
+  "title": "BLU-028 Opt-in file indexing",
+  "status": "partial",
+  "acceptance": [
+    {
+      "id": "AC-1",
+      "criterion": "Only selected files indexed; revocation purges",
+      "type": "automated",
+      "evidence": "test/file_index_test.dart",
+      "note": "Directory selection is delegated to UI; picker not shipped"
+    },
+    {
+      "id": "AC-2",
+      "criterion": "Success, invalid input, offline, timeout, denied permission, cancellation and restart",
+      "type": "manual",
+      "reason": "Success, invalid and restart covered by unit tests; permission, cancellation, offline and timeout integration paths remain unverified"
+    },
+    {
+      "id": "AC-3",
+      "criterion": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
+      "type": "automated",
+      "evidence": "lib/services/file_index.dart",
+      "note": "In-memory only; no egress API; dedicated audit still pending"
+    },
+    {
+      "id": "AC-4",
+      "criterion": "Accessible RTL-compatible reversible user states",
+      "type": "manual",
+      "reason": "Directory chooser and user-facing controls not yet integrated; requires Flutter widget tests"
+    }
+  ]
+}
