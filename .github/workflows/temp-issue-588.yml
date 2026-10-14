@@ -1,0 +1,19 @@
+name: temp-issue-588
+on:
+  pull_request:
+    paths:
+      - 'docs/acceptance/temporary/issue-588.json'
+      - '.github/workflows/temp-issue-588.yml'
+  workflow_dispatch:
+
+jobs:
+  rive-feasibility:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+      - uses: subosito/flutter-action@fd55f4c5af5b953cc8f6a0e5c5e5c7f8b4f3d6e8
+        with:
+          flutter-version-file: pubspec.yaml
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
