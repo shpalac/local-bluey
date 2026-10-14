@@ -2,6 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/mcp/mcp_tool_safety_gate.dart';
 import 'package:local_bluey/mcp/safety_gate_runtime.dart';
 
+McpToolSpec _spec() => McpToolSpec(
+      name: 'read',
+      description: 'read value',
+      inputSchema: {
+        'type': 'object',
+        'properties': {},
+      },
+    );
+
 void main() {
   test('runtime redacts secret output after approved invocation', () async {
     final gate = McpToolSafetyGate(
@@ -13,16 +22,9 @@ void main() {
       },
     );
 
-    final result = await const SafetyGateRuntime(gate: gate).invoke(
+    final result = await SafetyGateRuntime(gate: gate).invoke(
       serverId: 'local',
-      spec: McpToolSpec(
-        name: 'read',
-        description: 'read value',
-        inputSchema: {
-          'type': 'object',
-          'properties': {},
-        },
-      ),
+      spec: _spec(),
       arguments: const {},
       timeout: const Duration(seconds: 1),
     );
@@ -38,18 +40,11 @@ void main() {
     );
 
     await expectLater(
-      const SafetyGateRuntime(gate: gate).invoke(
+      SafetyGateRuntime(gate: gate).invoke(
         serverId: 'local',
-        spec: McpToolSpec(
-          name: 'read',
-          description: 'read value',
-          inputSchema: {
-            'type': 'object',
-            'properties': {},
-          },
-        ),
+        spec: _spec(),
         arguments: const {},
-        timeout: Duration(seconds: 1),
+        timeout: const Duration(seconds: 1),
         isCancelled: () => true,
       ),
       throwsA(
