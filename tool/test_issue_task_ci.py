@@ -140,14 +140,35 @@ class IssueTaskTests(unittest.TestCase):
 
     def test_closing_rejects_unmapped_extra_criterion(self):
         path = self.root / "docs/acceptance/temporary/issue-42.json"
+        test_path = self.root / "test/issues/issue_42_test.dart"
+        test_path.write_text(
+            test_path.read_text() + "test('another assertion', () {});\n"
+        )
         manifest = json.loads(path.read_text())
         manifest["issues"][0]["criteria"].append({
             "id": "ac_2", "requirement": "Another assertion", "type": "automated",
             "tests": [{"file": "test/issues/issue_42_test.dart",
-                       "name": "rejects invalid request"}],
+                       "name": "another assertion"}],
         })
         path.write_text(json.dumps(manifest))
         with self.assertRaisesRegex(task.ContractError, "unmapped issue contract"):
+            self.check("AutoClose #42")
+
+    def test_one_test_cannot_certify_multiple_criteria(self):
+        path = self.root / "docs/acceptance/temporary/issue-42.json"
+        self.body = self.body.replace(
+            "## CI and validation",
+            "- [ ] AC-2: Reject malformed data without side effects.\n\n"
+            "## CI and validation",
+        )
+        manifest = json.loads(path.read_text())
+        manifest["issues"][0]["criteria"].append({
+            "id": "ac_2", "requirement": "Second behavior", "type": "automated",
+            "tests": [{"file": "test/issues/issue_42_test.dart",
+                       "name": "rejects invalid request"}],
+        })
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(task.ContractError, "one named test"):
             self.check("AutoClose #42")
 
     def test_temporary_manual_gap_blocks_closing(self):
