@@ -8,7 +8,8 @@ class _MemoryStore implements RetryCheckpointStore {
   final Map<String, RetryCheckpoint> values = {};
 
   @override
-  Future<RetryCheckpoint?> read(String operationId) async => values[operationId];
+  Future<RetryCheckpoint?> read(String operationId) async =>
+      values[operationId];
 
   @override
   Future<void> write(RetryCheckpoint checkpoint) async {
@@ -35,8 +36,8 @@ void main() {
     await executor.run<void>(
       operationId: 'send-1',
       send: () async {
-          sends++;
-        },
+        sends++;
+      },
     );
 
     expect(sends, 1);
@@ -91,15 +92,11 @@ void main() {
       await gate.future;
     }
 
-    final first = IdempotentRetryExecutor(store).run<void>(
-      operationId: 'shared',
-      send: send,
-    );
+    final first = IdempotentRetryExecutor(store)
+        .run<void>(operationId: 'shared', send: send);
     await expectLater(
-      IdempotentRetryExecutor(store).run<void>(
-        operationId: 'shared',
-        send: send,
-      ),
+      IdempotentRetryExecutor(store)
+          .run<void>(operationId: 'shared', send: send),
       throwsStateError,
     );
     gate.complete();
@@ -153,36 +150,39 @@ void main() {
     expect(await store.read('cancelled'), isNull);
   });
 
-  test('cancellation during send preserves claim and prevents replay', () async {
-    final store = _MemoryStore();
-    final cancellation = RetryCancellation();
-    final pending = Completer<void>();
-    var sends = 0;
-    final running = IdempotentRetryExecutor(store).run<void>(
-      operationId: 'in-flight',
-      cancellation: cancellation,
-      send: () {
+  test(
+    'cancellation during send preserves claim and prevents replay',
+    () async {
+      final store = _MemoryStore();
+      final cancellation = RetryCancellation();
+      final pending = Completer<void>();
+      var sends = 0;
+      final running = IdempotentRetryExecutor(store).run<void>(
+        operationId: 'in-flight',
+        cancellation: cancellation,
+        send: () {
           sends++;
           return pending.future;
         },
-    );
-    // Complete the first async claim before cancellation.
-    await Future<void>.delayed(Duration.zero);
-    cancellation.cancel();
-    await expectLater(running, throwsA(isA<RetryCancelled>()));
-    await expectLater(
-      IdempotentRetryExecutor(store).run<void>(
-        operationId: 'in-flight',
-        send: () async {
-          sends++;
-        },
-      ),
-      throwsStateError,
-    );
-    expect(sends, 1);
-    expect((await store.read('in-flight'))?.phase, 'started');
-    pending.complete();
-  });
+      );
+      // Complete the first async claim before cancellation.
+      await Future<void>.delayed(Duration.zero);
+      cancellation.cancel();
+      await expectLater(running, throwsA(isA<RetryCancelled>()));
+      await expectLater(
+        IdempotentRetryExecutor(store).run<void>(
+          operationId: 'in-flight',
+          send: () async {
+            sends++;
+          },
+        ),
+        throwsStateError,
+      );
+      expect(sends, 1);
+      expect((await store.read('in-flight'))?.phase, 'started');
+      pending.complete();
+    },
+  );
 
   test('malformed operation IDs and timeouts are rejected', () async {
     final executor = IdempotentRetryExecutor(_MemoryStore());
