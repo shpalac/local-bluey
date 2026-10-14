@@ -28,7 +28,7 @@ final class WorkflowActionPreview {
 /// An exact-action grant; persistence is available only through opt-in setup.
 final class WorkflowApprovalGrant {
   WorkflowApprovalGrant._({this.expiresAt, DateTime Function()? now})
-      : _now = now ?? DateTime.now;
+    : _now = now ?? DateTime.now;
 
   final DateTime? expiresAt;
   final DateTime Function() _now;
@@ -136,9 +136,9 @@ final class WorkflowApprovalHost implements WorkflowHost {
   String _key(int index) {
     // Include permissions and the validated definition, not merely the
     // visible target: a changed workflow must never inherit an old grant.
-    return sha256.convert(
-      utf8.encode('${jsonEncode(_definition.toJson())}:$index'),
-    ).toString();
+    return sha256
+        .convert(utf8.encode('${jsonEncode(_definition.toJson())}:$index'))
+        .toString();
   }
 
   Future<void> revokeAll() async {
@@ -214,10 +214,7 @@ final class WorkflowApprovalHost implements WorkflowHost {
     final accepted = await _prompt.request(action);
     if (_cancelled || !accepted) return false;
     final expires = _storage == null ? null : _now().add(_grantTtl);
-    final grant = WorkflowApprovalGrant._(
-      expiresAt: expires,
-      now: _now,
-    );
+    final grant = WorkflowApprovalGrant._(expiresAt: expires, now: _now);
     _grants[index] = grant;
     if (_storage != null) {
       try {

@@ -60,15 +60,14 @@ void main() {
     }
   });
 
-  Future<WorkflowApprovalHost> open() =>
-      WorkflowApprovalHost.openWithStorage(
-        definition: definition,
-        delegate: delegate,
-        prompt: _Prompt(),
-        safetyGate: _Gate(),
-        storage: storage,
-        now: () => clock,
-      );
+  Future<WorkflowApprovalHost> open() => WorkflowApprovalHost.openWithStorage(
+    definition: definition,
+    delegate: delegate,
+    prompt: _Prompt(),
+    safetyGate: _Gate(),
+    storage: storage,
+    now: () => clock,
+  );
 
   test('revoke persists and prevents host execution after restart', () async {
     final first = await open();
@@ -81,35 +80,39 @@ void main() {
     expect(delegate.executions, 0);
   });
 
-  test('file-backed approval survives restart and expires with fake clock',
-      () async {
-    final first = await open();
-    final action = definition.steps.single;
-    expect(await first.approve(action), isTrue);
+  test(
+    'file-backed approval survives restart and expires with fake clock',
+    () async {
+      final first = await open();
+      final action = definition.steps.single;
+      expect(await first.approve(action), isTrue);
 
-    final restored = await open();
-    await restored.execute(action);
-    expect(delegate.executions, 1);
+      final restored = await open();
+      await restored.execute(action);
+      expect(delegate.executions, 1);
 
-    clock = clock.add(const Duration(minutes: 6));
-    final expired = await open();
-    await expectLater(expired.execute(action), throwsStateError);
-    expect(delegate.executions, 1);
-  });
+      clock = clock.add(const Duration(minutes: 6));
+      final expired = await open();
+      await expectLater(expired.execute(action), throwsStateError);
+      expect(delegate.executions, 1);
+    },
+  );
 
-  test('approval files contain metadata only and never action secrets',
-      () async {
-    final first = await open();
-    expect(await first.approve(definition.steps.single), isTrue);
-    final files = directory.listSync().whereType<File>().toList();
-    expect(files, hasLength(1));
-    final record = await files.single.readAsString();
-    expect(record, contains('expiresAt'));
-    expect(record, contains('revoked'));
-    expect(record, isNot(contains('top-secret-target')));
-    expect(record, isNot(contains('workflow-approval-restart')));
-    expect(files.single.path, isNot(contains('top-secret-target')));
-  });
+  test(
+    'approval files contain metadata only and never action secrets',
+    () async {
+      final first = await open();
+      expect(await first.approve(definition.steps.single), isTrue);
+      final files = directory.listSync().whereType<File>().toList();
+      expect(files, hasLength(1));
+      final record = await files.single.readAsString();
+      expect(record, contains('expiresAt'));
+      expect(record, contains('revoked'));
+      expect(record, isNot(contains('top-secret-target')));
+      expect(record, isNot(contains('workflow-approval-restart')));
+      expect(files.single.path, isNot(contains('top-secret-target')));
+    },
+  );
 
   test('corrupt persisted grants fail closed without host effects', () async {
     final first = await open();

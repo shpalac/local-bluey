@@ -94,10 +94,7 @@ final class FileWorkflowApprovalGrantStorage
     await directory.create(recursive: true);
     final file = _file(key);
     final temporary = File('${file.path}.pending');
-    await temporary.writeAsString(
-      jsonEncode(record.toJson()),
-      flush: true,
-    );
+    await temporary.writeAsString(jsonEncode(record.toJson()), flush: true);
     await temporary.rename(file.path);
   }
 
