@@ -26,6 +26,6 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get --enforce-lockfile
-      - run: dart format --output=show lib/services/idempotent_retry.dart test/idempotent_retry_test.dart
+      - run: dart format --output=show lib/services/idempotent_retry.dart test/idempotent_retry_test.dart && exit 1
       - run: flutter analyze
       - run: flutter test --reporter expanded
