@@ -671,3 +671,19 @@ secret storage or action executor in these modules. AC-4: not applicable to
 this non-user-facing module. Temporary CI:
 `.github/workflows/temp-issue-577.yml`. BLU-006/BLU-008 integration and
 end-to-end regression evidence remain outstanding; #577 must remain OPEN.
+
+## BLU-022 protocol-only tracking (Refs #578)
+
+This entry does not revise the historical reconciliation above. The
+[macOS pilot protocol](MAC_PILOT_PROTOCOL.md) and scoped temporary docs CI
+are proposed in PR #738. AC-1 signed pilot review, AC-2 physical macOS
+permission/restart and cancellation cases, AC-3 actual egress/retention
+verification, and AC-4 real accessibility/RTL verification remain **deferred**.
+There is no claim of pilot execution, green native checks, or issue closure.
+Dependencies: BLU-011 and BLU-020. A reviewer must record exact build SHA,
+manual evidence and a go/no-go decision before disposition.
+
+
+## BLU-028 — opt-in file indexing (partial; Refs #584)
+
+See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.

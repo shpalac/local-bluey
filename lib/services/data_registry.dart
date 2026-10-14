@@ -7,6 +7,7 @@ import 'hold_key_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'action_log.dart';
+import 'file_index.dart';
 import 'biometric_lock.dart';
 import 'characters.dart';
 import 'haptics.dart';
@@ -71,6 +72,16 @@ class DataRegistry {
   /// Every local store in the app. The registry-coverage test fails when
   /// a new store appears in lib/services without an entry here.
   static final List<DataStoreInfo> stores = [
+    DataStoreInfo(
+      id: 'file_index',
+      sourceFile: 'lib/services/file_index.dart',
+      whatEn: 'Explicitly selected local file index (memory only)',
+      whatHe: 'אינדקס קבצים מקומי שנבחר במפורש (זיכרון בלבד)',
+      where: 'Process memory; no disk persistence',
+      retentionEn: 'Until revoked or app restart',
+      retentionHe: 'עד לביטול ההרשאה או להפעלה מחדש',
+      clear: () async => FileIndex.instance.revoke(),
+    ),
     DataStoreInfo(
       id: 'hold_key_pref',
       sourceFile: 'lib/services/hold_key_controller.dart',

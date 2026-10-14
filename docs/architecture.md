@@ -201,3 +201,21 @@ Zero denominators yield zero metrics, never NaN. Duplicate/blank IDs and
 negative elapsed times fail closed. Rollback is removal of this isolated test
 harness, its tests and temporary workflow. Production workflow integration
 requires a separately reviewed adapter and privacy/safety boundaries.
+
+## macOS pilot protocol (BLU-022, documentation only)
+
+The [opt-in Mac pilot protocol](MAC_PILOT_PROTOCOL.md) defines a limited
+allowlisted-app evaluation. It is **not** a running collection service and
+introduces no new runtime interfaces, capture permissions, persistence, or
+network paths. Consent and revoke/stop behavior must be verified against
+existing capture controls; suggestions/actions remain subject to SafetyGate
+and human approval. Data registry and ActionLog coverage are review inputs,
+not proof of a complete network audit. Physical macOS TCC, accessibility,
+RTL, CPU usage, network egress and retention deletion require manual test
+artifacts and signed review before pilot expansion. CI checks documentation
+only; BLU-011 and BLU-020 are prerequisites for the live pilot.
+
+
+## BLU-028 — opt-in file indexing (partial; Refs #584)
+
+See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.

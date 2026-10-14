@@ -233,6 +233,7 @@ Before opening a PR, read [CONTRIBUTING.md](CONTRIBUTING.md). Please don't publi
 | [Setup](docs/dev-setup.md) | Local development and device checklist |
 | [Architecture](docs/architecture.md) | Components and data flow |
 | [Platform support](docs/SUPPORT.md) | Supported roles and experimental backends |
+| [Mac pilot protocol](docs/MAC_PILOT_PROTOCOL.md) | Opt-in study checklist, safety gates, measurements, rollback, and manual sign-off (not completed) |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | Common failures and fixes |
 | [Technical reference](docs/README_TECHNICAL_REFERENCE.md) | Detailed privacy, retention, CI, OS integration and test limitations |
 | [Project website](https://shpalac.github.io/local-bluey/) | Cinematic landing page (GitHub Pages) |
@@ -259,3 +260,6 @@ recall, F1, accuracy, and simulated latency metrics. The fake clock and
 synthetic exit fixtures never require network, device permissions, or a model.
 This is test infrastructure only; it does not execute workflows or authorize
 real actions. The temporary CI workflow is `.github/workflows/temp-issue-577.yml`.
+
+
+**Opt-in file indexing (experimental, not shipped):** An isolated in-memory engine supports explicitly approved directory scans, incremental refresh and immediate revocation. macOS folder selection and explicit consent/revoke controls are integrated; physical-device permission and RTL validation remain outstanding. See [BLU-028 implementation notes](docs/blu-028-file-index.md).
