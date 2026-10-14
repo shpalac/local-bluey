@@ -13,7 +13,12 @@ class LocalSemanticFileRetrieval {
       return const LocalSemanticRetrievalResult.invalidInput();
     }
 
-    return index.search(normalized);
+    final result = index.search(normalized);
+    if (result is LocalSemanticSuccess) {
+      // Revalidate the provider boundary and return an isolated ranked snapshot.
+      return LocalSemanticRetrievalResult.success(hits: result.hits);
+    }
+    return result;
   }
 }
 

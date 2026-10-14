@@ -17,6 +17,10 @@
             {
               "file": "test/services/local_semantic_file_retrieval_test.dart",
               "name": "success rejects empty results and out-of-range or nonfinite scores"
+            },
+            {
+              "file": "test/services/local_semantic_retrieval_boundary_test.dart",
+              "name": "retrieval returns a separately immutable ranked snapshot"
             }
           ]
         },
@@ -32,6 +36,10 @@
             {
               "file": "test/services/local_semantic_file_retrieval_test.dart",
               "name": "missing matches remain notFound without invented hits"
+            },
+            {
+              "file": "test/services/local_semantic_retrieval_boundary_test.dart",
+              "name": "retrieval forwards typed invalid and missing results unchanged"
             }
           ]
         },
