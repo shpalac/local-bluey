@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 
+import '../lib/services/durable_recovery_store.dart';
 import '../lib/services/execution_audit.dart';
 import '../lib/workflows/workflow_dsl.dart';
 import '../lib/workflows/workflow_execution.dart';
@@ -92,8 +93,14 @@ final class _Host implements WorkflowHost {
 
 final class _RecoveryStore implements DurableRecoveryStore {
   @override
+  Future<void> clear() async {}
+
+  @override
   Future<RecoveryMetadata?> load() async => const RecoveryMetadata(
         executionId: 'recovery',
         interrupted: true,
       );
+
+  @override
+  Future<void> save(RecoveryMetadata metadata) async {}
 }
