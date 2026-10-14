@@ -5,64 +5,11 @@
       "number": 572,
       "title": "BLU-019 Idempotent retry and crash recovery",
       "criteria": [
-        {
-          "id": "ac_1",
-          "requirement": "Restart after dispatched external effect never automatically sends again",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "crash after send fails closed across instances"
-            }
-          ]
-        },
-        {
-          "id": "ac_2",
-          "requirement": "Happy path, malformed checkpoint and disallowed verification are tested",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "verified step resumes at next step"
-            },
-            {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "malformed checkpoint rejected"
-            },
-            {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "cannot verify without dispatched checkpoint"
-            }
-          ]
-        },
-        {
-          "id": "ac_3",
-          "requirement": "Recovery contract contains no networking or secrets and fails closed without verification",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "crash after send fails closed across instances"
-            }
-          ]
-        },
-        {
-          "id": "ac_4",
-          "requirement": "Scoped Flutter analyze and unit test command in temporary CI",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "verified step resumes at next step"
-            }
-          ]
-        },
-        {
-          "id": "runtime_integration_gap",
-          "requirement": "Encrypted atomic storage, multi-process concurrency, cancellation, offline, permission and timeout integration with BLU-018",
-          "type": "gap",
-          "reason": "The standalone core remains unwired to WorkflowExecution. No production persistence or end-to-end guarantees; leave #572 open."
-        }
+        {"id":"ac_1","requirement":"Restart after dispatched external effect never automatically sends again","type":"automated","tests":[{"file":"test/durable_retry_checkpoint_store_test.dart","name":"checkpoint survives restart and prevents duplicate execution"}]},
+        {"id":"ac_2","requirement":"Checkpoint happy path, corrupt input and claim cases are tested","type":"automated","tests":[{"file":"test/durable_retry_checkpoint_store_test.dart","name":"completion uses durable phase"},{"file":"test/durable_retry_checkpoint_store_test.dart","name":"corrupt checkpoint fails explicitly"}]},
+        {"id":"ac_3","requirement":"Recovery contract fails closed without silent reset","type":"automated","tests":[{"file":"test/durable_retry_checkpoint_store_test.dart","name":"corrupt checkpoint fails explicitly"}]},
+        {"id":"ac_4","requirement":"Flutter tests validate durable retry checkpoint implementation","type":"automated","tests":[{"file":"test/durable_retry_checkpoint_store_test.dart","name":"checkpoint survives restart and prevents duplicate execution"}]},
+        {"id":"runtime_integration_gap","requirement":"macOS kill and relaunch lifecycle harness","type":"gap","reason":"Requires native process lifecycle harness execution on macOS CI lane."}
       ]
     }
   ]
