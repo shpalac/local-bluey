@@ -54,7 +54,7 @@ void main() {
   test('invalid directory does not enable access', () async {
     await expectLater(
       index.grant(Directory('${root.path}/missing'), consent: true),
-      throwsFileSystemException,
+      throwsA(isA<FileSystemException>()),
     );
     expect(index.isEnabled, isFalse);
   });
