@@ -1,26 +1,35 @@
 {
-  "issue": 611,
-  "title": "BLU-055 Storage migration matrix",
-  "criteria": [
+  "version": 1,
+  "issues": [
     {
-      "id": "AC-1",
-      "status": "manual",
-      "reason": "No storage migration implementation contract was found on current main that can be exercised by a truthful flutter_test without adding speculative production behavior. Requires migration fixtures and platform storage validation."
-    },
-    {
-      "id": "AC-2",
-      "status": "manual",
-      "reason": "Deterministic migration results require an existing migration engine and persisted fixture format. Current evidence does not expose a testable API."
-    },
-    {
-      "id": "AC-3",
-      "status": "manual",
-      "reason": "Log/artifact egress and secret handling require CI artifact inspection and runtime configuration review."
-    },
-    {
-      "id": "AC-4",
-      "status": "manual",
-      "reason": "Cross-platform migration behavior requires platform storage validation not available from a pure Dart test."
+      "number": 611,
+      "title": "BLU-055 Storage migration matrix",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "gap",
+          "requirement": "Safe migrations and explicit downgrade failure",
+          "reason": "Current main does not expose a storage migration contract that can be verified by a truthful flutter_test. Migration fixtures and platform storage validation remain manual."
+        },
+        {
+          "id": "ac_2",
+          "type": "gap",
+          "requirement": "Results are deterministic and reproducible; all failures are explicit and actionable",
+          "reason": "No existing migration API or fixture contract is available for deterministic automated verification."
+        },
+        {
+          "id": "ac_3",
+          "type": "gap",
+          "requirement": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress",
+          "reason": "Requires CI artifact and runtime egress review rather than a storage migration unit test."
+        },
+        {
+          "id": "ac_4",
+          "type": "gap",
+          "requirement": "Backwards compatibility and cross-platform behavior reviewed; no unsupported capability falsely advertised",
+          "reason": "Requires platform storage validation and compatibility review not available from pure Dart tests."
+        }
+      ]
     }
   ]
 }
