@@ -23,9 +23,7 @@ abstract interface class LocalSemanticFileIndex {
 
 /// A grounded local path with a finite relevance score in the range [0, 1].
 class LocalSemanticHit {
-  const LocalSemanticHit({required this.path, required this.score})
-    : assert(path.length > 0),
-      assert(score >= 0 && score <= 1);
+  const LocalSemanticHit({required this.path, required this.score});
 
   final String path;
   final double score;
@@ -54,7 +52,11 @@ class LocalSemanticSuccess extends LocalSemanticRetrievalResult {
 
   static List<LocalSemanticHit> _validateAndRank(List<LocalSemanticHit> hits) {
     if (hits.isEmpty) {
-      throw ArgumentError.value(hits, 'hits', 'Success requires at least one hit');
+      throw ArgumentError.value(
+        hits,
+        'hits',
+        'Success requires at least one hit',
+      );
     }
 
     final ordered = List<LocalSemanticHit>.of(hits);

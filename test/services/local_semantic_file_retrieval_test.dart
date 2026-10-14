@@ -28,41 +28,45 @@ void main() {
     expect(index.receivedQuery, 'notes');
     expect(result, isA<LocalSemanticSuccess>());
     final hits = (result as LocalSemanticSuccess).hits;
-    expect(
-      hits.map((hit) => hit.path),
-      ['/local/alpha.txt', '/local/notes.txt', '/local/other.txt'],
-    );
+    expect(hits.map((hit) => hit.path), [
+      '/local/alpha.txt',
+      '/local/notes.txt',
+      '/local/other.txt',
+    ]);
     expect(hits.map((hit) => hit.score), [0.9, 0.9, 0.2]);
     expect(() => hits.clear(), throwsUnsupportedError);
   });
 
-  test('success rejects empty results and out-of-range or nonfinite scores', () {
-    expect(
-      () => LocalSemanticRetrievalResult.success(hits: const []),
-      throwsArgumentError,
-    );
-    for (final score in [-0.01, 1.01, double.nan, double.infinity]) {
+  test(
+    'success rejects empty results and out-of-range or nonfinite scores',
+    () {
+      expect(
+        () => LocalSemanticRetrievalResult.success(hits: const []),
+        throwsArgumentError,
+      );
+      for (final score in [-0.01, 1.01, double.nan, double.infinity]) {
+        expect(
+          () => LocalSemanticRetrievalResult.success(
+            hits: [LocalSemanticHit(path: '/local/document.txt', score: score)],
+          ),
+          throwsArgumentError,
+        );
+      }
       expect(
         () => LocalSemanticRetrievalResult.success(
-          hits: [LocalSemanticHit(path: '/local/document.txt', score: score)],
+          hits: const [LocalSemanticHit(path: ' ', score: 0.5)],
         ),
         throwsArgumentError,
       );
-    }
-    expect(
-      () => LocalSemanticRetrievalResult.success(
-        hits: const [LocalSemanticHit(path: ' ', score: 0.5)],
-      ),
-      throwsArgumentError,
-    );
-    final result = LocalSemanticRetrievalResult.success(
-      hits: const [
-        LocalSemanticHit(path: '/local/zero.txt', score: 0),
-        LocalSemanticHit(path: '/local/one.txt', score: 1),
-      ],
-    ) as LocalSemanticSuccess;
-    expect(result.hits.map((hit) => hit.score), [1, 0]);
-  });
+      final result = LocalSemanticRetrievalResult.success(
+        hits: const [
+          LocalSemanticHit(path: '/local/zero.txt', score: 0),
+          LocalSemanticHit(path: '/local/one.txt', score: 1),
+        ],
+      ) as LocalSemanticSuccess;
+      expect(result.hits.map((hit) => hit.score), [1, 0]);
+    },
+  );
 
   test('blank queries remain invalid and never invoke index', () {
     final index = FakeIndex();
