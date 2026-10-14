@@ -7,61 +7,68 @@
       "criteria": [
         {
           "id": "ac_1",
-          "requirement": "Restart after dispatched external effect never automatically sends again",
           "type": "automated",
+          "requirement": "At-most-once dispatch after crash and concurrent callers, with atomic claim required by store contract",
           "tests": [
             {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "crash after send fails closed across instances"
+              "file": "test/idempotent_retry_test.dart",
+              "name": "crash after send before completion fails closed on restart"
+            },
+            {
+              "file": "test/idempotent_retry_test.dart",
+              "name": "concurrent callers have exactly one send"
             }
           ]
         },
         {
           "id": "ac_2",
-          "requirement": "Happy path, malformed checkpoint and disallowed verification are tested",
           "type": "automated",
+          "requirement": "Timeout, cancellation, malformed input and happy path covered with real flutter_test",
           "tests": [
             {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "verified step resumes at next step"
+              "file": "test/idempotent_retry_test.dart",
+              "name": "completed operation is not executed twice"
             },
             {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "malformed checkpoint rejected"
+              "file": "test/idempotent_retry_test.dart",
+              "name": "timeout does not replay an uncertain external send"
             },
             {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "cannot verify without dispatched checkpoint"
+              "file": "test/idempotent_retry_test.dart",
+              "name": "cancellation before claim never sends"
+            },
+            {
+              "file": "test/idempotent_retry_test.dart",
+              "name": "cancellation during send preserves claim and prevents replay"
+            },
+            {
+              "file": "test/idempotent_retry_test.dart",
+              "name": "malformed operation IDs and timeouts are rejected"
             }
           ]
         },
         {
           "id": "ac_3",
-          "requirement": "Recovery contract contains no networking or secrets and fails closed without verification",
           "type": "automated",
+          "requirement": "No egress or secrets in standalone retry module; uncertain operations fail closed",
           "tests": [
             {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "crash after send fails closed across instances"
+              "file": "test/idempotent_retry_test.dart",
+              "name": "crash after send before completion fails closed on restart"
             }
           ]
         },
         {
           "id": "ac_4",
-          "requirement": "Scoped Flutter analyze and unit test command in temporary CI",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/workflow_recovery_test.dart",
-              "name": "verified step resumes at next step"
-            }
-          ]
+          "type": "gap",
+          "requirement": "flutter analyze and relevant tests pass in CI",
+          "reason": "CI verification is required; writing tests alone is not evidence of a successful run."
         },
         {
           "id": "runtime_integration_gap",
-          "requirement": "Encrypted atomic storage, multi-process concurrency, cancellation, offline, permission and timeout integration with BLU-018",
           "type": "gap",
-          "reason": "The standalone core remains unwired to WorkflowExecution. No production persistence or end-to-end guarantees; leave #572 open."
+          "requirement": "Atomic durable encrypted checkpoint implementation, WorkflowExecution/BLU-018 wiring, offline/permission, device and TCC validation",
+          "reason": "No production RetryCheckpointStore is installed; memory fake only. Atomic claim prevents duplicate invocation only when the store persists the claim before the send. A destination-side idempotency key is needed for at-least-once delivery. Native permissions and device/TCC tests require manual hardware validation."
         }
       ]
     }
