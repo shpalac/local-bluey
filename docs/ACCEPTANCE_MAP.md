@@ -687,3 +687,8 @@ manual evidence and a go/no-go decision before disposition.
 ## BLU-028 — opt-in file indexing (partial; Refs #584)
 
 See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.
+
+
+## BLU-034 Playwright MCP (issue #590)
+
+The temporary [acceptance manifest](acceptance/temporary/issue-590.json) maps AC-1 through AC-4. Deterministic fake tests cover hostile pages, blocked hosts and failure/session paths. Production MCP transport, download sandbox, ActionLog/privacy registry integration and accessible RTL consent require manual verification before enabling browser execution. This isolated contract does not establish native readiness.
