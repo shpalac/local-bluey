@@ -1,4 +1,6 @@
-/// A deterministic permission grant owned by the permission center.
+import 'safety_gate.dart';
+
+/// A permission entry tracked by the center for lifecycle and expiry.
 class PermissionGrant {
   PermissionGrant({required this.id, this.expiresAtMs});
 
@@ -10,32 +12,22 @@ class PermissionGrant {
 
   void revoke() => _revoked = true;
 
-  bool isActive(int nowMs) =>
-      !_revoked && (expiresAtMs == null || nowMs < expiresAtMs!);
+  bool isExpired(int nowMs) => expiresAtMs != null && nowMs >= expiresAtMs!;
 }
 
-/// Core permission registry shared by watchdog/policy/ephemeral grants.
+/// Permission center facade over the existing safety authorization path.
+///
+/// The registry is only for grant lifecycle. Authorization is delegated to
+/// SafetyGate so revocation changes the actual action decision path.
 class PermissionCenter {
-  PermissionCenter({DateTime Function()? now}) : _now = now ?? DateTime.now;
+  PermissionCenter({required this.safetyGate, DateTime Function()? now})
+      : _now = now ?? DateTime.now;
 
+  final SafetyGate safetyGate;
   final DateTime Function() _now;
   final Map<String, PermissionGrant> _grants = {};
-  final Set<String> _baseline = {};
-  final Set<String> _allowlist = {};
 
   List<PermissionGrant> get grants => List.unmodifiable(_grants.values);
-
-  void setWatchdogBaseline(Iterable<String> permissions) {
-    _baseline
-      ..clear()
-      ..addAll(permissions);
-  }
-
-  void setAppAllowlist(Iterable<String> apps) {
-    _allowlist
-      ..clear()
-      ..addAll(apps);
-  }
 
   PermissionGrant grant(String id, {Duration? expiry}) {
     final grant = PermissionGrant(
@@ -52,9 +44,10 @@ class PermissionCenter {
     _grants[id]?.revoke();
   }
 
-  bool allows(String id) {
+  Future<bool> allows(String id) async {
     final grant = _grants[id];
-    if (grant != null) return grant.isActive(_now().millisecondsSinceEpoch);
-    return _baseline.contains(id) || _allowlist.contains(id);
+    if (grant == null || grant.isRevoked) return false;
+    if (grant.isExpired(_now().millisecondsSinceEpoch)) return false;
+    return safetyGate.authorize(id, const {});
   }
 }
