@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 565,
+      "title": "BLU-012 Teach Mode capture session lifecycle",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Cancel discards; restart does not resume; denied apps not captured",
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_session_test.dart",
+              "name": "ac1 cancel drops captured steps and restart stays off"
+            }
+          ],
+          "reason": "Denied-app case has separate test under AC-2; native restart is not simulated."
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Happy path, malformed input, timeout, cancellation, permission denied, offline and restart cases where applicable",
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_session_test.dart",
+              "name": "ac2 rejected consent duration and denied app do not capture"
+            }
+          ],
+          "reason": "Only consent, duration refusal and denied-app paths covered here; physical permission loss, offline and timer expiry require additional verification."
+        },
+        {
+          "id": "ac_3",
+          "type": "automated",
+          "requirement": "No unintended egress, secret retention, or unsafe auto-execution",
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_session_test.dart",
+              "name": "ac3 secret-bearing input discarded and draft cannot execute"
+            }
+          ],
+          "reason": "The owner holds sanitized steps in memory without network APIs; native integrations are not proven."
+        },
+        {
+          "id": "ac_4",
+          "type": "manual",
+          "requirement": "flutter analyze and relevant tests pass; PR includes commands and evidence",
+          "reason": "CI verification required. Native macOS TCC validation remains manual."
+        }
+      ]
+    }
+  ]
+}
