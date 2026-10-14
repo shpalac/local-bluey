@@ -74,13 +74,15 @@ final class WorkflowExecution {
       cancel();
       return status;
     }
-    try {
-      await _acknowledgement;
-      await reconcileStartup();
-    } catch (_) {
-      status = WorkflowStatus.failed;
-      audit?.record('execution', 'recovery_storage_failed');
-      return status;
+    if (_acknowledgement != null || recoveryStore != null) {
+      try {
+        await _acknowledgement;
+        await reconcileStartup();
+      } catch (_) {
+        status = WorkflowStatus.failed;
+        audit?.record('execution', 'recovery_storage_failed');
+        return status;
+      }
     }
     if (requiresManualRecovery) {
       status = WorkflowStatus.failed;
@@ -111,9 +113,11 @@ final class WorkflowExecution {
   }
 
   Future<WorkflowStatus> _execute() async {
-    await recoveryStore?.save(
-      RecoveryMetadata(executionId: definition.id, interrupted: true),
-    );
+    if (recoveryStore != null) {
+      await recoveryStore!.save(
+        RecoveryMetadata(executionId: definition.id, interrupted: true),
+      );
+    }
     status = WorkflowStatus.running;
     audit?.record('execution', 'started');
     for (; nextStep < definition.steps.length; nextStep++) {
@@ -149,7 +153,7 @@ final class WorkflowExecution {
       cancel();
       return status;
     }
-    await recoveryStore?.clear();
+    if (recoveryStore != null) await recoveryStore!.clear();
     status = WorkflowStatus.completed;
     audit?.record('execution', 'completed');
     return status;
