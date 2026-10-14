@@ -31,67 +31,70 @@ class ActionHost implements WorkflowHost {
   Future<bool> verify(WorkflowStep step) async => true;
 }
 
-WorkflowStep _step() => const WorkflowStep(
-      type: 'hostAction',
-      target: 'send',
-    );
+WorkflowStep _step() => const WorkflowStep(type: 'hostAction', target: 'send');
 
 Postcondition _expected() => const Postcondition(
-      kind: PostconditionKind.toolResponse,
-      key: 'result',
-      expected: 'done',
-    );
+  kind: PostconditionKind.toolResponse,
+  key: 'result',
+  expected: 'done',
+);
 
 void main() {
-  test('false success rejects normal host completion with mismatched evidence', () async {
-    final reader = MemoryReader({'result': 'wrong'});
-    final host = ActionHost();
-    final verifier = PostconditionVerifier(reader);
-    final workflowHost = VerifyingWorkflowHost(
-      delegate: host,
-      verifier: verifier,
-      postconditions: [_expected()],
-      timeout: const Duration(seconds: 1),
-    );
+  test(
+    'false success rejects normal host completion with mismatched evidence',
+    () async {
+      final reader = MemoryReader({'result': 'wrong'});
+      final host = ActionHost();
+      final verifier = PostconditionVerifier(reader);
+      final workflowHost = VerifyingWorkflowHost(
+        delegate: host,
+        verifier: verifier,
+        postconditions: [_expected()],
+        timeout: const Duration(seconds: 1),
+      );
 
-    await workflowHost.execute(_step());
-    final verified = await workflowHost.verify(_step());
+      await workflowHost.execute(_step());
+      final verified = await workflowHost.verify(_step());
 
-    expect(verified, false);
-    expect(host.executeCalls, 1);
-  });
+      expect(verified, false);
+      expect(host.executeCalls, 1);
+    },
+  );
 
-  test('ui drift rejects second verification and does not cache confirmation', () async {
-    final reader = _ChangingReader(['done', 'changed']);
-    final verifier = PostconditionVerifier(reader);
+  test(
+    'ui drift rejects second verification and does not cache confirmation',
+    () async {
+      final reader = _ChangingReader(['done', 'changed']);
+      final verifier = PostconditionVerifier(reader);
 
-    final first = await verifier.verify(
-      [_expected()],
-      timeout: const Duration(seconds: 1),
-    );
-    final second = await verifier.verify(
-      [_expected()],
-      timeout: const Duration(seconds: 1),
-    );
+      final first = await verifier.verify([
+        _expected(),
+      ], timeout: const Duration(seconds: 1));
+      final second = await verifier.verify([
+        _expected(),
+      ], timeout: const Duration(seconds: 1));
 
-    expect(first, VerificationOutcome.confirmed);
-    expect(second, VerificationOutcome.rejected);
-    expect(reader.reads, 2);
-  });
+      expect(first, VerificationOutcome.confirmed);
+      expect(second, VerificationOutcome.rejected);
+      expect(reader.reads, 2);
+    },
+  );
 
-  test('inconclusive evidence does not permit duplicate action retry', () async {
-    final reader = MemoryReader({'result': null});
-    final host = ActionHost();
-    final verifier = PostconditionVerifier(reader);
+  test(
+    'inconclusive evidence does not permit duplicate action retry',
+    () async {
+      final reader = MemoryReader({'result': null});
+      final host = ActionHost();
+      final verifier = PostconditionVerifier(reader);
 
-    final outcome = await verifier.verify(
-      [_expected()],
-      timeout: const Duration(seconds: 1),
-    );
+      final outcome = await verifier.verify([
+        _expected(),
+      ], timeout: const Duration(seconds: 1));
 
-    expect(outcome, VerificationOutcome.inconclusive);
-    expect(host.executeCalls, 0);
-  });
+      expect(outcome, VerificationOutcome.inconclusive);
+      expect(host.executeCalls, 0);
+    },
+  );
 }
 
 class _ChangingReader implements PostconditionReader {
