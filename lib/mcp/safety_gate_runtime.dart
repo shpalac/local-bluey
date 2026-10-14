@@ -7,9 +7,9 @@ import 'mcp_tool_safety_gate.dart';
 /// Keeps approval, redaction, and lifecycle handling outside untrusted tool
 /// metadata. Native permission checks can be supplied by platform adapters.
 class SafetyGateRuntime {
-  const SafetyGateRuntime({required McpToolSafetyGate gate}) : _gate = gate;
+  const SafetyGateRuntime({required this.gate});
 
-  final McpToolSafetyGate _gate;
+  final McpToolSafetyGate gate;
 
   Future<Object?> invoke({
     required String serverId,
@@ -22,7 +22,7 @@ class SafetyGateRuntime {
       throw const McpToolException(McpToolFailure.cancelled);
     }
 
-    final result = await _gate.execute(
+    final result = await gate.execute(
       serverId: serverId,
       spec: spec,
       arguments: arguments,
