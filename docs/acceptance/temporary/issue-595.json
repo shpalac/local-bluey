@@ -1,22 +1,40 @@
 {
-  "issue": 595,
-  "criteria": {
-    "AC-1": {
-      "status": "automated",
-      "test_file": "test/blu_039_android_emulator_ci_lane_test.dart",
-      "test_name": "android emulator ci lane acceptance smoke test"
-    },
-    "AC-2": {
-      "status": "manual/gap",
-      "reason": "Deterministic emulator execution depends on GitHub Actions runner image and Android emulator availability; workflow diagnostics provide evidence but cannot be proven by a local Dart unit test."
-    },
-    "AC-3": {
-      "status": "manual/gap",
-      "reason": "Secret, artifact and network egress review requires CI workflow inspection and runner execution evidence."
-    },
-    "AC-4": {
-      "status": "manual/gap",
-      "reason": "Cross-platform compatibility review requires platform validation beyond a Dart acceptance test."
+  "version": 1,
+  "issues": [
+    {
+      "number": 595,
+      "title": "BLU-039 Android emulator CI lane",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Emulator tests reproducible",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/blu_039_android_emulator_ci_lane_test.dart",
+              "name": "android emulator ci lane acceptance smoke test"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Results are deterministic and reproducible; all failures are explicit and actionable",
+          "type": "manual",
+          "reason": "Deterministic emulator execution depends on the GitHub Actions runner image and Android emulator availability; CI run history is the evidence, not a local Dart test."
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress",
+          "type": "manual",
+          "reason": "Secret, artifact and network egress review requires CI workflow inspection and runner execution evidence."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Backwards compatibility and cross-platform behavior reviewed; no unsupported capability falsely advertised",
+          "type": "manual",
+          "reason": "Cross-platform compatibility review requires platform validation beyond a Dart acceptance test."
+        }
+      ]
     }
-  }
+  ]
 }
