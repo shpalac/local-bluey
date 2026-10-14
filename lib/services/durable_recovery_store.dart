@@ -3,7 +3,10 @@
 /// Implementations must persist state before process termination. The in-memory
 /// fake exists for deterministic restart simulation tests only.
 class RecoveryMetadata {
-  const RecoveryMetadata({required this.executionId, required this.interrupted});
+  const RecoveryMetadata({
+    required this.executionId,
+    required this.interrupted,
+  });
 
   final String executionId;
   final bool interrupted;
