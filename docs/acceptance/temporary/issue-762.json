@@ -28,6 +28,10 @@
             {
               "file": "test/mcp/safety_gate_runtime_test.dart",
               "name": "runtime cancels during an invocation with controllable fake"
+            },
+            {
+              "file": "test/mcp/safety_gate_runtime_preflight_cancellation_test.dart",
+              "name": "runtime cancellation interrupts pending async precheck"
             }
           ]
         },

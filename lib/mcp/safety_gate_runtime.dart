@@ -40,8 +40,20 @@ class SafetyGateRuntime {
     if (cancellation?.isCancelled ?? false) {
       throw const McpToolException(McpToolFailure.cancelled);
     }
-    if (isCancelled != null && await isCancelled()) {
-      throw const McpToolException(McpToolFailure.cancelled);
+    if (isCancelled != null) {
+      final cancelled = isCancelled();
+      final bool wasCancelled;
+      if (cancelled is Future<bool> && cancellation != null) {
+        wasCancelled = await Future.any<bool>([
+          cancelled,
+          cancellation.whenCancelled.then<bool>((_) => true),
+        ]);
+      } else {
+        wasCancelled = await cancelled;
+      }
+      if (wasCancelled) {
+        throw const McpToolException(McpToolFailure.cancelled);
+      }
     }
     if (cancellation?.isCancelled ?? false) {
       throw const McpToolException(McpToolFailure.cancelled);
