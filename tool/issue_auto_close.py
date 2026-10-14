@@ -147,9 +147,9 @@ def process(event, repo, root, client):
                     "body": (
                         f"{marker}\n"
                         f"Acceptance complete: all numbered criteria have named "
-                        f"automated tests in \`{manifest.relative_to(root)}\`. "
+                        f"automated tests in `{manifest.relative_to(root)}`. "
                         f"PR #{number} passed exact-head CI and the merged "
-                        f"commit \`{merge_sha}\` passed main CI. "
+                        f"commit `{merge_sha}` passed main CI. "
                         "No manual or implementation gaps remain in the contract."
                     ),
                 })
