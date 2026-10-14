@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/durable_recovery_store.dart';
+import 'package:local_bluey/services/file_durable_recovery_store.dart';
 import 'package:local_bluey/workflows/workflow_dsl.dart';
 import 'package:local_bluey/workflows/workflow_execution.dart';
 
