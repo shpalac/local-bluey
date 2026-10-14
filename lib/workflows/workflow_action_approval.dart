@@ -115,12 +115,10 @@ final class WorkflowApprovalHost implements WorkflowHost {
     this._delegate,
     this._prompt,
     this._safetyGate, {
-    WorkflowApprovalGrantStorage? storage,
-    Duration grantTtl = const Duration(minutes: 5),
+    this._storage,
+    this._grantTtl = const Duration(minutes: 5),
     DateTime Function()? now,
-  }) : _storage = storage,
-       _grantTtl = grantTtl,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final WorkflowDefinition _definition;
   final WorkflowHost _delegate;
