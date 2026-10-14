@@ -192,15 +192,15 @@ def check(root: Path, repository: str, body: str, token: str, mode: str,
         acceptance_ids = validate_issue_body(issue_body, number)
         path, stage = select_manifest(root, number)
         # Native GitHub closing keywords close at merge time, before main CI.
-        # Temporary issue evidence may only opt in to deferred AutoClose.
-        if closing and stage == "temporary":
+        # All automated issue closures must opt in to deferred AutoClose.
+        if closing:
             clean_body = re.sub(
                 r"(?ms)^\x60\x60\x60.*?^\x60\x60\x60[^\n]*(?:\n|$)",
                 "", body,
             )
             if not re.search(rf"(?im)^\s*AutoClose\s+#{number}\s*$", clean_body):
                 raise ContractError(
-                    f"#{number}: temporary closing requires a standalone AutoClose marker"
+                    f"#{number}: automatic closing requires a standalone AutoClose marker"
                 )
         record = validate_stage(root, number, path, stage, closing)
         if closing and not acceptance_ids:
