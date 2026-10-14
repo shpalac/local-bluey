@@ -21,7 +21,7 @@ class PermissionGrant {
 /// SafetyGate so revocation changes the actual action decision path.
 class PermissionCenter {
   PermissionCenter({required this.safetyGate, DateTime Function()? now})
-      : _now = now ?? DateTime.now;
+    : _now = now ?? DateTime.now;
 
   final SafetyGate safetyGate;
   final DateTime Function() _now;
