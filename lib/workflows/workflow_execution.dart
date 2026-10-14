@@ -40,6 +40,7 @@ final class WorkflowExecution {
   String? pendingRecoveryExecutionId;
   bool _cancelled = false;
   Future<WorkflowStatus>? _active;
+  Future<void>? _acknowledgement;
 
   Future<void> reconcileStartup() async {
     final metadata = await recoveryStore?.load();
@@ -50,8 +51,11 @@ final class WorkflowExecution {
 
   bool get requiresManualRecovery => pendingRecoveryExecutionId != null;
 
-  void acknowledgeRecovery() {
+  Future<void> acknowledgeRecovery() {
+    if (!requiresManualRecovery) return Future<void>.value();
+    _acknowledgement = recoveryStore?.clear() ?? Future<void>.value();
     pendingRecoveryExecutionId = null;
+    return _acknowledgement!;
   }
 
   void cancel() {
@@ -69,6 +73,16 @@ final class WorkflowExecution {
     if (_cancelled || audit?.stopRequested == true) {
       cancel();
       return status;
+    }
+    if (_acknowledgement != null || recoveryStore != null) {
+      try {
+        await _acknowledgement;
+        await reconcileStartup();
+      } catch (_) {
+        status = WorkflowStatus.failed;
+        audit?.record('execution', 'recovery_storage_failed');
+        return status;
+      }
     }
     if (requiresManualRecovery) {
       status = WorkflowStatus.failed;
@@ -99,6 +113,11 @@ final class WorkflowExecution {
   }
 
   Future<WorkflowStatus> _execute() async {
+    if (recoveryStore != null) {
+      await recoveryStore!.save(
+        RecoveryMetadata(executionId: definition.id, interrupted: true),
+      );
+    }
     status = WorkflowStatus.running;
     audit?.record('execution', 'started');
     for (; nextStep < definition.steps.length; nextStep++) {
@@ -134,6 +153,7 @@ final class WorkflowExecution {
       cancel();
       return status;
     }
+    if (recoveryStore != null) await recoveryStore!.clear();
     status = WorkflowStatus.completed;
     audit?.record('execution', 'completed');
     return status;
