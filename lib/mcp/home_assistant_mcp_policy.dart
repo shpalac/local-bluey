@@ -4,7 +4,7 @@
 /// transport only after this policy approves the request.
 class HomeAssistantMcpPolicy {
   HomeAssistantMcpPolicy({required Set<String> allowedEntities})
-      : _allowedEntities = Set.unmodifiable(allowedEntities);
+    : _allowedEntities = Set.unmodifiable(allowedEntities);
 
   final Set<String> _allowedEntities;
 
@@ -25,8 +25,7 @@ class HomeAssistantMcpPolicy {
     if (!enabled || !localEndpoint) {
       return const HomeAssistantPolicyResult.denied();
     }
-    if (!_allowedEntities.contains(entityId) ||
-        !_services.contains(service)) {
+    if (!_allowedEntities.contains(entityId) || !_services.contains(service)) {
       return const HomeAssistantPolicyResult.invalid();
     }
     if ((service == 'lock' || service == 'unlock') &&
@@ -41,13 +40,13 @@ class HomeAssistantPolicyResult {
   const HomeAssistantPolicyResult._(this.allowed, this.reason);
 
   const HomeAssistantPolicyResult.approved()
-      : this._(true, HomeAssistantPolicyFailure.none);
+    : this._(true, HomeAssistantPolicyFailure.none);
 
   const HomeAssistantPolicyResult.denied()
-      : this._(false, HomeAssistantPolicyFailure.denied);
+    : this._(false, HomeAssistantPolicyFailure.denied);
 
   const HomeAssistantPolicyResult.invalid()
-      : this._(false, HomeAssistantPolicyFailure.invalid);
+    : this._(false, HomeAssistantPolicyFailure.invalid);
 
   final bool allowed;
   final HomeAssistantPolicyFailure reason;

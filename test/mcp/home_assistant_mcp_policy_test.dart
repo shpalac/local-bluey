@@ -3,9 +3,7 @@ import 'package:local_bluey/mcp/home_assistant_mcp_policy.dart';
 
 void main() {
   test('approved local allowed lock passes policy', () {
-    final policy = HomeAssistantMcpPolicy(
-      allowedEntities: {'lock.front_door'},
-    );
+    final policy = HomeAssistantMcpPolicy(allowedEntities: {'lock.front_door'});
 
     final result = policy.validate(
       entityId: 'lock.front_door',
@@ -19,9 +17,7 @@ void main() {
   });
 
   test('unknown entities fail closed', () {
-    final policy = HomeAssistantMcpPolicy(
-      allowedEntities: {'lock.front_door'},
-    );
+    final policy = HomeAssistantMcpPolicy(allowedEntities: {'lock.front_door'});
 
     final result = policy.validate(
       entityId: 'lock.back_door',
@@ -35,27 +31,29 @@ void main() {
   });
 
   test('remote endpoint and disabled adapter are denied', () {
-    final policy = HomeAssistantMcpPolicy(
-      allowedEntities: {'light.desk'},
-    );
+    final policy = HomeAssistantMcpPolicy(allowedEntities: {'light.desk'});
 
     expect(
-      policy.validate(
-        entityId: 'light.desk',
-        service: 'turn_on',
-        localEndpoint: false,
-        enabled: true,
-      ).reason,
+      policy
+          .validate(
+            entityId: 'light.desk',
+            service: 'turn_on',
+            localEndpoint: false,
+            enabled: true,
+          )
+          .reason,
       HomeAssistantPolicyFailure.denied,
     );
 
     expect(
-      policy.validate(
-        entityId: 'light.desk',
-        service: 'turn_on',
-        localEndpoint: true,
-        enabled: false,
-      ).reason,
+      policy
+          .validate(
+            entityId: 'light.desk',
+            service: 'turn_on',
+            localEndpoint: true,
+            enabled: false,
+          )
+          .reason,
       HomeAssistantPolicyFailure.denied,
     );
   });

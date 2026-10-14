@@ -21,6 +21,14 @@
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "unknown entity and invalid service fail closed"
+            },
+            {
+              "file": "test/mcp/home_assistant_mcp_policy_test.dart",
+              "name": "approved local allowed lock passes policy"
+            },
+            {
+              "file": "test/mcp/home_assistant_mcp_policy_test.dart",
+              "name": "unknown entities fail closed"
             }
           ]
         },
@@ -52,6 +60,10 @@
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "cancellation and restart never inherit an approval"
+            },
+            {
+              "file": "test/mcp/home_assistant_mcp_policy_test.dart",
+              "name": "remote endpoint and disabled adapter are denied"
             }
           ]
         },
