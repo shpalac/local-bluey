@@ -1,0 +1,24 @@
+{
+  "issue": 614,
+  "criteria": {
+    "AC-1": {
+      "status": "automated",
+      "test_file": "test/mcp/hostile_mcp_server_suite_test.dart",
+      "tests": ["hostile nested output redacts secrets deterministically", "hostile server denial returns explicit policy error"]
+    },
+    "AC-2": {
+      "status": "automated",
+      "test_file": "test/mcp/hostile_mcp_server_suite_test.dart",
+      "tests": ["hostile nested output redacts secrets deterministically"]
+    },
+    "AC-3": {
+      "status": "automated",
+      "test_file": "test/mcp/hostile_mcp_server_suite_test.dart",
+      "tests": ["hostile nested output redacts secrets deterministically"]
+    },
+    "AC-4": {
+      "status": "manual/gap",
+      "reason": "Full platform compatibility requires device-specific native MCP and UI validation not available in pure Dart tests."
+    }
+  }
+}
