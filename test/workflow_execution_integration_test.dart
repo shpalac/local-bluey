@@ -6,66 +6,75 @@ import '../lib/workflows/workflow_dsl.dart';
 import '../lib/workflows/workflow_execution.dart';
 
 void main() {
-  test('WorkflowExecution integrates approval host and audit happy path', () async {
-    final audit = ExecutionAudit();
-    final events = <String>[];
-    final definition = WorkflowDefinition(
-      id: 'blu-016',
-      trigger: 'manual',
-      steps: const [WorkflowStep(type: 'hostAction', target: 'local')],
-    );
-    final execution = WorkflowExecution(
-      definition,
-      _Host(events),
-      deadline: const Duration(seconds: 5),
-      audit: audit,
-    );
+  test(
+    'WorkflowExecution integrates approval host and audit happy path',
+    () async {
+      final audit = ExecutionAudit();
+      final events = <String>[];
+      final definition = WorkflowDefinition(
+        id: 'blu-016',
+        trigger: 'manual',
+        steps: const [WorkflowStep(type: 'hostAction', target: 'local')],
+      );
+      final execution = WorkflowExecution(
+        definition,
+        _Host(events),
+        deadline: const Duration(seconds: 5),
+        audit: audit,
+      );
 
-    final status = await execution.run();
+      final status = await execution.run();
 
-    expect(status, WorkflowStatus.completed);
-    expect(events, ['approve', 'execute', 'verify']);
-    expect(audit.entries.any((entry) => entry.status == 'completed'), isTrue);
-  });
+      expect(status, WorkflowStatus.completed);
+      expect(events, ['approve', 'execute', 'verify']);
+      expect(audit.entries.any((entry) => entry.status == 'completed'), isTrue);
+    },
+  );
 
-  test('WorkflowExecution stops after cancellation and does not continue', () async {
-    final audit = ExecutionAudit();
-    final definition = WorkflowDefinition(
-      id: 'blu-016-cancel',
-      trigger: 'manual',
-      steps: const [WorkflowStep(type: 'hostAction', target: 'local')],
-    );
-    final execution = WorkflowExecution(
-      definition,
-      _Host([]),
-      deadline: const Duration(seconds: 5),
-      audit: audit,
-    );
+  test(
+    'WorkflowExecution stops after cancellation and does not continue',
+    () async {
+      final audit = ExecutionAudit();
+      final definition = WorkflowDefinition(
+        id: 'blu-016-cancel',
+        trigger: 'manual',
+        steps: const [WorkflowStep(type: 'hostAction', target: 'local')],
+      );
+      final execution = WorkflowExecution(
+        definition,
+        _Host([]),
+        deadline: const Duration(seconds: 5),
+        audit: audit,
+      );
 
-    execution.cancel();
+      execution.cancel();
 
-    expect(await execution.run(), WorkflowStatus.cancelled);
-    expect(audit.stopRequested, isTrue);
-  });
+      expect(await execution.run(), WorkflowStatus.cancelled);
+      expect(audit.stopRequested, isTrue);
+    },
+  );
 
-  test('WorkflowExecution rejects interrupted restart without replay', () async {
-    final definition = WorkflowDefinition(
-      id: 'blu-016-recovery',
-      trigger: 'manual',
-      steps: const [WorkflowStep(type: 'hostAction', target: 'local')],
-    );
-    final execution = WorkflowExecution(
-      definition,
-      _Host([]),
-      deadline: const Duration(seconds: 5),
-      recoveryStore: _RecoveryStore(),
-    );
+  test(
+    'WorkflowExecution rejects interrupted restart without replay',
+    () async {
+      final definition = WorkflowDefinition(
+        id: 'blu-016-recovery',
+        trigger: 'manual',
+        steps: const [WorkflowStep(type: 'hostAction', target: 'local')],
+      );
+      final execution = WorkflowExecution(
+        definition,
+        _Host([]),
+        deadline: const Duration(seconds: 5),
+        recoveryStore: _RecoveryStore(),
+      );
 
-    await execution.reconcileStartup();
+      await execution.reconcileStartup();
 
-    expect(execution.requiresManualRecovery, isTrue);
-    expect(await execution.run(), WorkflowStatus.failed);
-  });
+      expect(execution.requiresManualRecovery, isTrue);
+      expect(await execution.run(), WorkflowStatus.failed);
+    },
+  );
 }
 
 final class _Host implements WorkflowHost {
@@ -96,10 +105,8 @@ final class _RecoveryStore implements DurableRecoveryStore {
   Future<void> clear() async {}
 
   @override
-  Future<RecoveryMetadata?> load() async => const RecoveryMetadata(
-        executionId: 'recovery',
-        interrupted: true,
-      );
+  Future<RecoveryMetadata?> load() async =>
+      const RecoveryMetadata(executionId: 'recovery', interrupted: true);
 
   @override
   Future<void> save(RecoveryMetadata metadata) async {}
