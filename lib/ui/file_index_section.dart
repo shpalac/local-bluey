@@ -34,19 +34,24 @@ class _FileIndexSectionState extends State<FileIndexSection> {
       _error = null;
     });
     try {
-      final path = await (FileIndexSection.debugChooseDirectory?.call() ??
-          _channel.invokeMethod<String>('chooseDirectory'));
+      final path =
+          await (FileIndexSection.debugChooseDirectory?.call() ??
+              _channel.invokeMethod<String>('chooseDirectory'));
       if (!mounted || path == null) {
         return;
       }
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text(Strings.t('Index selected folder?', 'לאנדקס את התיקייה שנבחרה?')),
-          content: Text(Strings.t(
-            'Local file contents will be scanned into memory. Hidden files are skipped. You can revoke access at any time; no content is uploaded.',
-            'תוכן הקבצים המקומיים ייסרק לזיכרון. קבצים מוסתרים יוחרגו. ניתן לבטל גישה בכל עת; לא מתבצעת העלאה.',
-          )),
+          title: Text(
+            Strings.t('Index selected folder?', 'לאנדקס את התיקייה שנבחרה?'),
+          ),
+          content: Text(
+            Strings.t(
+              'Local file contents will be scanned into memory. Hidden files are skipped. You can revoke access at any time; no content is uploaded.',
+              'תוכן הקבצים המקומיים ייסרק לזיכרון. קבצים מוסתרים יוחרגו. ניתן לבטל גישה בכל עת; לא מתבצעת העלאה.',
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -65,28 +70,40 @@ class _FileIndexSectionState extends State<FileIndexSection> {
       await _index.grant(Directory(path), consent: true);
     } catch (_) {
       if (mounted) {
-        setState(() => _error = Strings.t(
-          'Cannot access the selected folder. Nothing was uploaded.',
-          'אין גישה לתיקייה שנבחרה. לא הועלה שום מידע.',
-        ));
+        setState(
+          () => _error = Strings.t(
+            'Cannot access the selected folder. Nothing was uploaded.',
+            'אין גישה לתיקייה שנבחרה. לא הועלה שום מידע.',
+          ),
+        );
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
   Future<void> _refresh() async {
-    if (_busy) return;
+    if (_busy) {
+      return;
+    }
     setState(() => _busy = true);
     try {
       await _index.refresh();
     } catch (_) {
-      if (mounted) setState(() => _error = Strings.t(
-        'Index refresh failed. Revoke to clear the index.',
-        'עדכון האינדקס נכשל. ניתן לבטל כדי למחוק את האינדקס.',
-      ));
+      if (mounted) {
+        setState(
+          () => _error = Strings.t(
+            'Index refresh failed. Revoke to clear the index.',
+            'עדכון האינדקס נכשל. ניתן לבטל כדי למחוק את האינדקס.',
+          ),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+      }
     }
   }
 
@@ -103,34 +120,44 @@ class _FileIndexSectionState extends State<FileIndexSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(Strings.t('Local file indexing', 'אינדוקס קבצים מקומי'),
-            style: Theme.of(context).textTheme.titleSmall),
-        Text(Strings.t(
-          'Off by default. Indexed contents stay in memory until revoked or restart.',
-          'כבוי כברירת מחדל. התוכן נשמר בזיכרון עד לביטול או להפעלה מחדש.',
-        )),
+        Text(
+          Strings.t('Local file indexing', 'אינדוקס קבצים מקומי'),
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        Text(
+          Strings.t(
+            'Off by default. Indexed contents stay in memory until revoked or restart.',
+            'כבוי כברירת מחדל. התוכן נשמר בזיכרון עד לביטול או להפעלה מחדש.',
+          ),
+        ),
         if (_busy) const LinearProgressIndicator(),
         if (_error != null) Text(_error!, key: const Key('file-index-error')),
-        Text(Strings.t(
-          'Indexed files: ${_index.documentCount}',
-          'קבצים באינדקס: ${_index.documentCount}',
-        ), key: const Key('file-index-count')),
-        Wrap(spacing: 8, children: [
-          OutlinedButton(
-            onPressed: _busy ? null : _choose,
-            child: Text(Strings.t('Choose folder', 'בחירת תיקייה')),
+        Text(
+          Strings.t(
+            'Indexed files: ${_index.documentCount}',
+            'קבצים באינדקס: ${_index.documentCount}',
           ),
-          if (_index.isEnabled)
+          key: const Key('file-index-count'),
+        ),
+        Wrap(
+          spacing: 8,
+          children: [
             OutlinedButton(
-              onPressed: _busy ? null : _refresh,
-              child: Text(Strings.t('Refresh', 'רענון')),
+              onPressed: _busy ? null : _choose,
+              child: Text(Strings.t('Choose folder', 'בחירת תיקייה')),
             ),
-          if (_index.isEnabled)
-            OutlinedButton(
-              onPressed: _revoke,
-              child: Text(Strings.t('Revoke and purge', 'ביטול ומחיקה')),
-            ),
-        ]),
+            if (_index.isEnabled)
+              OutlinedButton(
+                onPressed: _busy ? null : _refresh,
+                child: Text(Strings.t('Refresh', 'רענון')),
+              ),
+            if (_index.isEnabled)
+              OutlinedButton(
+                onPressed: _revoke,
+                child: Text(Strings.t('Revoke and purge', 'ביטול ומחיקה')),
+              ),
+          ],
+        ),
       ],
     );
   }
