@@ -31,11 +31,13 @@ void main() {
         arguments: {'path': '/tmp/file'},
         timeout: const Duration(seconds: 1),
       ),
-      throwsA(isA<McpToolException>().having(
-        (error) => error.reason,
-        'reason',
-        McpToolFailure.denied,
-      )),
+      throwsA(
+        isA<McpToolException>().having(
+          (error) => error.reason,
+          'reason',
+          McpToolFailure.denied,
+        ),
+      ),
     );
     expect(called, isFalse);
   });
