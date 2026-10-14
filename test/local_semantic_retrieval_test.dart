@@ -32,8 +32,10 @@ void main() {
   test('consent gate, grounded citation and ranked excerpt', () async {
     final file = File('${directory.path}/guide.txt');
     await file.writeAsString('blueberry pancakes with honey');
-    expect((await retriever.retrieve('blueberry')).status,
-        LocalRetrievalStatus.disabled);
+    expect(
+      (await retriever.retrieve('blueberry')).status,
+      LocalRetrievalStatus.disabled,
+    );
     await index.grant(directory, consent: false);
     expect((await retriever.retrieve('blueberry')).hits, isEmpty);
     await index.grant(directory, consent: true);
@@ -46,10 +48,14 @@ void main() {
 
   test('invalid query and invalid limit fail closed', () async {
     await index.grant(directory, consent: true);
-    expect((await retriever.retrieve(' ')).status,
-        LocalRetrievalStatus.invalidQuery);
-    expect((await retriever.retrieve('hello', limit: 0)).status,
-        LocalRetrievalStatus.invalidQuery);
+    expect(
+      (await retriever.retrieve(' ')).status,
+      LocalRetrievalStatus.invalidQuery,
+    );
+    expect(
+      (await retriever.retrieve('hello', limit: 0)).status,
+      LocalRetrievalStatus.invalidQuery,
+    );
   });
 
   test('revocation and restart remove all results', () async {
@@ -58,8 +64,10 @@ void main() {
     index.revoke();
     expect((await retriever.retrieve('blueberry')).hits, isEmpty);
     final restarted = LocalSemanticRetriever(FileIndex());
-    expect((await restarted.retrieve('blueberry')).status,
-        LocalRetrievalStatus.disabled);
+    expect(
+      (await restarted.retrieve('blueberry')).status,
+      LocalRetrievalStatus.disabled,
+    );
   });
 
   test('cancellation returns no partial citations', () async {
@@ -76,8 +84,10 @@ void main() {
   test('timeout returns no partial citations', () async {
     await File('${directory.path}/doc.txt').writeAsString('blueberry');
     await index.grant(directory, consent: true);
-    final result =
-        await retriever.retrieve('blueberry', timeout: Duration.zero);
+    final result = await retriever.retrieve(
+      'blueberry',
+      timeout: Duration.zero,
+    );
     expect(result.status, LocalRetrievalStatus.invalidQuery);
   });
 
@@ -91,8 +101,7 @@ void main() {
   });
 
   test('Hebrew text tokenization works without network', () async {
-    await File('${directory.path}/hebrew.txt')
-        .writeAsString('תפוח ירוק בגינה');
+    await File('${directory.path}/hebrew.txt').writeAsString('תפוח ירוק בגינה');
     await index.grant(directory, consent: true);
     expect((await retriever.retrieve('תפוח')).hits, isNotEmpty);
   });
