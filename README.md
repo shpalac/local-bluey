@@ -252,3 +252,6 @@ Local Bluey is forked from [**Bluey by Riley Brown**](https://github.com/rbrown1
 [Back to top ↑](#-local-bluey)
 
 </div>
+
+
+**Opt-in file indexing (experimental, not shipped):** An isolated in-memory engine supports explicitly approved directory scans, incremental refresh and immediate revocation. A folder chooser and end-user controls are still pending. See [BLU-028 implementation notes](docs/blu-028-file-index.md).
