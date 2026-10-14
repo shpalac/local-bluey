@@ -17,6 +17,10 @@
             {
               "file": "test/teach_mode/draft_builder_test.dart",
               "name": "unknown and malformed observations require review"
+            },
+            {
+              "file": "test/teach_mode/draft_preview_test.dart",
+              "name": "preview flags unknown steps and never authorizes execution"
             }
           ]
         },
@@ -28,6 +32,10 @@
             {
               "file": "test/teach_mode/draft_builder_test.dart",
               "name": "empty observations are safe and immutable"
+            },
+            {
+              "file": "test/teach_mode/draft_preview_test.dart",
+              "name": "preview handles empty and malformed observations deterministically"
             }
           ]
         },
@@ -35,7 +43,13 @@
           "id": "ac_3",
           "requirement": "Pure draft builder discards unrecognized data and never invokes host or network",
           "type": "gap",
-          "reason": "Isolated non-executable module tested; real capture, data registry, safety gate and host integration not yet connected."
+          "reason": "Isolated non-executable module tested; real capture, data registry, safety gate and host integration not yet connected.",
+          "tests": [
+            {
+              "file": "test/teach_mode/draft_preview_test.dart",
+              "name": "preview exposes placeholders without retaining typed secrets"
+            }
+          ]
         },
         {
           "id": "ac_4",
