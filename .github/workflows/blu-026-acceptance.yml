@@ -4,6 +4,7 @@ on:
     paths:
       - 'lib/mcp/**'
       - 'test/mcp/**'
+      - 'docs/acceptance/temporary/issue-582.json'
       - '.github/workflows/blu-026-acceptance.yml'
   workflow_dispatch:
 permissions:
@@ -12,12 +13,12 @@ jobs:
   acceptance:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed lib/mcp test/mcp
       - run: flutter analyze lib/mcp test/mcp
       - run: flutter test test/mcp/mcp_tool_safety_gate_test.dart
-      - run: flutter build web
+      - run: flutter build bundle --release
