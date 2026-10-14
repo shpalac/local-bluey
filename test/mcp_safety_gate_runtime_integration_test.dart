@@ -97,6 +97,16 @@ void main() {
       ),
       throwsA(isA<McpToolException>()),
     );
+
+    await expectLater(
+      runtime.invoke(
+        serverId: 'fake',
+        spec: spec,
+        arguments: const {'count': 1},
+        timeout: const Duration(milliseconds: 10),
+      ),
+      throwsA(isA<McpToolException>()),
+    );
   });
 
   test('runtime cancellation fixture fails closed', () async {
