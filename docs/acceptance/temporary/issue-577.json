@@ -33,6 +33,12 @@
           "type": "manual",
           "requirement": "User-facing states are accessible, RTL-compatible and reversible where applicable",
           "reason": "This headless benchmark has no new user-facing screens. UI accessibility and RTL require product-owner applicability review."
+        },
+        {
+          "id": "end_to_end_gap",
+          "type": "gap",
+          "requirement": "Real BLU-006/008 captures and production workflow instrumentation",
+          "reason": "Synthetic fixtures and the local retrieval contract only; no production trace capture, end-to-end privacy verification, permission flows or accessibility evidence. Keep #577 open."
         }
       ]
     }
