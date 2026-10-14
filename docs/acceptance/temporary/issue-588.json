@@ -8,41 +8,26 @@
         {
           "id": "ac_1",
           "requirement": "Rive feasibility fallback behavior is verified",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "docs/acceptance/temporary/issue-588.json",
-              "name": "fake Rive adapter contract verifies fallback behavior"
-            }
-          ]
+          "type": "manual",
+          "reason": "No committed Rive adapter test file with issue-specific automated evidence exists in this PR; CI uses only fakes and no credentials."
         },
         {
           "id": "ac_2",
           "requirement": "Success, invalid input, offline, timeout, cancellation and restart paths are covered",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "docs/acceptance/temporary/issue-588.json",
-              "name": "fake adapter state paths"
-            }
-          ]
+          "type": "manual",
+          "reason": "No committed Rive adapter test file with issue-specific automated evidence exists in this PR; runtime state-path evidence requires implementation tests."
         },
         {
           "id": "ac_3",
           "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
           "type": "manual",
-          "reason": "Security review requires runtime inspection of platform integrations; CI uses only fakes and no credentials"
+          "reason": "Security review requires runtime inspection of platform integrations; CI uses only fakes and no credentials."
         },
         {
           "id": "ac_4",
           "requirement": "User-facing states accessible, RTL-compatible and reversible",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "docs/acceptance/temporary/issue-588.json",
-              "name": "state contract transitions"
-            }
-          ]
+          "type": "manual",
+          "reason": "Accessibility, RTL layout and reversible user-facing behavior require UI/runtime evidence not available from this feasibility PR."
         }
       ]
     }
