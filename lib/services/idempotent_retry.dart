@@ -24,7 +24,9 @@ class RetryCancellation {
   bool get isCancelled => _cancelled.isCompleted;
   Future<void> get whenCancelled => _cancelled.future;
   void cancel() {
-    if (!_cancelled.isCompleted) _cancelled.complete();
+    if (!_cancelled.isCompleted) {
+      _cancelled.complete();
+    }
   }
 }
 
@@ -38,27 +40,37 @@ class IdempotentRetryExecutor {
     Duration? timeout,
     RetryCancellation? cancellation,
   }) async {
-    if (operationId.trim().isEmpty)
+    if (operationId.trim().isEmpty) {
       throw ArgumentError.value(
         operationId,
         'operationId',
         'Must not be empty',
       );
-    if (timeout != null && timeout <= Duration.zero)
+    }
+    if (timeout != null && timeout <= Duration.zero) {
       throw ArgumentError.value(timeout, 'timeout', 'Must be positive');
-    if (cancellation?.isCancelled ?? false) throw const RetryCancelled();
-    if (!await _store.claim(operationId))
+    }
+    if (cancellation?.isCancelled ?? false) {
+      throw const RetryCancelled();
+    }
+    if (!await _store.claim(operationId)) {
       throw StateError('Operation already claimed: $operationId');
-    if (cancellation?.isCancelled ?? false) throw const RetryCancelled();
+    }
+    if (cancellation?.isCancelled ?? false) {
+      throw const RetryCancelled();
+    }
     Future<T> outcome = Future<T>.sync(send);
     if (timeout != null) outcome = outcome.timeout(timeout);
-    if (cancellation != null)
+    if (cancellation != null) {
       outcome = Future.any<T>([
         outcome,
         cancellation.whenCancelled.then<T>((_) => throw const RetryCancelled()),
       ]);
+    }
     final result = await outcome;
-    if (cancellation?.isCancelled ?? false) throw const RetryCancelled();
+    if (cancellation?.isCancelled ?? false) {
+      throw const RetryCancelled();
+    }
     await _store.write(
       RetryCheckpoint(operationId: operationId, phase: RetryPhase.completed),
     );
