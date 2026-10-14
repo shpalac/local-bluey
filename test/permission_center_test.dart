@@ -1,4 +1,4 @@
-import 'package:flutter_test/flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/permission_center.dart';
 import 'package:local_bluey/services/safety_gate.dart';
 
