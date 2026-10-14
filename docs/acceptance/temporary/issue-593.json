@@ -1,28 +1,45 @@
 {
-  "issue": 593,
-  "title": "BLU-037 PR fast CI lane",
-  "criteria": [
+  "version": 1,
+  "issues": [
     {
-      "id": "AC-1",
-      "status": "automated",
-      "test": ".github/workflows/pr-fast-ci.yml::fast-ci required workflow job",
-      "reason": "Workflow fails the PR check when format, analyze, or test commands fail."
-    },
-    {
-      "id": "AC-2",
-      "status": "automated",
-      "test": "tool/test_ci_gate.py::test_gate_fails_closed",
-      "reason": "Existing CI gate fixtures verify explicit failure behavior."
-    },
-    {
-      "id": "AC-3",
-      "status": "manual",
-      "reason": "Workflow review required to verify artifact/log policy and network restrictions."
-    },
-    {
-      "id": "AC-4",
-      "status": "manual",
-      "reason": "Cross-platform behavior review is required; this lane intentionally targets Ubuntu-only checks."
+      "number": 593,
+      "title": "BLU-037 PR fast CI lane",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "PR failures block merge",
+          "type": "automated",
+          "tests": [
+            {
+              "file": ".github/workflows/pr-fast-ci.yml",
+              "name": "fast-ci required workflow job"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Results are deterministic and reproducible; failures are explicit and actionable",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "tool/test_ci_gate.py",
+              "name": "test_gate_fails_closed"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress",
+          "type": "manual",
+          "reason": "Workflow review is required for artifact/log policy and network restrictions."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Backwards compatibility and cross-platform behavior reviewed; no unsupported capability falsely advertised",
+          "type": "manual",
+          "reason": "This lane intentionally targets Ubuntu-only checks; cross-platform behavior requires platform review."
+        }
+      ]
     }
   ]
 }
