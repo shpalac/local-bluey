@@ -85,19 +85,22 @@ void main() {
     },
   );
 
-  test('inconclusive evidence does not permit duplicate action retry', () async {
-    final reader = MemoryReader({'result': null});
-    final host = ActionHost();
-    final verifier = PostconditionVerifier(reader);
+  test(
+    'inconclusive evidence does not permit duplicate action retry',
+    () async {
+      final reader = MemoryReader({'result': null});
+      final host = ActionHost();
+      final verifier = PostconditionVerifier(reader);
 
-    final outcome = await verifier.verify(
-      [_expected()],
-      timeout: const Duration(seconds: 1),
-    );
+      final outcome = await verifier.verify(
+        [_expected()],
+        timeout: const Duration(seconds: 1),
+      );
 
-    expect(outcome, VerificationOutcome.inconclusive);
-    expect(host.executeCalls, 0);
-  });
+      expect(outcome, VerificationOutcome.inconclusive);
+      expect(host.executeCalls, 0);
+    },
+  );
 }
 
 class _ChangingReader implements PostconditionReader {
