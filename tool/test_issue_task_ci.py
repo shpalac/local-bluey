@@ -127,8 +127,30 @@ class IssueTaskTests(unittest.TestCase):
             "test/issues/issue_42_test.dart": {"rejects invalid request"},
         }])
 
-    def test_temporary_manifest_cannot_close(self):
-        with self.assertRaisesRegex(task.ContractError, "permanent"):
+    def test_complete_temporary_manifest_can_close(self):
+        self.assertTrue(self.check("Closes #42"))
+
+    def test_closing_rejects_unmapped_extra_criterion(self):
+        path = self.root / "docs/acceptance/temporary/issue-42.json"
+        manifest = json.loads(path.read_text())
+        manifest["issues"][0]["criteria"].append({
+            "id": "ac_2", "requirement": "Another assertion", "type": "automated",
+            "tests": [{"file": "test/issues/issue_42_test.dart",
+                       "name": "rejects invalid request"}],
+        })
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(task.ContractError, "unmapped issue contract"):
+            self.check("Closes #42")
+
+    def test_temporary_manual_gap_blocks_closing(self):
+        path = self.root / "docs/acceptance/temporary/issue-42.json"
+        manifest = json.loads(path.read_text())
+        manifest["issues"][0]["criteria"].append({
+            "id": "native_gap", "requirement": "OS-level validation",
+            "type": "manual", "reason": "Physical TCC permissions are not covered",
+        })
+        path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(task.ContractError, "manual"):
             self.check("Closes #42")
 
     def test_permanent_requires_real_named_integration_test(self):
