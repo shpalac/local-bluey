@@ -197,10 +197,16 @@ final class WorkflowApprovalHost implements WorkflowHost {
   Future<bool> approve(WorkflowStep step) async {
     if (_cancelled) return false;
     final index = _index(step);
-    try {
-      await revokeStep(index);
-    } catch (_) {
-      return false;
+    if (_storage == null) {
+      // Keep the legacy prompt on the same synchronous turn. This also
+      // prevents a pre-failed prompt Future from becoming unhandled.
+      revokeStep(index);
+    } else {
+      try {
+        await revokeStep(index);
+      } catch (_) {
+        return false;
+      }
     }
     final action = preview(index);
     // All actions need explicit consent; risky actions additionally need gate.
