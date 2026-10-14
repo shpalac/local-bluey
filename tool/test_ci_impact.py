@@ -35,7 +35,9 @@ class ImpactPlanningTest(unittest.TestCase):
     def test_docs_only_skips_flutter_lanes(self):
         result = plan(["docs/INCIDENT_RUNBOOK.md", "README.md"], "pull_request", self.root)
         self.assertFalse(result["full_ci"])
-        self.assertFalse(any(result["lanes"].values()))
+        self.assertTrue(result["lanes"]["acceptance"])
+        self.assertFalse(any(value for name, value in result["lanes"].items()
+                             if name != "acceptance"))
 
     def test_acceptance_manifest_requires_acceptance(self):
         result = plan(["docs/acceptance/temporary/issue-637.json"], "pull_request", self.root)
