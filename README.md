@@ -254,4 +254,4 @@ Local Bluey is forked from [**Bluey by Riley Brown**](https://github.com/rbrown1
 </div>
 
 
-**Opt-in file indexing (experimental, not shipped):** An isolated in-memory engine supports explicitly approved directory scans, incremental refresh and immediate revocation. A folder chooser and end-user controls are still pending. See [BLU-028 implementation notes](docs/blu-028-file-index.md).
+**Opt-in file indexing (experimental, not shipped):** An isolated in-memory engine supports explicitly approved directory scans, incremental refresh and immediate revocation. macOS folder selection and explicit consent/revoke controls are integrated; physical-device permission and RTL validation remain outstanding. See [BLU-028 implementation notes](docs/blu-028-file-index.md).
