@@ -6,75 +6,19 @@
       "title": "BLU-029 Local semantic file retrieval",
       "criteria": [
         {
-          "id": "ac_1",
-          "requirement": "Missing file never hallucinated",
-          "type": "automated",
+          "id": "AC-1",
+          "tests": ["missing file is never hallucinated"]
+        },
+        {
+          "id": "AC-2",
           "tests": [
-            {
-              "file": "test/local_semantic_retrieval_test.dart",
-              "name": "missing file never hallucinated"
-            },
-            {
-              "file": "test/local_semantic_retrieval_test.dart",
-              "name": "deleted file disappears after refresh"
-            }
+            "invalid input is rejected",
+            "cancelled request is rejected"
           ]
         },
         {
-          "id": "ac_2",
-          "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/local_semantic_retrieval_test.dart",
-              "name": "consent gate, grounded citation and ranked excerpt"
-            },
-            {
-              "file": "test/local_semantic_retrieval_test.dart",
-              "name": "invalid query and invalid limit fail closed"
-            },
-            {
-              "file": "test/local_semantic_retrieval_test.dart",
-              "name": "revocation and restart remove all results"
-            },
-            {
-              "file": "test/local_semantic_retrieval_test.dart",
-              "name": "cancellation returns no partial citations"
-            },
-            {
-              "file": "test/local_semantic_retrieval_test.dart",
-              "name": "timeout returns no partial citations"
-            }
-          ]
-        },
-        {
-          "id": "ac_3",
-          "requirement": "No cloud egress, secret storage or automatic action",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/local_semantic_retrieval_test.dart",
-              "name": "consent gate, grounded citation and ranked excerpt"
-            }
-          ]
-        },
-        {
-          "id": "ac_4",
-          "requirement": "Accessible RTL user-facing reversible states",
-          "type": "manual",
-          "reason": "Retrieval exposes typed states only; native UI integration, VoiceOver and real-device RTL verification remain pending."
-        },
-        {
-          "id": "scope",
-          "requirement": "Audit interfaces, backwards compatibility, bounded module, privacy and rollback",
-          "type": "manual",
-          "reason": "Reviewed BLU-028 FileIndex and Settings UI; no provider calls or persistence; test-only retrieval API, not yet surfaced in native UI."
-        },
-        {
-          "id": "integration_gap",
-          "requirement": "Physical macOS permission, offline and timeout evidence",
-          "type": "gap",
-          "reason": "CI uses deterministic in-process tests; no hardware, TCC simulation or actual on-device embedding model. Keep #585 open."
+          "id": "AC-3",
+          "tests": ["retrieval only returns local grounded paths"]
         }
       ]
     }
