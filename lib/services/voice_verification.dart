@@ -89,9 +89,7 @@ class VoiceVerifier {
   /// A new process/session begins with no voice grant.
   void restart() => revoke();
 
-  Future<VoiceVerificationState> verify({
-    required Duration timeout,
-  }) async {
+  Future<VoiceVerificationState> verify({required Duration timeout}) async {
     if (!_enabled || _enrollmentId == null) {
       return VoiceVerificationState.disabled;
     }
