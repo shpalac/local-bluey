@@ -32,7 +32,7 @@ void main() {
   void editEncryptedDatabase(void Function(Database db) edit) {
     final db = sqlite3.open(file.path);
     try {
-      db.execute('PRAGMA key = "x\'${vault.key}\'"');
+      db.execute('PRAGMA key = "x\\'${vault.key}\\'"');
       expect(db.select('PRAGMA cipher_version'), isNotEmpty);
       edit(db);
     } finally {
