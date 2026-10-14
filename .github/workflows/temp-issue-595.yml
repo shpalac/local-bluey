@@ -1,0 +1,26 @@
+name: BLU-039 Android emulator CI lane
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/temp-issue-595.yml'
+      - 'test/blu_039_android_emulator_ci_lane_test.dart'
+      - 'docs/acceptance/temporary/issue-595.json'
+
+permissions:
+  contents: read
+
+jobs:
+  android-emulator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version-file: .flutter-version
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter test test/blu_039_android_emulator_ci_lane_test.dart
+      - name: Android emulator lane placeholder
+        run: echo "Android emulator integration lane wiring is isolated here; native emulator execution requires the project Android integration harness."
