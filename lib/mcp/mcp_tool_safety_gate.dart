@@ -1,9 +1,9 @@
-import 'dart:async';
-
 /// Fail-closed validation boundary for untrusted MCP tool metadata.
 ///
 /// This module deliberately does not launch processes or send network requests.
 library;
+
+import 'dart:async';
 
 enum McpToolFailure {
   invalidSchema,
@@ -16,6 +16,7 @@ enum McpToolFailure {
 
 class McpToolException implements Exception {
   const McpToolException(this.reason);
+
   final McpToolFailure reason;
 }
 
@@ -47,23 +48,24 @@ class McpToolSpec {
         required.any((key) => !arguments.containsKey(key))) {
       throw const McpToolException(McpToolFailure.invalidArguments);
     }
+
     for (final entry in arguments.entries) {
       final schema = properties[entry.key];
       if (schema is! Map) {
         throw const McpToolException(McpToolFailure.invalidArguments);
       }
-      final type = schema['type'];
-      final value = entry.value;
-      final valid = switch (type) {
-        'string' => value is String,
-        'integer' => value is int,
-        'number' => value is num,
-        'boolean' => value is bool,
-        'object' => value is Map,
-        'array' => value is List,
-        'null' => value == null,
+
+      final valid = switch (schema['type']) {
+        'string' => entry.value is String,
+        'integer' => entry.value is int,
+        'number' => entry.value is num,
+        'boolean' => entry.value is bool,
+        'object' => entry.value is Map,
+        'array' => entry.value is List,
+        'null' => entry.value == null,
         _ => false,
       };
+
       if (!valid) {
         throw const McpToolException(McpToolFailure.invalidArguments);
       }
@@ -99,10 +101,13 @@ class McpToolSafetyGate {
     if (!isServerAllowed(serverId)) {
       throw const McpToolException(McpToolFailure.denied);
     }
+
     spec.validateArguments(arguments);
+
     if (!await requestPermission(serverId, spec.name)) {
       throw const McpToolException(McpToolFailure.denied);
     }
+
     try {
       return await invoke(serverId, spec.name, arguments).timeout(timeout);
     } on TimeoutException {
