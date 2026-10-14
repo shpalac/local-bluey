@@ -32,15 +32,15 @@ class ActionHost implements WorkflowHost {
 }
 
 WorkflowStep _step() => const WorkflowStep(
-  type: 'hostAction',
-  target: 'send',
-);
+      type: 'hostAction',
+      target: 'send',
+    );
 
 Postcondition _expected() => const Postcondition(
-  kind: PostconditionKind.toolResponse,
-  key: 'result',
-  expected: 'done',
-);
+      kind: PostconditionKind.toolResponse,
+      key: 'result',
+      expected: 'done',
+    );
 
 void main() {
   test(
