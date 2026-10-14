@@ -47,7 +47,7 @@ void main() {
     expect(invoked, isFalse);
   });
 
-  test('fake transport stays inside approved invocation path and redacts secrets', () async {
+  test('fake transport stays in approved path and redacts secrets', () async {
     final egress = <String>[];
     final gate = McpToolSafetyGate(
       isServerAllowed: (_) => true,
@@ -74,7 +74,7 @@ void main() {
     expect(result['value'], 'ok');
   });
 
-  test('runtime rejects invalid input and timeout fixtures through safety gate', () async {
+  test('runtime rejects invalid input and timeout via safety gate', () async {
     final gate = McpToolSafetyGate(
       isServerAllowed: (_) => true,
       requestPermission: (_, _) async => true,
