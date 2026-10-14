@@ -1,7 +1,7 @@
-/// Durable recovery metadata used by startup reconciliation.
+/// Durable recovery metadata contract used during startup reconciliation.
 ///
-/// Persistence implementations must store interrupted executions before process
-/// termination. The memory implementation is deterministic for tests.
+/// Implementations must persist state before process termination. The in-memory
+/// fake exists for deterministic restart simulation tests only.
 class RecoveryMetadata {
   const RecoveryMetadata({
     required this.executionId,
@@ -14,7 +14,9 @@ class RecoveryMetadata {
 
 abstract interface class DurableRecoveryStore {
   Future<void> save(RecoveryMetadata metadata);
+
   Future<RecoveryMetadata?> load();
+
   Future<void> clear();
 }
 
