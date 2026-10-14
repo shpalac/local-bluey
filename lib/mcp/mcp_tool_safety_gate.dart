@@ -30,13 +30,13 @@ class McpToolSpec {
         description.length > 8192 ||
         inputSchema['type'] != 'object' ||
         inputSchema['properties'] is! Map ||
-        (inputSchema['required'] != null &&
-            inputSchema['required'] is! List)) {
+        (inputSchema['required'] != null && inputSchema['required'] is! List)) {
       throw const McpToolException(McpToolFailure.invalidSchema);
     }
   }
 
   final String name;
+
   /// Untrusted display-only text; never interpreted as an instruction.
   final String description;
   final Map<String, Object?> inputSchema;
@@ -73,7 +73,10 @@ class McpToolSpec {
   }
 }
 
-typedef McpPermissionCheck = Future<bool> Function(String serverId, String toolName);
+typedef McpPermissionCheck = Future<bool> Function(
+  String serverId,
+  String toolName,
+);
 typedef McpToolInvoker = Future<Object?> Function(
   String serverId,
   String toolName,
