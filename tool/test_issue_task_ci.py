@@ -110,7 +110,7 @@ class IssueTaskTests(unittest.TestCase):
         self.promotion()
         self.body = self.body.replace("AC-1:", "Expected:")
         with self.assertRaisesRegex(task.ContractError, "number all acceptance"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
 
     def test_partially_numbered_acceptance_is_rejected(self):
         self.body = self.body.replace("\n## CI and validation", "\n- [ ] Another criterion without a number.\n\n## CI and validation")
@@ -174,7 +174,7 @@ class IssueTaskTests(unittest.TestCase):
             }],
         }])
         with self.assertRaisesRegex(task.ContractError, "integration_test/"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
         bad.unlink()
         self.write_manifest("temporary", [{
             "id": "ac_1", "requirement": "Reject malformed input",
@@ -184,7 +184,7 @@ class IssueTaskTests(unittest.TestCase):
             }],
         }])
         self.promotion()
-        self.assertTrue(self.check("Closes #42", mode="integration"))
+        self.assertTrue(self.check("AutoClose #42", mode="integration"))
 
     def test_temporary_not_allowed_after_promotion(self):
         self.write_manifest("permanent", [{
@@ -197,7 +197,7 @@ class IssueTaskTests(unittest.TestCase):
             }],
         }])
         with self.assertRaisesRegex(task.ContractError, "remove temporary"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
 
     def test_incomplete_gap_cannot_close(self):
         path = self.promotion()
@@ -210,7 +210,7 @@ class IssueTaskTests(unittest.TestCase):
         })
         path.write_text(json.dumps(manifest))
         with self.assertRaisesRegex(task.ContractError, "outstanding"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
         self.assertTrue(self.check("Refs #42", mode="integration"))
 
     def test_manual_evidence_never_auto_certified(self):
@@ -224,7 +224,7 @@ class IssueTaskTests(unittest.TestCase):
         })
         path.write_text(json.dumps(manifest))
         with self.assertRaisesRegex(task.ContractError, "manual"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
 
     def test_failed_or_skipped_test_blocks(self):
         self.assertFalse(self.check(
