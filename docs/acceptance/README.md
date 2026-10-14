@@ -10,14 +10,14 @@ This is **bounded verification**, not automatic sign-off. CI now runs [BLU-001..
 - The existing required `build` aggregate depends on `acceptance-evidence`, so a failing automated evidence gate blocks that required check as well. This does not require changing branch-protection settings.
 - The check emits `build/acceptance/blu-001-003/{acceptance.md,acceptance.json}` and `build/acceptance/other-issues/{acceptance.md,acceptance.json}` with `passed`, `failed`, `manual_required`, or `not_implemented`. Artifacts include only bounded filenames, criterion IDs and rationale. Raw test stdout and fixture secrets are not included.
 - A `manual_required` or `not_implemented` row is never counted as `passed`, regardless of neighboring suite results. Hardware security, OS permissions, model locality and human review require real evidence.
-- Green CI **does not close issues, grant privacy/security approval, enable vision capture or authorize persistent storage**.
+- Green CI **does not by itself close issues, grant privacy/security approval, enable vision capture or authorize persistent storage**. A fully automated `AutoClose #N` PR may close only after its exact-head CI, merge and merged-main CI have passed, and the live issue/manifest have no manual or implementation gaps.
 
 ## Review and completion procedure
 
 1. Compare #554, #555, and #556 against their dedicated `issue-N.json` file, and the other issues against `criteria.json`. Update the applicable manifest when implementation changes; do not remove unmet criteria to make CI green.
 2. Add an actual `test/..._test.dart` path and exact test name for each newly automated criterion. The validator fails if the test is removed or renamed. Run the entire file to avoid hiding neighboring regressions.
 3. Change a `gap` to `automated` **only after the production integration exists** and a regression test exercises it. Keep `manual` until a reviewer records build/device/OS, actions, outcomes, commit SHA and evidence URL.
-4. A maintainer must check all relevant issue criteria and required checks before closing an issue. This CI does not auto-close or pretend unimplemented features are complete.
+4. For complete issue-specific temporary or permanent manifests, use a standalone `AutoClose #N` line in the PR body. The trusted workflow enables auto-merge only after green PR CI; then it revalidates evidence and closes the issue after successful CI on `main`. Keep `Refs #N` for partial work. Native/manual criteria and gaps still block automation.
 
 ## Local commands
 
