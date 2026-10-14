@@ -32,15 +32,15 @@ class ActionHost implements WorkflowHost {
 }
 
 WorkflowStep _step() => const WorkflowStep(
-      type: 'hostAction',
-      target: 'send',
-    );
+  type: 'hostAction',
+  target: 'send',
+);
 
 Postcondition _expected() => const Postcondition(
-      kind: PostconditionKind.toolResponse,
-      key: 'result',
-      expected: 'done',
-    );
+  kind: PostconditionKind.toolResponse,
+  key: 'result',
+  expected: 'done',
+);
 
 void main() {
   test(
@@ -64,24 +64,26 @@ void main() {
     },
   );
 
-  test('ui drift rejects second verification and does not cache confirmation',
-      () async {
-    final reader = _ChangingReader(['done', 'changed']);
-    final verifier = PostconditionVerifier(reader);
+  test(
+    'ui drift rejects second verification and does not cache confirmation',
+    () async {
+      final reader = _ChangingReader(['done', 'changed']);
+      final verifier = PostconditionVerifier(reader);
 
-    final first = await verifier.verify(
-      [_expected()],
-      timeout: const Duration(seconds: 1),
-    );
-    final second = await verifier.verify(
-      [_expected()],
-      timeout: const Duration(seconds: 1),
-    );
+      final first = await verifier.verify(
+        [_expected()],
+        timeout: const Duration(seconds: 1),
+      );
+      final second = await verifier.verify(
+        [_expected()],
+        timeout: const Duration(seconds: 1),
+      );
 
-    expect(first, VerificationOutcome.confirmed);
-    expect(second, VerificationOutcome.rejected);
-    expect(reader.reads, 2);
-  });
+      expect(first, VerificationOutcome.confirmed);
+      expect(second, VerificationOutcome.rejected);
+      expect(reader.reads, 2);
+    },
+  );
 
   test('inconclusive evidence does not permit duplicate action retry', () async {
     final reader = MemoryReader({'result': null});
