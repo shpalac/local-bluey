@@ -18,8 +18,8 @@ void main() {
     var called = false;
     final gate = McpToolSafetyGate(
       isServerAllowed: (_) => true,
-      requestPermission: (_, __) async => false,
-      invoke: (_, __, ___) async {
+      requestPermission: (_, _) async => false,
+      invoke: (_, _, _) async {
         called = true;
         return null;
       },
@@ -45,8 +45,8 @@ void main() {
   test('unknown server is denied', () async {
     final gate = McpToolSafetyGate(
       isServerAllowed: (_) => false,
-      requestPermission: (_, __) async => true,
-      invoke: (_, __, ___) async => 'unexpected',
+      requestPermission: (_, _) async => true,
+      invoke: (_, _, _) async => 'unexpected',
     );
     await expectLater(
       gate.execute(
@@ -69,8 +69,8 @@ void main() {
   test('approved invocation returns result', () async {
     final gate = McpToolSafetyGate(
       isServerAllowed: (_) => true,
-      requestPermission: (_, __) async => true,
-      invoke: (_, __, ___) async => 'ok',
+      requestPermission: (_, _) async => true,
+      invoke: (_, _, _) async => 'ok',
     );
     expect(
       await gate.execute(
