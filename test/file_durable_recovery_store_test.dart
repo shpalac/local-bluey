@@ -41,9 +41,9 @@ void main() {
   });
 
   test('file recovery metadata survives new store instance', () async {
-    await FileDurableRecoveryStore(metadataFile).save(
-      const RecoveryMetadata(executionId: 'exec-573', interrupted: true),
-    );
+    await FileDurableRecoveryStore(
+      metadataFile,
+    ).save(const RecoveryMetadata(executionId: 'exec-573', interrupted: true));
     final restored = await FileDurableRecoveryStore(metadataFile).load();
     expect(restored?.executionId, 'exec-573');
     expect(restored?.interrupted, isTrue);
@@ -59,9 +59,8 @@ void main() {
 
   test('empty execution IDs are rejected without writing', () async {
     await expectLater(
-      FileDurableRecoveryStore(metadataFile).save(
-        const RecoveryMetadata(executionId: '', interrupted: true),
-      ),
+      FileDurableRecoveryStore(metadataFile)
+          .save(const RecoveryMetadata(executionId: '', interrupted: true)),
       throwsFormatException,
     );
     expect(await metadataFile.exists(), isFalse);
@@ -77,9 +76,9 @@ void main() {
   });
 
   test('restart reconciliation blocks all host actions', () async {
-    await FileDurableRecoveryStore(metadataFile).save(
-      const RecoveryMetadata(executionId: 'exec-573', interrupted: true),
-    );
+    await FileDurableRecoveryStore(
+      metadataFile,
+    ).save(const RecoveryMetadata(executionId: 'exec-573', interrupted: true));
     final host = _CountingHost();
     final workflow = WorkflowExecution(
       WorkflowDefinition.fromJson({

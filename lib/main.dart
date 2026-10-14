@@ -77,6 +77,7 @@ import 'ui/watch_suggestion_card.dart';
 import 'services/frame_differ.dart';
 import 'services/native_control.dart';
 import 'services/file_durable_recovery_store.dart';
+
 import 'package:path_provider/path_provider.dart';
 
 void main() async {
@@ -96,7 +97,8 @@ void main() async {
   final recoveryStore = FileDurableRecoveryStore(
     File('${recoveryDirectory.path}/workflow_recovery.json'),
   );
-  await recoveryStore.load(); // Corrupt metadata stops startup; never auto-resume.
+  await recoveryStore
+      .load(); // Corrupt metadata stops startup; never auto-resume.
   final profile = SupportMatrix.profile();
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
