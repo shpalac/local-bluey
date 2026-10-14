@@ -253,5 +253,13 @@ Local Bluey is forked from [**Bluey by Riley Brown**](https://github.com/rbrown1
 
 </div>
 
+### Synthetic benchmark harness (BLU-021)
+
+Run `flutter test test/benchmark` for deterministic, local-only precision,
+recall, F1, accuracy, and simulated latency metrics. The fake clock and
+synthetic exit fixtures never require network, device permissions, or a model.
+This is test infrastructure only; it does not execute workflows or authorize
+real actions. The temporary CI workflow is `.github/workflows/temp-issue-577.yml`.
+
 
 **Opt-in file indexing (experimental, not shipped):** An isolated in-memory engine supports explicitly approved directory scans, incremental refresh and immediate revocation. macOS folder selection and explicit consent/revoke controls are integrated; physical-device permission and RTL validation remain outstanding. See [BLU-028 implementation notes](docs/blu-028-file-index.md).

@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 577,
+      "title": "BLU-021 Synthetic benchmark harness",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Deterministic precision, recall, F1 and fake-time metrics",
+          "tests": [
+            {
+              "file": "test/benchmark/synthetic_benchmark_test.dart",
+              "name": "deterministic precision, recall and fake elapsed time"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Synthetic success and failure-path traces, validation and restart",
+          "tests": [
+            {
+              "file": "test/benchmark/synthetic_trace_harness_test.dart",
+              "name": "fake-clock traces reproduce every synthetic exit path"
+            },
+            {
+              "file": "test/benchmark/synthetic_trace_harness_test.dart",
+              "name": "duplicate id and clock rollback are rejected without mutation"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "automated",
+          "requirement": "Input rejects invalid traces without storing or transmitting data",
+          "tests": [
+            {
+              "file": "test/benchmark/synthetic_benchmark_test.dart",
+              "name": "rejects duplicate ids and negative durations"
+            },
+            {
+              "file": "test/benchmark/synthetic_trace_harness_test.dart",
+              "name": "trace snapshots are immutable"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "type": "automated",
+          "requirement": "This test-only module has no user-facing surfaces",
+          "tests": [
+            {
+              "file": "test/benchmark/synthetic_benchmark_test.dart",
+              "name": "empty trace has finite zero metrics"
+            }
+          ]
+        },
+        {
+          "id": "end_to_end_gap",
+          "type": "gap",
+          "requirement": "Real BLU-006/008 captures and production workflow instrumentation",
+          "reason": "Synthetic fixtures only; production integrations, end-to-end privacy and accessibility checks are not proven. Keep #577 open."
+        }
+      ]
+    }
+  ]
+}
