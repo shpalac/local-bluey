@@ -29,19 +29,17 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
   @override
   Future<bool> claim(String operationId) async {
     await directory.create(recursive: true);
+    final file = _file(operationId);
     try {
-      final file = _file(operationId);
-      await file.open(mode: FileMode.writeOnlyExclusive).then((sink) async {
-        await sink.write(
-          jsonEncode({
-            'operationId': operationId,
-            'phase': RetryPhase.started.name,
-          }),
-        );
-        await sink.close();
-      });
+      await file.create(exclusive: true);
+      await file.writeAsString(
+        jsonEncode({
+          'operationId': operationId,
+          'phase': RetryPhase.started.name,
+        }),
+      );
       return true;
-    } on PathAccessException {
+    } on PathExistsException {
       return false;
     } catch (_) {
       return false;
@@ -51,13 +49,14 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
   @override
   Future<void> write(RetryCheckpoint checkpoint) async {
     await directory.create(recursive: true);
-    final temp = File('${_file(checkpoint.operationId).path}.tmp');
+    final target = _file(checkpoint.operationId);
+    final temp = File('${target.path}.tmp');
     await temp.writeAsString(
       jsonEncode({
         'operationId': checkpoint.operationId,
         'phase': checkpoint.phase.name,
       }),
     );
-    await temp.rename(_file(checkpoint.operationId).path);
+    await temp.rename(target.path);
   }
 }
