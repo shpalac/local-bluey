@@ -31,7 +31,8 @@ sealed class LocalSemanticRetrievalResult {
   const factory LocalSemanticRetrievalResult.invalidInput() =
       LocalSemanticInvalidInput;
 
-  const factory LocalSemanticRetrievalResult.notFound() = LocalSemanticNotFound;
+  const factory LocalSemanticRetrievalResult.notFound() =
+      LocalSemanticNotFound;
 }
 
 class LocalSemanticSuccess extends LocalSemanticRetrievalResult {
