@@ -17,6 +17,14 @@
             {
               "file": "test/execution_audit_test.dart",
               "name": "unknown fields and diagnostics are redacted"
+            },
+            {
+              "file": "test/workflow_audit_stop_checkpoint_test.dart",
+              "name": "audit stop after approval prevents any host execution"
+            },
+            {
+              "file": "test/workflow_audit_stop_checkpoint_test.dart",
+              "name": "audit stop after execution prevents verification and next step"
             }
           ]
         },
