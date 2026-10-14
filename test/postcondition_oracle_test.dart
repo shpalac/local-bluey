@@ -43,25 +43,29 @@ Postcondition _expected() => const Postcondition(
     );
 
 void main() {
-  test('false success rejects normal host completion with mismatched evidence', () async {
-    final reader = MemoryReader({'result': 'wrong'});
-    final host = ActionHost();
-    final verifier = PostconditionVerifier(reader);
-    final workflowHost = VerifyingWorkflowHost(
-      delegate: host,
-      verifier: verifier,
-      postconditions: [_expected()],
-      timeout: const Duration(seconds: 1),
-    );
+  test(
+    'false success rejects normal host completion with mismatched evidence',
+    () async {
+      final reader = MemoryReader({'result': 'wrong'});
+      final host = ActionHost();
+      final verifier = PostconditionVerifier(reader);
+      final workflowHost = VerifyingWorkflowHost(
+        delegate: host,
+        verifier: verifier,
+        postconditions: [_expected()],
+        timeout: const Duration(seconds: 1),
+      );
 
-    await workflowHost.execute(_step());
-    final verified = await workflowHost.verify(_step());
+      await workflowHost.execute(_step());
+      final verified = await workflowHost.verify(_step());
 
-    expect(verified, false);
-    expect(host.executeCalls, 1);
-  });
+      expect(verified, false);
+      expect(host.executeCalls, 1);
+    },
+  );
 
-  test('ui drift rejects second verification and does not cache confirmation', () async {
+  test('ui drift rejects second verification and does not cache confirmation',
+      () async {
     final reader = _ChangingReader(['done', 'changed']);
     final verifier = PostconditionVerifier(reader);
 
