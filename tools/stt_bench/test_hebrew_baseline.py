@@ -35,7 +35,7 @@ class HebrewBaselineTest(unittest.TestCase):
         self.assertEqual(error_counts("שלום", "שולם")["character_errors"], 2)
 
     def test_empty_reference_is_not_claimed_accurate(self):
-        result = summarize([attempt("local", "silence", "")])
+        result = summarize([{**attempt("local", "silence", ""), "reference": ""}])
         self.assertIsNone(result["local"]["wer"])
         self.assertIsNone(result["local"]["cer"])
 
