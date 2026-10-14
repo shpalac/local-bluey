@@ -204,7 +204,9 @@ class WatchPipeline {
     // small diffs below the threshold and never reaches a vision call.
     final diff = await frameDiff();
     if (stale()) return null;
-    if (diff == null || diff < diffThreshold) {
+    // Invalid native/frame-differ readings must never trigger vision.
+    if (diff == null || !diff.isFinite || diff < 0 || diff > 1 ||
+        diff < diffThreshold) {
       _changeStreak = 0;
       return null;
     }

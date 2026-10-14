@@ -24,6 +24,10 @@
             {
               "file": "test/blu_022_protocol_test.dart",
               "name": "pilot protocol explicitly requires opt-in and safe stop"
+            },
+            {
+              "file": "test/blu_022_invalid_frame_test.dart",
+              "name": "invalid pilot frame differences never trigger vision"
             }
           ]
         },
