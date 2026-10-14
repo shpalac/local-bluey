@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+
+import 'workflow_approval_grant_store.dart';
 import 'workflow_dsl.dart';
 import 'workflow_execution.dart';
 
@@ -20,13 +25,18 @@ final class WorkflowActionPreview {
   final bool risky;
 }
 
-/// An ephemeral, exact-action grant. A fresh process starts without grants.
+/// An exact-action grant; persistence is available only through opt-in setup.
 final class WorkflowApprovalGrant {
-  WorkflowApprovalGrant._();
+  WorkflowApprovalGrant._({this.expiresAt, DateTime Function()? now})
+    : _now = now ?? DateTime.now;
+
+  final DateTime? expiresAt;
+  final DateTime Function() _now;
   bool _revoked = false;
 
   void revoke() => _revoked = true;
-  bool get isRevoked => _revoked;
+  bool get isRevoked =>
+      _revoked || (expiresAt != null && !_now().isBefore(expiresAt!));
 }
 
 abstract interface class WorkflowApprovalPrompt {
@@ -58,31 +68,101 @@ final class WorkflowApprovalHost implements WorkflowHost {
     );
   }
 
+  /// Persistent grants are loaded only on explicit opt-in. Corrupt records
+  /// never authorize actions and a live SafetyGate check is always required.
+  static Future<WorkflowApprovalHost> openWithStorage({
+    required WorkflowDefinition definition,
+    required WorkflowHost delegate,
+    required WorkflowApprovalPrompt prompt,
+    required WorkflowSafetyCheck safetyGate,
+    required WorkflowApprovalGrantStorage storage,
+    Duration grantTtl = const Duration(minutes: 5),
+    DateTime Function()? now,
+  }) async {
+    if (grantTtl <= Duration.zero) {
+      throw ArgumentError.value(grantTtl, 'grantTtl');
+    }
+    final host = WorkflowApprovalHost._(
+      WorkflowDefinition.fromJson(definition.toJson()),
+      delegate,
+      prompt,
+      safetyGate,
+      storage: storage,
+      grantTtl: grantTtl,
+      now: now ?? DateTime.now,
+    );
+    try {
+      for (var i = 0; i < host._definition.steps.length; i++) {
+        final record = await storage.read(host._key(i));
+        if (record != null &&
+            !record.revoked &&
+            host._now().isBefore(record.expiresAt)) {
+          host._grants[i] = WorkflowApprovalGrant._(
+            expiresAt: record.expiresAt,
+            now: host._now,
+          );
+        }
+      }
+    } catch (_) {
+      host._grants.clear();
+      host._cancelled = true;
+    }
+    return host;
+  }
+
   WorkflowApprovalHost._(
     this._definition,
     this._delegate,
     this._prompt,
-    this._safetyGate,
-  );
+    this._safetyGate, {
+    this._storage,
+    this._grantTtl = const Duration(minutes: 5),
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
 
   final WorkflowDefinition _definition;
   final WorkflowHost _delegate;
   final WorkflowApprovalPrompt _prompt;
   final WorkflowSafetyCheck _safetyGate;
+  final WorkflowApprovalGrantStorage? _storage;
+  final Duration _grantTtl;
+  final DateTime Function() _now;
   final Map<int, WorkflowApprovalGrant> _grants = {};
   bool _cancelled = false;
   int _stepIndex = 0;
 
-  void revokeAll() {
-    _cancelled = true;
-    for (final grant in _grants.values) {
-      grant.revoke();
-    }
-    _grants.clear();
+  String _key(int index) {
+    // Include permissions and the validated definition, not merely the
+    // visible target: a changed workflow must never inherit an old grant.
+    return sha256
+        .convert(utf8.encode('${jsonEncode(_definition.toJson())}:$index'))
+        .toString();
   }
 
-  void revokeStep(int index) {
-    _grants.remove(index)?.revoke();
+  Future<void> revokeAll() async {
+    _cancelled = true;
+    for (var i = 0; i < _definition.steps.length; i++) {
+      await revokeStep(i);
+    }
+  }
+
+  Future<void> revokeStep(int index) async {
+    final grant = _grants.remove(index);
+    grant?.revoke();
+    if (_storage != null) {
+      try {
+        await _storage.write(
+          _key(index),
+          WorkflowApprovalGrantRecord(
+            expiresAt: grant?.expiresAt ?? _now().toUtc(),
+            revoked: true,
+          ),
+        );
+      } catch (_) {
+        _cancelled = true;
+        rethrow;
+      }
+    }
   }
 
   WorkflowActionPreview preview(int index) {
@@ -116,13 +196,44 @@ final class WorkflowApprovalHost implements WorkflowHost {
   Future<bool> approve(WorkflowStep step) async {
     if (_cancelled) return false;
     final index = _index(step);
-    revokeStep(index);
+    if (_storage == null) {
+      // Keep the legacy prompt on the same synchronous turn. This also
+      // prevents a pre-failed prompt Future from becoming unhandled.
+      revokeStep(index);
+    } else {
+      try {
+        await revokeStep(index);
+      } catch (_) {
+        return false;
+      }
+    }
     final action = preview(index);
     // All actions need explicit consent; risky actions additionally need gate.
     final accepted = await _prompt.request(action);
     if (_cancelled || !accepted) return false;
-    final grant = WorkflowApprovalGrant._();
+    final expires = _storage == null ? null : _now().add(_grantTtl);
+    final grant = WorkflowApprovalGrant._(expiresAt: expires, now: _now);
     _grants[index] = grant;
+    if (_storage != null) {
+      try {
+        await _storage.write(
+          _key(index),
+          WorkflowApprovalGrantRecord(expiresAt: expires!),
+        );
+      } catch (_) {
+        _grants.remove(index);
+        grant.revoke();
+        return false;
+      }
+    }
+    if (_cancelled || grant.isRevoked) {
+      try {
+        await revokeStep(index);
+      } catch (_) {
+        _cancelled = true;
+      }
+      return false;
+    }
     return true;
   }
 
@@ -156,7 +267,7 @@ final class WorkflowApprovalHost implements WorkflowHost {
     try {
       return await _delegate.verify(step);
     } finally {
-      revokeStep(index);
+      await revokeStep(index);
       _stepIndex++;
     }
   }

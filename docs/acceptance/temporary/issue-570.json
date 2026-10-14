@@ -7,7 +7,7 @@
       "criteria": [
         {
           "id": "ac_1",
-          "requirement": "Deny has no side effects; revocation prevents host execution",
+          "requirement": "Deny has no side effects; revocation prevents host execution; opt-in file-backed grant lifecycle verified",
           "type": "automated",
           "tests": [
             {
@@ -21,12 +21,16 @@
             {
               "file": "test/workflow_action_approval_test.dart",
               "name": "revocation prevents reuse of an already granted action"
+            },
+            {
+              "file": "test/workflow_approval_grant_storage_test.dart",
+              "name": "revoke persists and prevents host execution after restart"
             }
           ]
         },
         {
           "id": "ac_2",
-          "requirement": "Happy path, malformed DSL, offline policy, permission denied and restart in isolated host",
+          "requirement": "Happy path, malformed DSL, offline policy, permission denied and restart in isolated host; opt-in file-backed grant lifecycle verified",
           "type": "automated",
           "tests": [
             {
@@ -44,28 +48,40 @@
             {
               "file": "test/workflow_action_approval_test.dart",
               "name": "restart has no persisted grant"
+            },
+            {
+              "file": "test/workflow_approval_grant_storage_test.dart",
+              "name": "file-backed approval survives restart and expires with fake clock"
             }
           ]
         },
         {
           "id": "ac_3",
-          "requirement": "Ephemeral grants require explicit consent and safety check; no built-in storage or network",
+          "requirement": "Ephemeral grants require explicit consent and safety check; no built-in storage or network; opt-in file-backed grant lifecycle verified",
           "type": "automated",
           "tests": [
             {
               "file": "test/workflow_action_approval_test.dart",
               "name": "safety gate rejection blocks host action"
+            },
+            {
+              "file": "test/workflow_approval_grant_storage_test.dart",
+              "name": "approval files contain metadata only and never action secrets"
             }
           ]
         },
         {
           "id": "ac_4",
-          "requirement": "Focused tests, analyzer and Android build execute in temporary CI",
+          "requirement": "Focused tests, analyzer and Android build execute in temporary CI; opt-in file-backed grant lifecycle verified",
           "type": "automated",
           "tests": [
             {
               "file": "test/workflow_action_approval_test.dart",
               "name": "preview includes action details without side effects"
+            },
+            {
+              "file": "test/workflow_approval_grant_storage_test.dart",
+              "name": "corrupt persisted grants fail closed without host effects"
             }
           ]
         },
