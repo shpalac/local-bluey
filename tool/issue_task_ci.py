@@ -153,6 +153,17 @@ def validate_stage(root: Path, number: int, path: Path,
                 f"#{number}: remove temporary manifest after permanent coverage is added"
             )
     if closing:
+        # Do not count one unrelated test case as independent evidence for
+        # several acceptance criteria. Each AC needs its own named assertion.
+        ownership = {}
+        for criterion in automated:
+            for case in criterion["tests"]:
+                key = (case["file"], case["name"])
+                previous = ownership.setdefault(key, criterion["id"])
+                if previous != criterion["id"]:
+                    raise ContractError(
+                        f"#{number}: one named test cannot certify multiple ACs"
+                    )
         if stage == "legacy":
             raise ContractError(
                 f"#{number}: closing requires an issue-specific temporary or permanent manifest"
