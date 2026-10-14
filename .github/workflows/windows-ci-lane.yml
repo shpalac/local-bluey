@@ -1,0 +1,20 @@
+name: Windows CI lane
+
+on:
+  pull_request:
+    paths:
+      - 'lib/**'
+      - 'test/**'
+      - '.github/workflows/windows-ci-lane.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  windows-ci:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+      - run: flutter pub get
+      - run: flutter test test/windows_ci_lane_manifest_test.dart
