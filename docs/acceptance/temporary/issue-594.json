@@ -1,0 +1,23 @@
+{
+  "issue": 594,
+  "criteria": {
+    "AC-1": {
+      "status": "manual",
+      "reason": "Requires macOS GitHub runner execution evidence; manifest records the lane requirement without faking native availability."
+    },
+    "AC-2": {
+      "status": "automated",
+      "test_file": "test/macos_build_lane_manifest_test.dart",
+      "test_name": "macOS build lane manifest is deterministic"
+    },
+    "AC-3": {
+      "status": "automated",
+      "test_file": "test/macos_build_lane_manifest_test.dart",
+      "test_name": "macOS build lane manifest contains no secrets or network requirements"
+    },
+    "AC-4": {
+      "status": "manual",
+      "reason": "Cross-platform compatibility review requires maintainers to validate supported platform behavior."
+    }
+  }
+}
