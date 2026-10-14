@@ -81,9 +81,7 @@ class PlaywrightBrowserAdapter {
   final bool online;
   final int maxTextLength;
 
-  static final _hostPattern = RegExp(
-    r'^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$',
-  );
+  static final _hostPattern = RegExp(r'^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$');
   static final _ipv4Pattern = RegExp(r'^\d+\.\d+\.\d+\.\d+$');
 
   static final _navigateSpec = McpToolSpec(
@@ -127,12 +125,14 @@ class PlaywrightBrowserAdapter {
         host.contains(':')) {
       return false;
     }
-    return _allowedDomains.any((domain) =>
-        domain.contains('.') &&
-        !_ipv4Pattern.hasMatch(domain) &&
-        !domain.contains('..') &&
-        _hostPattern.hasMatch(domain) &&
-        (host == domain || host.endsWith('.$domain')));
+    return _allowedDomains.any(
+      (domain) =>
+          domain.contains('.') &&
+          !_ipv4Pattern.hasMatch(domain) &&
+          !domain.contains('..') &&
+          _hostPattern.hasMatch(domain) &&
+          (host == domain || host.endsWith('.$domain')),
+    );
   }
 
   Future<BrowserResult> execute({

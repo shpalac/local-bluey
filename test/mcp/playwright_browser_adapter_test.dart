@@ -16,20 +16,21 @@ void main() {
   late Object? response;
   late McpToolSafetyGate gate;
 
-  PlaywrightBrowserAdapter adapter({
-    bool enabled = true,
-    bool online = true,
-  }) => PlaywrightBrowserAdapter(
-    gate: gate,
-    transport: _FakeTransport(),
-    allowedDomains: {'example.org'},
-    enabled: enabled,
-    online: online,
-  );
+  PlaywrightBrowserAdapter adapter({bool enabled = true, bool online = true}) =>
+      PlaywrightBrowserAdapter(
+        gate: gate,
+        transport: _FakeTransport(),
+        allowedDomains: {'example.org'},
+        enabled: enabled,
+        online: online,
+      );
 
   Future<BrowserResult> run(PlaywrightBrowserAdapter subject, {Uri? url}) =>
       subject.execute(
-        request: BrowserRequest(action: BrowserAction.navigate, url: url ?? origin),
+        request: BrowserRequest(
+          action: BrowserAction.navigate,
+          url: url ?? origin,
+        ),
         session: session,
         timeout: timeout,
       );
@@ -100,19 +101,26 @@ void main() {
     expect(invocations, 0);
   });
 
-  test('rejects unsafe schemes, credentials and local network targets', () async {
-    for (final raw in [
-      'http://example.org',
-      'https://user:password@example.org',
-      'https://localhost',
-      'https://127.0.0.1',
-      'https://example.org:444',
-      'https://example.org/#payload',
-    ]) {
-      await rejects(adapter(), BrowserFailure.blockedDomain, url: Uri.parse(raw));
-    }
-    expect(invocations, 0);
-  });
+  test(
+    'rejects unsafe schemes, credentials and local network targets',
+    () async {
+      for (final raw in [
+        'http://example.org',
+        'https://user:password@example.org',
+        'https://localhost',
+        'https://127.0.0.1',
+        'https://example.org:444',
+        'https://example.org/#payload',
+      ]) {
+        await rejects(
+          adapter(),
+          BrowserFailure.blockedDomain,
+          url: Uri.parse(raw),
+        );
+      }
+      expect(invocations, 0);
+    },
+  );
 
   test('invalid timeout fails without invoking tools', () async {
     await expectLater(
@@ -143,11 +151,14 @@ void main() {
     expect(invocations, 0);
   });
 
-  test('timeout is reported and never falls back to another transport', () async {
-    pending = Completer<Object?>();
-    await rejects(adapter(), BrowserFailure.timeout);
-    expect(invocations, 1);
-  });
+  test(
+    'timeout is reported and never falls back to another transport',
+    () async {
+      pending = Completer<Object?>();
+      await rejects(adapter(), BrowserFailure.timeout);
+      expect(invocations, 1);
+    },
+  );
 
   test('cancelled in-flight results cannot be applied', () async {
     pending = Completer<Object?>();
@@ -157,11 +168,13 @@ void main() {
     pending!.complete(response);
     await expectLater(
       operation,
-      throwsA(isA<BrowserException>().having(
-        (error) => error.reason,
-        'reason',
-        BrowserFailure.cancelled,
-      )),
+      throwsA(
+        isA<BrowserException>().having(
+          (error) => error.reason,
+          'reason',
+          BrowserFailure.cancelled,
+        ),
+      ),
     );
   });
 
@@ -174,11 +187,13 @@ void main() {
     pending!.complete(response);
     await expectLater(
       old,
-      throwsA(isA<BrowserException>().having(
-        (error) => error.reason,
-        'reason',
-        BrowserFailure.cancelled,
-      )),
+      throwsA(
+        isA<BrowserException>().having(
+          (error) => error.reason,
+          'reason',
+          BrowserFailure.cancelled,
+        ),
+      ),
     );
     pending = null;
     expect((await run(adapter())).untrustedText, hostile);
@@ -192,7 +207,10 @@ void main() {
   });
 
   test('downloads and mutation tools are never part of the contract', () {
-    expect(BrowserAction.values, [BrowserAction.navigate, BrowserAction.snapshot]);
+    expect(BrowserAction.values, [
+      BrowserAction.navigate,
+      BrowserAction.snapshot,
+    ]);
   });
 }
 
