@@ -23,7 +23,7 @@
           "tests": [
             {
               "file": "test/mcp_safety_gate_runtime_integration_test.dart",
-              "name": "runtime rejects invalid input and timeout fixtures through safety gate"
+              "name": "runtime rejects invalid input and timeout via safety gate"
             },
             {
               "file": "test/mcp_safety_gate_runtime_integration_test.dart",
@@ -38,7 +38,7 @@
           "tests": [
             {
               "file": "test/mcp_safety_gate_runtime_integration_test.dart",
-              "name": "fake transport stays inside approved invocation path and redacts secrets"
+              "name": "fake transport stays in approved path and redacts secrets"
             }
           ]
         },
