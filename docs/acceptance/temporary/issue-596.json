@@ -1,0 +1,27 @@
+{
+  "issue": 596,
+  "criteria": [
+    {
+      "id": "AC-1",
+      "status": "automated",
+      "test_file": "test/ios_simulator_feasibility_test.dart",
+      "test_name": "iOS simulator feasibility baseline is deterministic"
+    },
+    {
+      "id": "AC-2",
+      "status": "automated",
+      "test_file": "test/ios_simulator_feasibility_test.dart",
+      "test_name": "iOS simulator feasibility baseline is deterministic"
+    },
+    {
+      "id": "AC-3",
+      "status": "manual",
+      "reason": "Requires CI artifact and runner policy inspection"
+    },
+    {
+      "id": "AC-4",
+      "status": "manual",
+      "reason": "Requires cross-platform capability review"
+    }
+  ]
+}
