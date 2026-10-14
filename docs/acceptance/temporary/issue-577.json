@@ -13,6 +13,10 @@
             {
               "file": "test/benchmark/synthetic_benchmark_test.dart",
               "name": "deterministic precision, recall and fake elapsed time"
+            },
+            {
+              "file": "test/benchmark/synthetic_benchmark_harness_test.dart",
+              "name": "seeded fake clock yields identical traces precision recall and latency"
             }
           ]
         },
@@ -28,6 +32,10 @@
             {
               "file": "test/benchmark/synthetic_trace_harness_test.dart",
               "name": "duplicate id and clock rollback are rejected without mutation"
+            },
+            {
+              "file": "test/benchmark/synthetic_benchmark_harness_test.dart",
+              "name": "invalid input timeout and cancellation have explicit outcomes"
             }
           ]
         },
@@ -43,6 +51,10 @@
             {
               "file": "test/benchmark/synthetic_trace_harness_test.dart",
               "name": "trace snapshots are immutable"
+            },
+            {
+              "file": "test/benchmark/synthetic_benchmark_harness_test.dart",
+              "name": "offline in-memory seam performs no egress persistence or automatic action"
             }
           ]
         },
