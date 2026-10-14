@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+import 'activity_schema_preflight.dart';
 import 'activity_step.dart';
 
 /// A storage error intentionally omits paths, keys, SQL statements and records.
@@ -169,19 +170,13 @@ final class EncryptedActivityStore {
 
       final version =
           database.select('PRAGMA user_version').single.values.first as int;
-      if (version != 0 && version != schemaVersion) {
+      try {
+        ActivitySchemaPreflight.verify(
+          database,
+          supportedVersion: schemaVersion,
+        );
+      } on StateError {
         throw const EncryptedActivityException('unsupported schema version');
-      }
-      if (version == 0) {
-        // Version zero is valid only for an empty, freshly created database.
-        if (database
-            .select(
-              "SELECT name FROM sqlite_master WHERE type='table' "
-              "AND name NOT LIKE 'sqlite_%'",
-            )
-            .isNotEmpty) {
-          throw const EncryptedActivityException('unknown legacy schema');
-        }
       }
 
       database.execute('PRAGMA busy_timeout = 1000');
