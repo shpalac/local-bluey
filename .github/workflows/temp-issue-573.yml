@@ -1,0 +1,28 @@
+name: Temporary BLU-020 acceptance
+on:
+  pull_request:
+    paths:
+      - 'lib/services/execution_audit.dart'
+      - 'lib/workflows/workflow_execution.dart'
+      - 'lib/ui/execution_audit_panel.dart'
+      - 'test/execution_audit_test.dart'
+      - 'docs/blu-020-execution-audit.md'
+      - 'docs/acceptance/temporary/issue-573.json'
+      - '.github/workflows/temp-issue-573.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - name: Format BLU-020 files
+        run: dart format lib/services/execution_audit.dart lib/workflows/workflow_execution.dart lib/ui/execution_audit_panel.dart test/execution_audit_test.dart
+      - run: flutter analyze
+      - run: flutter test test/execution_audit_test.dart test/workflow_execution_test.dart
+      - run: flutter build apk --debug

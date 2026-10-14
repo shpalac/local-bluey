@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 573,
+      "title": "BLU-020 Execution audit timeline and stop UX",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Stop blocks subsequent execution steps and diagnostic secrets are redacted",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "stop during host action prevents second step"
+            },
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "unknown fields and diagnostics are redacted"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Success, permission denial, malformed input, timeout, cancellation, and UI consent",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "success produces only allowlisted step events"
+            },
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "permission denial redacts and fails closed"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "invalid DSL is rejected before execution"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "timeout fails closed"
+            },
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "stop UI cancels and export requires explicit consent"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No unintended egress, secret retention or auto-execution; consent before diagnostic display",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "export fails closed without consent"
+            },
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "bounded memory and valid JSON"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Flutter static analysis, tests and build complete in CI",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "success produces only allowlisted step events"
+            }
+          ]
+        },
+        {
+          "id": "end_to_end_gap",
+          "requirement": "Production HostControl adapter wiring, hardware permission validation and durable restart recovery",
+          "type": "gap",
+          "reason": "Audit widget intentionally opt-in until SafetyGate and TCC validation; restart reconciliation is BLU-019. Keep issue open until end-to-end validation."
+        }
+      ]
+    }
+  ]
+}
