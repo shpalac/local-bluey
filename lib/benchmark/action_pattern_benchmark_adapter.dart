@@ -8,9 +8,9 @@ class ActionPatternBenchmarkAdapter {
 
   List<PatternCandidate> mine(
     Iterable<ActionEvent> events, {
-    PatternMiner miner = const PatternMiner(),
+    PatternMiner? miner,
   }) {
-    return miner.mine(
+    return (miner ?? PatternMiner()).mine(
       events.map(
         (event) => ObservedStep(
           fingerprint: '${event.kind.name}:${event.app}',
