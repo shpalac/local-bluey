@@ -1,0 +1,26 @@
+{
+  "issue": 611,
+  "title": "BLU-055 Storage migration matrix",
+  "criteria": [
+    {
+      "id": "AC-1",
+      "status": "manual",
+      "reason": "No storage migration implementation contract was found on current main that can be exercised by a truthful flutter_test without adding speculative production behavior. Requires migration fixtures and platform storage validation."
+    },
+    {
+      "id": "AC-2",
+      "status": "manual",
+      "reason": "Deterministic migration results require an existing migration engine and persisted fixture format. Current evidence does not expose a testable API."
+    },
+    {
+      "id": "AC-3",
+      "status": "manual",
+      "reason": "Log/artifact egress and secret handling require CI artifact inspection and runtime configuration review."
+    },
+    {
+      "id": "AC-4",
+      "status": "manual",
+      "reason": "Cross-platform migration behavior requires platform storage validation not available from a pure Dart test."
+    }
+  ]
+}
