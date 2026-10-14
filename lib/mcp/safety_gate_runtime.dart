@@ -3,9 +3,6 @@ import 'dart:async';
 import 'mcp_tool_safety_gate.dart';
 
 /// Production boundary helpers for MCP execution.
-///
-/// Keeps approval, redaction, and lifecycle handling outside untrusted tool
-/// metadata. Native permission checks can be supplied by platform adapters.
 class SafetyGateRuntime {
   const SafetyGateRuntime({required this.gate});
 
@@ -29,26 +26,31 @@ class SafetyGateRuntime {
       timeout: timeout,
     );
 
-    if (result is Map) {
-      return _redactSecrets(result);
-    }
-
-    return result;
+    return _redactValue(result);
   }
 
-  Map<Object?, Object?> _redactSecrets(Map<Object?, Object?> input) {
-    final redacted = <Object?, Object?>{};
-    for (final entry in input.entries) {
-      final key = entry.key.toString().toLowerCase();
-      redacted[entry.key] = _isSecretKey(key) ? '[REDACTED]' : entry.value;
+  Object? _redactValue(Object? value) {
+    if (value is Map) {
+      return {
+        for (final entry in value.entries)
+          entry.key: _isSecretKey(entry.key.toString())
+              ? '[REDACTED]'
+              : _redactValue(entry.value),
+      };
     }
-    return redacted;
+
+    if (value is List) {
+      return value.map(_redactValue).toList(growable: false);
+    }
+
+    return value;
   }
 
   bool _isSecretKey(String key) {
-    return key.contains('token') ||
-        key.contains('secret') ||
-        key.contains('password') ||
-        key.contains('private_key');
+    final normalized = key.toLowerCase();
+    return normalized.contains('token') ||
+        normalized.contains('secret') ||
+        normalized.contains('password') ||
+        normalized.contains('private_key');
   }
 }
