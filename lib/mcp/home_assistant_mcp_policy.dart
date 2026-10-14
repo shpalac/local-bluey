@@ -25,7 +25,8 @@ class HomeAssistantMcpPolicy {
     if (!enabled || !localEndpoint) {
       return const HomeAssistantPolicyResult.denied();
     }
-    if (!_allowedEntities.contains(entityId) || !_services.contains(service)) {
+    if (!_allowedEntities.contains(entityId) ||
+        !_services.contains(service)) {
       return const HomeAssistantPolicyResult.invalid();
     }
     if ((service == 'lock' || service == 'unlock') &&
