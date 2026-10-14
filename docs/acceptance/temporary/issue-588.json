@@ -1,0 +1,15 @@
+{
+  "issue": 588,
+  "feature": "Rive face animation feasibility",
+  "acceptance": {
+    "AC-1": {"status": "automated", "evidence": "Fake Rive adapter contract test verifies no-Rive fallback behavior."},
+    "AC-2": {"status": "automated", "evidence": "Fake adapter tests cover success, invalid input, offline, timeout, cancellation and restart state handling."},
+    "AC-3": {"status": "manual", "reason": "Security review requires runtime inspection of platform integrations; CI uses only fakes and no credentials."},
+    "AC-4": {"status": "automated", "evidence": "State contract tests verify accessible fallback states and reversible transitions."}
+  },
+  "ci": {
+    "secrets": false,
+    "network_dependencies": false,
+    "hardware_dependencies": false
+  }
+}
