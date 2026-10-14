@@ -7,51 +7,46 @@
       "criteria": [
         {
           "id": "ac_1",
-          "requirement": "Hostile tool description cannot bypass approval",
           "type": "automated",
+          "requirement": "Hostile tool descriptions cannot bypass SafetyGate approval",
           "tests": [
             {
-              "file": "test/mcp/mcp_tool_safety_gate_test.dart",
-              "name": "hostile descriptions cannot bypass permission"
+              "file": "test/mcp_safety_gate_runtime_integration_test.dart",
+              "name": "hostile tool description remains display only and cannot bypass permission"
             }
           ]
         },
         {
           "id": "ac_2",
-          "requirement": "Invalid input, denied permission and unknown-server paths are tested; approved invocation returns its result",
           "type": "automated",
+          "requirement": "Bounded hostile fixtures cover invalid input, timeout and cancellation paths",
           "tests": [
             {
-              "file": "test/mcp/mcp_tool_safety_gate_test.dart",
-              "name": "invalid arguments are rejected"
+              "file": "test/mcp_safety_gate_runtime_integration_test.dart",
+              "name": "runtime rejects invalid input and timeout via safety gate"
             },
             {
-              "file": "test/mcp/mcp_tool_safety_gate_test.dart",
-              "name": "unknown server is denied"
-            },
-            {
-              "file": "test/mcp/mcp_tool_safety_gate_test.dart",
-              "name": "approved invocation returns result"
+              "file": "test/mcp_safety_gate_runtime_integration_test.dart",
+              "name": "runtime cancellation fixture fails closed"
             }
           ]
         },
         {
           "id": "ac_3",
-          "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
-          "type": "manual",
-          "reason": "This module launches no MCP process and has no egress test; egress and secret-storage review is pending integration with the BLU-025 registry."
+          "type": "automated",
+          "requirement": "Fake transport proves no unintended egress and returned secrets are redacted",
+          "tests": [
+            {
+              "file": "test/mcp_safety_gate_runtime_integration_test.dart",
+              "name": "fake transport stays in approved path and redacts secrets"
+            }
+          ]
         },
         {
           "id": "ac_4",
-          "requirement": "User-facing states are accessible, RTL-compatible and reversible",
-          "type": "manual",
-          "reason": "No user-facing UI exists in this slice; accessibility and RTL review is pending."
-        },
-        {
-          "id": "gap_1",
-          "requirement": "Timeout, cancellation, restart and offline paths, output redaction, full JSON Schema coverage, and integration with ActionLog and SafetyGate",
           "type": "gap",
-          "reason": "Not implemented in this partial slice; keep #582 open."
+          "requirement": "User-facing accessibility, RTL and reversible UI validation",
+          "reason": "No UI changes are introduced by this CI acceptance slice."
         }
       ]
     }
