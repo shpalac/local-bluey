@@ -89,10 +89,7 @@ final class WorkflowStep {
     if (!const {'notify', 'wait', 'hostAction'}.contains(type)) {
       throw const FormatException('Unsupported step type');
     }
-    return WorkflowStep(
-      type: type,
-      target: _requiredString(json['target'], 'step.target'),
-    );
+    return WorkflowStep(type: type, target: _safeTarget(json['target']));
   }
 
   Map<String, dynamic> toJson() => {'type': type, 'target': target};
@@ -112,4 +109,12 @@ List<String> _stringList(Object? value) {
     throw const FormatException('Invalid string list');
   }
   return List.unmodifiable(value.cast<String>());
+}
+
+String _safeTarget(Object? value) {
+  final target = _requiredString(value, 'step.target');
+  if (target.runes.any((codePoint) => codePoint < 0x20 || codePoint == 0x7f)) {
+    throw const FormatException('Invalid step target control character');
+  }
+  return target;
 }
