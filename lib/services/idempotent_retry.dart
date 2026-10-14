@@ -9,10 +9,7 @@ abstract interface class RetryCheckpointStore {
 }
 
 class RetryCheckpoint {
-  const RetryCheckpoint({
-    required this.operationId,
-    required this.phase,
-  });
+  const RetryCheckpoint({required this.operationId, required this.phase});
 
   final String operationId;
   final String phase;
