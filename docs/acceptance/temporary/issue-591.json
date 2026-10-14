@@ -1,0 +1,21 @@
+{
+  "issue": 591,
+  "criteria": {
+    "AC-1": {
+      "status": "manual",
+      "reason": "Documentation-only change; rollback guidance is validated by review."
+    },
+    "AC-2": {
+      "status": "manual",
+      "reason": "No BLU-035 runtime feature exists on main to test success/failure paths."
+    },
+    "AC-3": {
+      "status": "manual",
+      "reason": "No new runtime behavior or cloud/data flow is introduced."
+    },
+    "AC-4": {
+      "status": "manual",
+      "reason": "No new user-facing UI states are implemented."
+    }
+  }
+}
