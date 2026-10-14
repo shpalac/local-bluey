@@ -45,11 +45,13 @@ void main() {
   ) async {
     await expectLater(
       action(),
-      throwsA(isA<HomeAssistantException>().having(
-        (error) => error.reason,
-        'reason',
-        failure,
-      )),
+      throwsA(
+        isA<HomeAssistantException>().having(
+          (error) => error.reason,
+          'reason',
+          failure,
+        ),
+      ),
     );
     expect(transportCalls, 0);
   }
