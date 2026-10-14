@@ -66,8 +66,17 @@ final class WorkflowExecution {
   Future<WorkflowStatus> run() => _active ??= _run();
 
   Future<WorkflowStatus> _run() async {
-    if (requiresManualRecovery || _cancelled) {
+    if (_cancelled || audit?.stopRequested == true) {
       cancel();
+      return status;
+    }
+    if (requiresManualRecovery) {
+      status = WorkflowStatus.failed;
+      return status;
+    }
+    if (deadline <= Duration.zero) {
+      status = WorkflowStatus.failed;
+      audit?.record('execution', 'timeout');
       return status;
     }
     try {
@@ -76,31 +85,57 @@ final class WorkflowExecution {
         onTimeout: () {
           _cancelled = true;
           status = WorkflowStatus.failed;
+          audit?.record('execution', 'timeout');
           return status;
         },
       );
     } catch (_) {
-      status = WorkflowStatus.failed;
+      if (!_cancelled) {
+        status = WorkflowStatus.failed;
+        audit?.record('execution', 'failed');
+      }
       return status;
     }
   }
 
   Future<WorkflowStatus> _execute() async {
     status = WorkflowStatus.running;
+    audit?.record('execution', 'started');
     for (; nextStep < definition.steps.length; nextStep++) {
-      if (_cancelled) return status;
-      final step = definition.steps[nextStep];
-      if (!await host.approve(step)) {
-        status = WorkflowStatus.failed;
+      if (_cancelled || audit?.stopRequested == true) {
+        cancel();
         return status;
       }
+      final step = definition.steps[nextStep];
+      status = WorkflowStatus.approval;
+      audit?.record('step', 'approval', stepIndex: nextStep);
+      final approved = await host.approve(step);
+      if (_cancelled) return status;
+      if (!approved) {
+        status = WorkflowStatus.failed;
+        audit?.record('step', 'denied', stepIndex: nextStep);
+        return status;
+      }
+      status = WorkflowStatus.running;
+      audit?.record('step', 'started', stepIndex: nextStep);
       await host.execute(step);
+      if (_cancelled) return status;
+      status = WorkflowStatus.verifying;
+      audit?.record('step', 'verifying', stepIndex: nextStep);
       if (!await host.verify(step)) {
         status = WorkflowStatus.failed;
+        audit?.record('step', 'failed', stepIndex: nextStep);
         return status;
       }
+      audit?.record('step', 'completed', stepIndex: nextStep);
+      status = WorkflowStatus.running;
+    }
+    if (_cancelled || audit?.stopRequested == true) {
+      cancel();
+      return status;
     }
     status = WorkflowStatus.completed;
+    audit?.record('execution', 'completed');
     return status;
   }
 }
