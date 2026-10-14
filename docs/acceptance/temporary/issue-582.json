@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 582,
+      "title": "BLU-026 MCP ToolSpec adapter and SafetyGate",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Hostile tool description cannot bypass approval",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/mcp_tool_safety_gate_test.dart",
+              "name": "hostile descriptions cannot bypass permission"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Invalid input and denied permission paths are tested; unknown servers are denied",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/mcp_tool_safety_gate_test.dart",
+              "name": "invalid arguments are rejected"
+            },
+            {
+              "file": "test/mcp/mcp_tool_safety_gate_test.dart",
+              "name": "unknown server is denied"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Approved invocation returns its result",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/mcp_tool_safety_gate_test.dart",
+              "name": "approved invocation returns result"
+            }
+          ]
+        },
+        {
+          "id": "gap_1",
+          "requirement": "Timeout, cancellation, restart, offline paths, output redaction, accessible RTL states, full JSON Schema coverage, and integration with the BLU-025 registry, ActionLog and SafetyGate",
+          "type": "gap",
+          "reason": "Not implemented in this partial slice; keep #582 open."
+        }
+      ]
+    }
+  ]
+}
