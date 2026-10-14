@@ -89,10 +89,7 @@ final class WorkflowStep {
     if (!const {'notify', 'wait', 'hostAction'}.contains(type)) {
       throw const FormatException('Unsupported step type');
     }
-    return WorkflowStep(
-      type: type,
-      target: _safeTarget(json['target']),
-    );
+    return WorkflowStep(type: type, target: _safeTarget(json['target']));
   }
 
   Map<String, dynamic> toJson() => {'type': type, 'target': target};
