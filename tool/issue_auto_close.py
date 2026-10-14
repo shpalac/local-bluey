@@ -19,7 +19,7 @@ from issue_task_ci import (
 )
 
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
-AUTO_CLOSE = re.compile(r"(?im)^\\s*AutoClose\\s+#([1-9]\\d*)\\s*$")
+AUTO_CLOSE = re.compile(r"(?im)^\s*AutoClose\s+#([1-9]\d*)\s*$")
 COMMENT_MARKER = "<!-- local-bluey:acceptance-auto-close -->"
 
 
