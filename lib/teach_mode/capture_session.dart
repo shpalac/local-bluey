@@ -7,7 +7,8 @@ import 'draft_builder.dart';
 /// Explicit-consent, memory-only Teach Mode lifecycle.
 class TeachCaptureSession extends ChangeNotifier {
   TeachCaptureSession({required ScreenWatch watch})
-      : _watch = watch, _monitor = CaptureMonitor(watch: watch) {
+    : _watch = watch,
+      _monitor = CaptureMonitor(watch: watch) {
     _monitor.addListener(_onChanged);
   }
 
@@ -42,8 +43,12 @@ class TeachCaptureSession extends ChangeNotifier {
   }
 
   void _onChanged() {
-    if (_monitor.indicator != CaptureIndicator.active) _discard();
-    if (!_disposed) notifyListeners();
+    if (_monitor.indicator != CaptureIndicator.active) {
+      _discard();
+    }
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   bool pause() => _monitor.pause();
@@ -52,7 +57,9 @@ class TeachCaptureSession extends ChangeNotifier {
   void cancel() {
     _discard();
     _monitor.stop();
-    if (!_disposed) notifyListeners();
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   /// Only validated, payload-free step identifiers pass the capture gate.
@@ -70,10 +77,16 @@ class TeachCaptureSession extends ChangeNotifier {
       locked: locked,
       operation: capture,
     );
-    if (_disposed || epoch != _epoch ||
-        indicator != CaptureIndicator.active || result == null) return false;
+    if (_disposed ||
+        epoch != _epoch ||
+        indicator != CaptureIndicator.active ||
+        result == null) {
+      return false;
+    }
     final step = _builder.build([result]).steps.single;
-    if (step.uncertain) return false;
+    if (step.uncertain) {
+      return false;
+    }
     _steps.add({'action': result['action'], 'target': step.target});
     notifyListeners();
     return true;

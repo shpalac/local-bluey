@@ -15,10 +15,13 @@ void main() {
   test('ac1 cancel drops captured steps and restart stays off', () async {
     final session = TeachCaptureSession(watch: newWatch());
     expect(await session.start(consentConfirmed: true), isNull);
-    expect(await session.observe(
-      frontApp: 'editor',
-      capture: () async => {'action': 'click', 'target': 'save'},
-    ), isTrue);
+    expect(
+      await session.observe(
+        frontApp: 'editor',
+        capture: () async => {'action': 'click', 'target': 'save'},
+      ),
+      isTrue,
+    );
     expect(session.stepCount, 1);
     session.cancel();
     expect(session.stepCount, 0);
@@ -34,20 +37,26 @@ void main() {
   test('ac2 rejected consent duration and denied app do not capture', () async {
     final session = TeachCaptureSession(watch: newWatch());
     expect(await session.start(consentConfirmed: false), isNotNull);
-    expect(await session.start(
-      consentConfirmed: true,
-      duration: const Duration(minutes: 11),
-    ), isNotNull);
+    expect(
+      await session.start(
+        consentConfirmed: true,
+        duration: const Duration(minutes: 11),
+      ),
+      isNotNull,
+    );
     expect(session.indicator, CaptureIndicator.off);
     expect(await session.start(consentConfirmed: true), isNull);
     var invoked = false;
-    expect(await session.observe(
-      frontApp: '1Password',
-      capture: () async {
-        invoked = true;
-        return {'action': 'click', 'target': 'secret'};
-      },
-    ), isFalse);
+    expect(
+      await session.observe(
+        frontApp: '1Password',
+        capture: () async {
+          invoked = true;
+          return {'action': 'click', 'target': 'secret'};
+        },
+      ),
+      isFalse,
+    );
     expect(invoked, isFalse);
     expect(session.stepCount, 0);
     session.dispose();
@@ -56,18 +65,24 @@ void main() {
   test('ac3 secret-bearing input discarded and draft cannot execute', () async {
     final session = TeachCaptureSession(watch: newWatch());
     expect(await session.start(consentConfirmed: true), isNull);
-    expect(await session.observe(
-      frontApp: 'editor',
-      capture: () async => {
-        'action': 'type',
-        'target': 'password',
-        'text': 'secret',
-      },
-    ), isFalse);
-    expect(await session.observe(
-      frontApp: 'editor',
-      capture: () async => {'action': 'click', 'target': 'save'},
-    ), isTrue);
+    expect(
+      await session.observe(
+        frontApp: 'editor',
+        capture: () async => {
+          'action': 'type',
+          'target': 'password',
+          'text': 'secret',
+        },
+      ),
+      isFalse,
+    );
+    expect(
+      await session.observe(
+        frontApp: 'editor',
+        capture: () async => {'action': 'click', 'target': 'save'},
+      ),
+      isTrue,
+    );
     final draft = session.finish();
     expect(draft.steps, hasLength(1));
     expect(draft.steps.single.target, 'save');
