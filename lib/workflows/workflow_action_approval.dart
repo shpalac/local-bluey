@@ -134,9 +134,10 @@ final class WorkflowApprovalHost implements WorkflowHost {
   int _stepIndex = 0;
 
   String _key(int index) {
-    final step = _definition.steps[index];
+    // Include permissions and the validated definition, not merely the
+    // visible target: a changed workflow must never inherit an old grant.
     return sha256.convert(
-      utf8.encode('${_definition.id}:$index:${step.type}:${step.target}'),
+      utf8.encode('${jsonEncode(_definition.toJson())}:$index'),
     ).toString();
   }
 
