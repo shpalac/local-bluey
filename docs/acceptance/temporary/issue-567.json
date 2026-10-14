@@ -21,6 +21,10 @@
             {
               "file": "test/workflow_dsl_test.dart",
               "name": "unsupported schema is rejected"
+            },
+            {
+              "file": "test/workflow_dsl_target_validation_test.dart",
+              "name": "step target rejects embedded control characters"
             }
           ]
         },
@@ -32,6 +36,10 @@
             {
               "file": "test/workflow_dsl_test.dart",
               "name": "invalid retry policy is rejected"
+            },
+            {
+              "file": "test/workflow_dsl_target_validation_test.dart",
+              "name": "malformed step target newline is rejected"
             }
           ]
         },
