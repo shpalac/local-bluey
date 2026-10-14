@@ -78,7 +78,8 @@ void main() {
     final gate = McpToolSafetyGate(
       isServerAllowed: (_) => true,
       requestPermission: (_, _) async => true,
-      invoke: (_, _, _) async => Future<Object?>.delayed(const Duration(seconds: 2), () => null),
+      invoke: (_, _, _) async =>
+          Future<Object?>.delayed(const Duration(seconds: 2), () => null),
     );
     final runtime = SafetyGateRuntime(gate: gate);
     final spec = McpToolSpec(
