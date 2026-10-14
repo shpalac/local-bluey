@@ -86,7 +86,10 @@ class LocalSemanticRetriever {
     if (!index.isEnabled || index.state != FileIndexState.ready) {
       return const LocalRetrievalResult(LocalRetrievalStatus.disabled, []);
     }
-    if (query.trim().isEmpty || limit < 1 || limit > 50 || timeout <= Duration.zero) {
+    if (query.trim().isEmpty ||
+        limit < 1 ||
+        limit > 50 ||
+        timeout <= Duration.zero) {
       return const LocalRetrievalResult(LocalRetrievalStatus.invalidQuery, []);
     }
     final snapshot = index.retrievalSnapshot();
@@ -100,7 +103,8 @@ class LocalSemanticRetriever {
     final hits = <LocalRetrievalHit>[];
     final clock = Stopwatch()..start();
     for (final entry in snapshot.entries) {
-      if (!index.isEnabled || index.state != FileIndexState.ready ||
+      if (!index.isEnabled ||
+          index.state != FileIndexState.ready ||
           !index.matchesRetrievalSnapshot(snapshot)) {
         return const LocalRetrievalResult(LocalRetrievalStatus.cancelled, []);
       }
@@ -123,7 +127,9 @@ class LocalSemanticRetriever {
         final excerpt = source.substring(start, end);
         final score = _similarity(queryVector, _embed(excerpt));
         if (score > 0) {
-          hits.add(LocalRetrievalHit(path: entry.key, excerpt: excerpt, score: score));
+          hits.add(
+            LocalRetrievalHit(path: entry.key, excerpt: excerpt, score: score),
+          );
         }
       }
     }
@@ -135,7 +141,9 @@ class LocalSemanticRetriever {
       return score != 0 ? score : a.path.compareTo(b.path);
     });
     return LocalRetrievalResult(
-      hits.isEmpty ? LocalRetrievalStatus.noMatches : LocalRetrievalStatus.ready,
+      hits.isEmpty
+          ? LocalRetrievalStatus.noMatches
+          : LocalRetrievalStatus.ready,
       List.unmodifiable(hits.take(limit)),
     );
   }
