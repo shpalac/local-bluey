@@ -23,7 +23,9 @@ jobs:
           channel: stable
       - run: flutter pub get
       - name: Verify Dart formatting
-        run: dart format lib/services/file_index.dart lib/ui/file_index_section.dart test/file_index_test.dart
+        run: |
+          dart format lib/services/file_index.dart lib/ui/file_index_section.dart test/file_index_test.dart
+          git diff -- lib/services/file_index.dart lib/ui/file_index_section.dart test/file_index_test.dart
       - run: flutter analyze
       - run: flutter test test/file_index_test.dart
       - run: flutter build apk --debug
