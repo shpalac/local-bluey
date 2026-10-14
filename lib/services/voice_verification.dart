@@ -40,16 +40,13 @@ abstract interface class VoiceEvidenceProvider {
 /// No audio, enrollment embeddings, user IDs or scores are written to disk.
 /// A verified result MUST NOT replace SafetyGate's human confirmation.
 class VoiceVerifier {
-  VoiceVerifier({
-    required VoiceEvidenceProvider provider,
-    this.threshold = 0.85,
-  }) : _provider = provider {
+  VoiceVerifier({required this.provider, this.threshold = 0.85}) {
     if (!threshold.isFinite || threshold <= 0 || threshold > 1) {
       throw ArgumentError.value(threshold, 'threshold');
     }
   }
 
-  final VoiceEvidenceProvider _provider;
+  final VoiceEvidenceProvider provider;
 
   /// For fake testing only; not an empirically calibrated production threshold.
   final double threshold;
@@ -105,15 +102,15 @@ class VoiceVerifier {
     try {
       // One budget for permission, readiness, and assessment combined.
       final state = await (() async {
-        if (!await _provider.hasMicrophonePermission()) {
+        if (!await provider.hasMicrophonePermission()) {
           return VoiceVerificationState.permissionDenied;
         }
         if (changed()) return stale();
-        if (!await _provider.isOfflineReady()) {
+        if (!await provider.isOfflineReady()) {
           return VoiceVerificationState.offline;
         }
         if (changed()) return stale();
-        final evidence = await _provider.assess(id);
+        final evidence = await provider.assess(id);
         if (changed()) return stale();
         if (!evidence.similarity.isFinite ||
             evidence.similarity < 0 ||
