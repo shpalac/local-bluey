@@ -14,7 +14,11 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
         id.contains('..') ||
         id.contains('/') ||
         id.contains('\\')) {
-      throw ArgumentError.value(id, 'operationId', 'Invalid checkpoint identifier');
+      throw ArgumentError.value(
+        id,
+        'operationId',
+        'Invalid checkpoint identifier',
+      );
     }
     return File('${directory.path}/$id.json');
   }
