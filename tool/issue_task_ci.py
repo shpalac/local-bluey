@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Enforce per-issue acceptance evidence on linked pull requests.
 
-A temporary issue manifest runs targeted tests during implementation. Its
-permanent replacement must contain end-to-end coverage before a PR can use
-a closing keyword. This gate never certifies human-only or hardware checks.
+A temporary issue manifest runs targeted tests during implementation. A
+closing PR may use temporary or permanent evidence, but every acceptance
+criterion must have executable coverage; no manual/gap entries can close.
+This gate never certifies human-only or hardware checks.
 """
 import argparse
 import json
@@ -152,15 +153,15 @@ def validate_stage(root: Path, number: int, path: Path,
                 f"#{number}: remove temporary manifest after permanent coverage is added"
             )
     if closing:
-        if stage != "permanent":
+        if stage == "legacy":
             raise ContractError(
-                f"#{number}: use Refs until permanent feature integration coverage exists"
+                f"#{number}: closing requires an issue-specific temporary or permanent manifest"
             )
         if any(item["type"] == "gap" for item in criteria):
             raise ContractError(f"#{number}: outstanding implementation gaps")
         if any(item["type"] == "manual" for item in criteria):
             raise ContractError(
-                f"#{number}: manual criteria require separate maintainer verification; "
+                f"#{number}: manual criteria require separate verification; "
                 "do not auto-close this issue"
             )
     return record
@@ -200,6 +201,9 @@ def check(root: Path, repository: str, body: str, token: str, mode: str,
             if not acceptance_ids.issubset(mapped_ids):
                 missing = ", ".join(sorted(acceptance_ids - mapped_ids))
                 raise ContractError(f"#{number}: acceptance criteria missing test mappings: {missing}")
+            if closing and mapped_ids != acceptance_ids:
+                extra = ", ".join(sorted(mapped_ids - acceptance_ids))
+                raise ContractError(f"#{number}: unmapped issue contract criteria: {extra}")
         records.append(record)
         print(f"#{number}: {stage} acceptance contract ({path.relative_to(root)})")
     tests = expected_tests(records, mode)
