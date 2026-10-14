@@ -21,6 +21,10 @@ class TeachDraft {
 class TeachDraftBuilder {
   const TeachDraftBuilder();
 
+  /// Derives a safe review preview without granting execution rights.
+  TeachDraftPreview preview(List<Map<String, Object?>> observations) =>
+      TeachDraftPreview(build(observations));
+
   TeachDraft build(List<Map<String, Object?>> observations) {
     final steps = <DraftStep>[];
     final warnings = <String>[];
@@ -50,4 +54,51 @@ class TeachDraftBuilder {
     }
     return TeachDraft(List.unmodifiable(steps), List.unmodifiable(warnings));
   }
+}
+
+  
+/// A review-only projection of captured observations. It deliberately has no
+/// conversion to WorkflowDefinition or host execution API.
+final class TeachDraftPreview {
+  TeachDraftPreview(TeachDraft draft)
+      : steps = List.unmodifiable(
+          draft.steps.asMap().entries.map((entry) {
+            final step = entry.value;
+            return DraftPreviewStep(
+              ordinal: entry.key + 1,
+              kind: step.kind,
+              target: step.target,
+              requiresReview: step.uncertain,
+              variablePlaceholder: step.kind == DraftStepKind.type &&
+                      !step.uncertain
+                  ? 'input_${entry.key + 1}'
+                  : null,
+            );
+          }),
+        ),
+        warnings = List.unmodifiable(draft.warnings);
+
+  final List<DraftPreviewStep> steps;
+  final List<String> warnings;
+
+  bool get requiresReview => warnings.isNotEmpty;
+  bool get canAutoExecute => false;
+}
+
+final class DraftPreviewStep {
+  const DraftPreviewStep({
+    required this.ordinal,
+    required this.kind,
+    required this.target,
+    required this.requiresReview,
+    required this.variablePlaceholder,
+  });
+
+  final int ordinal;
+  final DraftStepKind kind;
+  final String target;
+  final bool requiresReview;
+
+  /// Identifier only; the typed value is never retained in the draft.
+  final String? variablePlaceholder;
 }
