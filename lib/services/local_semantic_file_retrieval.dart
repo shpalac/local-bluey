@@ -24,15 +24,13 @@ abstract interface class LocalSemanticFileIndex {
 sealed class LocalSemanticRetrievalResult {
   const LocalSemanticRetrievalResult();
 
-  const factory LocalSemanticRetrievalResult.success({
-    required String path,
-  }) = LocalSemanticSuccess;
+  const factory LocalSemanticRetrievalResult.success({required String path}) =
+      LocalSemanticSuccess;
 
   const factory LocalSemanticRetrievalResult.invalidInput() =
       LocalSemanticInvalidInput;
 
-  const factory LocalSemanticRetrievalResult.notFound() =
-      LocalSemanticNotFound;
+  const factory LocalSemanticRetrievalResult.notFound() = LocalSemanticNotFound;
 }
 
 class LocalSemanticSuccess extends LocalSemanticRetrievalResult {

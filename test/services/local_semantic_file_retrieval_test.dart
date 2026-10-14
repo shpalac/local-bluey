@@ -17,10 +17,7 @@ void main() {
   test('returns invalid input for blank query', () {
     final retrieval = LocalSemanticFileRetrieval(index: FakeIndex());
 
-    expect(
-      retrieval.search(' '),
-      isA<LocalSemanticInvalidInput>(),
-    );
+    expect(retrieval.search(' '), isA<LocalSemanticInvalidInput>());
   });
 
   test('returns grounded local path from index result', () {
