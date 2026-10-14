@@ -18,8 +18,10 @@ class _MemoryStore implements RetryCheckpointStore {
   @override
   Future<bool> claim(String operationId) async {
     if (values.containsKey(operationId)) return false;
-    values[operationId] =
-        RetryCheckpoint(operationId: operationId, phase: 'started');
+    values[operationId] = RetryCheckpoint(
+      operationId: operationId,
+      phase: 'started',
+    );
     return true;
   }
 }
@@ -32,7 +34,9 @@ void main() {
 
     await executor.run<void>(
       operationId: 'send-1',
-      send: () async { sends++; },
+      send: () async {
+          sends++;
+        },
     );
 
     expect(sends, 1);
@@ -40,7 +44,9 @@ void main() {
     await expectLater(
       executor.run<void>(
         operationId: 'send-1',
-        send: () async { sends++; },
+        send: () async {
+          sends++;
+        },
       ),
       throwsStateError,
     );
@@ -57,14 +63,18 @@ void main() {
     await expectLater(
       IdempotentRetryExecutor(failingStore).run<void>(
         operationId: 'crash',
-        send: () async { sends++; },
+        send: () async {
+          sends++;
+        },
       ),
       throwsStateError,
     );
     await expectLater(
       executor.run<void>(
         operationId: 'crash',
-        send: () async { sends++; },
+        send: () async {
+          sends++;
+        },
       ),
       throwsStateError,
     );
@@ -104,7 +114,10 @@ void main() {
     await expectLater(
       IdempotentRetryExecutor(store).run<void>(
         operationId: 'timeout',
-        send: () { sends++; return pending.future; },
+        send: () {
+          sends++;
+          return pending.future;
+        },
         timeout: const Duration(milliseconds: 1),
       ),
       throwsA(isA<TimeoutException>()),
@@ -112,7 +125,9 @@ void main() {
     await expectLater(
       IdempotentRetryExecutor(store).run<void>(
         operationId: 'timeout',
-        send: () async { sends++; },
+        send: () async {
+          sends++;
+        },
       ),
       throwsStateError,
     );
@@ -128,7 +143,9 @@ void main() {
       IdempotentRetryExecutor(store).run<void>(
         operationId: 'cancelled',
         cancellation: cancellation,
-        send: () async { sends++; },
+        send: () async {
+          sends++;
+        },
       ),
       throwsA(isA<RetryCancelled>()),
     );
@@ -144,7 +161,10 @@ void main() {
     final running = IdempotentRetryExecutor(store).run<void>(
       operationId: 'in-flight',
       cancellation: cancellation,
-      send: () { sends++; return pending.future; },
+      send: () {
+          sends++;
+          return pending.future;
+        },
     );
     // Complete the first async claim before cancellation.
     await Future<void>.delayed(Duration.zero);
@@ -153,7 +173,9 @@ void main() {
     await expectLater(
       IdempotentRetryExecutor(store).run<void>(
         operationId: 'in-flight',
-        send: () async { sends++; },
+        send: () async {
+          sends++;
+        },
       ),
       throwsStateError,
     );
