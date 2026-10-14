@@ -687,3 +687,7 @@ manual evidence and a go/no-go decision before disposition.
 ## BLU-028 — opt-in file indexing (partial; Refs #584)
 
 See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.
+
+### BLU-031 voice verification (#587)
+
+Temporary criterion-by-criterion evidence: [`docs/acceptance/temporary/issue-587.json`](acceptance/temporary/issue-587.json). Fake-only Dart tests cover spoofed/matched speakers retaining SafetyGate confirmation, invalid scores, absent spoof evidence, denied permission, offline, timeout, cancellation, revocation and restart. The default-off module makes no network or persistence calls. Accessibility/RTL device UI, calibrated anti-spoof accuracy, real enrollment and device permission evidence remain **manual gaps**. Keep #587 open pending native verification.

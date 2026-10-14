@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 587,
+      "title": "BLU-031 Voice verification as secondary factor",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Spoofed voice still asks approval",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "spoofed voice still asks approval"
+            },
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "successful secondary signal still requires SafetyGate approval"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart paths",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "successful secondary signal still requires SafetyGate approval"
+            },
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "invalid score and unavailable spoof evidence deny verification"
+            },
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "offline and denied microphone permission fail closed"
+            },
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "timeout never grants a late response"
+            },
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "cancellation invalidates in-flight assessment"
+            },
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "revocation and restart remove consent and stale results"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No cloud egress, secret storage, unsafe automatic action or silent downgrade",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "default off and explicit consent required"
+            },
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "no provider or storage called until explicit opt-in"
+            },
+            {
+              "file": "test/voice_verification_test.dart",
+              "name": "invalid score and unavailable spoof evidence deny verification"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "User-facing states accessible, RTL-compatible and reversible",
+          "type": "manual",
+          "reason": "Typed states and revoke/restart are implemented; no feature toggle or on-device speaker UI is shipped. VoiceOver/TalkBack and Hebrew RTL review require device evidence."
+        },
+        {
+          "id": "scope",
+          "requirement": "Audit interfaces, backwards compatibility, privacy registry, ActionLog and rollback",
+          "type": "manual",
+          "reason": "Isolated memory-only typed module; no persistent voice template, consent or log written; existing SafetyGate unchanged. Future persistent or user-facing integration requires registry, redacted ActionLog, UX review."
+        },
+        {
+          "id": "integration_gap",
+          "requirement": "Real local speaker recognition, calibrated spoof protection and physical-device permission tests",
+          "type": "gap",
+          "reason": "BLU-030 research does not supply selected model/calibration. Fakes verify orchestration but not voice identity or anti-spoof effectiveness; keep #587 open."
+        }
+      ]
+    }
+  ]
+}
