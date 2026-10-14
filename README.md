@@ -255,3 +255,5 @@ Local Bluey is forked from [**Bluey by Riley Brown**](https://github.com/rbrown1
 
 
 **Opt-in file indexing (experimental, not shipped):** An isolated in-memory engine supports explicitly approved directory scans, incremental refresh and immediate revocation. macOS folder selection and explicit consent/revoke controls are integrated; physical-device permission and RTL validation remain outstanding. See [BLU-028 implementation notes](docs/blu-028-file-index.md).
+
+**Voice verification (experimental, disabled):** BLU-031 adds a memory-only, fake-testable speaker-confidence contract. No speaker model, biometric enrollment or user-facing verification is enabled. A voice match never authorizes a computer action or bypasses SafetyGate; spoof and missing-liveness evidence deny verification. See [voice-verification design and limitations](docs/blu-031-voice-verification.md).
