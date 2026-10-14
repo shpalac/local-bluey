@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 611,
+      "title": "[BLU-055] Storage migration matrix",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Safe migrations and explicit downgrade failure (bounded: fresh v1 initialization, v1 reopen and fail-closed newer schema)",
+          "tests": [
+            {
+              "file": "test/activity_storage_migration_matrix_test.dart",
+              "name": "future schema downgrade refuses without rewriting ciphertext"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Results are deterministic and reproducible; all failures are explicit and actionable (bounded: fresh initialization and reopen)",
+          "tests": [
+            {
+              "file": "test/activity_storage_migration_matrix_test.dart",
+              "name": "fresh install creates schema version one and reopens"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "gap",
+          "requirement": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress",
+          "reason": "New migration tests use an ephemeral fake vault and local SQLite only, but do not certify the application-wide logging, artifact and egress requirements. Requires independent evidence."
+        },
+        {
+          "id": "ac_4",
+          "type": "manual",
+          "requirement": "Backwards compatibility and cross-platform behavior reviewed; no unsupported capability falsely advertised",
+          "reason": "SQLCipher-backed tests exercise the host runner, not macOS/iOS/Android secure storage or native migration on each supported OS. Device/platform review remains required."
+        },
+        {
+          "id": "legacy_schema",
+          "type": "automated",
+          "requirement": "Supplemental: unknown legacy v0 schema rejects without destructive initialization",
+          "tests": [
+            {
+              "file": "test/activity_storage_migration_matrix_test.dart",
+              "name": "unknown legacy schema refuses instead of migrating"
+            }
+          ]
+        },
+        {
+          "id": "upgrade_gap",
+          "type": "gap",
+          "requirement": "Real data upgrades across historical schema versions and WAL corruption recovery",
+          "reason": "Only schema v1 is implemented; there is no production v2 migration. True WAL-corruption test and rollback path remain unproven; do not claim matrix completion."
+        }
+      ]
+    }
+  ]
+}
