@@ -1,0 +1,22 @@
+{
+  "issue": 595,
+  "criteria": {
+    "AC-1": {
+      "status": "automated",
+      "test_file": "test/blu_039_android_emulator_ci_lane_test.dart",
+      "test_name": "android emulator ci lane acceptance smoke test"
+    },
+    "AC-2": {
+      "status": "manual/gap",
+      "reason": "Deterministic emulator execution depends on GitHub Actions runner image and Android emulator availability; workflow diagnostics provide evidence but cannot be proven by a local Dart unit test."
+    },
+    "AC-3": {
+      "status": "manual/gap",
+      "reason": "Secret, artifact and network egress review requires CI workflow inspection and runner execution evidence."
+    },
+    "AC-4": {
+      "status": "manual/gap",
+      "reason": "Cross-platform compatibility review requires platform validation beyond a Dart acceptance test."
+    }
+  }
+}
