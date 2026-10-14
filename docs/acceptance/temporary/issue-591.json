@@ -1,21 +1,35 @@
 {
-  "issue": 591,
-  "criteria": {
-    "AC-1": {
-      "status": "manual",
-      "reason": "Documentation-only change; rollback guidance is validated by review."
-    },
-    "AC-2": {
-      "status": "manual",
-      "reason": "No BLU-035 runtime feature exists on main to test success/failure paths."
-    },
-    "AC-3": {
-      "status": "manual",
-      "reason": "No new runtime behavior or cloud/data flow is introduced."
-    },
-    "AC-4": {
-      "status": "manual",
-      "reason": "No new user-facing UI states are implemented."
+  "version": 1,
+  "issues": [
+    {
+      "number": 591,
+      "title": "BLU-035 docs rollout/rollback",
+      "criteria": [
+        {
+          "id": "ac_1_rollback_documented",
+          "requirement": "Feature off compatible; rollback documented.",
+          "type": "manual",
+          "reason": "Documentation-only change; rollback guidance is validated by review because no BLU-035 runtime feature exists on main."
+        },
+        {
+          "id": "ac_2_runtime_paths",
+          "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart paths tested where applicable.",
+          "type": "manual",
+          "reason": "No BLU-035 runtime feature exists on main, so runtime path tests are out of scope until implementation exists."
+        },
+        {
+          "id": "ac_3_safety_boundaries",
+          "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade.",
+          "type": "manual",
+          "reason": "No new runtime behavior or data flow is introduced by this documentation rollout."
+        },
+        {
+          "id": "ac_4_user_states",
+          "requirement": "User-facing states are accessible, RTL-compatible and reversible where applicable.",
+          "type": "manual",
+          "reason": "No new user-facing UI states are implemented by this documentation-only change."
+        }
+      ]
     }
-  }
+  ]
 }
