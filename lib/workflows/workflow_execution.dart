@@ -141,7 +141,12 @@ final class WorkflowExecution {
       if (_cancelled) return status;
       status = WorkflowStatus.verifying;
       audit?.record('step', 'verifying', stepIndex: nextStep);
-      if (!await host.verify(step)) {
+      final verified = await host.verify(step);
+      if (_cancelled || audit?.stopRequested == true) {
+        cancel();
+        return status;
+      }
+      if (!verified) {
         status = WorkflowStatus.failed;
         audit?.record('step', 'failed', stepIndex: nextStep);
         return status;

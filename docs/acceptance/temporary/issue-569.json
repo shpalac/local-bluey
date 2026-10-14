@@ -17,6 +17,10 @@
             {
               "file": "test/workflow_execution_integration_test.dart",
               "name": "WorkflowExecution stops after cancellation and does not continue"
+            },
+            {
+              "file": "test/workflow_execution_verification_cancellation_test.dart",
+              "name": "cancellation during verification cannot complete or advance"
             }
           ]
         },
