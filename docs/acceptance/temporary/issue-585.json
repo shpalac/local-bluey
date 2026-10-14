@@ -6,19 +6,59 @@
       "title": "BLU-029 Local semantic file retrieval",
       "criteria": [
         {
-          "id": "AC-1",
-          "tests": ["missing file is never hallucinated"]
-        },
-        {
-          "id": "AC-2",
+          "id": "ac_1",
+          "requirement": "Missing file never hallucinated",
+          "type": "automated",
           "tests": [
-            "invalid input is rejected",
-            "cancelled request is rejected"
+            {
+              "file": "test/retrieval/local_semantic_retrieval_test.dart",
+              "name": "missing file is never hallucinated"
+            }
           ]
         },
         {
-          "id": "AC-3",
-          "tests": ["retrieval only returns local grounded paths"]
+          "id": "ac_2",
+          "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/retrieval/local_semantic_retrieval_test.dart",
+              "name": "invalid input is rejected"
+            },
+            {
+              "file": "test/retrieval/local_semantic_retrieval_test.dart",
+              "name": "cancelled request is rejected"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No cloud egress, secret storage or automatic action",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/retrieval/local_semantic_retrieval_test.dart",
+              "name": "retrieval only returns local grounded paths"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Accessible RTL user-facing reversible states",
+          "type": "manual",
+          "reason": "Retrieval exposes typed states only; native UI accessibility and RTL verification remain pending."
+        },
+        {
+          "id": "scope",
+          "requirement": "Audit interfaces, backwards compatibility, bounded module, privacy and rollback",
+          "type": "manual",
+          "reason": "Implementation remains local-only with deterministic tests and no provider calls."
+        },
+        {
+          "id": "integration_gap",
+          "requirement": "Physical macOS permission, offline and timeout evidence",
+          "type": "gap",
+          "reason": "CI uses deterministic in-process tests; hardware and on-device embedding validation remain pending."
         }
       ]
     }
