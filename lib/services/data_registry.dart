@@ -7,6 +7,7 @@ import 'hold_key_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'action_log.dart';
+import 'file_index.dart';
 import 'biometric_lock.dart';
 import 'characters.dart';
 import 'haptics.dart';
@@ -81,6 +82,16 @@ class DataRegistry {
       retentionEn: 'Off unless opted in; up to 7 days',
       retentionHe: 'כבוי עד לאישור מפורש; עד 7 ימים',
       clear: EncryptedActivityStore.deleteDefault,
+    ),
+    DataStoreInfo(
+      id: 'file_index',
+      sourceFile: 'lib/services/file_index.dart',
+      whatEn: 'Explicitly selected local file index (memory only)',
+      whatHe: 'אינדקס קבצים מקומי שנבחר במפורש (זיכרון בלבד)',
+      where: 'Process memory; no disk persistence',
+      retentionEn: 'Until revoked or app restart',
+      retentionHe: 'עד לביטול ההרשאה או להפעלה מחדש',
+      clear: () async => FileIndex.instance.revoke(),
     ),
     DataStoreInfo(
       id: 'hold_key_pref',
