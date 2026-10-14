@@ -26,7 +26,9 @@ class _FileIndexSectionState extends State<FileIndexSection> {
   String? _error;
 
   Future<void> _choose() async {
-    if (_busy) return;
+    if (_busy) {
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -34,7 +36,9 @@ class _FileIndexSectionState extends State<FileIndexSection> {
     try {
       final path = await (FileIndexSection.debugChooseDirectory?.call() ??
           _channel.invokeMethod<String>('chooseDirectory'));
-      if (!mounted || path == null) return;
+      if (!mounted || path == null) {
+        return;
+      }
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
@@ -55,7 +59,9 @@ class _FileIndexSectionState extends State<FileIndexSection> {
           ],
         ),
       );
-      if (!mounted || confirmed != true) return;
+      if (!mounted || confirmed != true) {
+        return;
+      }
       await _index.grant(Directory(path), consent: true);
     } catch (_) {
       if (mounted) {
