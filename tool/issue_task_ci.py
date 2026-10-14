@@ -18,7 +18,7 @@ from urllib.request import Request, urlopen
 import acceptance_criteria as acceptance
 
 REFERENCE = re.compile(
-    r"(?i)\b(closes?|fix(?:es|ed)?|resolves?|refs?)\s+#([1-9]\d*)"
+    r"(?i)\b(auto-?closes?|closes?|fix(?:es|ed)?|resolves?|refs?)\s+#([1-9]\d*)"
 )
 ACCEPTANCE_HEADING = re.compile(
     r"(?ims)^##\s+Acceptance criteria\s*$([\s\S]*?)(?=^##\s+|\Z)"
@@ -49,7 +49,7 @@ def linked_issues(body: str) -> dict[int, bool]:
         if re.search(r"(?i)\b(?:do\s+not|don't|never|not)\s+$", context):
             continue
         number = int(raw_number)
-        closing = kind.lower().startswith(("close", "fix", "resolve"))
+        closing = kind.lower().startswith(("auto", "close", "fix", "resolve"))
         found[number] = found.get(number, False) or closing
     return found
 
