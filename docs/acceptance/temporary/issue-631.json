@@ -1,23 +1,53 @@
 {
-  "issue": 631,
-  "criteria": {
-    "AC-1": {
-      "status": "automated",
-      "test_file": "test/workflows_import_test.dart",
-      "test_name": "imports workflow without enabling it"
-    },
-    "AC-2": {
-      "status": "automated",
-      "test_file": "test/workflows_import_test.dart",
-      "test_name": "rejects malformed workflow JSON with explicit error"
-    },
-    "AC-3": {
-      "status": "manual/gap",
-      "reason": "No proof in this slice for full secret scanning, privacy registry integration, or network action enforcement."
-    },
-    "AC-4": {
-      "status": "manual/gap",
-      "reason": "Compatibility with every supported platform routine path requires broader integration validation."
+  "version": 1,
+  "issues": [
+    {
+      "number": 631,
+      "title": "Versioned import/export",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Import cannot auto-enable",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflows_import_test.dart",
+              "name": "imports workflow without enabling it"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Deterministic, reproducible results; explicit errors rather than silent fallbacks",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/workflows_import_test.dart",
+              "name": "rejects malformed workflow JSON with explicit error"
+            },
+            {
+              "file": "test/workflows_import_test.dart",
+              "name": "rejects unsupported workflow schema version"
+            },
+            {
+              "file": "test/workflows_import_test.dart",
+              "name": "rejects oversized workflow documents deterministically"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions",
+          "type": "gap",
+          "reason": "No proof in this slice for full secret scanning, privacy registry integration, or network action enforcement."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Existing Routines and supported platform behavior remain compatible",
+          "type": "gap",
+          "reason": "Compatibility with every supported platform routine path requires broader integration validation."
+        }
+      ]
     }
-  }
+  ]
 }

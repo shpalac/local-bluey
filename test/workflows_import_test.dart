@@ -16,9 +16,8 @@ void main() {
 
   test('rejects unsupported workflow schema version', () {
     expect(
-      () => importer.importJson(
-        valid.replaceFirst('"version":1', '"version":2'),
-      ),
+      () =>
+          importer.importJson(valid.replaceFirst('"version":1', '"version":2')),
       throwsA(isA<FormatException>()),
     );
   });
