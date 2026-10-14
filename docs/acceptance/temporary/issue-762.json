@@ -3,7 +3,6 @@
   "issues": [
     {
       "number": 762,
-      "parent": 582,
       "title": "Deep output redaction and mid-invocation cancellation",
       "criteria": [
         {
