@@ -2,7 +2,7 @@ name: Issue acceptance automation
 
 # This privileged workflow only reads metadata from a CI run and checks out
 # trusted main. It must never execute code from an unmerged pull request.
-on:
+on: # zizmor: ignore[dangerous-triggers] Runs trusted main code only; no PR branch checkout, no PR artifacts or cache.
   workflow_run:
     workflows: [CI]
     types: [completed]
