@@ -1,9 +1,9 @@
-import 'package:test/test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
-import '../lib/services/durable_recovery_store.dart';
-import '../lib/services/execution_audit.dart';
-import '../lib/workflows/workflow_dsl.dart';
-import '../lib/workflows/workflow_execution.dart';
+import 'package:local_bluey/services/durable_recovery_store.dart';
+import 'package:local_bluey/services/execution_audit.dart';
+import 'package:local_bluey/workflows/workflow_dsl.dart';
+import 'package:local_bluey/workflows/workflow_execution.dart';
 
 void main() {
   test(
