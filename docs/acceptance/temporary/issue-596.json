@@ -1,27 +1,45 @@
 {
-  "issue": 596,
-  "criteria": [
+  "version": 1,
+  "issues": [
     {
-      "id": "AC-1",
-      "status": "automated",
-      "test_file": "test/ios_simulator_feasibility_test.dart",
-      "test_name": "iOS simulator feasibility baseline is deterministic"
-    },
-    {
-      "id": "AC-2",
-      "status": "automated",
-      "test_file": "test/ios_simulator_feasibility_test.dart",
-      "test_name": "iOS simulator feasibility baseline is deterministic"
-    },
-    {
-      "id": "AC-3",
-      "status": "manual",
-      "reason": "Requires CI artifact and runner policy inspection"
-    },
-    {
-      "id": "AC-4",
-      "status": "manual",
-      "reason": "Requires cross-platform capability review"
+      "number": 596,
+      "title": "BLU-040 iOS simulator feasibility and CI",
+      "criteria": [
+        {
+          "id": "ac_ios_simulator_tests",
+          "requirement": "Supported iOS simulator tests run or limitations are documented",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/ios_simulator_feasibility_test.dart",
+              "name": "iOS simulator feasibility baseline is deterministic"
+            }
+          ]
+        },
+        {
+          "id": "ac_deterministic_results",
+          "requirement": "Results are deterministic and failures are explicit and actionable",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/ios_simulator_feasibility_test.dart",
+              "name": "iOS simulator feasibility baseline is deterministic"
+            }
+          ]
+        },
+        {
+          "id": "ac_no_secrets_or_network",
+          "requirement": "No secrets, personal data, raw screenshots, or unapproved network egress are included",
+          "type": "manual",
+          "reason": "Requires CI artifact and runner policy inspection"
+        },
+        {
+          "id": "ac_cross_platform_review",
+          "requirement": "Backwards compatibility and unsupported capabilities are reviewed",
+          "type": "manual",
+          "reason": "Requires cross-platform capability review"
+        }
+      ]
     }
   ]
 }
