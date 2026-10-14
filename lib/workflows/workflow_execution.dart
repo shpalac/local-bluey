@@ -51,10 +51,11 @@ final class WorkflowExecution {
 
   bool get requiresManualRecovery => pendingRecoveryExecutionId != null;
 
-  void acknowledgeRecovery() {
-    if (!requiresManualRecovery) return;
+  Future<void> acknowledgeRecovery() {
+    if (!requiresManualRecovery) return Future<void>.value();
     _acknowledgement = recoveryStore?.clear() ?? Future<void>.value();
     pendingRecoveryExecutionId = null;
+    return _acknowledgement!;
   }
 
   void cancel() {
