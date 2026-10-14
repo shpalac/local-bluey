@@ -15,8 +15,12 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
     final file = _file(operationId);
     if (!await file.exists()) return null;
     try {
-      final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-      return RetryCheckpoint(operationId: json['operationId'] as String, phase: RetryPhase.values.byName(json['phase'] as String));
+      final json =
+          jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      return RetryCheckpoint(
+        operationId: json['operationId'] as String,
+        phase: RetryPhase.values.byName(json['phase'] as String),
+      );
     } catch (e) {
       throw StateError('Corrupt retry checkpoint: $operationId');
     }
@@ -28,7 +32,12 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
     try {
       final file = _file(operationId);
       await file.open(mode: FileMode.writeOnlyExclusive).then((sink) async {
-        await sink.write(jsonEncode({'operationId': operationId, 'phase': RetryPhase.started.name}));
+        await sink.write(
+          jsonEncode({
+            'operationId': operationId,
+            'phase': RetryPhase.started.name,
+          }),
+        );
         await sink.close();
       });
       return true;
@@ -43,7 +52,12 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
   Future<void> write(RetryCheckpoint checkpoint) async {
     await directory.create(recursive: true);
     final temp = File('${_file(checkpoint.operationId).path}.tmp');
-    await temp.writeAsString(jsonEncode({'operationId': checkpoint.operationId, 'phase': checkpoint.phase.name}));
+    await temp.writeAsString(
+      jsonEncode({
+        'operationId': checkpoint.operationId,
+        'phase': checkpoint.phase.name,
+      }),
+    );
     await temp.rename(_file(checkpoint.operationId).path);
   }
 }
