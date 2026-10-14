@@ -40,9 +40,7 @@ class SafetyGateRuntime {
     final redacted = <Object?, Object?>{};
     for (final entry in input.entries) {
       final key = entry.key.toString().toLowerCase();
-      redacted[entry.key] = _isSecretKey(key)
-          ? '[REDACTED]'
-          : entry.value;
+      redacted[entry.key] = _isSecretKey(key) ? '[REDACTED]' : entry.value;
     }
     return redacted;
   }
