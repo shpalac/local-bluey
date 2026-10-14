@@ -688,6 +688,11 @@ manual evidence and a go/no-go decision before disposition.
 
 See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.
 
+
+## BLU-034 Playwright MCP (issue #590)
+
+The temporary [acceptance manifest](acceptance/temporary/issue-590.json) maps AC-1 through AC-4. Deterministic fake tests cover hostile pages, blocked hosts and failure/session paths. Production MCP transport, download sandbox, ActionLog/privacy registry integration and accessible RTL consent require manual verification before enabling browser execution. This isolated contract does not establish native readiness.
+
 ### BLU-031 voice verification (#587)
 
 Temporary criterion-by-criterion evidence: [`docs/acceptance/temporary/issue-587.json`](acceptance/temporary/issue-587.json). Fake-only Dart tests cover spoofed/matched speakers retaining SafetyGate confirmation, invalid scores, absent spoof evidence, denied permission, offline, timeout, cancellation, revocation and restart. The default-off module makes no network or persistence calls. Accessibility/RTL device UI, calibrated anti-spoof accuracy, real enrollment and device permission evidence remain **manual gaps**. Keep #587 open pending native verification.

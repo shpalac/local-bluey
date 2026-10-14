@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 590,
+      "title": "BLU-034 Playwright MCP browser agent",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Hostile page and blocked domain tests",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "hostile page text remains untrusted data after consent"
+            },
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "blocked domain and deceptive suffix never invoke transport"
+            },
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "rejects unsafe schemes, credentials and local network targets"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "hostile page text remains untrusted data after consent"
+            },
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "invalid timeout fails without invoking tools"
+            },
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "offline never invokes tools"
+            },
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "denied permission fails closed"
+            },
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "timeout is reported and never falls back to another transport"
+            },
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "cancelled in-flight results cannot be applied"
+            },
+            {
+              "file": "test/mcp/playwright_browser_adapter_test.dart",
+              "name": "restart invalidates prior result; new operation succeeds"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
+          "type": "manual",
+          "reason": "Contract contains no network client, process launcher, secret persistence or download actions; fake-only execution is tested, but native MCP transport integration, privacy registry and ActionLog instrumentation require separate production integration review."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "User-facing states accessible, RTL-compatible and reversible",
+          "type": "manual",
+          "reason": "No user-facing UI is introduced. Accessibility, localized consent and native RTL behaviors require platform integration and manual review."
+        },
+        {
+          "id": "scope_1",
+          "requirement": "Full browser process sandbox and downloads",
+          "type": "manual",
+          "reason": "Deliberately not enabled: no Playwright binary, live transport, download directory, or persistent browser session is shipped in this safety-contract slice."
+        }
+      ]
+    }
+  ]
+}
