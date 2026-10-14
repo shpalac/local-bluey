@@ -2,10 +2,28 @@ import 'dart:async';
 
 import 'mcp_tool_safety_gate.dart';
 
+/// A cooperative cancellation signal for an in-flight MCP invocation.
+///
+/// Completing [cancel] stops waiting for the tool result, but it cannot undo
+/// a side effect already performed by the tool or terminate its transport.
+class McpCancellationSignal {
+  final Completer<void> _cancelled = Completer<void>();
+
+  bool get isCancelled => _cancelled.isCompleted;
+
+  Future<void> get whenCancelled => _cancelled.future;
+
+  void cancel() {
+    if (!_cancelled.isCompleted) {
+      _cancelled.complete();
+    }
+  }
+}
+
 /// Production boundary helpers for MCP execution.
 ///
-/// Keeps approval, redaction, and lifecycle handling outside untrusted tool
-/// metadata. Native permission checks can be supplied by platform adapters.
+/// Approval remains the responsibility of [McpToolSafetyGate]. This runtime
+/// only handles cancellation and redacts returned secret-like fields.
 class SafetyGateRuntime {
   const SafetyGateRuntime({required this.gate});
 
@@ -17,32 +35,60 @@ class SafetyGateRuntime {
     required Map<String, Object?> arguments,
     required Duration timeout,
     FutureOr<bool> Function()? isCancelled,
+    McpCancellationSignal? cancellation,
   }) async {
+    if (cancellation?.isCancelled ?? false) {
+      throw const McpToolException(McpToolFailure.cancelled);
+    }
     if (isCancelled != null && await isCancelled()) {
       throw const McpToolException(McpToolFailure.cancelled);
     }
+    if (cancellation?.isCancelled ?? false) {
+      throw const McpToolException(McpToolFailure.cancelled);
+    }
 
-    final result = await gate.execute(
+    final invocation = gate.execute(
       serverId: serverId,
       spec: spec,
       arguments: arguments,
       timeout: timeout,
     );
 
-    if (result is Map) {
-      return _redactSecrets(result);
+    // A cooperative signal makes cancellation observable while the gate waits
+    // for permission or the tool. The gate's work may still finish remotely.
+    final Object? result;
+    if (cancellation == null) {
+      result = await invocation;
+    } else {
+      result = await Future.any<Object?>([
+        invocation,
+        cancellation.whenCancelled.then<Object?>(
+          (_) => throw const McpToolException(McpToolFailure.cancelled),
+        ),
+      ]);
+      if (cancellation.isCancelled) {
+        throw const McpToolException(McpToolFailure.cancelled);
+      }
     }
 
-    return result;
+    return _redactSecrets(result);
   }
 
-  Map<Object?, Object?> _redactSecrets(Map<Object?, Object?> input) {
-    final redacted = <Object?, Object?>{};
-    for (final entry in input.entries) {
-      final key = entry.key.toString().toLowerCase();
-      redacted[entry.key] = _isSecretKey(key) ? '[REDACTED]' : entry.value;
+  Object? _redactSecrets(Object? value) {
+    if (value is Map) {
+      final redacted = <Object?, Object?>{};
+      for (final entry in value.entries) {
+        final key = entry.key.toString().toLowerCase();
+        redacted[entry.key] = _isSecretKey(key)
+            ? '[REDACTED]'
+            : _redactSecrets(entry.value);
+      }
+      return redacted;
     }
-    return redacted;
+    if (value is List) {
+      return value.map(_redactSecrets).toList();
+    }
+    return value;
   }
 
   bool _isSecretKey(String key) {
