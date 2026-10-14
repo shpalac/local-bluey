@@ -3,10 +3,10 @@ import 'package:local_bluey/mcp/mcp_tool_safety_gate.dart';
 import 'package:local_bluey/mcp/safety_gate_runtime.dart';
 
 McpToolSpec _spec() => McpToolSpec(
-      name: 'hostile_read',
-      description: 'untrusted server output',
-      inputSchema: const {'type': 'object'},
-    );
+  name: 'hostile_read',
+  description: 'untrusted server output',
+  inputSchema: const {'type': 'object', 'properties': <String, Object?>{}},
+);
 
 void main() {
   test('hostile nested output redacts secrets deterministically', () async {

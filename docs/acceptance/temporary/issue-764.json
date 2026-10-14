@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 764,
+      "title": "BLU-020 follow-up durable recovery persistence and WorkflowExecution wiring",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Recovery metadata survives a simulated restart",
+          "tests": [
+            {
+              "file": "test/durable_recovery_store_test.dart",
+              "name": "recovery metadata survives simulated restart"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "gap",
+          "requirement": "WorkflowExecution startup surfaces interrupted executions for manual acknowledgement",
+          "reason": "WorkflowExecution wiring is not implemented in this slice; only the DurableRecoveryStore contract and in-memory fake landed. Acknowledgement UX/wiring remains open on #764."
+        },
+        {
+          "id": "ac_3",
+          "type": "gap",
+          "requirement": "No automatic replay of host actions",
+          "reason": "No execution wiring exists yet, so there is no auto-resume path to test; must be proven with a no-auto-resume test when WorkflowExecution wiring lands."
+        },
+        {
+          "id": "ac_4",
+          "type": "gap",
+          "requirement": "SafetyGate/TCC device validation",
+          "reason": "Requires native macOS hardware validation and remains a manual gap."
+        }
+      ]
+    }
+  ]
+}
