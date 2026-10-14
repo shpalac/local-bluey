@@ -34,10 +34,7 @@ void main() {
     expect(await result, WorkflowStatus.cancelled);
     expect(execution.nextStep, 0);
     expect(host.events, ['approve', 'execute', 'verify']);
-    expect(
-      audit.entries.any((entry) => entry.status == 'completed'),
-      isFalse,
-    );
+    expect(audit.entries.any((entry) => entry.status == 'completed'), isFalse);
   });
 }
 
