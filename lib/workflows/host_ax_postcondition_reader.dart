@@ -3,7 +3,6 @@ import '../services/privacy_guard.dart';
 import '../services/safety_gate.dart';
 import 'postcondition_verifier.dart';
 import 'workflow_execution.dart';
-import 'workflow_dsl.dart';
 
 /// Opt-in live AX reader. Never prompts, executes actions or retains captures.
 final class HostAxPostconditionReader implements PostconditionReader {
