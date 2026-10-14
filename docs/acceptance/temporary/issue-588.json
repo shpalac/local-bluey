@@ -9,13 +9,13 @@
           "id": "ac_1",
           "requirement": "Rive feasibility fallback behavior is verified",
           "type": "manual",
-          "reason": "No committed Rive adapter test file with issue-specific automated evidence exists in this PR; CI uses only fakes and no credentials."
+          "reason": "This feasibility PR contains no production Rive adapter or executable Rive contract tests; evidence requires implementation follow-up."
         },
         {
           "id": "ac_2",
           "requirement": "Success, invalid input, offline, timeout, cancellation and restart paths are covered",
           "type": "manual",
-          "reason": "No committed Rive adapter test file with issue-specific automated evidence exists in this PR; runtime state-path evidence requires implementation tests."
+          "reason": "This feasibility PR contains no executable Rive state-path tests; runtime behavior requires implementation follow-up."
         },
         {
           "id": "ac_3",
@@ -27,7 +27,7 @@
           "id": "ac_4",
           "requirement": "User-facing states accessible, RTL-compatible and reversible",
           "type": "manual",
-          "reason": "Accessibility, RTL layout and reversible user-facing behavior require UI/runtime evidence not available from this feasibility PR."
+          "reason": "Accessibility and RTL evidence requires user-facing implementation and device validation not present in this feasibility PR."
         }
       ]
     }
