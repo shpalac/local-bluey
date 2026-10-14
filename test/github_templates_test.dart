@@ -35,7 +35,7 @@ void main() {
   group('pull request template', () {
     final text = read('.github/PULL_REQUEST_TEMPLATE.md');
 
-    test('links incomplete work with Refs and complete work with AutoClose', () {
+    test('Refs for partial work and AutoClose for complete work', () {
       expect(text, contains('Refs #<issue-number>'));
       expect(text, contains('AutoClose #<issue-number>'));
       expect(text, contains('Closes'));
