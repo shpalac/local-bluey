@@ -1,0 +1,43 @@
+name: Temporary BLU-024 Hebrew STT benchmark
+on:
+  pull_request:
+    paths:
+      - 'tools/stt_bench/**'
+      - 'docs/blu-024-hebrew-stt-benchmark.md'
+      - 'docs/acceptance/temporary/issue-580.json'
+      - 'docs/ACCEPTANCE_MAP.md'
+      - 'docs/architecture.md'
+      - 'README.md'
+      - '.github/workflows/temp-issue-580.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hebrew-stt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Read pinned Flutter SDK
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - name: Format check
+        run: |
+          dart format --output=none --set-exit-if-changed lib test
+      - name: Lint Python
+        run: python3 -m compileall -q tools/stt_bench
+      - name: Static analysis
+        run: flutter analyze
+      - name: Offline Hebrew matrix
+        run: python3 -m unittest discover -s tools/stt_bench -p 'test_hebrew_baseline.py' -v
+      - name: Existing STT regression
+        run: python3 -m unittest discover -s tools/stt_bench -p 'test_wer.py' -v
+      - name: Flutter STT test seam
+        run: flutter test test/local_stt_tools_test.dart
+      - name: Build
+        run: flutter build apk --debug
