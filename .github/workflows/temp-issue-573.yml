@@ -38,7 +38,8 @@ jobs:
           flutter-version-file: .flutter-version
           channel: stable
       - run: flutter pub get --enforce-lockfile
-      - run: tool/simulator_smoke.sh preboot
+      - name: Boot the simulator
+        run: tool/simulator_smoke.sh preboot
       - run: flutter build ios --simulator --debug --no-codesign
       - name: Verify simulator privacy grant and app launch
         shell: bash
