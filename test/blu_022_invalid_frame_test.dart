@@ -36,8 +36,9 @@ void main() {
       }
       expect(frameIndex, readings.length);
       expect(visionCalls, 0);
-      expect(pipeline.events.map((event) => event.kind),
-          [WatchEventKind.appSwitch]);
+      expect(pipeline.events.map((event) => event.kind), [
+        WatchEventKind.appSwitch,
+      ]);
     } finally {
       await pipeline.dispose();
       watch.stop();
