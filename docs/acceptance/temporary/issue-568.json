@@ -13,6 +13,10 @@
             {
               "file": "test/legacy_routine_adapter_test.dart",
               "name": "compatible routine round-trips without executing or persisting"
+            },
+            {
+              "file": "test/legacy_routine_adapter_test.dart",
+              "name": "stored routine preview leaves the legacy store unchanged"
             }
           ]
         },
@@ -32,6 +36,10 @@
             {
               "file": "test/legacy_routine_adapter_test.dart",
               "name": "permissioned, scheduled or multi-step workflows cannot convert"
+            },
+            {
+              "file": "test/legacy_routine_adapter_test.dart",
+              "name": "stored routine preview rejects disabled and missing entries"
             }
           ]
         },

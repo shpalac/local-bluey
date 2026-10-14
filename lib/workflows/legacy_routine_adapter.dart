@@ -38,6 +38,27 @@ final class LegacyRoutineAdapter {
     });
   }
 
+  /// Previews one stored routine without registration, mutation or execution.
+  ///
+  /// A missing or duplicate name fails closed. Disabled and unsupported
+  /// routines are rejected by [toWorkflow], not silently enabled.
+  static WorkflowDefinition previewStored(RoutineStore store, String name) {
+    Routine? match;
+    for (final routine in store.routines) {
+      if (routine.name != name) continue;
+      if (match != null) {
+        throw const LegacyRoutineConversionException(
+          'Ambiguous stored routine',
+        );
+      }
+      match = routine;
+    }
+    if (match == null) {
+      throw const LegacyRoutineConversionException('Stored routine not found');
+    }
+    return toWorkflow(match);
+  }
+
   static Routine toRoutine(WorkflowDefinition workflow) {
     // Round-trip through schema validation even for manually constructed objects.
     final validated = WorkflowDefinition.fromJson(workflow.toJson());

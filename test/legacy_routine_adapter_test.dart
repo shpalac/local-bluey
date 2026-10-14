@@ -116,4 +116,40 @@ void main() {
       expect(error.toString(), isNot(contains(secret)));
     }
   });
+  test('stored routine preview leaves the legacy store unchanged', () {
+    final store = RoutineStore.forTest(
+      file: () async => throw StateError('Preview must not access storage'),
+    );
+    store.seed([original]);
+    final before = store.export();
+
+    final preview = LegacyRoutineAdapter.previewStored(store, 'Reminder');
+
+    expect(preview.trigger, 'manual');
+    expect(preview.steps.single.type, 'notify');
+    expect(store.export(), before);
+    expect(store.match('remind me'), same(original));
+  });
+
+  test('stored routine preview rejects disabled and missing entries', () {
+    final store = RoutineStore.forTest(
+      file: () async => throw StateError('Preview must not access storage'),
+    );
+    store.seed([
+      const Routine(
+        name: 'Disabled',
+        trigger: 'disabled',
+        instructions: 'notify:hello',
+        enabled: false,
+      ),
+    ]);
+    for (final name in ['Disabled', 'Unknown']) {
+      expect(
+        () => LegacyRoutineAdapter.previewStored(store, name),
+        throwsA(isA<LegacyRoutineConversionException>()),
+      );
+    }
+  });
+
+
 }
