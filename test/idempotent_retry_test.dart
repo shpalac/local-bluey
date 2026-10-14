@@ -21,7 +21,7 @@ class _MemoryStore implements RetryCheckpointStore {
     if (values.containsKey(operationId)) return false;
     values[operationId] = RetryCheckpoint(
       operationId: operationId,
-      phase: 'started',
+      phase: RetryPhase.started,
     );
     return true;
   }
@@ -41,7 +41,7 @@ void main() {
     );
 
     expect(sends, 1);
-    expect((await store.read('send-1'))?.phase, 'completed');
+    expect((await store.read('send-1'))?.phase, RetryPhase.completed);
     await expectLater(
       executor.run<void>(
         operationId: 'send-1',
@@ -80,7 +80,7 @@ void main() {
       throwsStateError,
     );
     expect(sends, 1);
-    expect((await store.read('crash'))?.phase, 'started');
+    expect((await store.read('crash'))?.phase, RetryPhase.started);
   });
 
   test('concurrent callers have exactly one send', () async {
@@ -179,7 +179,7 @@ void main() {
         throwsStateError,
       );
       expect(sends, 1);
-      expect((await store.read('in-flight'))?.phase, 'started');
+      expect((await store.read('in-flight'))?.phase, RetryPhase.started);
       pending.complete();
     },
   );
@@ -213,7 +213,7 @@ class _FailCompletionStore implements RetryCheckpointStore {
 
   @override
   Future<void> write(RetryCheckpoint checkpoint) async {
-    if (checkpoint.phase == 'completed') {
+    if (checkpoint.phase == RetryPhase.completed) {
       throw StateError('Simulated crash before completion checkpoint');
     }
     await delegate.write(checkpoint);
