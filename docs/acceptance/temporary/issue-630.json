@@ -1,0 +1,21 @@
+{
+  "issue": 630,
+  "criteria": {
+    "AC-1": {
+      "type": "automated",
+      "tests": ["offline fallback reports unavailable provider without egress"]
+    },
+    "AC-2": {
+      "type": "automated",
+      "tests": ["offline fallback returns deterministic local response", "offline fallback rejects malformed input explicitly"]
+    },
+    "AC-3": {
+      "type": "automated",
+      "tests": ["offline fallback reports unavailable provider without egress"]
+    },
+    "AC-4": {
+      "type": "manual",
+      "reason": "Existing platform integrations require device-specific compatibility validation."
+    }
+  }
+}
