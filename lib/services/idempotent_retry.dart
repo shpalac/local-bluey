@@ -58,7 +58,11 @@ class IdempotentRetryExecutor {
     RetryCancellation? cancellation,
   }) async {
     if (operationId.trim().isEmpty) {
-      throw ArgumentError.value(operationId, 'operationId', 'Must not be empty');
+      throw ArgumentError.value(
+        operationId,
+        'operationId',
+        'Must not be empty',
+      );
     }
     if (timeout != null && timeout <= Duration.zero) {
       throw ArgumentError.value(timeout, 'timeout', 'Must be positive');
@@ -86,9 +90,7 @@ class IdempotentRetryExecutor {
     if (cancellation != null) {
       outcome = Future.any<T>([
         outcome,
-        cancellation.whenCancelled.then<T>(
-          (_) => throw const RetryCancelled(),
-        ),
+        cancellation.whenCancelled.then<T>((_) => throw const RetryCancelled()),
       ]);
     }
 
