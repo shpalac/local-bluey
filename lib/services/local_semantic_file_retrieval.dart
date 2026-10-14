@@ -21,11 +21,20 @@ abstract interface class LocalSemanticFileIndex {
   LocalSemanticRetrievalResult search(String query);
 }
 
+/// A grounded local path with a finite relevance score in the range [0, 1].
+class LocalSemanticHit {
+  const LocalSemanticHit({required this.path, required this.score});
+
+  final String path;
+  final double score;
+}
+
 sealed class LocalSemanticRetrievalResult {
   const LocalSemanticRetrievalResult();
 
-  const factory LocalSemanticRetrievalResult.success({required String path}) =
-      LocalSemanticSuccess;
+  factory LocalSemanticRetrievalResult.success({
+    required List<LocalSemanticHit> hits,
+  }) = LocalSemanticSuccess;
 
   const factory LocalSemanticRetrievalResult.invalidInput() =
       LocalSemanticInvalidInput;
@@ -34,9 +43,42 @@ sealed class LocalSemanticRetrievalResult {
 }
 
 class LocalSemanticSuccess extends LocalSemanticRetrievalResult {
-  const LocalSemanticSuccess({required this.path}) : super();
+  LocalSemanticSuccess({required List<LocalSemanticHit> hits})
+    : hits = List.unmodifiable(_validateAndRank(hits)),
+      super();
 
-  final String path;
+  /// Highest-scoring hit first, with path order breaking ties.
+  final List<LocalSemanticHit> hits;
+
+  static List<LocalSemanticHit> _validateAndRank(List<LocalSemanticHit> hits) {
+    if (hits.isEmpty) {
+      throw ArgumentError.value(
+        hits,
+        'hits',
+        'Success requires at least one hit',
+      );
+    }
+
+    final ordered = List<LocalSemanticHit>.of(hits);
+    for (final hit in ordered) {
+      if (hit.path.trim().isEmpty ||
+          !hit.score.isFinite ||
+          hit.score < 0 ||
+          hit.score > 1) {
+        throw ArgumentError.value(
+          hit,
+          'hits',
+          'Each hit needs a nonblank path and finite score in [0, 1]',
+        );
+      }
+    }
+
+    ordered.sort((left, right) {
+      final scoreOrder = right.score.compareTo(left.score);
+      return scoreOrder != 0 ? scoreOrder : left.path.compareTo(right.path);
+    });
+    return ordered;
+  }
 }
 
 class LocalSemanticInvalidInput extends LocalSemanticRetrievalResult {
