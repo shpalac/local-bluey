@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../services/durable_recovery_store.dart';
 import '../services/execution_audit.dart';
 import 'workflow_dsl.dart';
 
@@ -19,23 +20,39 @@ abstract interface class WorkflowHost {
   Future<bool> verify(WorkflowStep step);
 }
 
-/// In-memory, single-flight executor. Host implementations must enforce SafetyGate.
 final class WorkflowExecution {
   WorkflowExecution(
     this.definition,
     this.host, {
     required this.deadline,
     this.audit,
+    this.recoveryStore,
   });
 
   final WorkflowDefinition definition;
   final WorkflowHost host;
   final Duration deadline;
   final ExecutionAudit? audit;
+  final DurableRecoveryStore? recoveryStore;
+
   WorkflowStatus status = WorkflowStatus.pending;
   int nextStep = 0;
+  String? pendingRecoveryExecutionId;
   bool _cancelled = false;
   Future<WorkflowStatus>? _active;
+
+  Future<void> reconcileStartup() async {
+    final metadata = await recoveryStore?.load();
+    if (metadata?.interrupted == true) {
+      pendingRecoveryExecutionId = metadata!.executionId;
+    }
+  }
+
+  bool get requiresManualRecovery => pendingRecoveryExecutionId != null;
+
+  void acknowledgeRecovery() {
+    pendingRecoveryExecutionId = null;
+  }
 
   void cancel() {
     if (_cancelled) return;
@@ -51,6 +68,10 @@ final class WorkflowExecution {
   Future<WorkflowStatus> _run() async {
     if (_cancelled || audit?.stopRequested == true) {
       cancel();
+      return status;
+    }
+    if (requiresManualRecovery) {
+      status = WorkflowStatus.failed;
       return status;
     }
     if (deadline <= Duration.zero) {
@@ -91,8 +112,8 @@ final class WorkflowExecution {
       final approved = await host.approve(step);
       if (_cancelled) return status;
       if (!approved) {
-        audit?.record('step', 'denied', stepIndex: nextStep);
         status = WorkflowStatus.failed;
+        audit?.record('step', 'denied', stepIndex: nextStep);
         return status;
       }
       status = WorkflowStatus.running;
@@ -102,13 +123,10 @@ final class WorkflowExecution {
       status = WorkflowStatus.verifying;
       audit?.record('step', 'verifying', stepIndex: nextStep);
       if (!await host.verify(step)) {
-        if (!_cancelled) {
-          status = WorkflowStatus.failed;
-          audit?.record('step', 'failed', stepIndex: nextStep);
-        }
+        status = WorkflowStatus.failed;
+        audit?.record('step', 'failed', stepIndex: nextStep);
         return status;
       }
-      if (_cancelled) return status;
       audit?.record('step', 'completed', stepIndex: nextStep);
       status = WorkflowStatus.running;
     }

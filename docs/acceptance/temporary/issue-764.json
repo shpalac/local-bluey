@@ -18,15 +18,29 @@
         },
         {
           "id": "ac_2",
-          "type": "gap",
+          "type": "automated",
           "requirement": "WorkflowExecution startup surfaces interrupted executions for manual acknowledgement",
-          "reason": "WorkflowExecution wiring is not implemented in this slice; only the DurableRecoveryStore contract and in-memory fake landed. Acknowledgement UX/wiring remains open on #764."
+          "tests": [
+            {
+              "file": "test/workflow_execution_recovery_test.dart",
+              "name": "interrupted execution surfaces for manual acknowledgement"
+            },
+            {
+              "file": "test/workflow_execution_recovery_test.dart",
+              "name": "acknowledged recovery allows execution to proceed"
+            }
+          ]
         },
         {
           "id": "ac_3",
-          "type": "gap",
+          "type": "automated",
           "requirement": "No automatic replay of host actions",
-          "reason": "No execution wiring exists yet, so there is no auto-resume path to test; must be proven with a no-auto-resume test when WorkflowExecution wiring lands."
+          "tests": [
+            {
+              "file": "test/workflow_execution_recovery_test.dart",
+              "name": "pending recovery blocks run and never replays host actions"
+            }
+          ]
         },
         {
           "id": "ac_4",
