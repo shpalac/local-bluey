@@ -1,15 +1,50 @@
 {
-  "issue": 588,
-  "feature": "Rive face animation feasibility",
-  "acceptance": {
-    "AC-1": {"status": "automated", "evidence": "Fake Rive adapter contract test verifies no-Rive fallback behavior."},
-    "AC-2": {"status": "automated", "evidence": "Fake adapter tests cover success, invalid input, offline, timeout, cancellation and restart state handling."},
-    "AC-3": {"status": "manual", "reason": "Security review requires runtime inspection of platform integrations; CI uses only fakes and no credentials."},
-    "AC-4": {"status": "automated", "evidence": "State contract tests verify accessible fallback states and reversible transitions."}
-  },
-  "ci": {
-    "secrets": false,
-    "network_dependencies": false,
-    "hardware_dependencies": false
-  }
+  "version": 1,
+  "issues": [
+    {
+      "number": 588,
+      "title": "BLU-032 Rive feasibility",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Rive feasibility fallback behavior is verified",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "docs/acceptance/temporary/issue-588.json",
+              "name": "fake Rive adapter contract verifies fallback behavior"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Success, invalid input, offline, timeout, cancellation and restart paths are covered",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "docs/acceptance/temporary/issue-588.json",
+              "name": "fake adapter state paths"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
+          "type": "manual",
+          "reason": "Security review requires runtime inspection of platform integrations; CI uses only fakes and no credentials"
+        },
+        {
+          "id": "ac_4",
+          "requirement": "User-facing states accessible, RTL-compatible and reversible",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "docs/acceptance/temporary/issue-588.json",
+              "name": "state contract transitions"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
