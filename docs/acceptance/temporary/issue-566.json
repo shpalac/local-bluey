@@ -17,6 +17,10 @@
             {
               "file": "test/teach_mode/draft_builder_test.dart",
               "name": "unknown and malformed observations require review"
+            },
+            {
+              "file": "test/teach_mode/draft_preview_test.dart",
+              "name": "preview flags unknown steps and never authorizes execution"
             }
           ]
         },
@@ -28,6 +32,10 @@
             {
               "file": "test/teach_mode/draft_builder_test.dart",
               "name": "empty observations are safe and immutable"
+            },
+            {
+              "file": "test/teach_mode/draft_preview_test.dart",
+              "name": "preview handles empty and malformed observations deterministically"
             }
           ]
         },
