@@ -1,0 +1,78 @@
+"""Fail-closed PR auto-merge selection fixtures."""
+from pathlib import Path
+import sys
+import unittest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import issue_auto_merge as merge
+from issue_task_ci import ContractError
+
+REPO = "shpalac/local-bluey"
+SHA = "a" * 40
+
+
+class FakeGitHub:
+    def __init__(self):
+        self.pr = {
+            "state": "open", "draft": False,
+            "base": {"ref": "main"}, "head": {"sha": SHA},
+            "body": "AutoClose #42", "node_id": "PR_NODE_ID",
+            "auto_merge": None,
+        }
+
+    def request(self, path):
+        assert path == f"/repos/{REPO}/pulls/85"
+        return self.pr
+
+
+class AutoMergeTests(unittest.TestCase):
+    def setUp(self):
+        self.client = FakeGitHub()
+        self.event = {
+            "repository": {"full_name": REPO},
+            "workflow_run": {
+                "event": "pull_request", "status": "completed",
+                "conclusion": "success", "head_sha": SHA,
+                "head_repository": {"full_name": REPO},
+                "pull_requests": [{"number": 85}],
+            },
+        }
+
+    def eligible(self):
+        return merge.eligible_prs(self.event, REPO, self.client)
+
+    def test_green_checked_autoclose_pr_is_eligible(self):
+        self.assertEqual(self.eligible(), [(85, "PR_NODE_ID")])
+
+    def test_refs_and_native_closes_are_not_eligible(self):
+        for body in ["Refs #42", "Closes #42", ""]:
+            self.client.pr["body"] = body
+            self.assertEqual(self.eligible(), [])
+
+    def test_red_or_untrusted_ci_never_enables_merge(self):
+        for field, value in [("event", "push"), ("conclusion", "failure"),
+                             ("status", "in_progress"),
+                             ("head_repository", {"full_name": "other/repo"})]:
+            original = self.event["workflow_run"][field]
+            self.event["workflow_run"][field] = value
+            self.assertEqual(self.eligible(), [])
+            self.event["workflow_run"][field] = original
+
+    def test_stale_draft_or_already_enabled_pr_is_not_eligible(self):
+        for key, value in [("state", "closed"), ("draft", True),
+                           ("auto_merge", {"enabled_at": "now"}),
+                           ("head", {"sha": "b" * 40}),
+                           ("base", {"ref": "develop"})]:
+            original = self.client.pr[key]
+            self.client.pr[key] = value
+            self.assertEqual(self.eligible(), [])
+            self.client.pr[key] = original
+
+    def test_invalid_checked_sha_fails(self):
+        self.event["workflow_run"]["head_sha"] = "bad"
+        with self.assertRaisesRegex(ContractError, "SHA"):
+            self.eligible()
+
+
+if __name__ == "__main__":
+    unittest.main()
