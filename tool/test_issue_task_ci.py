@@ -84,6 +84,10 @@ class IssueTaskTests(unittest.TestCase):
             task.linked_issues("Refs #42\nCloses #42\nRefs #43\nFixes #44"),
             {42: True, 43: False, 44: True},
         )
+        self.assertEqual(
+            task.linked_issues("AutoClose #42. Refs #43"),
+            {42: True, 43: False},
+        )
 
     def test_markdown_examples_are_not_live_issue_links(self):
         tick = chr(96)
