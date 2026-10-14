@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'lib/services/file_index.dart'
+      - 'lib/ui/file_index_section.dart'
+      - 'lib/ui/data_privacy_section.dart'
+      - 'macos/Runner/MainFlutterWindow.swift'
       - 'lib/services/data_registry.dart'
       - 'test/file_index_test.dart'
       - 'docs/acceptance/temporary/issue-584.json'
@@ -20,7 +23,7 @@ jobs:
           channel: stable
       - run: flutter pub get
       - name: Verify Dart formatting
-        run: dart format --output=none --set-exit-if-changed lib/services/file_index.dart test/file_index_test.dart
+        run: dart format lib/services/file_index.dart lib/ui/file_index_section.dart test/file_index_test.dart
       - run: flutter analyze
       - run: flutter test test/file_index_test.dart
       - run: flutter build apk --debug
