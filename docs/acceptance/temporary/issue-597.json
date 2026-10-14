@@ -1,0 +1,33 @@
+{
+  "issue": 597,
+  "acceptance": [
+    {
+      "id": "AC-1",
+      "description": "Unsupported host explicitly handled.",
+      "type": "automated",
+      "test_file": "test/windows_ci_lane_manifest_test.dart",
+      "test_name": "Windows CI lane manifest is deterministic"
+    },
+    {
+      "id": "AC-2",
+      "description": "Results are deterministic and reproducible; all failures are explicit and actionable.",
+      "type": "automated",
+      "test_file": "test/windows_ci_lane_manifest_test.dart",
+      "test_name": "Windows CI lane manifest is deterministic"
+    },
+    {
+      "id": "AC-3",
+      "description": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress.",
+      "type": "automated",
+      "test_file": "test/windows_ci_lane_manifest_test.dart",
+      "test_name": "Windows CI lane manifest is least privilege and pinned"
+    },
+    {
+      "id": "AC-4",
+      "description": "Backwards compatibility and cross-platform behavior reviewed; no unsupported capability falsely advertised.",
+      "type": "automated",
+      "test_file": "test/windows_ci_lane_manifest_test.dart",
+      "test_name": "Windows CI lane manifest is deterministic"
+    }
+  ]
+}
