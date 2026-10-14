@@ -658,3 +658,14 @@ New `test/workflow_security_guard_test.dart` (26 cases) runs in the normal `flut
 ### #635 Issue and PR template contract (partial)
 
 The existing task, feature and bug issue templates and the PR template already carried objective, AC-1..AC-3, temporary/permanent manifest and Definition of Done fields. This slice adds two PR template sections (security, privacy and rollback; manual and device-only evidence), an issue template config.yml that keeps blank issues enabled, and `test/github_templates_test.dart` (8 cases) that fails if those fields are removed. This guards the text of the templates only. It does not prove contributors fill them in, add label automation, a security assessment workflow, release or incident runbooks (BLU-079), or full #635 acceptance. Rollback: revert the template edits, config.yml, test and this entry. Issue stays OPEN.
+
+## BLU-022 protocol-only tracking (Refs #578)
+
+This entry does not revise the historical reconciliation above. The
+[macOS pilot protocol](MAC_PILOT_PROTOCOL.md) and scoped temporary docs CI
+are proposed in PR #738. AC-1 signed pilot review, AC-2 physical macOS
+permission/restart and cancellation cases, AC-3 actual egress/retention
+verification, and AC-4 real accessibility/RTL verification remain **deferred**.
+There is no claim of pilot execution, green native checks, or issue closure.
+Dependencies: BLU-011 and BLU-020. A reviewer must record exact build SHA,
+manual evidence and a go/no-go decision before disposition.

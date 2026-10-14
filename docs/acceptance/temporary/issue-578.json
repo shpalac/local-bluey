@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 578,
+      "title": "BLU-022 Mac pilot protocol",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Protocol records explicit owner and reviewer sign-off and remains no-go before approval",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/blu_022_protocol_test.dart",
+              "name": "pilot protocol records privacy performance and manual gaps"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Documented negative and restart paths, consent, and safe stop requirements",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/blu_022_protocol_test.dart",
+              "name": "pilot protocol explicitly requires opt-in and safe stop"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Privacy and retention protection must be verified on a real Mac",
+          "type": "manual",
+          "reason": "Documentation alone cannot demonstrate absence of secret retention or cloud egress; physical pilot and network evidence pending."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Accessible RTL-friendly reversible behavior on real macOS",
+          "type": "manual",
+          "reason": "Physical macOS accessibility/RTL validation and human review pending."
+        },
+        {
+          "id": "pilot_gap",
+          "requirement": "Signed checklist, TCC permissions, CPU, cancellation, offline and crash observations",
+          "type": "gap",
+          "reason": "The opt-in Mac pilot has not run and reviewer sign-off remains outstanding; do not close #578."
+        }
+      ]
+    }
+  ]
+}
