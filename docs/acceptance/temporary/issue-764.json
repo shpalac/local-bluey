@@ -13,6 +13,10 @@
             {
               "file": "test/durable_recovery_store_test.dart",
               "name": "recovery metadata survives simulated restart"
+            },
+            {
+              "file": "test/filesystem_workflow_recovery_test.dart",
+              "name": "filesystem recovery survives a new store instance"
             }
           ]
         },
@@ -28,6 +32,10 @@
             {
               "file": "test/workflow_execution_recovery_test.dart",
               "name": "acknowledged recovery allows execution to proceed"
+            },
+            {
+              "file": "test/filesystem_workflow_recovery_test.dart",
+              "name": "acknowledged recovery remains cleared after restart"
             }
           ]
         },
@@ -39,6 +47,10 @@
             {
               "file": "test/workflow_execution_recovery_test.dart",
               "name": "pending recovery blocks run and never replays host actions"
+            },
+            {
+              "file": "test/filesystem_workflow_recovery_test.dart",
+              "name": "run checks durable recovery without explicit startup call"
             }
           ]
         },
