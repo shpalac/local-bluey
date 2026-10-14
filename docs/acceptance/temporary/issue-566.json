@@ -43,13 +43,7 @@
           "id": "ac_3",
           "requirement": "Pure draft builder discards unrecognized data and never invokes host or network",
           "type": "gap",
-          "reason": "Isolated non-executable module tested; real capture, data registry, safety gate and host integration not yet connected.",
-          "tests": [
-            {
-              "file": "test/teach_mode/draft_preview_test.dart",
-              "name": "preview exposes placeholders without retaining typed secrets"
-            }
-          ]
+          "reason": "Isolated non-executable module tested; real capture, data registry, safety gate and host integration not yet connected."
         },
         {
           "id": "ac_4",
