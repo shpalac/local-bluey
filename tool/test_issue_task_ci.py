@@ -132,7 +132,11 @@ class IssueTaskTests(unittest.TestCase):
         }])
 
     def test_complete_temporary_manifest_can_close(self):
-        self.assertTrue(self.check("Closes #42"))
+        self.assertTrue(self.check("AutoClose #42"))
+
+    def test_native_close_keyword_cannot_bypass_main_ci(self):
+        with self.assertRaisesRegex(task.ContractError, "standalone AutoClose"):
+            self.check("Closes #42")
 
     def test_closing_rejects_unmapped_extra_criterion(self):
         path = self.root / "docs/acceptance/temporary/issue-42.json"
@@ -144,7 +148,7 @@ class IssueTaskTests(unittest.TestCase):
         })
         path.write_text(json.dumps(manifest))
         with self.assertRaisesRegex(task.ContractError, "unmapped issue contract"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
 
     def test_temporary_manual_gap_blocks_closing(self):
         path = self.root / "docs/acceptance/temporary/issue-42.json"
@@ -155,7 +159,7 @@ class IssueTaskTests(unittest.TestCase):
         })
         path.write_text(json.dumps(manifest))
         with self.assertRaisesRegex(task.ContractError, "manual"):
-            self.check("Closes #42")
+            self.check("AutoClose #42")
 
     def test_permanent_requires_real_named_integration_test(self):
         temporary = self.root / "docs/acceptance/temporary/issue-42.json"
