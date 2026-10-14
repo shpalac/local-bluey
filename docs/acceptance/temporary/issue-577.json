@@ -3,65 +3,36 @@
   "issues": [
     {
       "number": 577,
-      "title": "BLU-021 Synthetic benchmark harness",
+      "title": "BLU-021 Synthetic benchmark harness - fake-clock traces and reproducible precision/recall and performance metrics",
       "criteria": [
         {
           "id": "ac_1",
           "type": "automated",
-          "requirement": "Deterministic precision, recall, F1 and fake-time metrics",
+          "requirement": "Synthetic benchmark deterministic: fake-clock traces and reproducible precision/recall and latency",
           "tests": [
             {
-              "file": "test/benchmark/synthetic_benchmark_test.dart",
-              "name": "deterministic precision, recall and fake elapsed time"
+              "file": "test/benchmark/synthetic_benchmark_harness_test.dart",
+              "name": "seeded fake clock yields identical traces precision recall and latency"
             }
           ]
         },
         {
           "id": "ac_2",
-          "type": "automated",
-          "requirement": "Synthetic success and failure-path traces, validation and restart",
-          "tests": [
-            {
-              "file": "test/benchmark/synthetic_trace_harness_test.dart",
-              "name": "fake-clock traces reproduce every synthetic exit path"
-            },
-            {
-              "file": "test/benchmark/synthetic_trace_harness_test.dart",
-              "name": "duplicate id and clock rollback are rejected without mutation"
-            }
-          ]
+          "type": "gap",
+          "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart paths tested where applicable",
+          "reason": "New test 'invalid input timeout and cancellation have explicit outcomes' proves only the listed paths on the synchronous local seam. Denied permission and restart lifecycle are not wired or evidenced, so the complete criterion remains a gap."
         },
         {
           "id": "ac_3",
-          "type": "automated",
-          "requirement": "Input rejects invalid traces without storing or transmitting data",
-          "tests": [
-            {
-              "file": "test/benchmark/synthetic_benchmark_test.dart",
-              "name": "rejects duplicate ids and negative durations"
-            },
-            {
-              "file": "test/benchmark/synthetic_trace_harness_test.dart",
-              "name": "trace snapshots are immutable"
-            }
-          ]
+          "type": "gap",
+          "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
+          "reason": "New test 'offline in-memory seam performs no egress persistence or automatic action' runs a pure in-memory index only; it cannot establish app-wide egress, secret storage, or downgrade safety."
         },
         {
           "id": "ac_4",
-          "type": "automated",
-          "requirement": "This test-only module has no user-facing surfaces",
-          "tests": [
-            {
-              "file": "test/benchmark/synthetic_benchmark_test.dart",
-              "name": "empty trace has finite zero metrics"
-            }
-          ]
-        },
-        {
-          "id": "end_to_end_gap",
-          "type": "gap",
-          "requirement": "Real BLU-006/008 captures and production workflow instrumentation",
-          "reason": "Synthetic fixtures only; production integrations, end-to-end privacy and accessibility checks are not proven. Keep #577 open."
+          "type": "manual",
+          "requirement": "User-facing states are accessible, RTL-compatible and reversible where applicable",
+          "reason": "This headless benchmark has no new user-facing screens. UI accessibility and RTL require product-owner applicability review."
         }
       ]
     }
