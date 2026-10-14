@@ -94,7 +94,7 @@ class LocalSemanticRetriever {
       return const LocalRetrievalResult(LocalRetrievalStatus.noMatches, []);
     }
     final queryVector = _embed(query);
-    if (!_words(query).isNotEmpty) {
+    if (_words(query).isEmpty) {
       return const LocalRetrievalResult(LocalRetrievalStatus.invalidQuery, []);
     }
     final hits = <LocalRetrievalHit>[];
