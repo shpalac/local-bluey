@@ -50,9 +50,7 @@ class _SecretIndex implements LocalSemanticFileIndex {
   @override
   LocalSemanticRetrievalResult search(String query) {
     return LocalSemanticRetrievalResult.success(
-      hits: const [
-        LocalSemanticHit(path: '/local/secret.txt', score: 1),
-      ],
+      hits: const [LocalSemanticHit(path: '/local/secret.txt', score: 1)],
     );
   }
 }
