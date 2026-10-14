@@ -4,7 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final workflow = File('.github/workflows/windows-ci-lane.yml')
-      .readAsStringSync();
+      .readAsStringSync()
+      .replaceAll('\r\n', '\n');
 
   test('Windows CI lane manifest is deterministic', () {
     expect(workflow, contains('runs-on: windows-latest'));
