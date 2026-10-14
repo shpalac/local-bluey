@@ -129,7 +129,10 @@ final class WorkflowExecution {
       status = WorkflowStatus.approval;
       audit?.record('step', 'approval', stepIndex: nextStep);
       final approved = await host.approve(step);
-      if (_cancelled) return status;
+      if (_cancelled || audit?.stopRequested == true) {
+        cancel();
+        return status;
+      }
       if (!approved) {
         status = WorkflowStatus.failed;
         audit?.record('step', 'denied', stepIndex: nextStep);
@@ -138,7 +141,10 @@ final class WorkflowExecution {
       status = WorkflowStatus.running;
       audit?.record('step', 'started', stepIndex: nextStep);
       await host.execute(step);
-      if (_cancelled) return status;
+      if (_cancelled || audit?.stopRequested == true) {
+        cancel();
+        return status;
+      }
       status = WorkflowStatus.verifying;
       audit?.record('step', 'verifying', stepIndex: nextStep);
       final verified = await host.verify(step);
