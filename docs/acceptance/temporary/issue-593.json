@@ -11,27 +11,26 @@
           "type": "automated",
           "tests": [
             {
-              "file": ".github/workflows/pr-fast-ci.yml",
-              "name": "fast-ci required workflow job"
+              "file": "test/pr_fast_ci_lane_test.dart",
+              "name": "fast lane runs format, analyze and the full test suite"
+            },
+            {
+              "file": "test/pr_fast_ci_lane_test.dart",
+              "name": "fast lane runs on pull requests to main without privileged triggers"
             }
           ]
         },
         {
           "id": "ac_2",
           "requirement": "Results are deterministic and reproducible; failures are explicit and actionable",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "tool/test_ci_gate.py",
-              "name": "test_gate_fails_closed"
-            }
-          ]
+          "type": "manual",
+          "reason": "Fail-closed aggregation is exercised by Python tests in tool/test_ci_gate.py, which are not Dart acceptance tests; reproducibility needs review of the lane in CI."
         },
         {
           "id": "ac_3",
           "requirement": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress",
           "type": "manual",
-          "reason": "Workflow review is required for artifact/log policy and network restrictions."
+          "reason": "Workflow review is required for artifact/log policy and network egress. test/pr_fast_ci_lane_test.dart only checks read-only permissions, no secrets references and SHA-pinned actions in the workflow file."
         },
         {
           "id": "ac_4",
