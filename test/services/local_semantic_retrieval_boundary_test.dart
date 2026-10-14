@@ -25,19 +25,19 @@ void main() {
     source.add(const LocalSemanticHit(path: '/local/c.txt', score: 1));
     final second = retrieval.search('files') as LocalSemanticSuccess;
 
-    expect(first.hits.map((hit) => hit.path), [
-      '/local/a.txt',
-      '/local/b.txt',
-    ]);
+    expect(first.hits.map((hit) => hit.path), ['/local/a.txt', '/local/b.txt']);
     expect(second.hits.map((hit) => hit.path), [
       '/local/c.txt',
       '/local/a.txt',
       '/local/b.txt',
     ]);
     expect(identical(first.hits, second.hits), isFalse);
-    expect(() => first.hits.add(
-      const LocalSemanticHit(path: '/local/new.txt', score: 0.5),
-    ), throwsUnsupportedError);
+    expect(
+      () => first.hits.add(
+        const LocalSemanticHit(path: '/local/new.txt', score: 0.5),
+      ),
+      throwsUnsupportedError,
+    );
   });
 
   test('retrieval forwards typed invalid and missing results unchanged', () {
