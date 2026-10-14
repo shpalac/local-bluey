@@ -118,7 +118,7 @@ class HomeAssistantAdapter {
     bool stale() => _cancelled || generation != _generation;
     try {
       // Even dry runs require SafetyGate permission and entity-scoped approval.
-      final result = await gate.execute(
+      await gate.execute(
         serverId: serverId,
         spec: _spec,
         arguments: {'entity_id': entityId, 'service': service},
@@ -127,8 +127,7 @@ class HomeAssistantAdapter {
       if (stale()) {
         throw const HomeAssistantException(HomeAssistantFailure.cancelled);
       }
-      // Ignore an untrusted MCP result; it is never authorization.
-      if (result == null && false) return result;
+      // An untrusted MCP result is never authorization.
       final approved = await approve(entityId, service).timeout(timeout);
       if (stale()) {
         throw const HomeAssistantException(HomeAssistantFailure.cancelled);
