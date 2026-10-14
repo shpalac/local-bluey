@@ -37,9 +37,9 @@ class FakeGitHub:
             f"{BASE}/issues/42": {
                 "number": 42, "state": "open",
                 "body": (
-                    "## Acceptance criteria\\n"
-                    "- [ ] AC-1: Reject malformed inputs with no side effects.\\n"
-                    "## CI and validation\\nRun issue-specific tests.\\n"
+                    "## Acceptance criteria\n"
+                    "- [ ] AC-1: Reject malformed inputs with no side effects.\n"
+                    "## CI and validation\nRun issue-specific tests.\n"
                 ),
             },
             f"{BASE}/issues/42/comments?per_page=100": [],
@@ -65,7 +65,7 @@ class IssueAutoCloseTests(unittest.TestCase):
         self.root = Path(self.folder.name)
         path = self.root / "test/issues/issue_42_test.dart"
         path.parent.mkdir(parents=True)
-        path.write_text("test('rejects invalid', () {});\\n", encoding="utf-8")
+        path.write_text("test('rejects invalid', () {});\n", encoding="utf-8")
         self.manifest = self.root / "docs/acceptance/temporary/issue-42.json"
         self.manifest.parent.mkdir(parents=True)
         self.write_manifest([{
@@ -154,10 +154,10 @@ class IssueAutoCloseTests(unittest.TestCase):
 
     def test_missing_criterion_blocks_closure(self):
         self.api.routes[f"{BASE}/issues/42"]["body"] = (
-            "## Acceptance criteria\\n"
-            "- [ ] AC-1: Reject malformed inputs with no side effects.\\n"
-            "- [ ] AC-2: Reject actions when offline.\\n"
-            "## CI and validation\\nRun issue-specific tests.\\n"
+            "## Acceptance criteria\n"
+            "- [ ] AC-1: Reject malformed inputs with no side effects.\n"
+            "- [ ] AC-2: Reject actions when offline.\n"
+            "## CI and validation\nRun issue-specific tests.\n"
         )
         with self.assertRaisesRegex(ContractError, "differ"):
             self.process()
