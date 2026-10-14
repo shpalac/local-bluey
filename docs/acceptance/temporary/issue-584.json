@@ -8,13 +8,14 @@
       "criterion": "Only selected files indexed; revocation purges",
       "type": "automated",
       "evidence": "test/file_index_test.dart",
-      "note": "Directory selection is delegated to UI; picker not shipped"
+      "note": "Native macOS folder chooser plus explicit consent, scan and revocation; unit evidence"
     },
     {
       "id": "AC-2",
       "criterion": "Success, invalid input, offline, timeout, denied permission, cancellation and restart",
       "type": "manual",
-      "reason": "Success, invalid and restart covered by unit tests; permission, cancellation, offline and timeout integration paths remain unverified"
+      "reason": "Success, invalid and restart covered by unit tests; permission, cancellation, offline and timeout integration paths remain unverified",
+      "note": "Success, invalid and restart tests; permission, timeout, cancellation, offline require complete test evidence"
     },
     {
       "id": "AC-3",
@@ -27,7 +28,7 @@
       "id": "AC-4",
       "criterion": "Accessible RTL-compatible reversible user states",
       "type": "manual",
-      "reason": "Directory chooser and user-facing controls not yet integrated; requires Flutter widget tests"
+      "reason": "Mac UI includes translated selection/revoke states; widget semantics and native review pending"
     }
   ]
 }
