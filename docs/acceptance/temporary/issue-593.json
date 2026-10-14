@@ -1,0 +1,28 @@
+{
+  "issue": 593,
+  "title": "BLU-037 PR fast CI lane",
+  "criteria": [
+    {
+      "id": "AC-1",
+      "status": "automated",
+      "test": ".github/workflows/pr-fast-ci.yml::fast-ci required workflow job",
+      "reason": "Workflow fails the PR check when format, analyze, or test commands fail."
+    },
+    {
+      "id": "AC-2",
+      "status": "automated",
+      "test": "tool/test_ci_gate.py::test_gate_fails_closed",
+      "reason": "Existing CI gate fixtures verify explicit failure behavior."
+    },
+    {
+      "id": "AC-3",
+      "status": "manual",
+      "reason": "Workflow review required to verify artifact/log policy and network restrictions."
+    },
+    {
+      "id": "AC-4",
+      "status": "manual",
+      "reason": "Cross-platform behavior review is required; this lane intentionally targets Ubuntu-only checks."
+    }
+  ]
+}
