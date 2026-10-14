@@ -1,7 +1,5 @@
 import 'dart:convert';
 
-import 'workflow_action_approval.dart';
-
 /// Persistence boundary for explicit workflow approvals.
 ///
 /// Implementations must store only approval metadata. Secrets and action data
