@@ -76,6 +76,9 @@ import 'services/watch_suggestions.dart';
 import 'ui/watch_suggestion_card.dart';
 import 'services/frame_differ.dart';
 import 'services/native_control.dart';
+import 'services/durable_recovery_store.dart';
+import 'services/file_durable_recovery_store.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -89,6 +92,17 @@ void main() async {
   await BiometricLock.instance.load();
   final appearance = AppearanceStartup();
   await appearance.reload();
+  // Resolve interrupted local workflow metadata before any host UI is started.
+  final recoveryDirectory = await getApplicationSupportDirectory();
+  final recoveryStore = FileDurableRecoveryStore(
+    File('${recoveryDirectory.path}/workflow_recovery.json'),
+  );
+  final recovery = await recoveryStore.load();
+  if (recovery?.interrupted == true) {
+    // No host action is replayed here; a future explicit UI acknowledgement
+    // must reconcile the persisted interrupted execution first.
+    // Read-only startup reconciliation is deliberately fail closed.
+  }
   final profile = SupportMatrix.profile();
   if (profile.supports(SupportMatrix.windowManagement)) {
     await windowManager.ensureInitialized();
