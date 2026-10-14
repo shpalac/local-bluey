@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 588,
+      "title": "BLU-032 Rive feasibility",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Rive feasibility fallback behavior is verified",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/rive_feasibility_baseline_test.dart",
+              "name": "no Rive runtime dependency is declared, native painter is the fallback"
+            },
+            {
+              "file": "test/bluey_character_test.dart",
+              "name": "mood, gaze and speech follow incoming FaceState"
+            },
+            {
+              "file": "test/bluey_character_test.dart",
+              "name": "reduced motion suppresses idle animation"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Success, invalid input, offline, timeout, cancellation and restart paths are covered",
+          "type": "manual",
+          "reason": "This feasibility PR contains no executable Rive state-path tests; runtime behavior requires implementation follow-up."
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
+          "type": "manual",
+          "reason": "Security review requires runtime inspection of platform integrations; CI uses only fakes and no credentials."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "User-facing states accessible, RTL-compatible and reversible",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/android_face_parity_test.dart",
+              "name": "Android: RTL, large text and reduced motion"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

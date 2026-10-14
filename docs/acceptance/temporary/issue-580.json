@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 580,
+      "title": "BLU-024 Hebrew STT benchmark",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Baseline comparison reproducible",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/local_stt_tools_test.dart",
+              "name": "STT benchmark failure accounting fixtures (#270)"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart paths tested where applicable",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/local_stt_tools_test.dart",
+              "name": "STT benchmark failure accounting fixtures (#270)"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
+          "type": "manual",
+          "reason": "Offline Python text comparator has no network, credentials, or action interfaces; physical Mac egress validation and consent audit remain outstanding."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "User-facing states accessible, RTL-compatible and reversible where applicable",
+          "type": "manual",
+          "reason": "No user-facing changes were made; real STT RTL VoiceOver and cancellation/rollback require physical macOS verification."
+        },
+        {
+          "id": "device_gap",
+          "requirement": "Representative consented Hebrew recordings and real-device latency, memory and WER/CER evidence",
+          "type": "gap",
+          "reason": "Cannot collect microphone/device measurements in GitHub-hosted CI; hardware tests and reviewer sign-off remain outstanding. Keep #580 open."
+        }
+      ]
+    }
+  ]
+}

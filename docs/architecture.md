@@ -188,3 +188,51 @@ foreground identity before it would send a picture to the configured provider.
 conversational screenshot tool. Keyword/OCR checks are best effort and native
 window-switch races remain for physical validation. No new persistence or
 unattended capture is enabled. The current `SafetyGate` remains in force.
+
+## BLU-021 synthetic benchmark harness
+
+`lib/benchmark/synthetic_benchmark.dart` computes confusion-matrix metrics
+from validated, unique synthetic samples. `synthetic_trace_harness.dart`
+accepts a caller-supplied monotonic clock (a deterministic fake is provided)
+and records success, invalid-input, offline, timeout, permission-denied,
+cancellation and restart classifications. Inputs are in-memory only; no
+network, persistence, user interface or action execution is performed.
+Zero denominators yield zero metrics, never NaN. Duplicate/blank IDs and
+negative elapsed times fail closed. Rollback is removal of this isolated test
+harness, its tests and temporary workflow. Production workflow integration
+requires a separately reviewed adapter and privacy/safety boundaries.
+
+## macOS pilot protocol (BLU-022, documentation only)
+
+The [opt-in Mac pilot protocol](MAC_PILOT_PROTOCOL.md) defines a limited
+allowlisted-app evaluation. It is **not** a running collection service and
+introduces no new runtime interfaces, capture permissions, persistence, or
+network paths. Consent and revoke/stop behavior must be verified against
+existing capture controls; suggestions/actions remain subject to SafetyGate
+and human approval. Data registry and ActionLog coverage are review inputs,
+not proof of a complete network audit. Physical macOS TCC, accessibility,
+RTL, CPU usage, network egress and retention deletion require manual test
+artifacts and signed review before pilot expansion. CI checks documentation
+only; BLU-011 and BLU-020 are prerequisites for the live pilot.
+
+
+## BLU-028 — opt-in file indexing (partial; Refs #584)
+
+See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.
+
+
+## Experimental Playwright MCP browser boundary (BLU-034)
+
+`lib/mcp/playwright_browser_adapter.dart` is a disabled-by-default read-only contract above `McpToolSafetyGate`. Host allowlists, session cancellation, hostile page data and failure paths are fake-tested without network access. The existing Swift WebResearch is a separate cloud integration; no production browser transport, consent UI, privacy registry write or download sandbox is shipped. See [BLU-034 design and limitations](blu-034-playwright-mcp.md).
+
+## Experimental secondary voice verification (BLU-031)
+
+`lib/services/voice_verification.dart` defines a default-off, in-memory,
+injectable local-only speaker-assessment boundary. A provider supplies a bounded
+similarity score and spoof-check verdict. Typed failure paths cover lack of
+consent, denied microphone permission, offline, timeout, cancellation,
+revocation and restart. It has no tool-execution capability, stores no voice
+biometrics and does not modify `SafetyGate.authorize`. Its fake-based tests
+confirm that even a matched or spoofed voice must pass the existing human
+approval gate. No production speaker/anti-spoof model is integrated; see
+[BLU-031 notes](blu-031-voice-verification.md).
