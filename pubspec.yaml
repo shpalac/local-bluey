@@ -43,6 +43,7 @@ dependencies:
   path_provider: ^2.1.6
   shared_preferences: ^2.5.3
   flutter_secure_storage: ^9.2.4
+  sqlite3: '>=3.6.0 <3.8.0'
   audioplayers: ^6.1.0
   crypto: ^3.0.6
   local_auth: ^2.3.0
@@ -108,3 +109,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# SQLCipher is a native asset bundled by package:sqlite3. Never fall back to
+# the package's default unencrypted sqlite3 build.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlcipher

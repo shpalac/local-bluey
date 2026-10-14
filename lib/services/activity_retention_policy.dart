@@ -11,13 +11,13 @@ abstract final class ActivityRetentionPolicy {
     'activity_store': RetentionClass.activity,
   };
 
-  /// The database entry is introduced only after BLU-004 encryption is
-  /// proven. On today's registry there are no purgeable activity stores.
+  /// Only the audited encrypted database owner may be purged. Other stores
+  /// (including credentials and routines) remain protected.
   static RetentionPurger fromRegistry(Iterable<DataStoreInfo> stores) {
     final classifications = <String, RetentionClass>{};
     for (final store in stores) {
       if (store.id == 'activity_store' &&
-          store.sourceFile == 'lib/services/activity_store.dart') {
+          store.sourceFile == 'lib/services/encrypted_activity_store.dart') {
         classifications[store.id] = _approved[store.id]!;
       }
     }

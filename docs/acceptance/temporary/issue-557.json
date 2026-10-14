@@ -7,13 +7,38 @@
       "criteria": [
         {
           "id": "ac_1",
-          "requirement": "SQLCipher: wrong key, WAL/journal cleanup and corruption behavior verified against real encrypted on-disk artifacts",
-          "type": "gap",
-          "reason": "SQLCipher database, key lifecycle and physical file/WAL tests are not implemented. This PR is memory-only groundwork and cannot satisfy durable storage requirements."
+          "requirement": "On-disk SQLCipher ciphertext, wrong-key fail closed, corruption preservation, expired-row and WAL/journal cleanup, and schema version refusal",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "real SQLCipher encrypts on-disk records and excludes raw text"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "wrong key fails closed and preserves original ciphertext"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "damaged ciphertext fails without overwriting the file"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "clear revokes session, erases rows and leaves no WAL/journal"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "schema rejects unknown versions without migrating or dropping data"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "explicit deletion removes owned sidecars and revokes the key"
+            }
+          ]
         },
         {
           "id": "ac_2",
-          "requirement": "Memory-only consent, denied operation, session timeout/restart, TTL, duplicate and capacity boundaries",
+          "requirement": "Memory-only and encrypted on-disk consent, denied operation, session timeout/restart, TTL, duplicate and capacity boundaries",
           "type": "automated",
           "tests": [
             {
@@ -39,12 +64,20 @@
             {
               "file": "test/activity_store_test.dart",
               "name": "invalid storage bounds fail closed"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "key unavailable and no opt-in never create a database"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "TTL purge, capacity and denied writes survive restart"
             }
           ]
         },
         {
           "id": "ac_3",
-          "requirement": "No plaintext filesystem writes, network access or implicit re-enablement in memory-only groundwork",
+          "requirement": "No plaintext data at rest, network access or implicit re-enablement; Keychain absent => deny without disk write",
           "type": "automated",
           "tests": [
             {
@@ -54,6 +87,18 @@
             {
               "file": "test/activity_store_test.dart",
               "name": "clear purges data without granting consent"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "real SQLCipher encrypts on-disk records and excludes raw text"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "key unavailable and no opt-in never create a database"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "clear revokes session, erases rows and leaves no WAL/journal"
             }
           ]
         },
@@ -61,7 +106,7 @@
           "id": "ac_4",
           "requirement": "Exact-head analyzer, CI tests, encrypted SQLite evidence and reviewer approval",
           "type": "manual",
-          "reason": "CI runs automatically; a reviewer must verify the merge head, security review, documentation and real encrypted-at-rest/WAL proof before closing."
+          "reason": "Flutter analyzer, all named tests and CI are required; a security reviewer must independently verify the exact commit and real macOS Keychain/filesystem behavior before closing. Hosted native-asset tests are automated but are not physical Mac evidence."
         }
       ]
     }
