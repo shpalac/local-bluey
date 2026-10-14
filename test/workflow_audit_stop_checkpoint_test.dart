@@ -58,19 +58,22 @@ void main() {
     expect(host.verifications, 0);
   });
 
-  test('audit stop after execution prevents verification and next step', () async {
-    final audit = ExecutionAudit();
-    final host = _CheckpointHost(audit, stopAtApproval: false);
-    final execution = WorkflowExecution(
-      _definition(),
-      host,
-      deadline: const Duration(seconds: 2),
-      audit: audit,
-    );
+  test(
+    'audit stop after execution prevents verification and next step',
+    () async {
+      final audit = ExecutionAudit();
+      final host = _CheckpointHost(audit, stopAtApproval: false);
+      final execution = WorkflowExecution(
+        _definition(),
+        host,
+        deadline: const Duration(seconds: 2),
+        audit: audit,
+      );
 
-    expect(await execution.run(), WorkflowStatus.cancelled);
-    expect(host.approvals, 1);
-    expect(host.executions, 1);
-    expect(host.verifications, 0);
-  });
+      expect(await execution.run(), WorkflowStatus.cancelled);
+      expect(host.approvals, 1);
+      expect(host.executions, 1);
+      expect(host.verifications, 0);
+    },
+  );
 }
