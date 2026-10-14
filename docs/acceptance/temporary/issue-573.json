@@ -7,8 +7,8 @@
       "criteria": [
         {
           "id": "ac_1",
-          "requirement": "Stop blocks subsequent execution steps and diagnostic secrets are redacted",
           "type": "automated",
+          "requirement": "Stop prevents subsequent steps and diagnostics redact secrets",
           "tests": [
             {
               "file": "test/execution_audit_test.dart",
@@ -22,16 +22,12 @@
         },
         {
           "id": "ac_2",
-          "requirement": "Success, permission denial, malformed input, timeout, cancellation, and UI consent",
           "type": "automated",
+          "requirement": "Success, malformed input, timeout, cancellation, permission denial and restart tests",
           "tests": [
             {
               "file": "test/execution_audit_test.dart",
               "name": "success produces only allowlisted step events"
-            },
-            {
-              "file": "test/execution_audit_test.dart",
-              "name": "permission denial redacts and fails closed"
             },
             {
               "file": "test/workflow_execution_test.dart",
@@ -44,40 +40,52 @@
             {
               "file": "test/execution_audit_test.dart",
               "name": "stop UI cancels and export requires explicit consent"
+            },
+            {
+              "file": "test/execution_audit_test.dart",
+              "name": "permission denial redacts and fails closed"
+            },
+            {
+              "file": "test/file_durable_recovery_store_test.dart",
+              "name": "restart reconciliation blocks all host actions"
             }
           ]
         },
         {
           "id": "ac_3",
-          "requirement": "No unintended egress, secret retention or auto-execution; consent before diagnostic display",
           "type": "automated",
+          "requirement": "Redacted diagnostics require explicit consent and recovery cannot auto-replay host actions",
           "tests": [
             {
               "file": "test/execution_audit_test.dart",
               "name": "export fails closed without consent"
             },
             {
-              "file": "test/execution_audit_test.dart",
-              "name": "bounded memory and valid JSON"
+              "file": "test/file_durable_recovery_store_test.dart",
+              "name": "restart reconciliation blocks all host actions"
+            },
+            {
+              "file": "test/file_durable_recovery_store_test.dart",
+              "name": "corrupt recovery metadata fails closed"
             }
           ]
         },
         {
           "id": "ac_4",
-          "requirement": "Flutter static analysis, tests and build complete in CI",
           "type": "automated",
+          "requirement": "Flutter static analysis and relevant tests run in GitHub CI",
           "tests": [
             {
-              "file": "test/execution_audit_test.dart",
-              "name": "success produces only allowlisted step events"
+              "file": "test/file_durable_recovery_store_test.dart",
+              "name": "file recovery metadata survives new store instance"
             }
           ]
         },
         {
-          "id": "end_to_end_gap",
-          "requirement": "Production HostControl adapter wiring, hardware permission validation and durable restart recovery",
+          "id": "native_tcc_gap",
           "type": "gap",
-          "reason": "Audit widget intentionally opt-in until SafetyGate and TCC validation; restart reconciliation is BLU-019. Keep issue open until end-to-end validation."
+          "requirement": "Real macOS host accessibility/TCC hardware validation and production HostControl integration",
+          "reason": "iOS simulator privacy grants cannot prove macOS Accessibility/TCC or native HostControl enforcement. Requires device evidence before closing #573."
         }
       ]
     }
