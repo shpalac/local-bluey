@@ -5,13 +5,7 @@ import 'dart:async';
 
 import 'mcp_tool_safety_gate.dart';
 
-enum HomeAssistantFailure {
-  invalidInput,
-  denied,
-  offline,
-  timeout,
-  cancelled,
-}
+enum HomeAssistantFailure { invalidInput, denied, offline, timeout, cancelled }
 
 class HomeAssistantException implements Exception {
   const HomeAssistantException(this.reason);
@@ -99,8 +93,13 @@ class HomeAssistantAdapter {
     if (!_entityPattern.hasMatch(entityId) ||
         !_servicePattern.hasMatch(service) ||
         !allowedEntities.contains(entityId) ||
-        !const {'turn_on', 'turn_off', 'toggle', 'lock', 'unlock'}
-            .contains(service) ||
+        !const {
+          'turn_on',
+          'turn_off',
+          'toggle',
+          'lock',
+          'unlock',
+        }.contains(service) ||
         (service == 'lock' && !entityId.startsWith('lock.')) ||
         (service == 'unlock' && !entityId.startsWith('lock.'))) {
       throw const HomeAssistantException(HomeAssistantFailure.invalidInput);
