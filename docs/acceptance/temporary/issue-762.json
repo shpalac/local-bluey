@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 762,
+      "parent": 582,
+      "title": "Deep output redaction and mid-invocation cancellation",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Nested secret-like values in maps and lists are redacted",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/safety_gate_runtime_test.dart",
+              "name": "runtime recursively redacts nested maps and lists"
+            },
+            {
+              "file": "test/mcp/safety_gate_runtime_test.dart",
+              "name": "runtime redacts top-level list results"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Mid-invocation cancellation is tested with controllable fake",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/safety_gate_runtime_test.dart",
+              "name": "runtime cancels during an invocation with controllable fake"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Underlying gate approval and denial behavior unchanged",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/safety_gate_runtime_test.dart",
+              "name": "runtime preserves underlying permission denial"
+            },
+            {
+              "file": "test/mcp/safety_gate_runtime_test.dart",
+              "name": "runtime preserves underlying approved result"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Cancellation is documented as best-effort after tool execution starts",
+          "type": "manual",
+          "reason": "Documented in runtime API and issue-762 notes; cancellation stops waiting but cannot undo a remote side effect."
+        },
+        {
+          "id": "manual_1",
+          "requirement": "Native macOS/TCC and live MCP network process validation",
+          "type": "gap",
+          "reason": "Requires physical macOS permissions and a real MCP process/transport unavailable in deterministic Flutter fake tests; intentionally out of scope for #762."
+        }
+      ]
+    }
+  ]
+}
