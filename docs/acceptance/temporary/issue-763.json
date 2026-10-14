@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 763,
+      "title": "Ranked retrieval results for the local semantic contract",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "success returns an ordered list of scored hits",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/services/local_semantic_file_retrieval_test.dart",
+              "name": "success returns highest score first with deterministic path ties"
+            },
+            {
+              "file": "test/services/local_semantic_file_retrieval_test.dart",
+              "name": "success rejects empty results and out-of-range or nonfinite scores"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "invalid input and not-found paths unchanged",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/services/local_semantic_file_retrieval_test.dart",
+              "name": "blank queries remain invalid and never invoke index"
+            },
+            {
+              "file": "test/services/local_semantic_file_retrieval_test.dart",
+              "name": "missing matches remain notFound without invented hits"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "contract stays free of embedding model and filesystem dependencies",
+          "type": "manual",
+          "reason": "Source review confirms a pure synchronous typed boundary with no imports, I/O, embeddings or provider calls; no on-device model or filesystem validation is claimed."
+        },
+        {
+          "id": "device_gap",
+          "requirement": "Native UI, macOS TCC, VoiceOver/RTL and model integration",
+          "type": "gap",
+          "reason": "Out of scope for #763; requires actual hardware/runtime integration and real device evidence. Keep #763 and #585 open."
+        }
+      ]
+    }
+  ]
+}
