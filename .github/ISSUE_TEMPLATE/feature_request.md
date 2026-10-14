@@ -22,10 +22,10 @@ Describe affected platforms, non-goals and dependencies.
 
 - Temporary issue-specific suite: `test/issues/issue_<number>_test.dart`.
 - Register exact named cases in `docs/acceptance/temporary/issue-<number>.json`.
-- Before closing, add permanent `integration_test/features/<feature>_test.dart` and `docs/acceptance/permanent/issue-<number>.json`.
+- For user-facing feature journeys, promote to `integration_test/features/<feature>_test.dart` and `docs/acceptance/permanent/issue-<number>.json`; pure-Dart contracts can close with complete temporary evidence.
 - Remove temporary checks only after the permanent suite runs in CI; record any physical-device verification separately.
 
 ## Definition of done
 
-- [ ] Required checks passed on the PR head; reviewers confirmed all applicable acceptance criteria.
-- [ ] Permanent feature-level regression coverage exists, with documented limitations.
+- [ ] Every AC has a real named passing test and no manual/gap rows; PR CI passes at exact head and main CI passes after merge.
+- [ ] Feature-level regression coverage exists when relevant, with documented limitations. Use `AutoClose #N` for automatic closure; `Refs #N` for partial work.
