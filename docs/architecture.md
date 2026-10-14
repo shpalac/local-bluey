@@ -219,3 +219,8 @@ only; BLU-011 and BLU-020 are prerequisites for the live pilot.
 ## BLU-028 — opt-in file indexing (partial; Refs #584)
 
 See [the isolated engine and limitations](blu-028-file-index.md). Directory scanning is disabled until the calling UI supplies explicit consent, stores file contents only in memory, ignores hidden paths and symbolic links, and purges upon revoke or process restart. No automatic action or cloud upload is introduced. Offline/permission evidence, end-user RTL/accessibility coverage and host-specific file permission validation remain incomplete. The [temporary manifest](acceptance/temporary/issue-584.json) tracks remaining gates; keep #584 open.
+
+
+## Experimental Playwright MCP browser boundary (BLU-034)
+
+`lib/mcp/playwright_browser_adapter.dart` is a disabled-by-default read-only contract above `McpToolSafetyGate`. Host allowlists, session cancellation, hostile page data and failure paths are fake-tested without network access. The existing Swift WebResearch is a separate cloud integration; no production browser transport, consent UI, privacy registry write or download sandbox is shipped. See [BLU-034 design and limitations](blu-034-playwright-mcp.md).
