@@ -7,7 +7,10 @@ enum FileIndexState { disabled, indexing, ready, denied, cancelled, failed }
 /// Ephemeral local-only index. No file bytes or paths are sent to providers.
 /// A restart drops all grants and indexed contents.
 class FileIndex {
-  FileIndex({this.maxBytes = 1024 * 1024, this.timeout = const Duration(seconds: 20)});
+  FileIndex({
+    this.maxBytes = 1024 * 1024,
+    this.timeout = const Duration(seconds: 20),
+  });
 
   final int maxBytes;
   final Duration timeout;
@@ -22,9 +25,11 @@ class FileIndex {
   List<String> search(String query) {
     if (_root == null || query.trim().isEmpty) return const [];
     final needle = query.toLowerCase();
-    return List.unmodifiable(_contents.entries
-        .where((entry) => entry.value.toLowerCase().contains(needle))
-        .map((entry) => entry.key));
+    return List.unmodifiable(
+      _contents.entries
+          .where((entry) => entry.value.toLowerCase().contains(needle))
+          .map((entry) => entry.key),
+    );
   }
 
   /// Only call after an explicit directory-selection UI and consent.
@@ -51,8 +56,7 @@ class FileIndex {
     final contents = <String, String>{};
     final modified = <String, DateTime>{};
     try {
-      await _scan(Directory(root), contents, modified, ticket)
-          .timeout(timeout);
+      await _scan(Directory(root), contents, modified, ticket).timeout(timeout);
       if (ticket != _generation) {
         return;
       }
@@ -81,7 +85,9 @@ class FileIndex {
     await for (final entity in root.list(recursive: true, followLinks: false)) {
       if (ticket != _generation) return;
       final relative = entity.path.substring(root.path.length + 1);
-      if (relative.split(Platform.pathSeparator).any((segment) => segment.startsWith('.'))) {
+      if (relative
+          .split(Platform.pathSeparator)
+          .any((segment) => segment.startsWith('.'))) {
         continue;
       }
       if (entity is! File) {
@@ -91,7 +97,8 @@ class FileIndex {
       if (stat.type != FileSystemEntityType.file || stat.size > maxBytes) {
         continue;
       }
-      if (_modified[entity.path] == stat.modified && _contents.containsKey(entity.path)) {
+      if (_modified[entity.path] == stat.modified &&
+          _contents.containsKey(entity.path)) {
         contents[entity.path] = _contents[entity.path]!;
       } else {
         try {
