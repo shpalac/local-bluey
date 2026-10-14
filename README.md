@@ -263,3 +263,6 @@ real actions. The temporary CI workflow is `.github/workflows/temp-issue-577.yml
 
 
 **Opt-in file indexing (experimental, not shipped):** An isolated in-memory engine supports explicitly approved directory scans, incremental refresh and immediate revocation. macOS folder selection and explicit consent/revoke controls are integrated; physical-device permission and RTL validation remain outstanding. See [BLU-028 implementation notes](docs/blu-028-file-index.md).
+
+
+**Playwright MCP (experimental, disabled):** A fake-tested, allowlisted, read-only browser contract is documented in [BLU-034](docs/blu-034-playwright-mcp.md). No live browser, automatic downloads or silent WebResearch fallback are enabled.
