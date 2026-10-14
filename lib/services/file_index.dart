@@ -53,7 +53,9 @@ class FileIndex {
     try {
       await _scan(Directory(root), contents, modified, ticket)
           .timeout(timeout);
-      if (ticket != _generation) return;
+      if (ticket != _generation) {
+        return;
+      }
       _contents
         ..clear()
         ..addAll(contents);
@@ -82,9 +84,13 @@ class FileIndex {
       if (relative.split(Platform.pathSeparator).any((segment) => segment.startsWith('.'))) {
         continue;
       }
-      if (entity is! File) continue;
+      if (entity is! File) {
+        continue;
+      }
       final stat = await entity.stat();
-      if (stat.type != FileSystemEntityType.file || stat.size > maxBytes) continue;
+      if (stat.type != FileSystemEntityType.file || stat.size > maxBytes) {
+        continue;
+      }
       if (_modified[entity.path] == stat.modified && _contents.containsKey(entity.path)) {
         contents[entity.path] = _contents[entity.path]!;
       } else {
