@@ -6,14 +6,18 @@ on:
       - '.github/workflows/temp-issue-588.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   rive-feasibility:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
-      - uses: subosito/flutter-action@fd55f4c5af5b953cc8f6a0e5c5e5c7f8b4f3d6e8
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
-          flutter-version-file: pubspec.yaml
+          channel: stable
       - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed
       - run: flutter analyze
       - run: flutter test
