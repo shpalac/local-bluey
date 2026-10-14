@@ -1,0 +1,27 @@
+name: Temporary BLU-029 acceptance
+on:
+  pull_request:
+    paths:
+      - 'lib/services/local_semantic_retrieval.dart'
+      - 'lib/services/file_index.dart'
+      - 'test/local_semantic_retrieval_test.dart'
+      - 'docs/acceptance/temporary/issue-585.json'
+      - '.github/workflows/temp-issue-585.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  semantic-retrieval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - name: Formatting
+        run: |
+          dart format --output=none --set-exit-if-changed lib/services/file_index.dart lib/services/local_semantic_retrieval.dart test/local_semantic_retrieval_test.dart
+      - run: flutter analyze
+      - run: flutter test test/file_index_test.dart test/local_semantic_retrieval_test.dart
+      - run: flutter build apk --debug

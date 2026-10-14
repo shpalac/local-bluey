@@ -21,6 +21,26 @@ class FileIndex {
   int _generation = 0;
 
   int get documentCount => _contents.length;
+
+  /// Read-only in-memory snapshot; no independent filesystem access.
+  Map<String, String> retrievalSnapshot() =>
+      _root != null && state == FileIndexState.ready
+      ? Map.unmodifiable(_contents)
+      : const {};
+
+  /// A revoked or refreshed index must not emit stale citations.
+  bool matchesRetrievalSnapshot(Map<String, String> snapshot) {
+    if (_root == null ||
+        state != FileIndexState.ready ||
+        snapshot.length != _contents.length) {
+      return false;
+    }
+    for (final entry in snapshot.entries) {
+      if (_contents[entry.key] != entry.value) return false;
+    }
+    return true;
+  }
+
   bool get isEnabled => _root != null;
   List<String> search(String query) {
     if (_root == null || query.trim().isEmpty) return const [];
