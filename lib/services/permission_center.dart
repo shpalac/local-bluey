@@ -1,4 +1,3 @@
-
 /// A deterministic permission grant owned by the permission center.
 class PermissionGrant {
   PermissionGrant({required this.id, this.expiresAtMs});
