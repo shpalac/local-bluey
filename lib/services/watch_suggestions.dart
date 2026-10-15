@@ -115,16 +115,16 @@ class WatchSuggestions {
       ((await SharedPreferences.getInstance()).getStringList(_kNeverApps) ??
               const [])
           .map(WatchPolicy.normalize)
+          .where((app) => app.isNotEmpty)
           .toSet();
 
   /// Persists a per-app "never suggest" choice.
   static Future<void> neverForApp(String app) async {
     final prefs = await SharedPreferences.getInstance();
-    final list = [...?prefs.getStringList(_kNeverApps)];
-    final n = app.trim().toLowerCase();
-    if (n.isEmpty || list.contains(n)) return;
-    list.add(n);
-    await prefs.setStringList(_kNeverApps, list);
+    final existing = prefs.getStringList(_kNeverApps) ?? const <String>[];
+    final n = WatchPolicy.normalize(app);
+    if (n.isEmpty || existing.map(WatchPolicy.normalize).contains(n)) return;
+    await prefs.setStringList(_kNeverApps, [...existing, n]);
   }
 
   /// Session lifecycle: counters reset with each new session.
