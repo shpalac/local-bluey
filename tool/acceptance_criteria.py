@@ -75,7 +75,7 @@ def load_manifest(root: Path, source: Path) -> dict:
                     evidence_key = (path, name)
                     previous = evidence_owners.setdefault(evidence_key, identifier)
                     if previous != identifier:
-                        raise ManifestError(f"#{number}/{identifier}: duplicate evidence ownership")
+                        raise ManifestError(f"#{number}/{identifier}: one named test has duplicate evidence ownership")
             else:
                 if set(c) != {"id", "requirement", "type", "reason"} or not isinstance(c["reason"], str) or not c["reason"].strip():
                     raise ManifestError(f"#{number}/{identifier}: explicit gap/manual reason required")
