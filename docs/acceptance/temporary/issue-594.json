@@ -9,7 +9,7 @@
           "id": "ac_1",
           "requirement": "macOS build smoke and native tests",
           "type": "manual",
-          "reason": "Requires macOS GitHub runner execution evidence; the lane's own CI run is the evidence, not a repository test."
+          "reason": "Requires macOS GitHub runner execution evidence; the lane's own CI run is the evidence, not a repository test. The additional structural Dart test checks wiring only; native runner completion remains required."
         },
         {
           "id": "ac_2",
