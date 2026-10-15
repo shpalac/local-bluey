@@ -83,9 +83,11 @@ class RetentionTarget {
 /// routines or settings store as activity or cache can purge it, because this
 /// module makes no classification or product-default choice of its own.
 class RetentionPurger {
-  RetentionPurger(Iterable<RetentionTarget> targets, {Duration? operationTimeout})
-    : _targets = _index(targets),
-      operationTimeout = operationTimeout {
+  RetentionPurger(
+    Iterable<RetentionTarget> targets, {
+    Duration? operationTimeout,
+  }) : _targets = _index(targets),
+       operationTimeout = operationTimeout {
     if (operationTimeout != null && operationTimeout <= Duration.zero) {
       throw ArgumentError.value(operationTimeout, 'operationTimeout');
     }
@@ -171,10 +173,13 @@ class RetentionPurger {
             } else {
               var timedOut = false;
               try {
-                await clear.timeout(operationTimeout!, onTimeout: () {
-                  timedOut = true;
-                  throw TimeoutException('retention clear timed out');
-                });
+                await clear.timeout(
+                  operationTimeout!,
+                  onTimeout: () {
+                    timedOut = true;
+                    throw TimeoutException('retention clear timed out');
+                  },
+                );
               } finally {
                 if (timedOut) _indeterminate.add(id);
               }
