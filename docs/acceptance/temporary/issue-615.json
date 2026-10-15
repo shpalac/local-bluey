@@ -31,7 +31,7 @@
           "tests": [
             {
               "file": "test/postcondition_oracle_missing_evidence_test.dart",
-              "name": "blank observation is inconclusive and cannot complete workflow"
+              "name": "blank evidence cannot complete workflow"
             },
             {
               "file": "test/postcondition_oracle_missing_evidence_test.dart",
