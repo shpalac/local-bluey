@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 624,
+      "title": "[BLU-067] Suggestion quality controls",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "No repeated spam and preferences persist.",
+          "tests": [
+            {
+              "file": "test/watch_suggestions_preferences_624_test.dart",
+              "name": "AC-1 persisted never-app preference suppresses repeated suggestions after restart"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Deterministic, reproducible results; explicit errors rather than silent fallbacks.",
+          "type": "gap",
+          "reason": "New tests cover canonical stored preference behavior only; full ranking determinism and explicit error handling are not proven by this PR."
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions.",
+          "type": "gap",
+          "reason": "Read-only preference change has no new network or action path, but complete privacy and egress coverage is not proven by new tests."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Existing Routines and supported platform behavior remain compatible.",
+          "type": "gap",
+          "reason": "This slice does not change Routines, but cross-platform and full Routines compatibility is not proven by new tests."
+        }
+      ]
+    }
+  ]
+}
