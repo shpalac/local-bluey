@@ -188,7 +188,7 @@ def plan(paths: list[str], event_name: str, root: Path) -> dict:
     for path in normalized:
         parts = PurePosixPath(path).parts
         if (not parts or path.startswith("/") or ".." in parts
-                or "\\\\" in path or "\\n" in path):
+                or "\\" in path or "\n" in path):
             reasons.add("unsafe_path")
         elif path in FULL_INPUTS:
             reasons.add("shared_config")
@@ -238,13 +238,13 @@ def main(argv: list[str] | None = None) -> int:
         summary = os.environ.get("GITHUB_STEP_SUMMARY")
         if summary:
             with open(summary, "a", encoding="utf-8") as handle:
-                handle.write("### Impact selection\\n\\n")
-                handle.write("- Mode: " + result["selection_kind"] + "\\n")
+                handle.write("### Impact selection\n\n")
+                handle.write("- Mode: " + result["selection_kind"] + "\n")
                 handle.write("- Reasons: " +
-                             ", ".join(result["selection_reasons"]) + "\\n")
+                             ", ".join(result["selection_reasons"]) + "\n")
                 selected = sorted(name for name, enabled in
                                   result["lanes"].items() if enabled)
-                handle.write("- Lanes: " + ", ".join(selected) + "\\n")
+                handle.write("- Lanes: " + ", ".join(selected) + "\n")
         if args.output:
             with args.output.open("a", encoding="utf-8") as output:
                 output.write(f"plan={serialized}\n")

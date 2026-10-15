@@ -67,7 +67,7 @@ def report(repo, since):
     }]
     failed = sum(run['conclusion'] == 'failure' for run in finished)
     rate = failed * 100 // len(finished) if finished else 0
-    rows = ['## CI metrics (last 7 days)', '', f'- Runs: {len(runs)}',
+    rows = ['## CI metrics (last 7 days)', '', f'- Completed runs: {len(finished)}',
             f'- Failed: {failed} ({rate}%)', '', '| Job | Median duration |',
             '|---|---:|']
     durations = {name: [] for name in JOBS}
@@ -90,7 +90,7 @@ def report(repo, since):
             active_lanes = set()
             for job in jobs:
                 name = job['name'].split(' (', 1)[0]
-                if name not in durations or job['status'] != 'completed':
+                if job['status'] != 'completed':
                     continue
                 if not job['started_at'] or not job['completed_at']:
                     continue
