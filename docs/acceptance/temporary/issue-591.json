@@ -21,6 +21,10 @@
             {
               "file": "test/blu_035_safety_rollback_docs_test.dart",
               "name": "rollback does not disable SafetyGate confirmations"
+            },
+            {
+              "file": "test/blu_035_feature_defaults_test.dart",
+              "name": "ac1 fresh opt-in integrations remain disabled by default"
             }
           ]
         },
