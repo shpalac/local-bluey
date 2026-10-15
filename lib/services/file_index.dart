@@ -43,7 +43,9 @@ class FileIndex {
 
   bool get isEnabled => _root != null;
   List<String> search(String query) {
-    if (_root == null || query.trim().isEmpty) return const [];
+    if (_root == null || state != FileIndexState.ready || query.trim().isEmpty) {
+      return const [];
+    }
     final needle = query.toLowerCase();
     return List.unmodifiable(
       _contents.entries
@@ -88,7 +90,11 @@ class FileIndex {
         ..addAll(modified);
       state = FileIndexState.ready;
     } on TimeoutException {
-      if (ticket == _generation) state = FileIndexState.failed;
+      if (ticket == _generation) {
+        _contents.clear();
+        _modified.clear();
+        state = FileIndexState.failed;
+      }
       rethrow;
     } catch (_) {
       if (ticket == _generation) state = FileIndexState.failed;
