@@ -28,6 +28,10 @@
             {
               "file": "test/mcp_safety_gate_runtime_integration_test.dart",
               "name": "runtime cancellation fixture fails closed"
+            },
+            {
+              "file": "test/mcp_permission_timeout_test.dart",
+              "name": "approval timeout denies invocation without calling the transport"
             }
           ]
         },
