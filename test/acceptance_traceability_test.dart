@@ -13,16 +13,18 @@ void main() {
       "test('first evidence', () {});\n"
       "test('second evidence', () {});\n",
     );
-    File('${root.path}/matrix.json').writeAsStringSync(jsonEncode({
-      'version': 1,
-      'issues': [
-        {
-          'number': 638,
-          'title': 'Traceability contract',
-          'criteria': criteria,
-        },
-      ],
-    }));
+    File('${root.path}/matrix.json').writeAsStringSync(
+      jsonEncode({
+        'version': 1,
+        'issues': [
+          {
+            'number': 638,
+            'title': 'Traceability contract',
+            'criteria': criteria,
+          },
+        ],
+      }),
+    );
 
     return Process.run('python3', [
       'tool/acceptance_criteria.py',
