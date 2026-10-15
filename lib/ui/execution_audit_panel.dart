@@ -65,22 +65,14 @@ class _ExecutionAuditPanelState extends State<ExecutionAuditPanel> {
         widget.execution.status == WorkflowStatus.completed ||
         widget.execution.status == WorkflowStatus.failed ||
         widget.execution.status == WorkflowStatus.cancelled;
-    final failure = widget.audit.entries.reversed
-        .where(
-          (entry) =>
-              entry.status == 'denied' ||
-              entry.status == 'timeout' ||
-              entry.status == 'failed' ||
-              entry.status == 'offline',
-        )
-        .firstOrNull;
-    final failureMessage = switch (failure?.status) {
-      'denied' => 'Permission denied. Review approval settings before retrying.',
-      'timeout' => 'Workflow timed out. Check the host and retry manually.',
-      'offline' => 'Host offline. Reconnect before retrying.',
-      'failed' => 'Workflow failed. Review redacted diagnostics before retrying.',
-      _ => null,
+    const failureMessages = <String, String>{
+      'denied': 'Permission denied. Review approval settings before retrying.',
+      'timeout': 'Workflow timed out. Check the host and retry manually.',
+      'offline': 'Host offline. Reconnect before retrying.',
+      'failed': 'Workflow failed. Review redacted diagnostics before retrying.',
     };
+    final failureMessage =
+        failureMessages[widget.audit.entries.lastOrNull?.status];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
