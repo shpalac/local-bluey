@@ -272,6 +272,25 @@ const sceneSteps = [
           <a class="pill-button pill-button-outline" href={github + '/blob/main/docs/README_TECHNICAL_REFERENCE.md#privacy-what-stays-local'} target="_blank" rel="noopener noreferrer">The honest details <span aria-hidden="true">↗</span></a>
         </section>
 
+        <section class="resources section-wrap" id="resources" aria-labelledby="resources-title">
+          <div class="section-index"><span>08 / GUIDES &amp; TRUST</span><span>LEARN BEFORE YOU INSTALL</span></div>
+          <h2 id="resources-title">How does Bluey <em>work?</em></h2>
+          <p class="resources-intro">Practical, source-backed guides explain what is implemented, what needs configuring, and what still requires validation.</p>
+          <div class="resource-grid">
+            <a class="resource-card" href={base + 'guides/mac-setup/'}><span>01 / SETUP</span><h3>Get started on Mac</h3><p>Install from source and review permissions.</p><strong>Read the guide →</strong></a>
+            <a class="resource-card" href={base + 'guides/ollama/'}><span>02 / LOCAL AI</span><h3>Connect Ollama</h3><p>Local brain setup and voice limitations.</p><strong>Read the guide →</strong></a>
+            <a class="resource-card" href={base + 'features/screen-understanding/'}><span>03 / SCREEN</span><h3>Understand your screen</h3><p>Screen tools, screenshots and privacy limits.</p><strong>Explore the feature →</strong></a>
+            <a class="resource-card" href={base + 'features/approval-safety/'}><span>04 / SAFETY</span><h3>Approve computer actions</h3><p>SafetyGate, kill switch and known gaps.</p><strong>Explore the feature →</strong></a>
+          </div>
+          <div class="resources-faq" aria-labelledby="faq-title">
+            <h3 id="faq-title">Frequently asked questions</h3>
+            <details><summary>Does Local Bluey run fully offline?</summary><p>Local-only mode restricts supported endpoints to loopback addresses, but native offline speech transcription is not shipped. Remote services may receive screenshots, prompts, or voice if configured.</p></details>
+            <details><summary>Does the iOS or Android app control my phone?</summary><p>No. The macOS app is the host; phones are companion clients that connect to the Mac on a trusted local network.</p></details>
+            <details><summary>Is this production ready?</summary><p>Not yet. Mock and source-level tests exist, but end-to-end validation on physical devices is pending. <a href={github + '/issues/15'}>See validation status.</a></p></details>
+            <details><summary>How can I contribute?</summary><p>Review the <a href={github + '/blob/main/CONTRIBUTING.md'}>contribution guidelines</a> or <a href={github + '/issues'}>open issues</a>. Report vulnerabilities privately.</p></details>
+          </div>
+        </section>
+
         <section class="last-call" aria-labelledby="last-title">
           <div class="last-call-inner section-wrap">
             <div class="last-doodle" aria-hidden="true">↘</div>
