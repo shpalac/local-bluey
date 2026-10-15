@@ -21,6 +21,10 @@
             {
               "file": "test/mcp/playwright_browser_adapter_test.dart",
               "name": "rejects unsafe schemes, credentials and local network targets"
+            },
+            {
+              "file": "test/mcp/playwright_transport_wiring_test.dart",
+              "name": "AC-1 blocked domain cannot reach injected transport"
             }
           ]
         },
@@ -56,6 +60,14 @@
             {
               "file": "test/mcp/playwright_browser_adapter_test.dart",
               "name": "restart invalidates prior result; new operation succeeds"
+            },
+            {
+              "file": "test/mcp/playwright_transport_wiring_test.dart",
+              "name": "AC-2 approved navigation uses injected transport"
+            },
+            {
+              "file": "test/mcp/playwright_transport_wiring_test.dart",
+              "name": "AC-2 denied permission never invokes transport"
             }
           ]
         },
