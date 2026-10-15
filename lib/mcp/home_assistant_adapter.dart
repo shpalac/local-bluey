@@ -166,6 +166,7 @@ class HomeAssistantAdapter {
         McpToolFailure.cancelled => HomeAssistantFailure.cancelled,
         McpToolFailure.invalidArguments ||
         McpToolFailure.invalidSchema => HomeAssistantFailure.invalidInput,
+        McpToolFailure.resourceLimit => HomeAssistantFailure.denied,
         McpToolFailure.denied => HomeAssistantFailure.denied,
       });
     } on TimeoutException {
