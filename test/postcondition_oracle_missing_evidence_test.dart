@@ -29,7 +29,7 @@ class _CountingHost implements WorkflowHost {
 }
 
 void main() {
-  test('blank observation is inconclusive and cannot complete workflow', () async {
+  test('blank evidence cannot complete workflow', () async {
     final reader = _BlankEvidenceReader();
     final delegate = _CountingHost();
     final host = VerifyingWorkflowHost(
