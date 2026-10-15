@@ -37,7 +37,10 @@ void main(List<String> args) {
     }
     final stage = decoded is Map ? decoded['stage'] : null;
     final ms = decoded is Map ? decoded['ms'] : null;
-    if (stage is! String || stage.isEmpty || ms is! int || ms < 0) {
+    if (stage is! String ||
+        !RegExp(r'^[A-Za-z0-9_.-]+$').hasMatch(stage) ||
+        ms is! int ||
+        ms < 0) {
       stderr.writeln('Invalid sample at line $lineNumber');
       exit(2);
     }
