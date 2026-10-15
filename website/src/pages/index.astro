@@ -8,6 +8,37 @@ const base = import.meta.env.BASE_URL;
 const asset = (name: string) => base + 'media/' + name;
 const github = 'https://github.com/shpalac/local-bluey';
 const doc = github + '#-quick-start';
+const pageUrl = new URL(base, Astro.site).toString();
+const socialImageUrl = new URL(asset('showcase-hero.png'), Astro.site).toString();
+
+// Account-specific values remain opt-in; no verification or tracking by default.
+const googleVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION?.trim() ?? '';
+const plausibleScriptUrl = import.meta.env.PUBLIC_PLAUSIBLE_SCRIPT_URL?.trim() ?? '';
+if (plausibleScriptUrl && !/^https:\/\/plausible\.io\/js\/pa-[a-zA-Z0-9_-]+\.js$/.test(plausibleScriptUrl)) {
+  throw new Error('PUBLIC_PLAUSIBLE_SCRIPT_URL must be an official site-specific Plausible HTTPS script URL');
+}
+
+// Describe the open-source Mac host without claiming an app-store release,
+// production validation, user ratings, or a native download.
+const softwareApplicationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Local Bluey',
+  description: 'An open-source, local-first AI desktop companion for Mac with screen understanding and approval-gated computer actions.',
+  url: pageUrl,
+  image: new URL(asset('bluey-mobile.png'), Astro.site).toString(),
+  applicationCategory: 'DesktopEnhancementApplication',
+  operatingSystem: 'macOS',
+  isAccessibleForFree: true,
+  codeRepository: github,
+  license: github + '/blob/main/LICENSE',
+  offers: {
+    '@type': 'Offer',
+    price: 0,
+    priceCurrency: 'USD',
+    url: doc
+  }
+};
 const sceneSteps = [
   {
     number: '01', verb: 'Wake', eyebrow: 'A little tap goes a long way',
@@ -41,9 +72,34 @@ const sceneSteps = [
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Local Bluey — Open-Source AI Desktop Assistant for Mac" />
     <meta property="og:description" content="Meet Bluey, the playful local-first AI companion for Mac. Ask about your screen and approve computer actions before Bluey helps." />
-    <meta property="og:image" content={new URL(asset('showcase-hero.png'), Astro.site)} />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:site_name" content="Local Bluey" />
+    <meta property="og:image" content={socialImageUrl} />
+    <meta property="og:image:alt" content="Local Bluey character artwork and deterministic Flutter UI previews" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Local Bluey — Open-Source AI Desktop Assistant for Mac" />
+    <meta name="twitter:description" content="Meet Bluey, the playful local-first AI companion for Mac. Ask about your screen and approve computer actions before Bluey helps." />
+    <meta name="twitter:image" content={socialImageUrl} />
+    <meta name="twitter:image:alt" content="Local Bluey character artwork and deterministic Flutter UI previews" />
+    {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
     <link rel="icon" href={asset('bluey-mobile.png')} type="image/png" />
-    <link rel="canonical" href={new URL(base, Astro.site)} />
+    <link rel="canonical" href={pageUrl} />
+    <link rel="sitemap" type="application/xml" href={new URL(base + 'sitemap-index.xml', Astro.site).toString()} />
+    <script type="application/ld+json" set:html={JSON.stringify(softwareApplicationSchema).replace(/</g, '\\u003c')}></script>
+    {plausibleScriptUrl && (
+      <>
+        <script is:inline async src={plausibleScriptUrl}></script>
+        <script is:inline>
+          window.plausible = window.plausible || function () {
+            (window.plausible.q = window.plausible.q || []).push(arguments);
+          };
+          window.plausible.init = window.plausible.init || function (options) {
+            window.plausible.o = options || {};
+          };
+          window.plausible.init();
+        </script>
+      </>
+    )}
     <title>Local Bluey | Open-Source AI Desktop Assistant for Mac</title>
   </head>
   <body>
