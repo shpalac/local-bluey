@@ -25,6 +25,18 @@
             {
               "file": "test/workflow_dsl_target_validation_test.dart",
               "name": "step target rejects embedded control characters"
+            },
+            {
+              "file": "test/workflow_dsl_unknown_fields_test.dart",
+              "name": "ac1 unknown top-level workflow fields fail closed"
+            },
+            {
+              "file": "test/workflow_dsl_unknown_fields_test.dart",
+              "name": "ac1 unknown workflow step fields fail closed"
+            },
+            {
+              "file": "test/workflow_dsl_unknown_fields_test.dart",
+              "name": "ac1 permitted optional fields still round-trip unchanged"
             }
           ]
         },
