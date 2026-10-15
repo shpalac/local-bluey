@@ -77,6 +77,7 @@ class OllamaProvider extends LlmProvider {
       final message = Map<String, dynamic>.from(
         body['message'] as Map? ?? const {},
       );
+      final content = message['content'] as String? ?? '';
       final toolCalls = message['tool_calls'] as List? ?? const [];
       ToolCall? call;
       if (toolCalls.isNotEmpty) {
@@ -98,7 +99,16 @@ class OllamaProvider extends LlmProvider {
           );
         }
       }
-      return LlmResponse(message['content'] as String? ?? '', toolCall: call);
+      // Local models often answer in `content` and leave tool_calls null even
+      // though the request carried a tools array. Falling back keeps the call
+      // instead of dropping it and narrating an action that never happened.
+      var spoken = content;
+      if (call == null) {
+        final inline = extractInlineToolCall(content);
+        call = inline.toolCall;
+        spoken = inline.spoken;
+      }
+      return LlmResponse(spoken, toolCall: call);
     });
   }
 

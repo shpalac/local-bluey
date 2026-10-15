@@ -175,6 +175,13 @@ const List<ToolSpec> kTools = [
   ),
 ];
 
+/// Every legal tool name, for validating tool calls that arrive as model text.
+///
+/// Inline encodings are model output, so a reply can name anything. A name
+/// outside this set is a hallucination and must never reach the executor:
+/// these calls move the real cursor and type for real.
+final Set<String> kToolNames = {for (final tool in kTools) tool.name};
+
 /// The system prompt that teaches a text LLM how to call the tools above.
 /// JSON schema for native tool calling (OpenAI/Ollama format).
 List<Map<String, dynamic>> kToolsAsFunctions() => [
