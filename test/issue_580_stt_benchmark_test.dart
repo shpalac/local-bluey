@@ -20,7 +20,9 @@ Future<void> runOfflineFixture(String fixtureName) async {
 void main() {
   test(
     'issue 580 AC-1 Hebrew baseline is reproducible',
-    () => runOfflineFixture('test_hebrew_nikud_and_punctuation_baseline_reproducible'),
+    () => runOfflineFixture(
+      'test_hebrew_nikud_and_punctuation_baseline_reproducible',
+    ),
     skip: Platform.isWindows,
     timeout: const Timeout(Duration(seconds: 30)),
   );
