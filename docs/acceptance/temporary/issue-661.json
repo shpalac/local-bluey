@@ -38,8 +38,25 @@
         {
           "id": "ac_3",
           "requirement": "Automated tests cover Linux capability lookup and initial screen routing, including failure/unsupported cases.",
-          "type": "manual",
-          "reason": "This slice pins the policy only; capability lookup and screen routing tests are follow-up work."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/linux_startup_gate_test.dart",
+              "name": "Linux capability lookup fails closed for unknown host powers"
+            },
+            {
+              "file": "test/linux_startup_gate_test.dart",
+              "name": "Linux initial routing rejects experimental backend promotion"
+            },
+            {
+              "file": "test/linux_startup_gate_test.dart",
+              "name": "Linux unsupported startup describes the blocked role"
+            },
+            {
+              "file": "test/linux_startup_gate_test.dart",
+              "name": "unknown operating system routes to unsupported initial screen"
+            }
+          ]
         },
         {
           "id": "ac_4",
