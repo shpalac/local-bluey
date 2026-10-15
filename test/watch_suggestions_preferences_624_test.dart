@@ -31,22 +31,28 @@ void main() {
     await restarted.dispose();
   });
 
-  test('canonical never-app choices do not duplicate stored preferences', () async {
-    await WatchSuggestions.neverForApp('Terminal.app');
-    await WatchSuggestions.neverForApp(' TERMINAL ');
-    final prefs = await SharedPreferences.getInstance();
-    expect(prefs.getStringList('watch.suggestNeverApps'), ['terminal']);
-  });
+  test(
+    'canonical never-app choices do not duplicate stored preferences',
+    () async {
+      await WatchSuggestions.neverForApp('Terminal.app');
+      await WatchSuggestions.neverForApp(' TERMINAL ');
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getStringList('watch.suggestNeverApps'), ['terminal']);
+    },
+  );
 
-  test('legacy app suffix suppression is honored without rewriting stored choices', () async {
-    SharedPreferences.setMockInitialValues({
-      'watch.suggestNeverApps': [' Terminal.app '],
-    });
-    final suggestions = WatchSuggestions();
-    for (var i = 0; i < 4; i++) {
-      expect(await suggestions.onEvent(_vision('Terminal')), isNull);
-    }
-    expect(await WatchSuggestions.neverApps(), contains('terminal'));
-    await suggestions.dispose();
-  });
+  test(
+    'legacy app suffix suppression is honored without rewriting stored choices',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'watch.suggestNeverApps': [' Terminal.app '],
+      });
+      final suggestions = WatchSuggestions();
+      for (var i = 0; i < 4; i++) {
+        expect(await suggestions.onEvent(_vision('Terminal')), isNull);
+      }
+      expect(await WatchSuggestions.neverApps(), contains('terminal'));
+      await suggestions.dispose();
+    },
+  );
 }
