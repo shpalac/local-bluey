@@ -36,10 +36,7 @@ void main() {
     expect(index.documentCount, 1);
 
     await expectLater(
-      index.grant(
-        Directory('${directory.path}/missing'),
-        consent: true,
-      ),
+      index.grant(Directory('${directory.path}/missing'), consent: true),
       throwsA(isA<FileSystemException>()),
     );
 
