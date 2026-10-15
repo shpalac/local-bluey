@@ -1,0 +1,45 @@
+name: Joyful mascot preview renders
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'lib/ui/joyful_bluey_painter.dart'
+      - 'lib/ui/bluey_character.dart'
+      - 'lib/ui/face_screen.dart'
+      - 'test/mascot_capture_test.dart'
+      - '.github/workflows/mascot-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [macos, linux, ios, android]
+    runs-on: ${{ (matrix.platform == 'macos' || matrix.platform == 'ios') && 'macos-latest' || 'ubuntu-latest' }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Read pinned Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - name: Capture deterministic Flutter widget render
+        run: flutter test test/mascot_capture_test.dart --dart-define=CAPTURE_BLUEY=true --dart-define=BLUEY_PLATFORM=${{ matrix.platform }} --update-goldens
+      - name: Upload labeled preview (not a physical-device screenshot)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: bluey-mascot-${{ matrix.platform }}-flutter-render
+          path: test/mascot/evidence/*.png
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 320 320" role="img" aria-labelledby="title desc">
+<title id="title">Joyful Bluey bird</title><desc id="desc">A fluffy sky-blue baby bird with bright cyan eyes, a sunny orange beak, a white belly, and waving wings.</desc>
+<defs>
+  <radialGradient id="head" cx="34%" cy="24%" r="78%"><stop stop-color="#87f1ff"/><stop offset=".46" stop-color="#368ee9"/><stop offset="1" stop-color="#16459a"/></radialGradient>
+  <radialGradient id="body" cx="42%" cy="20%" r="85%"><stop stop-color="#73d8ff"/><stop offset=".58" stop-color="#2b7cdb"/><stop offset="1" stop-color="#16469c"/></radialGradient>
+  <radialGradient id="belly" cx="44%" cy="32%" r="82%"><stop stop-color="#fff"/><stop offset=".65" stop-color="#c7f7ff"/><stop offset="1" stop-color="#6fc7fa"/></radialGradient>
+  <radialGradient id="iris"><stop stop-color="#0f264a"/><stop offset=".6" stop-color="#124b9f"/><stop offset="1" stop-color="#19c8ff"/></radialGradient>
+  <linearGradient id="beak" x2=".3" y2="1"><stop stop-color="#fff0a1"/><stop offset=".48" stop-color="#ffbd35"/><stop offset="1" stop-color="#fb7a0e"/></linearGradient>
+  <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7bebff"/><stop offset=".55" stop-color="#348ceb"/><stop offset="1" stop-color="#1951b2"/></linearGradient>
+</defs>
+<g stroke-linecap="round" stroke-linejoin="round">
+  <path d="M126 249Q100 251 92 265Q70 268 77 285Q89 292 107 283Q124 295 136 286Q143 268 129 264Z" fill="url(#beak)" stroke="#bf560d" stroke-width="3"/>
+  <path d="M190 249Q204 247 222 264Q243 269 239 286Q225 295 211 282Q198 296 185 286Q177 268 193 263Z" fill="url(#beak)" stroke="#bf560d" stroke-width="3"/>
+  <path d="M204 220Q239 236 254 261Q250 233 241 214Q267 229 283 225Q267 206 242 197" fill="#286fc3" stroke="#16519b" stroke-width="3"/>
+  <ellipse cx="160" cy="206" rx="75" ry="81" fill="url(#body)" stroke="#16458d" stroke-width="4"/>
+  <ellipse cx="160" cy="222" rx="48" ry="57" fill="url(#belly)"/>
+  <g fill="url(#wing)" stroke="#1655a4" stroke-width="3">
+    <path d="M108 177Q84 167 64 135Q47 131 52 157Q32 154 20 133Q13 151 33 174Q16 181 7 174Q24 207 58 208Q74 225 112 216Z"/>
+    <path d="M212 177Q244 156 268 121Q281 130 274 155Q296 151 308 134Q312 164 294 180Q306 184 315 178Q297 216 268 214Q249 235 209 216Z"/>
+  </g>
+  <path d="M149 48Q125 25 132 8Q152 19 157 41Q163 13 184 10Q186 29 172 47Q199 34 208 42Q202 56 176 64Z" fill="#1c79d6" stroke="#16529e" stroke-width="3"/>
+  <circle cx="160" cy="125" r="92" fill="url(#head)" stroke="#173f8a" stroke-width="4"/>
+  <ellipse cx="115" cy="179" rx="19" ry="11" fill="#ffa6bd" opacity=".5"/>
+  <ellipse cx="211" cy="179" rx="19" ry="11" fill="#ffa6bd" opacity=".5"/>
+  <path d="M88 96Q109 79 128 94M192 94Q214 78 234 96" fill="none" stroke="#173b78" stroke-width="7"/>
+  <ellipse cx="117" cy="136" rx="34" ry="43" fill="#fff" stroke="#28569e" stroke-width="3"/>
+  <ellipse cx="210" cy="136" rx="34" ry="43" fill="#fff" stroke="#28569e" stroke-width="3"/>
+  <ellipse cx="120" cy="140" rx="23" ry="28" fill="url(#iris)"/><ellipse cx="207" cy="140" rx="23" ry="28" fill="url(#iris)"/>
+  <ellipse cx="117" cy="140" rx="15" ry="21" fill="#101b45"/><ellipse cx="204" cy="140" rx="15" ry="21" fill="#101b45"/>
+  <circle cx="109" cy="129" r="8" fill="#fff"/><circle cx="196" cy="129" r="8" fill="#fff"/><circle cx="125" cy="151" r="3" fill="#fff"/><circle cx="213" cy="151" r="3" fill="#fff"/>
+  <path d="M125 176Q160 220 195 176Q184 207 160 216Q138 209 125 176Z" fill="#621a38" stroke="#d94a24" stroke-width="4"/>
+  <ellipse cx="160" cy="202" rx="17" ry="8" fill="#ff7992"/>
+  <path d="M118 176Q134 149 160 151Q186 150 204 176Q181 190 160 186Q135 190 118 176Z" fill="url(#beak)" stroke="#d97515" stroke-width="3"/>
+  <path d="M160 166L160 187" stroke="#f18c17" stroke-width="2"/>
+  <path d="M161 206Q156 224 161 237M149 221Q161 226 174 221" fill="none" stroke="#91e5ff" stroke-width="4" opacity=".6"/>
+  <path d="M160 182l4 10 11 1-8 7 2 11-9-5-10 5 2-11-8-7 11-1Z" fill="#e2fcff" opacity=".83" transform="translate(0 42)"/>
+</g>
+</svg>
