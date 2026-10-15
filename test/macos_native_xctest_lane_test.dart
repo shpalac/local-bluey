@@ -24,11 +24,11 @@ void main() {
     expect(project, contains('RunnerTests.swift in Sources'));
     expect(
       nativeTest,
-      contains('func testAppDelegateTerminatesWhenLastWindowCloses()'),
+      contains('func testRunnerHostHasNativeExecutable()'),
     );
     expect(
       nativeTest,
-      contains('applicationShouldTerminateAfterLastWindowClosed'),
+      contains('FileManager.default.isExecutableFile'),
     );
   });
 }

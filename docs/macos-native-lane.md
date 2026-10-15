@@ -2,7 +2,7 @@
 
 The GitHub-hosted `macos-latest` pull-request lane builds the Flutter macOS
 application and runs `RunnerTests` via Xcode after the build. The XCTest smoke
-asserts the real production `AppDelegate` window-close contract. It does not
+checks that the hosted Runner app bundle provides an executable. It does not
 request Accessibility or Screen Recording access or capture any screenshots.
 
 ## Reproduce on macOS
