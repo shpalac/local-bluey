@@ -30,3 +30,19 @@ The following are documentation placeholders only because the related implementa
 - New user-facing rollout states.
 
 These require their implementing issues before they can be documented as existing capabilities.
+
+## SafetyGate is not a rollout feature flag
+
+`SafetyGate.setEnabled(false)` pauses human confirmations for risky tools; it
+is **not** a feature-specific rollback switch. Do not use it to roll back a
+feature. Keep SafetyGate enabled while disabling the feature's own flag,
+when such a flag exists. A disabled SafetyGate can permit risky tools without
+a human approval prompt. The tray kill switch is separate: it blocks new
+safety-gated actions, but does not undo effects already entered. Do not claim
+that killing a session reverses a previously executed action.
+
+Before declaring a rollback complete, inspect whether the changed feature has
+a real flag and whether it introduced persistent data or network flows. If no
+flag exists, follow the reviewed deployment revert procedure instead; do not
+invent a preference key or delete retained user data. Check SafetyGate remains
+enabled and verify subsequent risky actions still require approval.
