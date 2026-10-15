@@ -46,5 +46,32 @@ class InvalidOutputFailClosed(unittest.TestCase):
             self.assertTrue(any("empty transcript" in p for p in problems))
 
 
+
+
+class InvalidTimingMeasurements(unittest.TestCase):
+    def test_negative_latency_and_rss_are_rejected(self):
+        for latency, rss in [("-1", "1024"), ("20", "-1"), ("NaN", "100")]:
+            with self.subTest(latency=latency, rss=rss):
+                with tempfile.TemporaryDirectory() as directory:
+                    fixture(directory, "שלום עולם")
+                    with (Path(directory) / "timings.csv").open(
+                        "w", newline=""
+                    ) as handle:
+                        writer = csv.writer(handle)
+                        writer.writerow([
+                            "backend", "clip", "latency_ms",
+                            "peak_rss_bytes", "exit_status",
+                        ])
+                        writer.writerow([
+                            "offline", "hebrew.wav", latency, rss, "0",
+                        ])
+                    with self.assertRaises(SystemExit):
+                        wer.score(
+                            directory,
+                            {"hebrew.wav": "שלום עולם"},
+                            metrics=metrics,
+                        )
+
+
 if __name__ == "__main__":
     unittest.main()
