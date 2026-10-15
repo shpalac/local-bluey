@@ -10,7 +10,10 @@ void main() {
     expect(guide, contains('SafetyGate.setEnabled(false)'));
     expect(guide, contains('not** a feature-specific rollback switch'));
     expect(guide, contains('Keep SafetyGate enabled'));
-    expect(guide, contains('verify subsequent risky actions still require approval'));
+    expect(
+      guide,
+      contains('verify subsequent risky actions still require approval'),
+    );
     expect(source, contains('Future<void> setEnabled(bool value)'));
     expect(source, contains('if (!enabled) return true;'));
     expect(source, contains('if (confirm == null || stale()) return false;'));
