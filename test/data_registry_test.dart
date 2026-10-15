@@ -54,7 +54,10 @@ void main() {
       final registered = DataRegistry.stores.map((s) => s.sourceFile).toSet()
         // The registry itself only clears stores on deleteAll; it owns no
         // persistent data of its own.
-        ..add('lib/services/data_registry.dart');
+        ..add('lib/services/data_registry.dart')
+        // The secure-storage factory only builds the client. The stores that
+        // own data register themselves, and deleteAll wipes the keychain.
+        ..add('lib/services/secure_storage.dart');
       final offenders = <String>[];
       for (final dir in ['lib/services', 'lib/ui', 'lib/llm', 'lib/link']) {
         for (final file in Directory(dir).listSync(recursive: true)) {

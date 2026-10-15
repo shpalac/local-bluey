@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 832,
+      "title": "Secure storage writes fail on a locally signed macOS build",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "One shared factory defines how this app reaches the platform keychain, and every secure-storage call site uses it.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/secure_storage_options_test.dart",
+              "name": "every secure-storage call site goes through the shared factory"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "The macOS option is the classic login keychain, which needs no keychain-access-groups entitlement.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/secure_storage_options_test.dart",
+              "name": "the shared store avoids the data-protection keychain"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "A test asserts the constructed options, so the platform configuration cannot silently regress.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/secure_storage_options_test.dart",
+              "name": "the shared store avoids the data-protection keychain"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "dart format lib test, flutter analyze, and flutter test are clean.",
+          "type": "manual",
+          "reason": "The required CI lanes run on the PR; a local toolchain below the pinned Dart SDK cannot resolve dependencies to reproduce the gate."
+        }
+      ]
+    }
+  ]
+}

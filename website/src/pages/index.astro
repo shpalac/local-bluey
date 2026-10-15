@@ -43,7 +43,7 @@ const sceneSteps = [
   {
     number: '01', verb: 'Wake', eyebrow: 'A little tap goes a long way',
     title: 'Say hello.', copy: 'Double-tap his face to wake him. Hold to talk. Suddenly your desktop feels a little less like a desktop.',
-    image: asset('bluey-desktop.png'), alt: 'Original Bluey desktop character artwork'
+    image: asset('joyful-bluey.svg'), alt: 'Joyful blue bird companion illustration'
   },
   {
     number: '02', verb: 'Ask', eyebrow: 'A question, out loud',
@@ -138,7 +138,7 @@ const sceneSteps = [
             </div>
             <p class="hero-honesty">macOS is the host; iOS and Android are companion clients. An open-source project in active development. Real-device validation is still pending.</p>
           </div>
-          <div class="hero-art" aria-label="Bluey original character illustration">
+          <div class="hero-art" aria-label="Bluey joyful bird character illustration">
             <div class="hero-scribble scribble-one" aria-hidden="true">☼</div>
             <div class="hero-scribble scribble-two" aria-hidden="true">✳</div>
             <div class="scene-orbit" aria-hidden="true">
@@ -146,7 +146,7 @@ const sceneSteps = [
             </div>
             <div class="mascot-stage">
               <div class="mascot-halo"></div>
-              <RiveMascot client:visible src={import.meta.env.PUBLIC_BLUEY_RIVE_URL ?? ''} fallbackSrc={asset('bluey-desktop.png')} />
+              <RiveMascot client:visible src={import.meta.env.PUBLIC_BLUEY_RIVE_URL ?? ''} fallbackSrc={asset('joyful-bluey.svg')} />
             </div>
             <div class="hero-sticker hero-sticker-top"><span class="sticker-star">✷</span> cute, but capable</div>
             <div class="hero-sticker hero-sticker-bottom">100% blueberry energy <span aria-hidden="true">↗</span></div>
