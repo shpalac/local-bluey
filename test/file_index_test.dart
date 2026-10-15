@@ -67,6 +67,23 @@ void main() {
     expect(nextProcess.search('needle'), isEmpty);
   });
 
+  test('failed refresh hides previously indexed data', () async {
+    final file = File('${root.path}/doc.txt');
+    await file.writeAsString('private needle');
+    await index.grant(root, consent: true);
+    expect(index.search('needle'), hasLength(1));
+
+    await root.rename('${root.path}-moved');
+    await expectLater(index.refresh(), throwsA(isA<FileSystemException>()));
+
+    expect(index.state, FileIndexState.failed);
+    expect(index.search('needle'), isEmpty);
+    expect(index.retrievalSnapshot(), isEmpty);
+    expect(index.documentCount, 0);
+
+    await Directory('${root.path}-moved').rename(root.path);
+  });
+
   test('oversized files are excluded', () async {
     await File('${root.path}/large.txt').writeAsString('needle');
     index = FileIndex(maxBytes: 3);
