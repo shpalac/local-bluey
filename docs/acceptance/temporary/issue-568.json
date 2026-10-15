@@ -17,6 +17,10 @@
             {
               "file": "test/legacy_routine_adapter_test.dart",
               "name": "stored routine preview leaves the legacy store unchanged"
+            },
+            {
+              "file": "test/legacy_routine_control_test.dart",
+              "name": "ac1 ordinary legacy notification round-trips unchanged"
             }
           ]
         },
@@ -40,6 +44,10 @@
             {
               "file": "test/legacy_routine_adapter_test.dart",
               "name": "stored routine preview rejects disabled and missing entries"
+            },
+            {
+              "file": "test/legacy_routine_control_test.dart",
+              "name": "ac2 control characters in legacy trigger metadata fail closed"
             }
           ]
         },
@@ -59,6 +67,10 @@
             {
               "file": "test/legacy_routine_adapter_test.dart",
               "name": "errors do not echo secrets"
+            },
+            {
+              "file": "test/legacy_routine_control_test.dart",
+              "name": "ac3 legacy names and triggers with control bytes never convert"
             }
           ]
         },
