@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Close fully proven issue tasks only after the merged main-branch CI passes.
 
-AutoClose #123 in a merged PR is an intent marker, not a GitHub-native
-closing keyword. This script runs from a trusted main-branch workflow_run
-with write access; it never checks out or executes a PR branch.
+A standalone Refs #123 or AutoClose #123 line identifies an issue. Refs
+closes only when every acceptance criterion is proven; AutoClose remains
+the explicit completion and auto-merge opt-in. The trusted main-branch
+workflow never executes code from an unmerged PR.
 """
 import json
 import os
@@ -20,6 +21,7 @@ from issue_task_ci import (
 
 COMMIT = re.compile(r"^[0-9a-f]{40}$")
 AUTO_CLOSE = re.compile(r"(?im)^\s*AutoClose\s+#([1-9]\d*)\s*$")
+REFS = re.compile(r"(?im)^\s*Refs\s+#([1-9]\d*)\s*$")
 COMMENT_MARKER = "<!-- local-bluey:acceptance-auto-close -->"
 
 
@@ -59,6 +61,14 @@ def closing_numbers(body):
     # Ignore snippets to avoid activating example PR templates.
     body = re.sub(r"(?ms)^\x60\x60\x60.*?^\x60\x60\x60[^\n]*(?:\n|$)", "", body)
     return {int(number) for number in AUTO_CLOSE.findall(body)}
+
+
+def referenced_numbers(body):
+    """Recognize explicit issue-reference lines, not passing prose or examples."""
+    if not isinstance(body, str):
+        return set()
+    body = re.sub(r"(?ms)^\x60\x60\x60.*?^\x60\x60\x60[^\n]*(?:\n|$)", "", body)
+    return {int(number) for number in REFS.findall(body)}
 
 
 def successful_pr_ci(client, repo, number, head_sha):
@@ -118,7 +128,8 @@ def process(event, repo, root, client):
         if (not pr.get("merged_at") or pr.get("merge_commit_sha") != merge_sha
                 or pr.get("base", {}).get("ref") != "main"):
             continue
-        targets = closing_numbers(pr.get("body"))
+        declared_closures = closing_numbers(pr.get("body"))
+        targets = declared_closures | referenced_numbers(pr.get("body"))
         if not targets:
             continue
         head_sha = pr.get("head", {}).get("sha", "")
@@ -134,7 +145,14 @@ def process(event, repo, root, client):
             if issue.get("state") != "open":
                 print(f"#{issue_number}: already closed; no action.")
                 continue
-            manifest = verify_acceptance(root, issue_number, issue.get("body", ""))
+            try:
+                manifest = verify_acceptance(root, issue_number, issue.get("body", ""))
+            except ContractError as exc:
+                if issue_number in declared_closures:
+                    raise
+                # An incremental Refs PR must never close an unfinished issue.
+                print(f"#{issue_number}: incomplete acceptance ({exc}); leaving open.")
+                continue
             comments = client.request(
                 f"{base}/issues/{issue_number}/comments?per_page=100"
             )
