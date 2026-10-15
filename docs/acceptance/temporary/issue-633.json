@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 633,
+      "title": "[BLU-075] Sanitized debug bundles",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "No tokens, PII or screenshots.",
+          "tests": [
+            {
+              "file": "test/issue_633_sanitized_diagnostics_test.dart",
+              "name": "AC-1 diagnostics report never includes untrusted metadata"
+            },
+            {
+              "file": "test/issue_633_sanitized_diagnostics_test.dart",
+              "name": "diagnostics report retains safe platform and role identifiers"
+            },
+            {
+              "file": "test/issue_633_sanitized_diagnostics_test.dart",
+              "name": "diagnostics report rejects oversized metadata labels"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "gap",
+          "requirement": "No silent failure, secrets in artifacts, unapproved egress or bypass of human approval.",
+          "reason": "No full debug bundle lifecycle, explicit export approval or egress verification implemented in this slice."
+        },
+        {
+          "id": "ac_3",
+          "type": "gap",
+          "requirement": "CI and relevant tests green with documented reproduction commands.",
+          "reason": "Commands documented in PR; head-matching required CI results must complete before this criterion can be certified."
+        }
+      ]
+    }
+  ]
+}

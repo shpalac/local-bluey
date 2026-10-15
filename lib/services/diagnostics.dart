@@ -317,6 +317,17 @@ class Diagnostics {
     return results;
   }
 
+  // Report labels are identifiers, never user-entered paths, URLs or messages.
+  // Reject the entire label rather than including a possibly sensitive prefix.
+  static String _safeReportLabel(String value) {
+    if (value.isEmpty ||
+        value.length > 32 ||
+        !RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(value)) {
+      return 'unknown';
+    }
+    return value;
+  }
+
   static final _keyPattern = RegExp(r'(sk-[A-Za-z0-9_-]{8,}|Bearer \S+)');
 
   /// "Copy diagnostics" text: versions, platform, role, check results -
@@ -329,8 +340,8 @@ class Diagnostics {
   }) {
     final buffer = StringBuffer()
       ..writeln('Local Bluey diagnostics')
-      ..writeln('Platform: $platform')
-      ..writeln('Role: $role');
+      ..writeln('Platform: ${_safeReportLabel(platform)}')
+      ..writeln('Role: ${_safeReportLabel(role)}');
     for (final r in results) {
       buffer.writeln('${r.id}: ${r.status.name}');
     }
