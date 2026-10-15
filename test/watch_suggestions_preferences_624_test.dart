@@ -30,7 +30,7 @@ void main() {
         expect(await restarted.onEvent(_vision('TERMINAL.app')), isNull);
       }
       expect(await WatchSuggestions.neverApps(), contains('terminal'));
-        await restarted.dispose();
+      await restarted.dispose();
     },
   );
 
