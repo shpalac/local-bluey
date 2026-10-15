@@ -26,6 +26,7 @@ class FaceScreen extends StatefulWidget {
     this.onHoldStart,
     this.onHoldEnd,
     this.perfOverlay,
+    this.legacyArtwork = false,
   });
 
   final FaceState face;
@@ -42,6 +43,9 @@ class FaceScreen extends StatefulWidget {
 
   /// Optional perf overlay shown under the status chip (#61).
   final Widget? perfOverlay;
+
+  /// For archived screenshot baselines only.
+  final bool legacyArtwork;
 
   @override
   State<FaceScreen> createState() => _FaceScreenState();
@@ -147,6 +151,7 @@ class _FaceScreenState extends State<FaceScreen>
                           awake: widget.awake,
                           tint: color,
                           phase: _breathing.value,
+                          legacyArtwork: widget.legacyArtwork,
                         ),
                       ),
                     );
