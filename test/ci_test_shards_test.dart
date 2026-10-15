@@ -3,19 +3,22 @@ import 'package:flutter_test/flutter_test.dart';
 import '../tool/ci_test_shards.dart' as ci;
 
 void main() {
-  test('issue 600 AC-1 shard parity covers every impacted test exactly once', () {
-    final input = [
-      'test/z_test.dart',
-      'test/a_test.dart',
-      'test/b_test.dart',
-    ];
-    final shards = ci.partitionImpactedTests(input);
-    final flattened = shards.expand((shard) => shard).toList();
+  test(
+    'issue 600 AC-1 shard parity covers every impacted test exactly once',
+    () {
+      final input = [
+        'test/z_test.dart',
+        'test/a_test.dart',
+        'test/b_test.dart',
+      ];
+      final shards = ci.partitionImpactedTests(input);
+      final flattened = shards.expand((shard) => shard).toList();
 
-    expect(shards, hasLength(2));
-    expect(flattened, hasLength(input.length));
-    expect(flattened.toSet(), input.toSet());
-  });
+      expect(shards, hasLength(2));
+      expect(flattened, hasLength(input.length));
+      expect(flattened.toSet(), input.toSet());
+    },
+  );
 
   test('issue 600 AC-2 shard results are order independent', () {
     final first = ci.partitionImpactedTests([
@@ -41,10 +44,7 @@ void main() {
       () => ci.partitionImpactedTests(['../secret_test.dart']),
       throwsFormatException,
     );
-    expect(
-      () => ci.partitionImpactedTests([]),
-      throwsFormatException,
-    );
+    expect(() => ci.partitionImpactedTests([]), throwsFormatException);
     expect(
       () => ci.partitionImpactedTests(['test/a_test.dart'], shardCount: 0),
       throwsArgumentError,
