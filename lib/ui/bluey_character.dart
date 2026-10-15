@@ -41,7 +41,8 @@ class BlueyCharacter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     assert(resolveFaceRenderer(requestedRenderer) == FaceRenderer.native);
-    final reducedMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reducedMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final effectivePhase = reducedMotion ? 0.0 : phase;
     return RepaintBoundary(
       child: CustomPaint(
