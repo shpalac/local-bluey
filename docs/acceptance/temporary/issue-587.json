@@ -52,6 +52,10 @@
             {
               "file": "test/voice_verification_test.dart",
               "name": "revocation and restart remove consent and stale results"
+            },
+            {
+              "file": "test/voice_consent_replacement_test.dart",
+              "name": "ac2 rejected replacement revokes previous consent"
             }
           ]
         },
@@ -75,6 +79,10 @@
             {
               "file": "test/voice_safety_gate_integration_test.dart",
               "name": "voice provider stays unused without explicit opt-in"
+            },
+            {
+              "file": "test/voice_consent_replacement_test.dart",
+              "name": "ac3 invalid replacement discards an in-flight voice result"
             }
           ]
         },

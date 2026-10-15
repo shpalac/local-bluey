@@ -40,3 +40,15 @@ No data migration is required. Revert the new module and its tests or
 never call `VoiceVerifier.enable` to roll back; current behavior is
 unchanged. Required CI and native tests must still pass before merge.
 Issue #587 remains open for deployment and hardware evidence.
+
+## Fail-closed consent replacement (Refs #587)
+
+A denied or malformed `enable` call revokes any earlier in-memory voice
+grant before returning its validation error. Revocation increments the
+revision so an outstanding provider assessment cannot grant a late match.
+No provider, storage, SafetyGate policy or microphone integration changes
+are made by this adjustment.
+
+Run `flutter test test/voice_consent_replacement_test.dart` for the
+rejected renewal and late-result regression cases. Real voice calibration
+and native permission/UI acceptance remain outstanding.
