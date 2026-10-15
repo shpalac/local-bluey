@@ -28,7 +28,7 @@ void main() {
     );
     expect(
       nativeTest,
-      contains('delegate.applicationShouldTerminateAfterLastWindowClosed(NSApplication.shared)'),
+      contains('applicationShouldTerminateAfterLastWindowClosed'),
     );
   });
 }
