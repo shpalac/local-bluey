@@ -19,7 +19,13 @@ void main() {
   PlaywrightBrowserAdapter adapter({bool enabled = true, bool online = true}) =>
       PlaywrightBrowserAdapter(
         gate: gate,
-        transport: _FakeTransport(),
+        transport: _FakeTransport((request) => gate.invoke(
+          'playwright-local',
+          request.action == BrowserAction.navigate
+              ? 'browser_navigate'
+              : 'browser_snapshot',
+          {'url': request.url.toString()},
+        )),
         allowedDomains: {'example.org'},
         enabled: enabled,
         online: online,
@@ -80,7 +86,13 @@ void main() {
   test('feature is off by default', () async {
     final subject = PlaywrightBrowserAdapter(
       gate: gate,
-      transport: _FakeTransport(),
+      transport: _FakeTransport((request) => gate.invoke(
+          'playwright-local',
+          request.action == BrowserAction.navigate
+              ? 'browser_navigate'
+              : 'browser_snapshot',
+          {'url': request.url.toString()},
+        )),
       allowedDomains: {'example.org'},
     );
     await rejects(subject, BrowserFailure.disabled);
@@ -215,9 +227,10 @@ void main() {
 }
 
 class _FakeTransport implements BrowserTransport {
+  const _FakeTransport(this.onExecute);
+
+  final Future<Object?> Function(BrowserRequest request) onExecute;
+
   @override
-  Future<Object?> execute(BrowserRequest request) async => {
-    'url': request.url.toString(),
-    'text': 'fake content',
-  };
+  Future<Object?> execute(BrowserRequest request) => onExecute(request);
 }
