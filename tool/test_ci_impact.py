@@ -92,6 +92,17 @@ class ImpactPlanningTest(unittest.TestCase):
             with self.subTest(event=event):
                 self.assertTrue(plan(paths, event, self.root)["full_ci"])
 
+    def test_impact_reason_codes_are_safe_and_explicit(self):
+        full = plan([".github/workflows/ci.yml"], "pull_request", self.root)
+        self.assertEqual(full["selection_kind"], "full_ci")
+        self.assertIn("ci_tooling_or_integration", full["selection_reasons"])
+        narrow = plan(["README.md"], "pull_request", self.root)
+        self.assertEqual(narrow["selection_kind"], "selective")
+        self.assertEqual(narrow["selection_reasons"], ["mapped_impact"])
+        missing = plan(["test/deleted_test.dart"], "pull_request", self.root)
+        self.assertEqual(missing["selection_kind"], "full_tests")
+        self.assertIn("unmapped_or_fixture_tests", missing["selection_reasons"])
+
     def test_plan_json_is_serializable(self):
         result = plan(["README.md"], "pull_request", self.root)
         self.assertEqual(json.loads(json.dumps(result))["android_matrix"], [34])
