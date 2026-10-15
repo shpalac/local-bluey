@@ -19,6 +19,10 @@
             {
               "file": "test/macos_build_lane_manifest_test.dart",
               "name": "macOS build lane manifest is deterministic"
+            },
+            {
+              "file": "test/macos_native_change_routing_test.dart",
+              "name": "ac2 macOS native dependencies and tests rerun the hosted lane"
             }
           ]
         },
