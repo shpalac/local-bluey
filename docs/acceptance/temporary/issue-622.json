@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 622,
+      "title": "[BLU-065] Workflow visual editor",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Accessible editor and diff before enable",
+          "tests": [
+            {
+              "file": "test/workflow_visual_editor_test.dart",
+              "name": "AC-1 original and edited instructions visible before accepting"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Deterministic, reproducible results; explicit errors rather than silent fallbacks",
+          "tests": [
+            {
+              "file": "test/workflow_visual_editor_test.dart",
+              "name": "AC-2 invalid instructions disable acceptance with explicit error"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "gap",
+          "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions",
+          "reason": "Full privacy and host/network audit not proven by bounded widget tests."
+        },
+        {
+          "id": "ac_4",
+          "type": "gap",
+          "requirement": "Existing Routines and supported platform behavior remain compatible",
+          "reason": "Native platform and full regression evidence not yet established."
+        }
+      ]
+    }
+  ]
+}
