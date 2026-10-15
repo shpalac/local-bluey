@@ -36,10 +36,7 @@ void main() {
     ]) {
       final checks = checklist.requirementsFor(scenario).toSet()
         ..remove(ReleaseIncidentCheck.incidentContainmentReviewed);
-      final result = checklist.dryRun(
-        scenario: scenario,
-        confirmed: checks,
-      );
+      final result = checklist.dryRun(scenario: scenario, confirmed: checks);
 
       expect(result.readyForHumanReview, isFalse);
       expect(
@@ -56,10 +53,7 @@ void main() {
     ]) {
       final checks = checklist.requirementsFor(scenario).toSet()
         ..remove(ReleaseIncidentCheck.dataCompatibilityVerified);
-      final result = checklist.dryRun(
-        scenario: scenario,
-        confirmed: checks,
-      );
+      final result = checklist.dryRun(scenario: scenario, confirmed: checks);
 
       expect(result.readyForHumanReview, isFalse);
       expect(
