@@ -5,6 +5,8 @@ on:
       - 'lib/mcp/playwright_browser_adapter.dart'
       - 'test/mcp/playwright_browser_adapter_test.dart'
       - 'docs/acceptance/temporary/issue-590.json'
+      - 'test/mcp/playwright_transport_wiring_test.dart'
+      - 'tool/acceptance_criteria.py'
       - '.github/workflows/temp-issue-590.yml'
       - 'docs/blu-034-playwright-mcp.md'
       - 'README.md'
@@ -26,7 +28,10 @@ jobs:
         run: dart format --output=none --set-exit-if-changed lib/mcp/playwright_browser_adapter.dart test/mcp/playwright_browser_adapter_test.dart
       - name: Lint and analysis
         run: flutter analyze
-      - name: Fake security and browser contract tests
-        run: flutter test test/mcp
+      - name: Run manifest-declared Playwright acceptance tests
+        run: |
+          python3 tool/acceptance_criteria.py \
+            --manifest docs/acceptance/temporary/issue-590.json \
+            --run-tests --out-dir build/acceptance/blu-034
       - name: Build
         run: flutter build bundle --release
