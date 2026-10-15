@@ -92,6 +92,9 @@ class TeachCaptureSession extends ChangeNotifier {
     return true;
   }
 
+  /// Read-only, non-executable preview without ending capture.
+  TeachDraftPreview review() => _builder.preview(_steps);
+
   TeachDraft finish() {
     final draft = _builder.build(_steps);
     cancel();
