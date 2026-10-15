@@ -175,7 +175,11 @@ final class WorkflowExecution {
       return status;
     }
     if (definition.steps.isNotEmpty) {
-      audit?.record('step', 'completed', stepIndex: definition.steps.length - 1);
+      audit?.record(
+        'step',
+        'completed',
+        stepIndex: definition.steps.length - 1,
+      );
     }
     status = WorkflowStatus.completed;
     audit?.record('execution', 'completed');
