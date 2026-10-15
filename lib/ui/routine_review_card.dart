@@ -90,7 +90,9 @@ class _RoutineReviewCardState extends State<RoutineReviewCard> {
           if (_editing && !widget.routine.enabled) ...[
             TextField(
               key: const ValueKey('workflow-draft-instructions'),
-              decoration: InputDecoration(labelText: Strings.t('Edit instructions', 'עריכת הוראות')),
+              decoration: InputDecoration(
+                labelText: Strings.t('Edit instructions', 'עריכת הוראות'),
+              ),
               onChanged: (value) => setState(() => _editedInstructions = value),
             ),
             Text(Strings.t('Before', 'לפני')),
@@ -123,7 +125,10 @@ class _RoutineReviewCardState extends State<RoutineReviewCard> {
             runSpacing: 8,
             children: [
               FilledButton(
-                onPressed: _pending || widget.routine.enabled || _proposal == null ? null : _accept,
+                onPressed:
+                    _pending || widget.routine.enabled || _proposal == null
+                    ? null
+                    : _accept,
                 child: Text(
                   Strings.t('Accept disabled draft', 'אישור טיוטה לא פעילה'),
                 ),
