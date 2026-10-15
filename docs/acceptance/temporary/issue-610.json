@@ -69,6 +69,28 @@
           "requirement": "Cross-platform compatibility and limitations of in-process simulation reviewed",
           "type": "manual",
           "reason": "No production code or OS permissions are changed. Process crash/restart, real disk-full, real permission revocation and physical-device behavior still require platform-specific validation and maintainer review."
+        },
+        {
+          "id": "ac_1_timeout_contract",
+          "requirement": "An operation that times out is quarantined so retries do not start a second unsafe clear",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/retention_timeout_quarantine_test.dart",
+              "name": "AC-1 timed-out clear is quarantined against duplicate side effects"
+            }
+          ]
+        },
+        {
+          "id": "ac_2_bounded_contract",
+          "requirement": "Opt-in bounded clears report TimeoutException and let later registered stores finish",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/retention_timeout_quarantine_test.dart",
+              "name": "AC-2 timed-out store fails explicitly while later stores complete"
+            }
+          ]
         }
       ]
     }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'data_registry.dart';
 
 /// How a registered store may be treated by a scoped purge (BLU-005).
@@ -81,8 +83,15 @@ class RetentionTarget {
 /// routines or settings store as activity or cache can purge it, because this
 /// module makes no classification or product-default choice of its own.
 class RetentionPurger {
-  RetentionPurger(Iterable<RetentionTarget> targets)
-    : _targets = _index(targets);
+  RetentionPurger(
+    Iterable<RetentionTarget> targets, {
+    Duration? operationTimeout,
+  }) : _targets = _index(targets),
+       operationTimeout = operationTimeout {
+    if (operationTimeout != null && operationTimeout <= Duration.zero) {
+      throw ArgumentError.value(operationTimeout, 'operationTimeout');
+    }
+  }
 
   /// Builds targets from the registry. A store without an entry in
   /// [classes] is [RetentionClass.protected].
@@ -102,6 +111,12 @@ class RetentionPurger {
 
   final Map<String, RetentionTarget> _targets;
   bool _busy = false;
+
+  /// Optional bound for individual clears. A timed-out clear cannot be cancelled.
+  final Duration? operationTimeout;
+
+  /// Timed-out stores are quarantined because their clear may still complete.
+  final Set<String> _indeterminate = <String>{};
 
   static Map<String, RetentionTarget> _index(Iterable<RetentionTarget> list) {
     final map = <String, RetentionTarget>{};
@@ -148,9 +163,27 @@ class RetentionPurger {
           refused[id] = 'unknown';
         } else if (t.cls == RetentionClass.protected) {
           refused[id] = 'protected';
+        } else if (_indeterminate.contains(id)) {
+          refused[id] = 'indeterminate';
         } else {
           try {
-            await t.clear();
+            final clear = t.clear();
+            if (operationTimeout == null) {
+              await clear;
+            } else {
+              var timedOut = false;
+              try {
+                await clear.timeout(
+                  operationTimeout!,
+                  onTimeout: () {
+                    timedOut = true;
+                    throw TimeoutException('retention clear timed out');
+                  },
+                );
+              } finally {
+                if (timedOut) _indeterminate.add(id);
+              }
+            }
             purged.add(id);
           } catch (e) {
             failed[id] = e.runtimeType.toString();
