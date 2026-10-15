@@ -35,17 +35,6 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get --enforce-lockfile
-      # Temporary read-only formatter diagnostics for PR #830 EM finalization.
-      - name: Collect exact formatted Dart source (temporary)
-        if: matrix.platform == 'linux'
-        shell: bash
-        run: |
-          dart format lib/ui/bluey_character.dart lib/ui/face_screen.dart lib/ui/joyful_bluey_painter.dart test/joyful_mascot_test.dart test/mascot_capture_test.dart
-          for path in lib/ui/bluey_character.dart lib/ui/face_screen.dart lib/ui/joyful_bluey_painter.dart test/joyful_mascot_test.dart test/mascot_capture_test.dart; do
-            printf 'DART_FORMAT_SOURCE_BEGIN:%s:' "$path"
-            base64 -w0 "$path"
-            printf '\nDART_FORMAT_SOURCE_END:%s\n' "$path"
-          done
       - name: Capture deterministic Flutter widget render
         run: flutter test test/mascot_capture_test.dart --dart-define=CAPTURE_BLUEY=true --dart-define=BLUEY_PLATFORM=${{ matrix.platform }} --update-goldens
       - name: Upload labeled preview (not a physical-device screenshot)

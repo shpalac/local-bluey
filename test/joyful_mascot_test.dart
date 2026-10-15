@@ -5,13 +5,13 @@ import 'package:local_bluey/ui/bluey_character.dart';
 import 'package:local_bluey/ui/face_screen.dart';
 
 void main() {
-  testWidgets('new joyful mascot is the default on every screen size', (tester) async {
+  testWidgets('new joyful mascot is the default on every screen size', (
+    tester,
+  ) async {
     final face = FaceState(mood: Mood.happy, gazeX: 0.7, talk: 0.8);
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: FaceScreen(face: face, awake: true),
-        ),
+        home: Scaffold(body: FaceScreen(face: face, awake: true)),
       ),
     );
     final mascot = tester.widget<BlueyCharacter>(find.byType(BlueyCharacter));
@@ -27,7 +27,10 @@ void main() {
         home: MediaQuery(
           data: const MediaQueryData(disableAnimations: true),
           child: Scaffold(
-            body: FaceScreen(face: FaceState(mood: Mood.talking, talk: 1), awake: true),
+            body: FaceScreen(
+              face: FaceState(mood: Mood.talking, talk: 1),
+              awake: true,
+            ),
           ),
         ),
       ),

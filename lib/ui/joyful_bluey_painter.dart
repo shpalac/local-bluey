@@ -74,20 +74,20 @@ class JoyfulBlueyPainter extends CustomPainter {
       const Rect.fromLTWH(85, 123, 150, 164),
       const Color(0xFF2055AA),
     );
-    _ovalGradient(
-      canvas,
-      const Rect.fromLTWH(89, 124, 142, 157),
-      [Color.lerp(const Color(0xFF7DE9FF), tint, 0.10)!, const Color(0xFF348DE7), const Color(0xFF184696)],
-    );
+    _ovalGradient(canvas, const Rect.fromLTWH(89, 124, 142, 157), [
+      Color.lerp(const Color(0xFF7DE9FF), tint, 0.10)!,
+      const Color(0xFF348DE7),
+      const Color(0xFF184696),
+    ]);
 
     _wing(canvas, left: true, wave: wave, joyful: joyful);
     _wing(canvas, left: false, wave: wave, joyful: joyful);
 
-    _ovalGradient(
-      canvas,
-      const Rect.fromLTWH(112, 177, 96, 101),
-      [const Color(0xFFFFFFFF), const Color(0xFFD7F7FF), const Color(0xFF75C8F5)],
-    );
+    _ovalGradient(canvas, const Rect.fromLTWH(112, 177, 96, 101), [
+      const Color(0xFFFFFFFF),
+      const Color(0xFFD7F7FF),
+      const Color(0xFF75C8F5),
+    ]);
 
     // Three distinct, windswept crest feathers.
     _shape(
@@ -106,16 +106,16 @@ class JoyfulBlueyPainter extends CustomPainter {
       width: 3,
     );
 
-    _oval(canvas, const Rect.fromLTWH(66, 34, 188, 186), const Color(0xFF174285));
-    _ovalGradient(
+    _oval(
       canvas,
-      const Rect.fromLTWH(70, 37, 180, 178),
-      [
-        Color.lerp(const Color(0xFF93EEFF), tint, 0.12)!,
-        Color.lerp(const Color(0xFF449BEE), tint, 0.08)!,
-        const Color(0xFF1A4E9C),
-      ],
+      const Rect.fromLTWH(66, 34, 188, 186),
+      const Color(0xFF174285),
     );
+    _ovalGradient(canvas, const Rect.fromLTWH(70, 37, 180, 178), [
+      Color.lerp(const Color(0xFF93EEFF), tint, 0.12)!,
+      Color.lerp(const Color(0xFF449BEE), tint, 0.08)!,
+      const Color(0xFF1A4E9C),
+    ]);
 
     for (final x in <double>[106, 215]) {
       _oval(
@@ -147,7 +147,9 @@ class JoyfulBlueyPainter extends CustomPainter {
 
     final opening = mood == Mood.talking && awake
         ? 12 + 30 * talk
-        : joyful ? 39.0 : 23.0;
+        : joyful
+        ? 39.0
+        : 23.0;
     // Draw the smiling mouth first so the beak sits naturally over it.
     _oval(
       canvas,
@@ -212,7 +214,12 @@ class JoyfulBlueyPainter extends CustomPainter {
     canvas.restore();
   }
 
-  void _wing(Canvas canvas, {required bool left, required double wave, required bool joyful}) {
+  void _wing(
+    Canvas canvas, {
+    required bool left,
+    required double wave,
+    required bool joyful,
+  }) {
     canvas.save();
     final anchor = left ? const Offset(104, 183) : const Offset(216, 183);
     canvas.translate(anchor.dx, anchor.dy);
@@ -269,12 +276,32 @@ class JoyfulBlueyPainter extends CustomPainter {
       );
       return;
     }
-    _oval(canvas, Rect.fromCenter(center: Offset(x, y), width: 65, height: 81), Colors.white);
+    _oval(
+      canvas,
+      Rect.fromCenter(center: Offset(x, y), width: 65, height: 81),
+      Colors.white,
+    );
     final pupil = Offset(x + gazeX * 10, y + gazeY * 10 + 3);
-    _oval(canvas, Rect.fromCircle(center: pupil, radius: 24), const Color(0xFF14ACF0));
-    _oval(canvas, Rect.fromCircle(center: pupil, radius: 17), const Color(0xFF122347));
-    _oval(canvas, Rect.fromCircle(center: pupil.translate(-8, -9), radius: 7), Colors.white);
-    _oval(canvas, Rect.fromCircle(center: pupil.translate(8, 10), radius: 3), Colors.white);
+    _oval(
+      canvas,
+      Rect.fromCircle(center: pupil, radius: 24),
+      const Color(0xFF14ACF0),
+    );
+    _oval(
+      canvas,
+      Rect.fromCircle(center: pupil, radius: 17),
+      const Color(0xFF122347),
+    );
+    _oval(
+      canvas,
+      Rect.fromCircle(center: pupil.translate(-8, -9), radius: 7),
+      Colors.white,
+    );
+    _oval(
+      canvas,
+      Rect.fromCircle(center: pupil.translate(8, 10), radius: 3),
+      Colors.white,
+    );
   }
 
   void _oval(Canvas canvas, Rect rect, Color color) {
@@ -293,7 +320,13 @@ class JoyfulBlueyPainter extends CustomPainter {
     );
   }
 
-  void _shape(Canvas canvas, Path path, Color color, {Color? stroke, double width = 1}) {
+  void _shape(
+    Canvas canvas,
+    Path path,
+    Color color, {
+    Color? stroke,
+    double width = 1,
+  }) {
     canvas.drawPath(path, Paint()..color = color);
     if (stroke != null) _line(canvas, path, stroke, width);
   }

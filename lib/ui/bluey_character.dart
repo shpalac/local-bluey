@@ -28,6 +28,7 @@ class BlueyCharacter extends StatelessWidget {
   });
 
   final FaceRenderer requestedRenderer;
+
   /// Retains pre-refresh reference screenshots without affecting production.
   final bool legacyArtwork;
   final FaceState face;
@@ -42,23 +43,25 @@ class BlueyCharacter extends StatelessWidget {
     assert(resolveFaceRenderer(requestedRenderer) == FaceRenderer.native);
     return RepaintBoundary(
       child: CustomPaint(
-        painter: legacyArtwork ? _BlueyPainter(
-          gazeX: _bounded(face.gazeX, -1, 1),
-          gazeY: _bounded(face.gazeY, -1, 1),
-          talk: _bounded(face.talk, 0, 1),
-          mood: face.mood,
-          awake: awake,
-          tint: tint,
-          phase: _bounded(phase, 0, 1),
-        ) : JoyfulBlueyPainter(
-          gazeX: _bounded(face.gazeX, -1, 1),
-          gazeY: _bounded(face.gazeY, -1, 1),
-          talk: _bounded(face.talk, 0, 1),
-          mood: face.mood,
-          awake: awake,
-          tint: tint,
-          phase: _bounded(phase, 0, 1),
-        ),
+        painter: legacyArtwork
+            ? _BlueyPainter(
+                gazeX: _bounded(face.gazeX, -1, 1),
+                gazeY: _bounded(face.gazeY, -1, 1),
+                talk: _bounded(face.talk, 0, 1),
+                mood: face.mood,
+                awake: awake,
+                tint: tint,
+                phase: _bounded(phase, 0, 1),
+              )
+            : JoyfulBlueyPainter(
+                gazeX: _bounded(face.gazeX, -1, 1),
+                gazeY: _bounded(face.gazeY, -1, 1),
+                talk: _bounded(face.talk, 0, 1),
+                mood: face.mood,
+                awake: awake,
+                tint: tint,
+                phase: _bounded(phase, 0, 1),
+              ),
         child: const SizedBox.expand(),
       ),
     );

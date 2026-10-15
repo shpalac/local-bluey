@@ -18,35 +18,28 @@ void main() {
     'android': Size(412, 915),
   };
 
-  testWidgets(
-    'render joyful companion for $capturePlatform',
-    (tester) async {
-      final size = sizes[capturePlatform];
-      expect(size, isNotNull);
-      tester.view.physicalSize = size!;
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
+  testWidgets('render joyful companion for $capturePlatform', (tester) async {
+    final size = sizes[capturePlatform];
+    expect(size, isNotNull);
+    tester.view.physicalSize = size!;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: MediaQuery(
-            data: const MediaQueryData(disableAnimations: true),
-            child: Scaffold(
-              body: FaceScreen(
-                face: FaceState(mood: Mood.happy),
-                awake: true,
-              ),
-            ),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: Scaffold(
+            body: FaceScreen(face: FaceState(mood: Mood.happy), awake: true),
           ),
         ),
-      );
-      await tester.pump();
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('mascot/evidence/$capturePlatform.png'),
-      );
-      expect(tester.takeException(), isNull);
-    },
-    skip: !captureEvidence,
-  );
+      ),
+    );
+    await tester.pump();
+    await expectLater(
+      find.byType(MaterialApp),
+      matchesGoldenFile('mascot/evidence/$capturePlatform.png'),
+    );
+    expect(tester.takeException(), isNull);
+  }, skip: !captureEvidence);
 }

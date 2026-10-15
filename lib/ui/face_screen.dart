@@ -43,6 +43,7 @@ class FaceScreen extends StatefulWidget {
 
   /// Optional perf overlay shown under the status chip (#61).
   final Widget? perfOverlay;
+
   /// For archived screenshot baselines only.
   final bool legacyArtwork;
 
