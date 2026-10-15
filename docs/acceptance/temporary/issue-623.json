@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 623,
+      "title": "[BLU-066] Workflow history dashboard",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "No secrets and actionable failures.",
+          "tests": [
+            {
+              "file": "test/workflow_history_failure_test.dart",
+              "name": "AC-1 denied workflow shows actionable redacted failure"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Deterministic, reproducible results; explicit errors rather than silent fallbacks.",
+          "type": "gap",
+          "reason": "The new widget test does not cover deterministic history across runs, restarts, or storage failures."
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions.",
+          "type": "gap",
+          "reason": "The new test checks one redacted UI path, not all files, logs, artifacts, or network interactions."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Existing Routines and supported platform behavior remain compatible.",
+          "type": "gap",
+          "reason": "Requires broader Routines regression and platform CI; no new test proves this criterion."
+        }
+      ]
+    }
+  ]
+}
