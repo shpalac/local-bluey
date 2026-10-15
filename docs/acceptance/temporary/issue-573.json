@@ -58,10 +58,6 @@
               "name": "permission denial redacts and fails closed"
             },
             {
-              "file": "test/file_durable_recovery_store_test.dart",
-              "name": "restart reconciliation blocks all host actions"
-            },
-            {
               "file": "test/execution_audit_live_panel_test.dart",
               "name": "ac2 external stop updates button without manual rebuild"
             }
