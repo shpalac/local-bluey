@@ -56,6 +56,14 @@
             {
               "file": "test/retrieval/local_semantic_retrieval_test.dart",
               "name": "cancelled request is rejected"
+            },
+            {
+              "file": "test/retrieval/local_semantic_final_boundary_test.dart",
+              "name": "late cancellation returns no ranked citations"
+            },
+            {
+              "file": "test/retrieval/local_semantic_final_boundary_test.dart",
+              "name": "final permission revocation returns no ranked citations"
             }
           ]
         },
