@@ -24,3 +24,7 @@ an independent acceptance requirement.
 Existing screenshot goldens intentionally use the old face artwork as
 historical baselines until they can be reviewed and rebaselined separately.
 Do not use them to advertise the new mascot.
+
+The Linux runtime remains unsupported as a host/client by `SupportMatrix`.
+Its informational screen now displays a finite, animated illustration of the
+same mascot without enabling unsupported host controls or starting network work.

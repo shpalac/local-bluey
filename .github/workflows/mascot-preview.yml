@@ -7,6 +7,7 @@ on:
       - 'lib/ui/joyful_bluey_painter.dart'
       - 'lib/ui/bluey_character.dart'
       - 'lib/ui/face_screen.dart'
+      - 'lib/ui/unsupported_screen.dart'
       - 'test/mascot_capture_test.dart'
       - '.github/workflows/mascot-preview.yml'
   workflow_dispatch:

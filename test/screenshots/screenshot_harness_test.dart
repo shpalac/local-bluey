@@ -396,6 +396,7 @@ void main() {
         height: 700,
         child: UnsupportedScreen(
           profile: SupportMatrix.profile(operatingSystem: 'linux'),
+          showMascot: false,
         ),
       ),
     );
