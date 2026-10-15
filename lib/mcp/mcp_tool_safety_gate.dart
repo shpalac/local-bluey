@@ -109,7 +109,10 @@ class McpToolSafetyGate {
 
     try {
       // A stalled approval must not keep an MCP invocation pending forever.
-      final approved = await requestPermission(serverId, spec.name).timeout(timeout);
+      final approved = await requestPermission(
+        serverId,
+        spec.name,
+      ).timeout(timeout);
       if (!approved) {
         throw const McpToolException(McpToolFailure.denied);
       }
