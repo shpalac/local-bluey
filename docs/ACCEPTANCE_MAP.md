@@ -700,3 +700,27 @@ The temporary [acceptance manifest](acceptance/temporary/issue-590.json) maps AC
 ### BLU-031 voice verification (#587)
 
 Temporary criterion-by-criterion evidence: [`docs/acceptance/temporary/issue-587.json`](acceptance/temporary/issue-587.json). Fake-only Dart tests cover spoofed/matched speakers retaining SafetyGate confirmation, invalid scores, absent spoof evidence, denied permission, offline, timeout, cancellation, revocation and restart. The default-off module makes no network or persistence calls. Accessibility/RTL device UI, calibrated anti-spoof accuracy, real enrollment and device permission evidence remain **manual gaps**. Keep #587 open pending native verification.
+
+## BLU-064 Teach Mode UX flow — acceptance evidence (Refs #621)
+
+`test/teach_mode/capture_validation_test.dart` (ac_2) pins explicit refusal
+reasons for consent and duration errors, observation outside an active
+session, a capture that races a stop (dropped by the epoch guard, never
+joined to a later draft), byte-identical previews for identical observations,
+and a clean restart. `test/teach_mode/capture_privacy_test.dart` (ac_3)
+separately rejects every payload key carrying a secret-corpus entry at
+capture time (individually), pins a static no-`dart:io`/`package:http`/
+storage/artifact-writer contract over `lib/teach_mode/capture_session.dart`
+and `lib/teach_mode/draft_builder.dart`, and asserts no retained — or
+discarded — projection (`toString`, steps, placeholders, warnings) ever
+contains the corpus. `test/teach_mode/routine_platform_compat_test.dart`
+(ac_4) proves legacy `Routine` JSON equality, `LegacyRoutineAdapter`
+round-trip and fail-closed conversion before, during and after active
+capture, and identical start, allowlist-refusal, pause-lowers-then-resumes
+behavior across the macOS, iOS and Android gate flavors. Together with PR
+#817's ac_1 review/abort test, all four criteria in
+`docs/acceptance/temporary/issue-621.json` are automated and passing. Not
+claimed here: the on-device consent flow UI, visual indicator verification on
+a live OS build, or native accessibility labels — those need device
+validation, not more fake-host tests. Rollback: the three tests, the
+manifest entries and this paragraph; production code unchanged.
