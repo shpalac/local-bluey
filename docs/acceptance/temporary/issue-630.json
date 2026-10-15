@@ -28,6 +28,14 @@
             {
               "file": "test/offline_provider_fallback_policy_test.dart",
               "name": "unusable providers expose explicit degraded failure"
+            },
+            {
+              "file": "test/offline_provider_empty_reply_test.dart",
+              "name": "blank cloud reply falls back to local reply"
+            },
+            {
+              "file": "test/offline_provider_empty_reply_test.dart",
+              "name": "blank local reply reports degraded failure"
             }
           ]
         },
