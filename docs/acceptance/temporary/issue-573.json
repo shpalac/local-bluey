@@ -25,6 +25,10 @@
             {
               "file": "test/workflow_audit_stop_checkpoint_test.dart",
               "name": "audit stop after execution prevents verification and next step"
+            },
+            {
+              "file": "test/execution_audit_live_panel_test.dart",
+              "name": "ac1 audit timeline displays newly recorded events"
             }
           ]
         },
@@ -56,6 +60,10 @@
             {
               "file": "test/file_durable_recovery_store_test.dart",
               "name": "restart reconciliation blocks all host actions"
+            },
+            {
+              "file": "test/execution_audit_live_panel_test.dart",
+              "name": "ac2 external stop updates button without manual rebuild"
             }
           ]
         },
@@ -75,6 +83,10 @@
             {
               "file": "test/file_durable_recovery_store_test.dart",
               "name": "corrupt recovery metadata fails closed"
+            },
+            {
+              "file": "test/execution_audit_live_panel_test.dart",
+              "name": "ac3 old audit listeners are detached on widget replacement"
             }
           ]
         },
