@@ -21,7 +21,10 @@ void main() {
     expect(text, contains('-only-testing:RunnerTests'));
     expect(text, isNot(contains('flutter build macos --debug')));
     expect(centralCi, contains('  build-macos:'));
-    expect(centralCi, contains('run: flutter build macos 2>&1 | tee build-macos.log'));
+    expect(
+      centralCi,
+      contains('run: flutter build macos 2>&1 | tee build-macos.log'),
+    );
     expect(centralCi, contains('  test:'));
     expect(centralCi, contains('flutter test --coverage --reporter expanded'));
     expect(text, contains('pull_request:'));

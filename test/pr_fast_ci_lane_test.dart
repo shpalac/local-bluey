@@ -40,7 +40,10 @@ void main() {
     expect(centralCi, contains('run: flutter analyze'));
     expect(centralCi, contains('flutter test --coverage --reporter expanded'));
     expect(centralCi, contains('run: python3 tool/ci_gate.py'));
-    expect(centralCi, contains('needs: [detect, static, docs, acceptance-evidence, test,'));
+    expect(
+      centralCi,
+      contains('needs: [detect, static, docs, acceptance-evidence, test,'),
+    );
   });
 
   test('fast lane actions are pinned to full commit SHAs', () {
