@@ -21,6 +21,10 @@
             {
               "file": "test/file_index_test.dart",
               "name": "incremental edits and deletions"
+            },
+            {
+              "file": "test/file_index_grant_fencing_test.dart",
+              "name": "ac1 denied replacement grant purges old indexed content"
             }
           ]
         },
@@ -40,6 +44,14 @@
             {
               "file": "test/file_index_test.dart",
               "name": "failed refresh hides previously indexed data"
+            },
+            {
+              "file": "test/file_index_grant_fencing_test.dart",
+              "name": "ac2 invalid replacement cannot retain previous documents"
+            },
+            {
+              "file": "test/file_index_grant_fencing_test.dart",
+              "name": "ac2 revoke during pending grant cannot restore indexing"
             }
           ]
         },

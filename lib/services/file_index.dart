@@ -59,16 +59,22 @@ class FileIndex {
   /// Only call after an explicit directory-selection UI and consent.
   /// Symlinked directories/files are never followed.
   Future<void> grant(Directory directory, {required bool consent}) async {
+    // Replacing or denying a grant immediately clears all previous content.
+    revoke();
+    final generation = _generation;
     if (!consent) {
       state = FileIndexState.denied;
       return;
     }
     if (!await directory.exists()) {
+      if (generation != _generation) return;
       state = FileIndexState.failed;
       throw const FileSystemException('Selected directory unavailable');
     }
-    revoke();
-    _root = await directory.resolveSymbolicLinks();
+    final resolved = await directory.resolveSymbolicLinks();
+    // A cancelled or superseded async picker must never restore access.
+    if (generation != _generation) return;
+    _root = resolved;
     await refresh();
   }
 
