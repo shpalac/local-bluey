@@ -57,6 +57,8 @@ abstract class HostControl implements NativeControlClient {
       }
       return LinuxX11HostControl();
     }
+    // Windows has no native control bridge; never dispatch to a plugin.
+    if (os == 'windows') return const UnsupportedHostControl('windows');
     return UnsupportedHostControl(os);
   }
 }

@@ -13,6 +13,10 @@
             {
               "file": "test/windows_ci_lane_manifest_test.dart",
               "name": "Windows CI lane manifest is deterministic"
+            },
+            {
+              "file": "test/windows_unsupported_host_control_test.dart",
+              "name": "Windows host control explicitly fails closed without native dispatch"
             }
           ]
         },
@@ -30,6 +34,10 @@
             {
               "file": "test/windows_ci_lane_manifest_test.dart",
               "name": "Windows CI lane manifest is least privilege and pinned"
+            },
+            {
+              "file": "test/windows_unsupported_host_control_test.dart",
+              "name": "Windows unsupported host errors never disclose caller payloads"
             }
           ]
         },
