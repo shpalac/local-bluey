@@ -5,18 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   test('ac2 fail-closed CI gate fixtures are reproducible', () async {
     final interpreter = Platform.isWindows ? 'python' : 'python3';
-    final result = await Process.run(
-      interpreter,
-      [
-        '-m',
-        'unittest',
-        'discover',
-        '-s',
-        'tool',
-        '-p',
-        'test_ci_gate.py',
-      ],
-    );
+    final result = await Process.run(interpreter, [
+      '-m',
+      'unittest',
+      'discover',
+      '-s',
+      'tool',
+      '-p',
+      'test_ci_gate.py',
+    ]);
 
     expect(
       result.exitCode,
