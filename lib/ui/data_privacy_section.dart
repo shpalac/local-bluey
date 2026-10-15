@@ -49,7 +49,9 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not delete local data: operation failed. Please retry.'),
+            content: Text(
+              'Could not delete local data: operation failed. Please retry.',
+            ),
           ),
         );
       }
@@ -106,7 +108,9 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Could not delete local data: operation failed. Please retry.'),
+            content: Text(
+              'Could not delete local data: operation failed. Please retry.',
+            ),
           ),
         );
       }
