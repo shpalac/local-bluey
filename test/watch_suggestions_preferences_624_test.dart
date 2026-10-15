@@ -18,19 +18,19 @@ void main() {
   test(
     'AC-1 persisted never-app preference suppresses repeated suggestions after restart',
     () async {
-    await WatchSuggestions.neverForApp(' Terminal.app ');
-    final first = WatchSuggestions();
-    for (var i = 0; i < 4; i++) {
-      expect(await first.onEvent(_vision('Terminal')), isNull);
-    }
-    await first.dispose();
+      await WatchSuggestions.neverForApp(' Terminal.app ');
+      final first = WatchSuggestions();
+      for (var i = 0; i < 4; i++) {
+        expect(await first.onEvent(_vision('Terminal')), isNull);
+      }
+      await first.dispose();
 
-    final restarted = WatchSuggestions();
-    for (var i = 0; i < 4; i++) {
-      expect(await restarted.onEvent(_vision('TERMINAL.app')), isNull);
-    }
-    expect(await WatchSuggestions.neverApps(), contains('terminal'));
-      await restarted.dispose();
+      final restarted = WatchSuggestions();
+      for (var i = 0; i < 4; i++) {
+        expect(await restarted.onEvent(_vision('TERMINAL.app')), isNull);
+      }
+      expect(await WatchSuggestions.neverApps(), contains('terminal'));
+        await restarted.dispose();
     },
   );
 
