@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 637,
+      "title": "[BLU-079] Release and incident runbooks",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Dry-run checklist.",
+          "tests": [
+            {
+              "file": "test/release_incident_checklist_test.dart",
+              "name": "release dry run rejects missing verification evidence"
+            },
+            {
+              "file": "test/release_incident_checklist_test.dart",
+              "name": "complete release checklist is review-ready without authorization"
+            },
+            {
+              "file": "test/release_incident_checklist_test.dart",
+              "name": "incident dry runs require containment confirmation"
+            },
+            {
+              "file": "test/release_incident_checklist_test.dart",
+              "name": "migration and rollback cannot omit data compatibility"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "gap",
+          "requirement": "No silent failure, secrets in artifacts, unapproved egress or bypass of human approval.",
+          "reason": "Checklist data model is offline and never authorizes execution; end-to-end runtime egress, secret scanning, diagnostics and human approval require separate validation."
+        },
+        {
+          "id": "ac_3",
+          "type": "manual",
+          "requirement": "CI and relevant tests green with documented reproduction commands.",
+          "reason": "Reproduction commands are documented; successful exact-head GitHub CI and any applicable native checks must be observed before certification."
+        }
+      ]
+    }
+  ]
+}
