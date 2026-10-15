@@ -165,6 +165,12 @@ final class WorkflowExecution {
       return status;
     }
     if (recoveryStore != null) await recoveryStore!.clear();
+    // A stop during the asynchronous recovery cleanup must never turn
+    // a cancelled execution into a successful one.
+    if (_cancelled || audit?.stopRequested == true) {
+      cancel();
+      return status;
+    }
     status = WorkflowStatus.completed;
     audit?.record('execution', 'completed');
     return status;

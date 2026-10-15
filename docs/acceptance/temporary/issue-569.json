@@ -21,6 +21,10 @@
             {
               "file": "test/workflow_execution_verification_cancellation_test.dart",
               "name": "cancellation during verification cannot complete or advance"
+            },
+            {
+              "file": "test/workflow_execution_cleanup_cancellation_test.dart",
+              "name": "ac1 cancellation during recovery cleanup cannot complete"
             }
           ]
         },
@@ -32,6 +36,10 @@
             {
               "file": "test/workflow_execution_integration_test.dart",
               "name": "WorkflowExecution rejects interrupted restart without replay"
+            },
+            {
+              "file": "test/workflow_execution_cleanup_cancellation_test.dart",
+              "name": "ac2 audit stop during recovery cleanup fails closed"
             }
           ]
         },
