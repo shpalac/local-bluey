@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'activity_schema_preflight.dart';
 import 'activity_step.dart';
+import 'secure_storage.dart';
 
 /// A storage error intentionally omits paths, keys, SQL statements and records.
 final class EncryptedActivityException implements Exception {
@@ -29,7 +29,7 @@ final class SecureActivityKeyVault implements ActivityKeyVault {
   const SecureActivityKeyVault();
 
   static const _keyName = 'activity_store.sqlcipher.key.v1';
-  static const _secureStorage = FlutterSecureStorage();
+  static final _secureStorage = secureStorage();
 
   @override
   Future<String?> read() => _secureStorage.read(key: _keyName);
