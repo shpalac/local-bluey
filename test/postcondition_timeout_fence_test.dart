@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/workflows/postcondition_verifier.dart';
 
 void main() {
-  test('ac2 timeout does not start later postcondition reads', () async {
+  test(
+    'ac2 timeout does not start later postcondition reads',
+    () async {
     final reader = _BlockingReader();
     final verifier = PostconditionVerifier(reader);
     final pending = verifier.verify(
@@ -21,9 +23,12 @@ void main() {
     reader.releaseFirst.complete('Done');
     await Future<void>.delayed(Duration.zero);
     expect(reader.keys, ['button']);
-  });
+    },
+  );
 
-  test('ac3 cancellation does not start later postcondition reads', () async {
+  test(
+    'ac3 cancellation does not start later postcondition reads',
+    () async {
     final reader = _BlockingReader();
     final cancellation = VerificationCancellation();
     final pending = PostconditionVerifier(reader).verify(
@@ -41,7 +46,8 @@ void main() {
 
     expect(await pending, VerificationOutcome.cancelled);
     expect(reader.keys, ['button']);
-  });
+    },
+  );
 }
 
 final class _BlockingReader implements PostconditionReader {
