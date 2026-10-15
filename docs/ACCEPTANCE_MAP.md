@@ -725,28 +725,24 @@ a live OS build, or native accessibility labels — those need device
 validation, not more fake-host tests. Rollback: the three tests, the
 manifest entries and this paragraph; production code unchanged.
 
-## BLU-067 Suggestion quality controls — acceptance evidence (Refs #624)
+## BLU-065 Workflow visual editor — acceptance evidence (Refs #622)
 
-`test/watch_suggestions_ranking_624_test.dart` (ac_2) proves identical
-event sequences produce identical evidence strings across sessions, the
-repeat-run rate limits fire once on the third repeat and re-arm —
-re-evaluated deterministically per fresh session — a failing never-apps
-read rethrows the caller's typed error instead of swallowing it, and a
-restored reader resumes the identical sequence exactly.
-`test/watch_suggestions_privacy_624_test.dart` (ac_3) pins a static
-provenance contract over `lib/services/watch_suggestions.dart` (no
-`dart:io`/`package:http`/artifact writers; the only storage call is the
-canonical never-apps list) and proves a corpus secret in screen text stays
-quoted, never-parsed data, persists nothing beyond app names, kept silent
-for oversized payloads instead of truncating evidence, with the upstream
-SensitiveContentGate corpus verdicts re-asserted.
-`test/watch_suggestions_compat_624_test.dart` (ac_4) proves a legacy
-Routine stays byte-identical across a suppression cycle and that the
-suppression law has no platform branch — identical behavior across the
-iOS, Android and macOS flavors. Together with PR #822's AC-1 evidence, all
-four criteria in `docs/acceptance/temporary/issue-624.json` are automated
-and passing. Not claimed here: native OS verification beyond flavor
-overrides, full pipeline integration on device, or cross-model egress
-(drive actuate whichever live OS) — those are native-lane acceptances.
-Rollback: the three suites and the manifest/map promotions; production
-code unchanged.
+`test/workflow_visual_editor_privacy_test.dart` (ac_3) pins a static
+no-`dart:io`/`dart:convert`/`package:http`/storage/artifact-writer contract
+over `lib/ui/routine_review_card.dart`; proves type-valid edits that embed
+secret-corpus text hand off nothing before a tap, leave no storage trace
+(mocked empty prefs through accept and decline), and always hand off
+`enabled: false`; and that every off-contract shape (blank and oversized
+instructions) shows the explicit invalid notice, keeps acceptance inactive,
+and that the validation exception's text never echoes the attempted input.
+`test/workflow_visual_editor_compat_test.dart` (ac_4) proves identical
+editing, before/after diff, handoff and draft immutability across the iOS,
+Android and macOS platform flavors, and that live enabled Routines stay
+outside the editor with all affordances inert on every flavor. Together
+with the existing AC-1/AC-2 widget evidence, all four criteria in
+`docs/acceptance/temporary/issue-622.json` are automated and passing. Not
+claimed here: full Workflow DSL step/condition/parameter editing (BLU-014
+remains the dependency), native OS-level platform verification beyond the
+flavor overrides, or device accessibility(Semantics) audit. Rollback: the
+two suites, the manifest promotion and this paragraph; production code
+unchanged.
