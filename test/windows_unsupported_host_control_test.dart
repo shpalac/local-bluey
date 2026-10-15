@@ -2,19 +2,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/host_control.dart';
 
 void main() {
-  test('Windows host control explicitly fails closed without native dispatch', () {
-    final host = HostControl.forPlatform(
-      operatingSystem: 'windows',
-      environment: const {'DISPLAY': ':0', 'XDG_SESSION_TYPE': 'wayland'},
-    );
+  test(
+    'Windows host control explicitly fails closed without native dispatch',
+    () {
+      final host = HostControl.forPlatform(
+        operatingSystem: 'windows',
+        environment: const {'DISPLAY': ':0', 'XDG_SESSION_TYPE': 'wayland'},
+      );
 
-    expect(host, isA<UnsupportedHostControl>());
-    expect((host as UnsupportedHostControl).operatingSystem, 'windows');
-    expect(() => host.isTrusted(), throwsUnsupportedError);
-    expect(() => host.snapshot(), throwsUnsupportedError);
-    expect(() => host.click(10, 20), throwsUnsupportedError);
-    expect(() => host.askPermission(), throwsUnsupportedError);
-  });
+      expect(host, isA<UnsupportedHostControl>());
+      expect((host as UnsupportedHostControl).operatingSystem, 'windows');
+      expect(() => host.isTrusted(), throwsUnsupportedError);
+      expect(() => host.snapshot(), throwsUnsupportedError);
+      expect(() => host.click(10, 20), throwsUnsupportedError);
+      expect(() => host.askPermission(), throwsUnsupportedError);
+    },
+  );
 
   test('Windows unsupported host errors never disclose caller payloads', () {
     final host = HostControl.forPlatform(operatingSystem: 'windows');
