@@ -26,9 +26,18 @@
         },
         {
           "id": "ac_2",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Deterministic reproducible results with explicit errors rather than silent fallbacks",
-          "reason": "Existing verifier tests cover deterministic outcomes; broader error taxonomy validation requires additional workflow fixture coverage."
+          "tests": [
+            {
+              "file": "test/postcondition_oracle_missing_evidence_test.dart",
+              "name": "blank observation is inconclusive and cannot complete workflow"
+            },
+            {
+              "file": "test/postcondition_oracle_missing_evidence_test.dart",
+              "name": "malformed postcondition raises explicit format error"
+            }
+          ]
         },
         {
           "id": "ac_3",
