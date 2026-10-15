@@ -133,8 +133,14 @@ class LocalSemanticRetriever {
         }
       }
     }
-    if (!index.matchesRetrievalSnapshot(snapshot)) {
+    if ((isCancelled != null && await isCancelled()) ||
+        !index.isEnabled ||
+        index.state != FileIndexState.ready ||
+        !index.matchesRetrievalSnapshot(snapshot)) {
       return const LocalRetrievalResult(LocalRetrievalStatus.cancelled, []);
+    }
+    if (clock.elapsed >= timeout) {
+      return const LocalRetrievalResult(LocalRetrievalStatus.timedOut, []);
     }
     hits.sort((a, b) {
       final score = b.score.compareTo(a.score);

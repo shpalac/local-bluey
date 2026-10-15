@@ -7,3 +7,5 @@ This is a lightweight on-device lexical embedding baseline, **not** a learned mu
 Safety/privacy: source bytes and paths are taken only from BLU-028's memory snapshot and disappear on revocation/restart. Large files are already bounded by the index. Search has a limit and timeout; cancelled requests do not return partial results. Integration with SafetyGate, ActionLog and data registry is deliberately not asserted: retrieval is read-only and has no tool execution. Manual macOS TCC, accessibility, RTL and offline verification remain pending.
 
 Rollback: stop constructing `LocalSemanticRetriever` and invoke `FileIndex.revoke()`; no schema, migration or cleanup process is required.
+
+Final-response boundary: cancellation, index permission state and timeout are checked again after the last ranked excerpt before returning citations. In-flight revocation and late cancellation yield no partial results. This is deterministic CI coverage; real-device permission, offline behavior, UI and model-quality validation remain manual gaps.
