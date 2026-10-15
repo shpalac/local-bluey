@@ -36,6 +36,14 @@
             {
               "file": "test/teach_mode/draft_preview_test.dart",
               "name": "preview handles empty and malformed observations deterministically"
+            },
+            {
+              "file": "test/teach_mode/draft_bounded_preview_test.dart",
+              "name": "ac2 preview is bounded on oversized untrusted input"
+            },
+            {
+              "file": "test/teach_mode/draft_bounded_preview_test.dart",
+              "name": "ac2 exact preview boundary retains all sanitized steps"
             }
           ]
         },
@@ -43,7 +51,7 @@
           "id": "ac_3",
           "requirement": "Pure draft builder discards unrecognized data and never invokes host or network",
           "type": "gap",
-          "reason": "Isolated non-executable module tested; real capture, data registry, safety gate and host integration not yet connected."
+          "reason": "Builder now bounds previews to 256 sanitized steps and warns on overflow, but real capture, data registry, safety gate and host integration still require end-to-end security evidence."
         },
         {
           "id": "ac_4",
