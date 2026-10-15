@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 621,
+      "title": "[BLU-064] Teach Mode UX flow",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "User can abort, delete and review.",
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_review_flow_test.dart",
+              "name": "ac1 review is read-only and abort discards preview"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "gap",
+          "requirement": "Deterministic, reproducible results; explicit errors rather than silent fallbacks.",
+          "reason": "Existing tests exercise validation, but this PR adds no independent AC-2 proof."
+        },
+        {
+          "id": "ac_3",
+          "type": "gap",
+          "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions.",
+          "reason": "Requires privacy and egress verification beyond the narrow in-memory review test."
+        },
+        {
+          "id": "ac_4",
+          "type": "gap",
+          "requirement": "Existing Routines and supported platform behavior remain compatible.",
+          "reason": "Requires broader Routine and platform compatibility coverage; the new test does not certify this criterion."
+        }
+      ]
+    }
+  ]
+}
