@@ -38,27 +38,7 @@ void main(List<String> args) {
     final stage = decoded is Map ? decoded['stage'] : null;
     final ms = decoded is Map ? decoded['ms'] : null;
     if (stage is! String ||
-        !RegExp(r'^[A-Za-z0-9_.-]+
-      stderr.writeln('Invalid sample at line $lineNumber');
-      exit(2);
-    }
-    stages.putIfAbsent(stage, () => []).add(ms);
-  }
-  if (stages.isEmpty) {
-    stderr.writeln('No samples');
-    exit(2);
-  }
-  final names = stages.keys.toList()..sort();
-  stdout.writeln('stage,count,p50_ms,p95_ms');
-  for (final name in names) {
-    final sorted = [...stages[name]!]..sort();
-    stdout.writeln(
-      '$name,${sorted.length},${nearestRank(sorted, 50)},'
-      '${nearestRank(sorted, 95)}',
-    );
-  }
-}
-).hasMatch(stage) ||
+        !RegExp(r'^[A-Za-z0-9_.-]+$').hasMatch(stage) ||
         ms is! int ||
         ms < 0) {
       stderr.writeln('Invalid sample at line $lineNumber');
