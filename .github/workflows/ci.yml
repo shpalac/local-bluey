@@ -226,7 +226,7 @@ jobs:
           shards=$(dart run tool/ci_test_shards.dart "$TEST_FILES")
           : > test-output.log
           for shard in 0 1; do
-            mapfile -t test_files < <(SHARDS="$shards" SHARD="$shard" python3 -c 'import json, os; print("\n".join(json.loads(os.environ["SHARDS"])[int(os.environ["SHARD"])]))')
+            mapfile -t test_files < <(SHARDS="$shards" SHARD="$shard" python3 -c 'import json, os, sys; sys.stdout.write("\n".join(json.loads(os.environ["SHARDS"])[int(os.environ["SHARD"])]))')
             if [ "${#test_files[@]}" -eq 0 ]; then
               continue
             fi
