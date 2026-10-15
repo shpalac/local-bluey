@@ -42,6 +42,30 @@ void main() {
       expect(text, contains('closes immediately on merge'));
     });
 
+    test('links work with Refs and reserves Closes for full acceptance', () {
+      expect(
+        text,
+        contains('link each issue on its own `Refs #<issue-number>` line'),
+      );
+      expect(
+        text,
+        contains('only when all original acceptance criteria have executable '
+            'evidence and no manual/gap rows remain'),
+      );
+      expect(
+        text,
+        contains(
+          'GitHub-native `Closes` closes immediately on merge, before main CI',
+        ),
+      );
+      expect(text, contains('avoid it for this workflow'));
+      expect(
+        text,
+        contains('`AutoClose #N` appears on its own line only for complete '
+            'criteria; `Refs #N` is used otherwise'),
+      );
+    });
+
     test('has acceptance evidence, security, rollback and device sections', () {
       expect(text, contains('## Acceptance criteria evidence'));
       expect(text, contains('## Security, privacy and rollback'));
