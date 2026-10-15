@@ -20,11 +20,15 @@ class OfflineProviderFallbackPolicy {
 
   Future<String> chat(List<LlmMessage> messages) async {
     try {
-      return await select().chat(messages);
+      final response = await select().chat(messages);
+      if (response.trim().isEmpty) throw StateError('Empty provider response');
+      return response;
     } catch (_) {
       if (!identical(select(), local)) {
         try {
-          return await local.chat(messages);
+          final response = await local.chat(messages);
+          if (response.trim().isEmpty) throw StateError('Empty local response');
+          return response;
         } catch (_) {
           throw const OfflineProviderException(DegradedMode.brainUnreachable);
         }
