@@ -160,6 +160,8 @@ jobs:
         run: python3 -m unittest discover -s tool -p test_acceptance_criteria.py
       - name: Validate issue task lifecycle test fixtures
         run: python3 -m unittest discover -s tool -p test_issue_task_ci.py
+      - name: Verify specialist workflows use acceptance manifests
+        run: python3 -m unittest discover -s tool -p test_acceptance_workflow_wiring.py
       - name: Validate acceptance-driven merge and closure fixtures
         run: |
           python3 -m unittest discover -s tool -p test_issue_auto_merge.py

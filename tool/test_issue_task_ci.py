@@ -207,6 +207,28 @@ class IssueTaskTests(unittest.TestCase):
         self.promotion()
         self.assertTrue(self.check("AutoClose #42", mode="integration"))
 
+    def test_cross_mode_partial_evidence_cannot_certify_closing(self):
+        (self.root / "docs/acceptance/temporary/issue-42.json").unlink()
+        self.write_manifest("permanent", [{
+            "id": "ac_1",
+            "requirement": "Both suites must execute",
+            "type": "automated",
+            "tests": [
+                {"file": "test/issues/issue_42_test.dart",
+                 "name": "rejects invalid request"},
+                {"file": "integration_test/features/feature_test.dart",
+                 "name": "feature works end to end"},
+            ],
+        }])
+        for mode in ("unit", "integration"):
+            with self.subTest(mode=mode):
+                with self.assertRaisesRegex(task.ContractError, "not executed"):
+                    self.check("AutoClose #42", mode=mode)
+        # Partial implementation work may reference this issue, but its
+        # acceptance remains explicitly incomplete, never auto-certified.
+        self.assertTrue(self.check("Refs #42", mode="unit"))
+        self.assertTrue(self.check("Refs #42", mode="integration"))
+
     def test_temporary_not_allowed_after_promotion(self):
         self.write_manifest("permanent", [{
             "id": "end_to_end",
