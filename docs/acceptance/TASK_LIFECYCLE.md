@@ -16,7 +16,7 @@ one remediation comment; it never invents the missing requirements.
    `ac_1`, `ac_2`, etc. Specify real platform/device limits,
    negative cases (bad inputs, permission denial, offline, restart,
    cancellation) and explicit exclusions.
-2. **Start work.** Reference incomplete work with `Refs #123` in the PR body. Use a separate line `AutoClose #123` only when the PR proves **every** numbered acceptance criterion and should be automatically squash-merged and closed after green main CI. Add
+2. **Start work.** Reference work with a standalone `Refs #123` line in the PR body. A merged `Refs` PR closes the issue only if **every** numbered criterion is proven; incremental PRs leave it open. Add a separate `AutoClose #123` line when the completed PR should also opt in to automatic squash merge after green PR CI. Add
    `docs/acceptance/temporary/issue-123.json` and real issue-only tests in
    `test/issues/issue_123_test.dart` (or a suitable existing `test/` file).
    Each automated criterion names exact file and test case, not only a path.
@@ -36,10 +36,11 @@ one remediation comment; it never invents the missing requirements.
    successful unskipped execution and an exact match between all live issue
    AC identifiers and the temporary **or** permanent manifest. Any `manual`
    or `gap` criterion, legacy manifest, missing test or skipped result blocks
-   `AutoClose`. For opted-in PRs the trusted workflow enables GitHub squash
-   auto-merge only after CI succeeds at the exact PR head. After merge, a
-   separate trusted workflow waits for successful CI on the merge commit in
-   `main`, rechecks the live issue and manifest and then closes the issue.
+   closure. For `AutoClose` PRs the trusted workflow enables GitHub squash
+   auto-merge only after CI succeeds at the exact PR head. After any linked
+   `Refs` or `AutoClose` PR merges, a separate trusted workflow waits for
+   successful CI on the merge commit in `main`, rechecks the live issue and
+   manifest, and closes the issue **only** if every criterion is complete.
    GitHub-native `Closes #123` closes **immediately on merge** and bypasses
    this post-main-CI delay: use `AutoClose #123` for this automation.
 
@@ -122,9 +123,11 @@ verification contract for those before trying to auto-close them.
 
 ## Automatic merge and closure contract
 
-- No automation is enabled for existing `Refs` PRs. Authors choose
-  `AutoClose #N` only after completing **all** the requirements; this is an
-  explicit machine-readable opt-in, not an issue closure shortcut.
+- Existing `Refs` PRs are eligible for **post-merge issue closure** when all
+  acceptance criteria are satisfied; they never enable automatic PR merging.
+  `AutoClose #N` remains the explicit opt-in for automatic squash merge and
+  strict pre-merge acceptance validation. Incremental `Refs` PRs leave their
+  issues open without failing post-merge issue automation.
 - Both workflows execute trusted `main` code only. Neither checks out or
   executes a contributor branch with a privileged token.
 - The PR CI must succeed at the exact head SHA, including issue-specific
