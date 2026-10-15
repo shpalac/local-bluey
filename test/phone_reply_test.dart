@@ -705,7 +705,7 @@ void main() {
 
   test('dispose while playing: late completion sends nothing', () async {
     receiver.handle(say('s', audio: _audio()));
-    await settle();
+    await waitFor(() => receipts().contains('playing:s'));
     active = false;
     await receiver.dispose();
     sess(0).controller.add(null);
