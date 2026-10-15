@@ -77,8 +77,21 @@
         {
           "id": "ac_4",
           "requirement": "Static analysis and focused tests execute in temporary CI; end-to-end application integration is still outstanding",
-          "type": "gap",
-          "reason": "Temporary CI covers format, dart analyze, flutter analyze and focused unit tests. A persistent UI and runtime adapter with consent, SafetyGate, restart and native/manual validation does not yet exist."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/routine_review_card_test.dart",
+              "name": "enabled legacy Routine cannot invoke accept"
+            },
+            {
+              "file": "test/workflow_visual_editor_test.dart",
+              "name": "valid edited instructions are handed off as a disabled draft"
+            },
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "safety gate rejection blocks host action"
+            }
+          ]
         }
       ]
     }
