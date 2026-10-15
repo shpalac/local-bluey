@@ -50,7 +50,7 @@
           "tests": [
             {
               "file": "test/workflow_execution_integration_test.dart",
-              "name": "WorkflowExecution rejects interrupted restart without replay"
+              "name": "ac3 interrupted recovery never invokes host actions"
             }
           ]
         },
@@ -61,7 +61,7 @@
           "tests": [
             {
               "file": "test/workflow_execution_integration_test.dart",
-              "name": "WorkflowExecution integrates approval host and audit happy path"
+              "name": "ac4 repeated run calls never replay completed host work"
             }
           ]
         },
