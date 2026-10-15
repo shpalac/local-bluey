@@ -28,6 +28,10 @@
             {
               "file": "test/perf_summary_test.dart",
               "name": "empty input and missing file fail with exit 2"
+            },
+            {
+              "file": "test/perf_summary_stage_validation_test.dart",
+              "name": "CSV-unsafe stage labels fail closed without reflecting the sample"
             }
           ]
         },
