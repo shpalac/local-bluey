@@ -107,11 +107,12 @@ class McpToolSafetyGate {
 
     spec.validateArguments(arguments);
 
-    if (!await requestPermission(serverId, spec.name)) {
-      throw const McpToolException(McpToolFailure.denied);
-    }
-
     try {
+      // A stalled approval must not keep an MCP invocation pending forever.
+      final approved = await requestPermission(serverId, spec.name).timeout(timeout);
+      if (!approved) {
+        throw const McpToolException(McpToolFailure.denied);
+      }
       return await invoke(serverId, spec.name, arguments).timeout(timeout);
     } on TimeoutException {
       throw const McpToolException(McpToolFailure.timeout);
