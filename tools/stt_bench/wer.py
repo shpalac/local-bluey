@@ -85,11 +85,14 @@ def score(out, refs, metrics=jiwer_metrics):
         ok, failed, pairs = [], [], []
         for a in items:
             has_out = os.path.exists(a["hyp_path"])
-            if a["exit"] == 0 and has_out:
+            # An empty or whitespace-only transcript is not a usable hypothesis.
+            has_text = has_out and bool(open(a["hyp_path"], encoding="utf-8").read().strip())
+            if a["exit"] == 0 and has_text:
                 ok.append(a)
             else:
                 why = ("exit status unknown (no exit_status column)" if a["exit"] is None
-                       else f"exit {a['exit']}" if a["exit"] != 0 else "no transcript written")
+                       else f"exit {a['exit']}" if a["exit"] != 0 else
+                       "empty transcript" if has_out else "no transcript written")
                 if a["exit"] not in (None, 0) and has_out:
                     why += ", partial output ignored"
                 failed.append(a)
