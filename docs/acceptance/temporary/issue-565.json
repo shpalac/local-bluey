@@ -18,9 +18,34 @@
         },
         {
           "id": "ac_2",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Happy path, malformed input, timeout, cancellation, permission denied, offline and restart cases where applicable",
-          "reason": "Consent, duration refusal and denied-app test added, but complete timeout, offline, restart and permission-revocation cases are not demonstrated."
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_negative_paths_test.dart",
+              "name": "ac2 denied or unknown app pauses until user resumes"
+            },
+            {
+              "file": "test/teach_mode/capture_negative_paths_test.dart",
+              "name": "ac2 timeout expires and destroys uncommitted observations"
+            },
+            {
+              "file": "test/teach_mode/capture_negative_paths_test.dart",
+              "name": "ac2 offline and permission revocation terminate capture"
+            },
+            {
+              "file": "test/teach_mode/capture_negative_paths_test.dart",
+              "name": "ac2 concurrent start cancelled mid-check never resurrects"
+            },
+            {
+              "file": "test/teach_mode/capture_negative_paths_test.dart",
+              "name": "ac2 capture errors pause and require explicit resume"
+            },
+            {
+              "file": "test/teach_mode/capture_negative_paths_test.dart",
+              "name": "ac2 cancellation fences in-flight result and restart is off"
+            }
+          ]
         },
         {
           "id": "ac_3",

@@ -18,6 +18,7 @@ class TeachCaptureSession extends ChangeNotifier {
   final TeachDraftBuilder _builder = const TeachDraftBuilder();
   int _epoch = 0;
   bool _disposed = false;
+  bool _starting = false;
 
   CaptureIndicator get indicator =>
       _disposed ? CaptureIndicator.off : _monitor.indicator;
@@ -32,9 +33,16 @@ class TeachCaptureSession extends ChangeNotifier {
     if (duration <= Duration.zero || duration > const Duration(minutes: 10)) {
       return 'Duration must be positive and at most ten minutes.';
     }
-    if (_watch.isActive) return 'A session is already active.';
-    _discard();
-    return _watch.start(length: duration, consentConfirmed: true);
+    if (_starting || _watch.isActive) {
+      return 'A session is already active or starting.';
+    }
+    _starting = true;
+    try {
+      _discard();
+      return await _watch.start(length: duration, consentConfirmed: true);
+    } finally {
+      _starting = false;
+    }
   }
 
   void _discard() {
@@ -71,16 +79,28 @@ class TeachCaptureSession extends ChangeNotifier {
   }) async {
     if (_disposed || indicator != CaptureIndicator.active) return false;
     final epoch = _epoch;
-    final result = await _monitor.runIfAllowed<Map<String, Object?>>(
-      frontApp: frontApp,
-      windowTitle: windowTitle,
-      locked: locked,
-      operation: capture,
-    );
-    if (_disposed ||
-        epoch != _epoch ||
-        indicator != CaptureIndicator.active ||
-        result == null) {
+    Map<String, Object?>? result;
+    try {
+      result = await _monitor.runIfAllowed<Map<String, Object?>>(
+        frontApp: frontApp,
+        windowTitle: windowTitle,
+        locked: locked,
+        operation: capture,
+      );
+    } catch (_) {
+      // A failed host/permission check must not leave capture running.
+      if (!_disposed && epoch == _epoch && indicator == CaptureIndicator.active) {
+        _monitor.pause();
+      }
+      return false;
+    }
+    if (_disposed || epoch != _epoch || indicator != CaptureIndicator.active) {
+      return false;
+    }
+    if (result == null) {
+      // Unknown or sensitive foreground context: explicit resume required.
+      // The pause also invalidates any earlier in-flight observation.
+      _monitor.pause();
       return false;
     }
     final step = _builder.build([result]).steps.single;
