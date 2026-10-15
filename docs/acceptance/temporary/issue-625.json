@@ -37,15 +37,37 @@
         },
         {
           "id": "ac_3",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Native privacy and device permission validation.",
-          "reason": "Requires native device permission surfaces and remains a manual gap."
+          "tests": [
+            {
+              "file": "test/permission_center_privacy_test.dart",
+              "name": "ac3 center keeps label-only provenance without transport"
+            },
+            {
+              "file": "test/permission_center_privacy_test.dart",
+              "name": "ac3 grant lifecycle leaves no payload or secret echo"
+            }
+          ]
         },
         {
           "id": "ac_4",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Platform-specific behavior compatibility.",
-          "reason": "Requires supported native platform validation."
+          "tests": [
+            {
+              "file": "test/permission_center_compat_test.dart",
+              "name": "ac4 center stays per-flavor identical with no platform branch"
+            },
+            {
+              "file": "test/permission_center_compat_test.dart",
+              "name": "ac4 the same lifecycle holds on every supported flavor"
+            },
+            {
+              "file": "test/permission_center_compat_test.dart",
+              "name": "ac4 legacy routines remain untouched by the center"
+            }
+          ]
         }
       ]
     }
