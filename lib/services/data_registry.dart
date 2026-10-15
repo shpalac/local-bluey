@@ -385,7 +385,7 @@ class DataRegistry {
       try {
         await store.clear();
       } catch (e) {
-        debugPrint('DataRegistry: clearing ${store.id} failed: $e');
+        debugPrint('DataRegistry: local store deletion failed.');
         failures.add(store.id);
       }
     }
