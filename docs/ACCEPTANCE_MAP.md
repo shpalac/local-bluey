@@ -724,29 +724,3 @@ claimed here: the on-device consent flow UI, visual indicator verification on
 a live OS build, or native accessibility labels — those need device
 validation, not more fake-host tests. Rollback: the three tests, the
 manifest entries and this paragraph; production code unchanged.
-
-## BLU-067 Suggestion quality controls — acceptance evidence (Refs #624)
-
-`test/watch_suggestions_ranking_624_test.dart` (ac_2) proves identical
-event sequences produce identical evidence strings across sessions, the
-repeat-run rate limits fire once on the third repeat and re-arm —
-re-evaluated deterministically per fresh session — a failing never-apps
-read rethrows the caller's typed error instead of swallowing it, and a
-restored reader resumes the identical sequence exactly.
-`test/watch_suggestions_privacy_624_test.dart` (ac_3) pins a static
-provenance contract over `lib/services/watch_suggestions.dart` (no
-`dart:io`/`package:http`/artifact writers; the only storage call is the
-canonical never-apps list) and proves a corpus secret in screen text stays
-quoted, never-parsed data, persists nothing beyond app names, kept silent
-for oversized payloads instead of truncating evidence, with the upstream
-SensitiveContentGate corpus verdicts re-asserted.
-`test/watch_suggestions_compat_624_test.dart` (ac_4) proves a legacy
-Routine stays byte-identical across a suppression cycle and that the
-suppression law has no platform branch — identical behavior across the
-iOS, Android and macOS flavors. Together with PR #822's AC-1 evidence, all
-four criteria in `docs/acceptance/temporary/issue-624.json` are automated
-and passing. Not claimed here: native OS verification beyond flavor
-overrides, full pipeline integration on device, or cross-model egress
-(drive actuate whichever live OS) — those are native-lane acceptances.
-Rollback: the three suites and the manifest/map promotions; production
-code unchanged.
