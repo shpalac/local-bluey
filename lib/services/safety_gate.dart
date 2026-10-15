@@ -162,9 +162,13 @@ class SafetyPreferences {
 /// need a human yes through [onConfirm] (wired to a dialog on the Mac).
 /// A global kill switch cancels everything in flight.
 class SafetyGate implements GateLike {
-  SafetyGate({this.onConfirm, this.voiceVerifier, Clock? clock, SafetyPreferences? preferences})
-    : _clockOverride = clock,
-      _preferences = preferences ?? SafetyPreferences.instance;
+  SafetyGate({
+    this.onConfirm,
+    this.voiceVerifier,
+    Clock? clock,
+    SafetyPreferences? preferences,
+  }) : _clockOverride = clock,
+       _preferences = preferences ?? SafetyPreferences.instance;
   final SafetyPreferences _preferences;
 
   /// Injectable clock for tests (#136); falls back to the zone-aware

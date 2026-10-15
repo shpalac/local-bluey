@@ -28,23 +28,26 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  test('spoofed voice at SafetyGate seam still asks for human approval', () async {
-    final provider = _FakeVoiceProvider();
-    final voice = VoiceVerifier(provider: provider);
-    voice.enable(enrollmentId: 'test-only', consent: true);
-    var confirmations = 0;
-    final gate = SafetyGate(
-      voiceVerifier: voice,
-      onConfirm: (_) async {
-        confirmations++;
-        return false;
-      },
-    );
+  test(
+    'spoofed voice at SafetyGate seam still asks for human approval',
+    () async {
+      final provider = _FakeVoiceProvider();
+      final voice = VoiceVerifier(provider: provider);
+      voice.enable(enrollmentId: 'test-only', consent: true);
+      var confirmations = 0;
+      final gate = SafetyGate(
+        voiceVerifier: voice,
+        onConfirm: (_) async {
+          confirmations++;
+          return false;
+        },
+      );
 
-    expect(await gate.authorize('click', {'target_id': 'button'}), isFalse);
-    expect(provider.assessments, 1);
-    expect(confirmations, 1);
-  });
+      expect(await gate.authorize('click', {'target_id': 'button'}), isFalse);
+      expect(provider.assessments, 1);
+      expect(confirmations, 1);
+    },
+  );
 
   test('voice provider stays unused without explicit opt-in', () async {
     final provider = _FakeVoiceProvider();
