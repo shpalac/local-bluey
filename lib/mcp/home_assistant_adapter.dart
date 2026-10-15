@@ -126,6 +126,13 @@ class HomeAssistantAdapter {
       if (stale()) {
         throw const HomeAssistantException(HomeAssistantFailure.cancelled);
       }
+      // Permissions and local connectivity can change while the MCP gate awaits.
+      if (!gate.isServerAllowed(serverId) || !isLocalEndpoint()) {
+        throw const HomeAssistantException(HomeAssistantFailure.denied);
+      }
+      if (!isOnline()) {
+        throw const HomeAssistantException(HomeAssistantFailure.offline);
+      }
       // An untrusted MCP result is never authorization.
       final approved = await approve(entityId, service).timeout(timeout);
       if (stale()) {
@@ -133,6 +140,13 @@ class HomeAssistantAdapter {
       }
       if (!approved) {
         throw const HomeAssistantException(HomeAssistantFailure.denied);
+      }
+      // Approval is scoped to the current server and local connection only.
+      if (!gate.isServerAllowed(serverId) || !isLocalEndpoint()) {
+        throw const HomeAssistantException(HomeAssistantFailure.denied);
+      }
+      if (!isOnline()) {
+        throw const HomeAssistantException(HomeAssistantFailure.offline);
       }
       if (dryRun) {
         return const {'dry_run': true};

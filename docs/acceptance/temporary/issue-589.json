@@ -29,6 +29,10 @@
             {
               "file": "test/mcp/home_assistant_mcp_policy_test.dart",
               "name": "unknown entities fail closed"
+            },
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "revoked server permission during lock approval blocks transport"
             }
           ]
         },
@@ -64,6 +68,10 @@
             {
               "file": "test/mcp/home_assistant_mcp_policy_test.dart",
               "name": "remote endpoint and disabled adapter are denied"
+            },
+            {
+              "file": "test/mcp/home_assistant_adapter_test.dart",
+              "name": "offline transition during MCP gate blocks transport"
             }
           ]
         },
