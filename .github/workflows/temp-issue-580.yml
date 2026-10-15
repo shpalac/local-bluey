@@ -7,7 +7,6 @@ on:
       - 'docs/acceptance/temporary/issue-580.json'
       - 'docs/ACCEPTANCE_MAP.md'
       - 'docs/architecture.md'
-      - 'README.md'
       - '.github/workflows/temp-issue-580.yml'
   workflow_dispatch:
 permissions:

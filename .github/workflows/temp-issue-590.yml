@@ -7,9 +7,6 @@ on:
       - 'docs/acceptance/temporary/issue-590.json'
       - '.github/workflows/temp-issue-590.yml'
       - 'docs/blu-034-playwright-mcp.md'
-      - 'README.md'
-      - 'docs/architecture.md'
-      - 'docs/ACCEPTANCE_MAP.md'
   workflow_dispatch:
 permissions:
   contents: read

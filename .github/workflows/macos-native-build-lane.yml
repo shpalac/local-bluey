@@ -23,8 +23,9 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
       - run: flutter pub get --enforce-lockfile
-      - run: flutter test test/macos_build_lane_manifest_test.dart test/macos_native_xctest_lane_test.dart
-      - run: flutter build macos --debug
+      # The central CI test lane runs the Dart suites and build-macos checks
+      # the Flutter build. This lane uniquely validates the native XCTest.
+      - run: flutter build macos --config-only
       - name: Run macOS XCTest target
         run: |
           xcodebuild test \
