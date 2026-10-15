@@ -89,7 +89,9 @@ class TeachCaptureSession extends ChangeNotifier {
       );
     } catch (_) {
       // A failed host/permission check must not leave capture running.
-      if (!_disposed && epoch == _epoch && indicator == CaptureIndicator.active) {
+      if (!_disposed &&
+          epoch == _epoch &&
+          indicator == CaptureIndicator.active) {
         _monitor.pause();
       }
       return false;
