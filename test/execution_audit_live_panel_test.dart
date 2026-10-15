@@ -26,10 +26,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: ExecutionAuditPanel(
-            execution: execution(audit),
-            audit: audit,
-          ),
+          body: ExecutionAuditPanel(execution: execution(audit), audit: audit),
         ),
       ),
     );
@@ -49,10 +46,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(
-          body: ExecutionAuditPanel(
-            execution: execution(audit),
-            audit: audit,
-          ),
+          body: ExecutionAuditPanel(execution: execution(audit), audit: audit),
         ),
       ),
     );
@@ -62,6 +56,7 @@ void main() {
         find.widgetWithText(TextButton, 'Stop execution'),
       );
     }
+
     expect(stopButton().onPressed, isNotNull);
 
     audit.requestStop();
@@ -79,10 +74,7 @@ void main() {
     Widget panel(ExecutionAudit audit) {
       return MaterialApp(
         home: Scaffold(
-          body: ExecutionAuditPanel(
-            execution: execution(audit),
-            audit: audit,
-          ),
+          body: ExecutionAuditPanel(execution: execution(audit), audit: audit),
         ),
       );
     }
