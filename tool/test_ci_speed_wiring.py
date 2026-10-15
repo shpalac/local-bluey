@@ -10,7 +10,7 @@ CI = (Path(__file__).resolve().parent.parent /
 
 def job_body(name):
     match = re.search(r"(?ms)^  " + re.escape(name) +
-                      r":\\n(.*?)(?=^  [a-z][a-z0-9_-]+:\\n|\\Z)", CI)
+                      r":\n(.*?)(?=^  [a-z][a-z0-9_-]+:\n|\Z)", CI)
     if match is None:
         raise AssertionError(f"missing job: {name}")
     return match.group(1)

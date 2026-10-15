@@ -7,7 +7,7 @@ from pathlib import Path
 import re
 import sys
 
-TEST_PATH = re.compile(r"test/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+_test\\.dart")
+TEST_PATH = re.compile(r"test/(?:[A-Za-z0-9_-]+/)*[A-Za-z0-9_-]+_test\.dart")
 
 
 def select_files(encoded: str, root: Path) -> list[str]:
@@ -40,7 +40,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         files = select_files(args.test_files, args.root.resolve())
-        args.output.write_text("\\n".join(files) + "\\n", encoding="utf-8")
+        args.output.write_text("\n".join(files) + "\n", encoding="utf-8")
     except (OSError, ValueError) as error:
         print(f"::error::Impacted test selection failed: {error}", file=sys.stderr)
         return 1
