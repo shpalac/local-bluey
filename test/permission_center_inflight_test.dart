@@ -42,21 +42,24 @@ void main() {
     await expectLater(pending, throwsStateError);
   });
 
-  test('expired grant while approval is pending denies authorization', () async {
-    var nowMs = 1000;
-    final response = Completer<bool>();
-    final center = PermissionCenter(
-      safetyGate: PendingPermissionGate(response.future),
-      now: () => DateTime.fromMillisecondsSinceEpoch(nowMs),
-    );
-    center.grant('camera', expiry: const Duration(milliseconds: 500));
+  test(
+    'expired grant while approval is pending denies authorization',
+    () async {
+      var nowMs = 1000;
+      final response = Completer<bool>();
+      final center = PermissionCenter(
+        safetyGate: PendingPermissionGate(response.future),
+        now: () => DateTime.fromMillisecondsSinceEpoch(nowMs),
+      );
+      center.grant('camera', expiry: const Duration(milliseconds: 500));
 
-    final pending = center.allows('camera');
-    nowMs = 1600;
-    response.complete(true);
+      final pending = center.allows('camera');
+      nowMs = 1600;
+      response.complete(true);
 
-    expect(await pending, isFalse);
-  });
+      expect(await pending, isFalse);
+    },
+  );
 
   test('replaced grant cannot authorize an older pending action', () async {
     final response = Completer<bool>();
