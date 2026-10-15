@@ -6,16 +6,18 @@ import 'package:local_bluey/workflows/workflow_dsl.dart';
 import 'package:local_bluey/workflows/workflow_execution.dart';
 
 void main() {
-  WorkflowExecution execution(ExecutionAudit audit) => WorkflowExecution(
-    const WorkflowDefinition(
-      id: 'audit-live-test',
-      trigger: 'manual',
-      steps: [WorkflowStep(type: 'notify', target: 'safe')],
-    ),
-    _InertHost(),
-    deadline: const Duration(seconds: 1),
-    audit: audit,
-  );
+  WorkflowExecution execution(ExecutionAudit audit) {
+    return WorkflowExecution(
+      const WorkflowDefinition(
+        id: 'audit-live-test',
+        trigger: 'manual',
+        steps: [WorkflowStep(type: 'notify', target: 'safe')],
+      ),
+      _InertHost(),
+      deadline: const Duration(seconds: 1),
+      audit: audit,
+    );
+  }
 
   testWidgets('ac1 audit timeline displays newly recorded events', (
     tester,
@@ -55,9 +57,11 @@ void main() {
       ),
     );
 
-    TextButton stopButton() => tester.widget<TextButton>(
-      find.widgetWithText(TextButton, 'Stop execution'),
-    );
+    TextButton stopButton() {
+      return tester.widget<TextButton>(
+        find.widgetWithText(TextButton, 'Stop execution'),
+      );
+    }
     expect(stopButton().onPressed, isNotNull);
 
     audit.requestStop();
@@ -72,14 +76,16 @@ void main() {
   ) async {
     final original = ExecutionAudit();
     final replacement = ExecutionAudit();
-    Widget panel(ExecutionAudit audit) => MaterialApp(
-      home: Scaffold(
-        body: ExecutionAuditPanel(
-          execution: execution(audit),
-          audit: audit,
+    Widget panel(ExecutionAudit audit) {
+      return MaterialApp(
+        home: Scaffold(
+          body: ExecutionAuditPanel(
+            execution: execution(audit),
+            audit: audit,
+          ),
         ),
-      ),
-    );
+      );
+    }
 
     await tester.pumpWidget(panel(original));
     await tester.pumpWidget(panel(replacement));
