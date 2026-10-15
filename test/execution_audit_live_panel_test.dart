@@ -55,8 +55,9 @@ void main() {
       ),
     );
 
-    TextButton stopButton() =>
-        tester.widget<TextButton>(find.widgetWithText(TextButton, 'Stop execution'));
+    TextButton stopButton() => tester.widget<TextButton>(
+      find.widgetWithText(TextButton, 'Stop execution'),
+    );
     expect(stopButton().onPressed, isNotNull);
 
     audit.requestStop();
