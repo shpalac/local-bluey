@@ -4,12 +4,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('macOS XCTest target runs after Flutter debug build', () {
-    final workflow =
-        File('.github/workflows/macos-native-build-lane.yml').readAsStringSync();
-    final nativeTest =
-        File('macos/RunnerTests/RunnerTests.swift').readAsStringSync();
-    final project =
-        File('macos/Runner.xcodeproj/project.pbxproj').readAsStringSync();
+    final workflow = File('.github/workflows/macos-native-build-lane.yml')
+        .readAsStringSync();
+    final nativeTest = File('macos/RunnerTests/RunnerTests.swift')
+        .readAsStringSync();
+    final project = File('macos/Runner.xcodeproj/project.pbxproj')
+        .readAsStringSync();
 
     expect(workflow, contains('runs-on: macos-latest'));
     expect(workflow, contains('xcodebuild test'));
