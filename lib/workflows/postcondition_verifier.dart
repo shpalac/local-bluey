@@ -103,7 +103,10 @@ final class PostconditionVerifier {
       if (cancellation?.isCancelled ?? false) {
         return VerificationOutcome.cancelled;
       }
-      if (observed == null) return VerificationOutcome.inconclusive;
+      // Empty observations are missing evidence, never proof of failure or success.
+      if (observed == null || observed.trim().isEmpty) {
+        return VerificationOutcome.inconclusive;
+      }
       if (observed != condition.expected) {
         return VerificationOutcome.rejected;
       }
