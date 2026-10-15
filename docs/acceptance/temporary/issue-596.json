@@ -13,6 +13,10 @@
             {
               "file": "test/ios_simulator_feasibility_test.dart",
               "name": "iOS simulator feasibility baseline is deterministic"
+            },
+            {
+              "file": "test/ios_simulator_mode_guard_test.dart",
+              "name": "AC-1 invalid simulator mode fails closed"
             }
           ]
         },

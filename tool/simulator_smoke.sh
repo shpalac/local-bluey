@@ -12,6 +12,10 @@ cd "$(dirname "$0")/.."
 #            migration on a cold runner can take 4+ minutes, so CI runs this
 #            before the iOS build and lets the two overlap.
 MODE="${1:-run}"
+case "$MODE" in
+  preboot|run) ;;
+  *) echo "unsupported simulator smoke mode: $MODE (expected preboot or run)" >&2; exit 2 ;;
+esac
 APP_PATH="build/ios/iphonesimulator/Runner.app"
 BUNDLE_ID="com.localbluey.localBluey"
 if [ "$MODE" != "preboot" ]; then

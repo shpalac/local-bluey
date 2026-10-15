@@ -24,3 +24,4 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed test/ios_simulator_feasibility_test.dart
       - run: flutter analyze
       - run: flutter test test/ios_simulator_feasibility_test.dart --reporter expanded
+      - run: flutter test test/ios_simulator_mode_guard_test.dart --reporter expanded
