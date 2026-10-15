@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/routines.dart';
+import '../services/routine_proposal.dart';
 import '../services/strings.dart';
 
 /// Unwired review surface for an existing disabled legacy Routine.
@@ -22,14 +23,32 @@ class RoutineReviewCard extends StatefulWidget {
 class _RoutineReviewCardState extends State<RoutineReviewCard> {
   bool _pending = false;
   bool _failed = false;
+  bool _editing = false;
+  String? _editedInstructions;
+
+  Routine? get _proposal {
+    if (!_editing || _editedInstructions == null) return widget.routine;
+    try {
+      return RoutineProposal.fromFields({
+        'name': widget.routine.name,
+        'trigger': widget.routine.trigger,
+        'instructions': _editedInstructions,
+      }).routine;
+    } on RoutineProposalException {
+      return null;
+    }
+  }
+
   Future<void> _accept() async {
     if (_pending || widget.routine.enabled) return;
+    final proposal = _proposal;
+    if (proposal == null) return;
     setState(() {
       _pending = true;
       _failed = false;
     });
     try {
-      await widget.onAccept(widget.routine);
+      await widget.onAccept(proposal);
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     } finally {
@@ -68,6 +87,19 @@ class _RoutineReviewCardState extends State<RoutineReviewCard> {
             style: Theme.of(context).textTheme.titleSmall,
           ),
           Text(widget.routine.instructions),
+          if (_editing && !widget.routine.enabled) ...[
+            TextField(
+              key: const ValueKey('workflow-draft-instructions'),
+              decoration: InputDecoration(labelText: Strings.t('Edit instructions', 'עריכת הוראות')),
+              onChanged: (value) => setState(() => _editedInstructions = value),
+            ),
+            Text(Strings.t('Before', 'לפני')),
+            Text(widget.routine.instructions),
+            Text(Strings.t('After', 'אחרי')),
+            Text(_editedInstructions ?? widget.routine.instructions),
+            if (_proposal == null)
+              Text(Strings.t('Invalid draft fields', 'שדות טיוטה לא תקינים')),
+          ],
           if (widget.routine.enabled)
             Text(
               Strings.t(
@@ -91,10 +123,16 @@ class _RoutineReviewCardState extends State<RoutineReviewCard> {
             runSpacing: 8,
             children: [
               FilledButton(
-                onPressed: _pending || widget.routine.enabled ? null : _accept,
+                onPressed: _pending || widget.routine.enabled || _proposal == null ? null : _accept,
                 child: Text(
                   Strings.t('Accept disabled draft', 'אישור טיוטה לא פעילה'),
                 ),
+              ),
+              OutlinedButton(
+                onPressed: _pending || widget.routine.enabled
+                    ? null
+                    : () => setState(() => _editing = !_editing),
+                child: Text(Strings.t('Edit draft', 'עריכת טיוטה')),
               ),
               TextButton(
                 onPressed: _pending ? null : widget.onDecline,
