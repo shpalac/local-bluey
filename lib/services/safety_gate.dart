@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 
 import 'request_interfaces.dart';
+import 'voice_verification.dart';
 
 import 'dart:async';
 
@@ -161,7 +162,7 @@ class SafetyPreferences {
 /// need a human yes through [onConfirm] (wired to a dialog on the Mac).
 /// A global kill switch cancels everything in flight.
 class SafetyGate implements GateLike {
-  SafetyGate({this.onConfirm, Clock? clock, SafetyPreferences? preferences})
+  SafetyGate({this.onConfirm, this.voiceVerifier, Clock? clock, SafetyPreferences? preferences})
     : _clockOverride = clock,
       _preferences = preferences ?? SafetyPreferences.instance;
   final SafetyPreferences _preferences;
@@ -200,6 +201,9 @@ class SafetyGate implements GateLike {
 
   /// UI hook: describe the action, get a yes/no. Null = deny risky actions.
   Future<bool> Function(String description)? onConfirm;
+
+  /// Optional, consented secondary signal. Never replaces human approval.
+  final VoiceVerifier? voiceVerifier;
 
   bool _killed = false;
 
@@ -305,6 +309,12 @@ class SafetyGate implements GateLike {
         if (allowed.isNotEmpty && !allowed.contains(targetApp)) return false;
       }
 
+      // Voice confidence is informational only. Even a verified voice must
+      // pass the original human confirmation; failures cannot waive it.
+      if (voiceVerifier?.enabled == true) {
+        await voiceVerifier!.verify(timeout: const Duration(seconds: 2));
+        if (stale()) return false;
+      }
       final description = describe(tool, arguments);
       final confirm = onConfirm;
       if (confirm == null || stale()) return false;

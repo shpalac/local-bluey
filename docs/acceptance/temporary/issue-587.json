@@ -17,6 +17,10 @@
             {
               "file": "test/voice_verification_test.dart",
               "name": "successful secondary signal still requires SafetyGate approval"
+            },
+            {
+              "file": "test/voice_safety_gate_integration_test.dart",
+              "name": "spoofed voice at SafetyGate seam still asks for human approval"
             }
           ]
         },
@@ -67,6 +71,10 @@
             {
               "file": "test/voice_verification_test.dart",
               "name": "invalid score and unavailable spoof evidence deny verification"
+            },
+            {
+              "file": "test/voice_safety_gate_integration_test.dart",
+              "name": "voice provider stays unused without explicit opt-in"
             }
           ]
         },
