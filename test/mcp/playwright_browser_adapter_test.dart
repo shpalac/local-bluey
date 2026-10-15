@@ -19,13 +19,15 @@ void main() {
   PlaywrightBrowserAdapter adapter({bool enabled = true, bool online = true}) =>
       PlaywrightBrowserAdapter(
         gate: gate,
-        transport: _FakeTransport((request) => gate.invoke(
-          'playwright-local',
-          request.action == BrowserAction.navigate
-              ? 'browser_navigate'
-              : 'browser_snapshot',
-          {'url': request.url.toString()},
-        )),
+        transport: _FakeTransport(
+          (request) => gate.invoke(
+            'playwright-local',
+            request.action == BrowserAction.navigate
+                ? 'browser_navigate'
+                : 'browser_snapshot',
+            {'url': request.url.toString()},
+          ),
+        ),
         allowedDomains: {'example.org'},
         enabled: enabled,
         online: online,
@@ -86,13 +88,15 @@ void main() {
   test('feature is off by default', () async {
     final subject = PlaywrightBrowserAdapter(
       gate: gate,
-      transport: _FakeTransport((request) => gate.invoke(
+      transport: _FakeTransport(
+        (request) => gate.invoke(
           'playwright-local',
           request.action == BrowserAction.navigate
               ? 'browser_navigate'
               : 'browser_snapshot',
           {'url': request.url.toString()},
-        )),
+        ),
+      ),
       allowedDomains: {'example.org'},
     );
     await rejects(subject, BrowserFailure.disabled);

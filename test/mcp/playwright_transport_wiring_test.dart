@@ -43,11 +43,13 @@ void main() {
   test('AC-1 blocked domain cannot reach injected transport', () async {
     await expectLater(
       execute(Uri.parse('https://example.org.attacker.test/')),
-      throwsA(isA<BrowserException>().having(
-        (error) => error.reason,
-        'reason',
-        BrowserFailure.blockedDomain,
-      )),
+      throwsA(
+        isA<BrowserException>().having(
+          (error) => error.reason,
+          'reason',
+          BrowserFailure.blockedDomain,
+        ),
+      ),
     );
     expect(transportCalls, 0);
     expect(legacyInvokerCalls, 0);
@@ -65,11 +67,13 @@ void main() {
     permissionGranted = false;
     await expectLater(
       execute(url),
-      throwsA(isA<BrowserException>().having(
-        (error) => error.reason,
-        'reason',
-        BrowserFailure.denied,
-      )),
+      throwsA(
+        isA<BrowserException>().having(
+          (error) => error.reason,
+          'reason',
+          BrowserFailure.denied,
+        ),
+      ),
     );
     expect(transportCalls, 0);
     expect(legacyInvokerCalls, 0);
