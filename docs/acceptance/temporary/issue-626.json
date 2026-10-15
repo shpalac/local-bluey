@@ -24,14 +24,9 @@
         },
         {
           "id": "ac_3",
-          "type": "automated",
+          "type": "gap",
           "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions.",
-          "tests": [
-            {
-              "file": "test/local_data_control_center_failure_test.dart",
-              "name": "deletion errors never print secret exception contents"
-            }
-          ]
+          "reason": "The new test covers redaction of a registered deletion failure, not comprehensive files, artifact, egress or native safety guarantees."
         },
         {
           "id": "ac_4",
