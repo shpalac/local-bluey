@@ -97,7 +97,11 @@ class FileIndex {
       }
       rethrow;
     } catch (_) {
-      if (ticket == _generation) state = FileIndexState.failed;
+      if (ticket == _generation) {
+        _contents.clear();
+        _modified.clear();
+        state = FileIndexState.failed;
+      }
       rethrow;
     }
   }
