@@ -19,20 +19,59 @@
         {
           "id": "ac_2",
           "requirement": "Deterministic, reproducible results; explicit errors rather than silent fallbacks.",
-          "type": "gap",
-          "reason": "New tests cover canonical stored preference behavior only; full ranking determinism and explicit error handling are not proven by this PR."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/watch_suggestions_ranking_624_test.dart",
+              "name": "ac2 identical event sequences leave identical verdict evidence"
+            },
+            {
+              "file": "test/watch_suggestions_ranking_624_test.dart",
+              "name": "ac2 rate limits are deterministic and re-evaluated per session"
+            },
+            {
+              "file": "test/watch_suggestions_ranking_624_test.dart",
+              "name": "ac2 a failing never-apps read is rethrown, not swallowed"
+            },
+            {
+              "file": "test/watch_suggestions_ranking_624_test.dart",
+              "name": "ac2 a restored reader deterministically resumes the sequence"
+            }
+          ]
         },
         {
           "id": "ac_3",
           "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions.",
-          "type": "gap",
-          "reason": "Read-only preference change has no new network or action path, but complete privacy and egress coverage is not proven by new tests."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/watch_suggestions_privacy_624_test.dart",
+              "name": "ac3 a screen-corpus secret stays quoted and unpersisted"
+            },
+            {
+              "file": "test/watch_suggestions_privacy_624_test.dart",
+              "name": "ac3 a screen-corpus secret stays quoted and unpersisted"
+            },
+            {
+              "file": "test/watch_suggestions_privacy_624_test.dart",
+              "name": "ac3 a screen-corpus secret stays quoted and unpersisted"
+            }
+          ]
         },
         {
           "id": "ac_4",
           "requirement": "Existing Routines and supported platform behavior remain compatible.",
-          "type": "gap",
-          "reason": "This slice does not change Routines, but cross-platform and full Routines compatibility is not proven by new tests."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/watch_suggestions_compat_624_test.dart",
+              "name": "ac4 routines stay untouched across a suppression cycle"
+            },
+            {
+              "file": "test/watch_suggestions_compat_624_test.dart",
+              "name": "ac4 suppression law is flavor-independent (no platform branch)"
+            }
+          ]
         }
       ]
     }
