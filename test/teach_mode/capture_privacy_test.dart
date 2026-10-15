@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:local_bluey/services/capture_monitor.dart';
 import 'package:local_bluey/services/screen_watch.dart';
 import 'package:local_bluey/teach_mode/capture_session.dart';
 
