@@ -3,6 +3,7 @@ import '../styles/global.css';
 import CompanionScene from '../components/CompanionScene';
 import RiveMascot from '../components/RiveMascot';
 import ApprovalDemo from '../components/ApprovalDemo';
+import OptInAnalytics from '../components/OptInAnalytics.astro';
 
 const base = import.meta.env.BASE_URL;
 const asset = (name: string) => base + 'media/' + name;
@@ -13,10 +14,6 @@ const socialImageUrl = new URL(asset('showcase-hero.png'), Astro.site).toString(
 
 // Account-specific values remain opt-in; no verification or tracking by default.
 const googleVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION?.trim() ?? '';
-const plausibleScriptUrl = import.meta.env.PUBLIC_PLAUSIBLE_SCRIPT_URL?.trim() ?? '';
-if (plausibleScriptUrl && !/^https:\/\/plausible\.io\/js\/pa-[a-zA-Z0-9_-]+\.js$/.test(plausibleScriptUrl)) {
-  throw new Error('PUBLIC_PLAUSIBLE_SCRIPT_URL must be an official site-specific Plausible HTTPS script URL');
-}
 
 // Describe the open-source Mac host without claiming an app-store release,
 // production validation, user ratings, or a native download.
@@ -86,20 +83,7 @@ const sceneSteps = [
     <link rel="canonical" href={pageUrl} />
     <link rel="sitemap" type="application/xml" href={new URL(base + 'sitemap-index.xml', Astro.site).toString()} />
     <script type="application/ld+json" set:html={JSON.stringify(softwareApplicationSchema).replace(/</g, '\\u003c')}></script>
-    {plausibleScriptUrl && (
-      <>
-        <script is:inline async src={plausibleScriptUrl}></script>
-        <script is:inline>
-          window.plausible = window.plausible || function () {
-            (window.plausible.q = window.plausible.q || []).push(arguments);
-          };
-          window.plausible.init = window.plausible.init || function (options) {
-            window.plausible.o = options || {};
-          };
-          window.plausible.init();
-        </script>
-      </>
-    )}
+    <OptInAnalytics />
     <title>Local Bluey | Open-Source AI Desktop Assistant for Mac</title>
   </head>
   <body>
@@ -112,7 +96,7 @@ const sceneSteps = [
           <a href="#approval-demo">Try the demo</a>
           <a href="#platforms">Platforms</a>
         </nav>
-        <a class="nav-cta" href={github} target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+        <a class="nav-cta" data-gtm-event="GitHub Click" href={github} target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
       </header>
 
       <main id="main">
@@ -123,7 +107,7 @@ const sceneSteps = [
             <h1 id="hero-title">YOUR MAC<br/>HAS AN AI<br/><em>sidekick.</em></h1>
             <p class="hero-lede">Meet Local Bluey, a playful open-source companion for your Mac. Ask about your screen, talk through tasks, and approve computer actions before Bluey clicks or types.</p>
             <div class="hero-actions">
-              <a class="pill-button pill-button-primary" href={doc} target="_blank" rel="noopener noreferrer">Set up Bluey on Mac <span aria-hidden="true">↗</span></a>
+              <a class="pill-button pill-button-primary" data-gtm-event="Setup Click" href={doc} target="_blank" rel="noopener noreferrer">Set up Bluey on Mac <span aria-hidden="true">↗</span></a>
               <a class="text-link" href="#how">See how it works <span aria-hidden="true">↓</span></a>
             </div>
             <div class="hero-walkthrough" aria-label="Four steps to use Bluey">
@@ -277,17 +261,17 @@ const sceneSteps = [
           <h2 id="resources-title">How does Bluey <em>work?</em></h2>
           <p class="resources-intro">Practical, source-backed guides explain what is implemented, what needs configuring, and what still requires validation.</p>
           <div class="resource-grid">
-            <a class="resource-card" href={base + 'guides/mac-setup/'}><span>01 / SETUP</span><h3>Get started on Mac</h3><p>Install from source and review permissions.</p><strong>Read the guide →</strong></a>
-            <a class="resource-card" href={base + 'guides/ollama/'}><span>02 / LOCAL AI</span><h3>Connect Ollama</h3><p>Local brain setup and voice limitations.</p><strong>Read the guide →</strong></a>
-            <a class="resource-card" href={base + 'features/screen-understanding/'}><span>03 / SCREEN</span><h3>Understand your screen</h3><p>Screen tools, screenshots and privacy limits.</p><strong>Explore the feature →</strong></a>
-            <a class="resource-card" href={base + 'features/approval-safety/'}><span>04 / SAFETY</span><h3>Approve computer actions</h3><p>SafetyGate, kill switch and known gaps.</p><strong>Explore the feature →</strong></a>
+            <a class="resource-card" data-gtm-event="Guide Click" href={base + 'guides/mac-setup/'}><span>01 / SETUP</span><h3>Get started on Mac</h3><p>Install from source and review permissions.</p><strong>Read the guide →</strong></a>
+            <a class="resource-card" data-gtm-event="Guide Click" href={base + 'guides/ollama/'}><span>02 / LOCAL AI</span><h3>Connect Ollama</h3><p>Local brain setup and voice limitations.</p><strong>Read the guide →</strong></a>
+            <a class="resource-card" data-gtm-event="Guide Click" href={base + 'features/screen-understanding/'}><span>03 / SCREEN</span><h3>Understand your screen</h3><p>Screen tools, screenshots and privacy limits.</p><strong>Explore the feature →</strong></a>
+            <a class="resource-card" data-gtm-event="Guide Click" href={base + 'features/approval-safety/'}><span>04 / SAFETY</span><h3>Approve computer actions</h3><p>SafetyGate, kill switch and known gaps.</p><strong>Explore the feature →</strong></a>
           </div>
           <div class="resources-faq" aria-labelledby="faq-title">
             <h3 id="faq-title">Frequently asked questions</h3>
             <details><summary>Does Local Bluey run fully offline?</summary><p>Local-only mode restricts supported endpoints to loopback addresses, but native offline speech transcription is not shipped. Remote services may receive screenshots, prompts, or voice if configured.</p></details>
             <details><summary>Does the iOS or Android app control my phone?</summary><p>No. The macOS app is the host; phones are companion clients that connect to the Mac on a trusted local network.</p></details>
             <details><summary>Is this production ready?</summary><p>Not yet. Mock and source-level tests exist, but end-to-end validation on physical devices is pending. <a href={github + '/issues/15'}>See validation status.</a></p></details>
-            <details><summary>How can I contribute?</summary><p>Review the <a href={github + '/blob/main/CONTRIBUTING.md'}>contribution guidelines</a> or <a href={github + '/issues'}>open issues</a>. Report vulnerabilities privately.</p></details>
+            <details><summary>How can I contribute?</summary><p>Review the <a data-gtm-event="Contribute Click" href={github + '/blob/main/CONTRIBUTING.md'}>contribution guidelines</a> or <a href={github + '/issues'}>open issues</a>. Report vulnerabilities privately.</p></details>
           </div>
         </section>
 
@@ -298,7 +282,7 @@ const sceneSteps = [
             <h2 id="last-title">GO ON.<br/><em>SAY HELLO.</em></h2>
             <div class="last-bottom">
               <p>Curious? Build from source, follow the journey, or help this little blueberry grow.</p>
-              <a class="pill-button pill-button-final" href={doc} target="_blank" rel="noopener noreferrer">Get started on GitHub <span aria-hidden="true">↗</span></a>
+              <a class="pill-button pill-button-final" data-gtm-event="Setup Click" href={doc} target="_blank" rel="noopener noreferrer">Get started on GitHub <span aria-hidden="true">↗</span></a>
             </div>
             <img class="last-mascot" src={asset('bluey-desktop.png')} alt="Bluey waving hello in the original app artwork" loading="lazy" width="340" height="340" />
           </div>
