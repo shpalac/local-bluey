@@ -4,6 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../link/models.dart';
 
+/// Renderer selection is deliberately local until a licensed Rive asset and
+/// runtime have passed platform validation.
+enum FaceRenderer { native, rive }
+
+/// No Rive runtime is bundled. Every request resolves to the native painter.
+FaceRenderer resolveFaceRenderer(FaceRenderer requested) => FaceRenderer.native;
+
 /// Scalable character artwork shared by the Mac, iOS and Android Flutter UI.
 ///
 /// The painter uses a fixed design space and has no image/network dependency.
@@ -15,8 +22,10 @@ class BlueyCharacter extends StatelessWidget {
     required this.awake,
     required this.tint,
     this.phase = 0,
+    this.requestedRenderer = FaceRenderer.native,
   });
 
+  final FaceRenderer requestedRenderer;
   final FaceState face;
   final bool awake;
   final Color tint;
@@ -25,7 +34,9 @@ class BlueyCharacter extends StatelessWidget {
   final double phase;
 
   @override
-  Widget build(BuildContext context) => RepaintBoundary(
+  Widget build(BuildContext context) {
+    assert(resolveFaceRenderer(requestedRenderer) == FaceRenderer.native);
+    return RepaintBoundary(
     child: CustomPaint(
       painter: _BlueyPainter(
         gazeX: _bounded(face.gazeX, -1, 1),
@@ -37,8 +48,8 @@ class BlueyCharacter extends StatelessWidget {
         phase: _bounded(phase, 0, 1),
       ),
       child: const SizedBox.expand(),
-    ),
-  );
+    );
+  }
 }
 
 double _bounded(double value, double min, double max) =>
