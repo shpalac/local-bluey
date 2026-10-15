@@ -12,6 +12,7 @@ enum McpToolFailure {
   offline,
   timeout,
   cancelled,
+  resourceLimit,
 }
 
 class McpToolException implements Exception {
