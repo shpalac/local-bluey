@@ -13,6 +13,10 @@
             {
               "file": "test/permission_center_test.dart",
               "name": "grant then allows true and revoke immediately blocks action"
+            },
+            {
+              "file": "test/permission_center_inflight_test.dart",
+              "name": "in-flight revocation denies the pending authorization"
             }
           ]
         },
@@ -24,6 +28,10 @@
             {
               "file": "test/permission_center_test.dart",
               "name": "expired grant does not silently allow action"
+            },
+            {
+              "file": "test/permission_center_inflight_test.dart",
+              "name": "authorization failure propagates without silent fallback"
             }
           ]
         },

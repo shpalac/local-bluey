@@ -48,6 +48,11 @@ class PermissionCenter {
     final grant = _grants[id];
     if (grant == null || grant.isRevoked) return false;
     if (grant.isExpired(_now().millisecondsSinceEpoch)) return false;
-    return safetyGate.authorize(id, const {});
+    final allowed = await safetyGate.authorize(id, const {});
+    // A revoke, replacement grant, or expiry during authorization wins.
+    return allowed &&
+        identical(_grants[id], grant) &&
+        !grant.isRevoked &&
+        !grant.isExpired(_now().millisecondsSinceEpoch);
   }
 }
