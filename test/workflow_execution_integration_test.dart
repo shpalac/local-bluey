@@ -75,6 +75,41 @@ void main() {
       expect(await execution.run(), WorkflowStatus.failed);
     },
   );
+
+  test('ac3 interrupted recovery never invokes host actions', () async {
+    final events = <String>[];
+    final execution = WorkflowExecution(
+      const WorkflowDefinition(
+        id: 'blu-016-recovery-no-replay',
+        trigger: 'manual',
+        steps: [WorkflowStep(type: 'hostAction', target: 'local')],
+      ),
+      _Host(events),
+      deadline: const Duration(seconds: 5),
+      recoveryStore: _RecoveryStore(),
+    );
+
+    expect(await execution.run(), WorkflowStatus.failed);
+    expect(execution.requiresManualRecovery, isTrue);
+    expect(events, isEmpty);
+  });
+
+  test('ac4 repeated run calls never replay completed host work', () async {
+    final events = <String>[];
+    final execution = WorkflowExecution(
+      const WorkflowDefinition(
+        id: 'blu-016-run-once',
+        trigger: 'manual',
+        steps: [WorkflowStep(type: 'hostAction', target: 'local')],
+      ),
+      _Host(events),
+      deadline: const Duration(seconds: 5),
+    );
+
+    expect(await execution.run(), WorkflowStatus.completed);
+    expect(await execution.run(), WorkflowStatus.completed);
+    expect(events, ['approve', 'execute', 'verify']);
+  });
 }
 
 final class _Host implements WorkflowHost {
