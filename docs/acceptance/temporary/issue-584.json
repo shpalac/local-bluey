@@ -36,6 +36,10 @@
             {
               "file": "test/file_index_test.dart",
               "name": "restart has no durable grant"
+            },
+            {
+              "file": "test/file_index_test.dart",
+              "name": "failed refresh hides previously indexed data"
             }
           ]
         },
