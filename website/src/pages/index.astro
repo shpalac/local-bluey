@@ -37,14 +37,14 @@ const sceneSteps = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#14142e" />
-    <meta name="description" content="Meet Local Bluey, a playful local-first AI companion for your Mac. Talk naturally, understand your screen, and approve actions before Bluey helps." />
+    <meta name="description" content="Local Bluey is an open-source, local-first AI desktop assistant for Mac. Ask about your screen, configure your AI provider, and approve computer actions." />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Local Bluey — A little company for your computer" />
-    <meta property="og:description" content="Your Mac has a new sidekick. Meet the little blueberry who listens, helps, and always asks first." />
+    <meta property="og:title" content="Local Bluey — Open-Source AI Desktop Assistant for Mac" />
+    <meta property="og:description" content="Meet Bluey, the playful local-first AI companion for Mac. Ask about your screen and approve computer actions before Bluey helps." />
     <meta property="og:image" content={new URL(asset('showcase-hero.png'), Astro.site)} />
     <link rel="icon" href={asset('bluey-mobile.png')} type="image/png" />
     <link rel="canonical" href={new URL(base, Astro.site)} />
-    <title>Local Bluey — A little company for your computer</title>
+    <title>Local Bluey | Open-Source AI Desktop Assistant for Mac</title>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -52,9 +52,9 @@ const sceneSteps = [
       <header class="site-header" id="top">
         <a class="wordmark" href="#top" aria-label="Local Bluey — back to top"><span class="wordmark-orb"></span>local<span class="wordmark-blue">bluey</span><span class="wordmark-dot">.</span></a>
         <nav aria-label="Primary navigation">
-          <a href="#meet">Meet Bluey</a>
-          <a href="#how">The magic</a>
-          <a href="#look">A closer look</a>
+          <a href="#how">How it works</a>
+          <a href="#approval-demo">Try the demo</a>
+          <a href="#platforms">Platforms</a>
         </nav>
         <a class="nav-cta" href={github} target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
       </header>
@@ -62,15 +62,25 @@ const sceneSteps = [
       <main id="main">
         <section class="hero section-wrap" aria-labelledby="hero-title">
           <span class="orbit-label orbit-label-a" aria-hidden="true">A FRIEND IN YOUR CORNER</span>
-          <span class="hero-label"><span class="status-light"></span> HELLO FROM YOUR DESKTOP</span>
+          <span class="hero-label"><span class="status-light"></span> OPEN-SOURCE, LOCAL-FIRST AI FOR MAC</span>
           <div class="hero-copy">
-            <h1 id="hero-title">YOUR MAC<br/>HAS A NEW<br/><em>sidekick.</em></h1>
-            <p class="hero-lede">Meet Bluey. A tiny blueberry with a big personality — and a surprisingly helpful set of hands.</p>
+            <h1 id="hero-title">YOUR MAC<br/>HAS AN AI<br/><em>sidekick.</em></h1>
+            <p class="hero-lede">Meet Local Bluey, a playful open-source companion for your Mac. Ask about your screen, talk through tasks, and approve computer actions before Bluey clicks or types.</p>
             <div class="hero-actions">
-              <a class="pill-button pill-button-primary" href={doc} target="_blank" rel="noopener noreferrer">Get started <span aria-hidden="true">↗</span></a>
-              <a class="text-link" href="#meet">Get to know him <span aria-hidden="true">↓</span></a>
+              <a class="pill-button pill-button-primary" href={doc} target="_blank" rel="noopener noreferrer">Set up Bluey on Mac <span aria-hidden="true">↗</span></a>
+              <a class="text-link" href="#how">See how it works <span aria-hidden="true">↓</span></a>
             </div>
-            <p class="hero-honesty">An open-source project in active development. Real-device validation is still pending.</p>
+            <div class="hero-walkthrough" aria-label="Four steps to use Bluey">
+              <span class="hero-walkthrough-kicker">HOW BLUEY HELPS</span>
+              <ol class="hero-walkthrough-steps">
+                <li><span>01</span> Wake</li>
+                <li><span>02</span> Ask</li>
+                <li><span>03</span> Approve</li>
+                <li><span>04</span> Help</li>
+              </ol>
+              <a class="hero-walkthrough-link" href="#approval-demo">Try the interactive approval demo <span aria-hidden="true">↗</span></a>
+            </div>
+            <p class="hero-honesty">macOS is the host; iOS and Android are companion clients. An open-source project in active development. Real-device validation is still pending.</p>
           </div>
           <div class="hero-art" aria-label="Bluey joyful bird character illustration">
             <div class="hero-scribble scribble-one" aria-hidden="true">☼</div>
@@ -120,7 +130,7 @@ const sceneSteps = [
                     <span class="story-eyebrow">{step.eyebrow}</span>
                     <h3>{step.title}</h3>
                     <p>{step.copy}</p>
-                    <span class="story-step-footer">{step.verb.toUpperCase()} WITH BLUEY <span>↗</span></span>
+                    <span class="story-step-footer">{step.verb.toUpperCase()} WITH BLUEY <span aria-hidden="true">✳</span></span>
                   </div>
                   <div class="story-image-wrap"><img src={step.image} alt={step.alt} loading="lazy" width="640" height="480" /></div>
                 </article>
@@ -131,7 +141,7 @@ const sceneSteps = [
           <p class="story-disclaimer section-wrap">Interactive storytelling explains features present in the codebase; it is not a recording of verified device operation.</p>
         </section>
 
-        <section class="control section-wrap" aria-labelledby="control-title">
+        <section class="control section-wrap" id="approval-demo" aria-labelledby="control-title">
           <div class="section-index"><span>03 / YOUR MAC. YOUR RULES.</span><span>✱</span></div>
           <div class="control-grid">
             <div class="control-copy">
@@ -152,21 +162,47 @@ const sceneSteps = [
           <div class="section-index"><span>04 / WHAT BLUEY CAN DO</span><span>YOU PICK THE BRAIN</span></div>
           <h2 id="features-title">Small face.<br/><em>Big ideas.</em></h2>
           <div class="feature-list" id="features">
-            <div class="feature-row"><span>✦ 01</span><h3>Bring your own brain.</h3><p>Use local Ollama or configure an OpenAI-compatible endpoint. Speech and transcription are configured separately.</p><span class="feature-end">↗</span></div>
-            <div class="feature-row"><span>✦ 02</span><h3>Look at the screen.</h3><p>Bluey can inspect screenshots and recognized text when allowed. Pattern-based redaction is helpful, not infallible.</p><span class="feature-end">↗</span></div>
-            <div class="feature-row"><span>✦ 03</span><h3>Talk it through.</h3><p>Hold to talk and hear responses with compatible configured endpoints. Native offline transcription is not shipped.</p><span class="feature-end">↗</span></div>
-            <div class="feature-row"><span>✦ 04</span><h3>Make it feel yours.</h3><p>Light and dark themes, English and Hebrew RTL, moods, haptics and optional biometric app lock.</p><span class="feature-end">↗</span></div>
+            <div class="feature-row"><span>✦ 01</span><h3>Bring your own brain.</h3><p>Use local Ollama or configure an OpenAI-compatible endpoint. Speech and transcription are configured separately.</p><span class="feature-end" aria-hidden="true">✳</span></div>
+            <div class="feature-row"><span>✦ 02</span><h3>Look at the screen.</h3><p>Bluey can inspect screenshots and recognized text when allowed. Pattern-based redaction is helpful, not infallible.</p><span class="feature-end" aria-hidden="true">✳</span></div>
+            <div class="feature-row"><span>✦ 03</span><h3>Talk it through.</h3><p>Hold to talk and hear responses with compatible configured endpoints. Native offline transcription is not shipped.</p><span class="feature-end" aria-hidden="true">✳</span></div>
+            <div class="feature-row"><span>✦ 04</span><h3>Make it feel yours.</h3><p>Light and dark themes, English and Hebrew RTL, moods, haptics and optional biometric app lock.</p><span class="feature-end" aria-hidden="true">✳</span></div>
           </div>
+        </section>
+
+        <section class="platforms section-wrap" id="platforms" aria-labelledby="platforms-title">
+          <div class="section-index"><span>05 / WHERE BLUEY RUNS</span><span>START WITH A MAC</span></div>
+          <div class="platforms-head">
+            <h2 id="platforms-title">One Mac.<br/><em>One little sidekick.</em></h2>
+            <p>Your Mac is the host that sees and controls its screen. Phone apps are companions to that Mac, not assistants that control your phone.</p>
+          </div>
+          <div class="platform-grid">
+            <article class="platform-card">
+              <span class="platform-tag">DESKTOP HOST</span>
+              <h3>macOS</h3>
+              <p>Runs configured AI services, screen understanding, and approval-gated computer actions.</p>
+            </article>
+            <article class="platform-card">
+              <span class="platform-tag">PHONE COMPANIONS</span>
+              <h3>iOS &amp; Android</h3>
+              <p>Hold to talk and connect to your Mac over a trusted local network. These are companion clients, not phone-control assistants.</p>
+            </article>
+            <article class="platform-card">
+              <span class="platform-tag">NOT SUPPORTED AS HOSTS</span>
+              <h3>Linux &amp; Windows</h3>
+              <p>Linux has experimental host backends but no supported host role. Windows host control is not implemented.</p>
+            </article>
+          </div>
+          <p class="platforms-note">End-to-end behavior on physical devices is not yet verified. <a href={github + '/blob/main/docs/SUPPORT.md'} target="_blank" rel="noopener noreferrer">Read the platform support matrix <span aria-hidden="true">↗</span></a></p>
         </section>
 
         <section class="gallery" id="look" aria-labelledby="gallery-title">
           <div class="section-wrap">
-            <div class="section-index"><span>05 / A CLOSER LOOK</span><span>REAL PROJECT ASSETS</span></div>
+            <div class="section-index"><span>06 / A CLOSER LOOK</span><span>REAL PROJECT ASSETS</span></div>
             <div class="gallery-head"><h2 id="gallery-title">Peek inside<br/><em>Bluey's world.</em></h2><p>Captured from the project's deterministic Flutter screenshot tests. No imaginary app screens here.</p></div>
             <div class="gallery-mosaic">
-              <figure class="gallery-large"><img src={asset('showcase-hero.png')} alt="Composed showcase with authentic Bluey icon and Flutter test screenshots" loading="lazy" width="1200" height="700" /><figcaption><span>01 — THE BIG PICTURE</span><span>↗</span></figcaption></figure>
-              <figure class="gallery-small"><img src={asset('settings-dark.png')} alt="Dark settings screen from Flutter test capture" loading="lazy" width="560" height="720" /><figcaption><span>02 — DARK MODE</span><span>↗</span></figcaption></figure>
-              <figure class="gallery-small"><img src={asset('onboarding-rtl.png')} alt="Hebrew right-to-left onboarding test capture" loading="lazy" width="560" height="720" /><figcaption><span>03 — HEBREW &amp; RTL</span><span>↗</span></figcaption></figure>
+              <figure class="gallery-large"><img src={asset('showcase-hero.png')} alt="Composed showcase with authentic Bluey icon and Flutter test screenshots" loading="lazy" width="1200" height="700" /><figcaption><span>01 — THE BIG PICTURE</span><span aria-hidden="true">✳</span></figcaption></figure>
+              <figure class="gallery-small"><img src={asset('settings-dark.png')} alt="Dark settings screen from Flutter test capture" loading="lazy" width="560" height="720" /><figcaption><span>02 — DARK MODE</span><span aria-hidden="true">✳</span></figcaption></figure>
+              <figure class="gallery-small"><img src={asset('onboarding-rtl.png')} alt="Hebrew right-to-left onboarding test capture" loading="lazy" width="560" height="720" /><figcaption><span>03 — HEBREW &amp; RTL</span><span aria-hidden="true">✳</span></figcaption></figure>
             </div>
             <p class="gallery-disclosure"><strong>Screenshots are deterministic</strong> mock captures generated from Flutter tests, not photographs of a running device. Native permission flows and end-to-end behavior still need real-device verification. <a href={github + '/issues/15'} target="_blank" rel="noopener noreferrer">Track validation ↗</a></p>
           </div>
@@ -174,7 +210,7 @@ const sceneSteps = [
 
         <section class="privacy section-wrap" aria-labelledby="privacy-title">
           <div class="privacy-mark" aria-hidden="true">✳</div>
-          <p class="section-index">06 / PRIVATE BY CHOICE</p>
+          <p class="section-index">07 / PRIVATE BY CHOICE</p>
           <h2 id="privacy-title">Your Mac.<br/><em>Your rules.</em></h2>
           <p>Local-first means you can choose local endpoints. Connecting remote AI or speech services may send data to those providers. Bluey has explicit permissions, confirmation gates and documented limits — not magic privacy promises.</p>
           <a class="pill-button pill-button-outline" href={github + '/blob/main/docs/README_TECHNICAL_REFERENCE.md#privacy-what-stays-local'} target="_blank" rel="noopener noreferrer">The honest details <span aria-hidden="true">↗</span></a>
