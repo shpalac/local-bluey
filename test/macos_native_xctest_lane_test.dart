@@ -22,13 +22,7 @@ void main() {
       lessThan(workflow.indexOf('xcodebuild test')),
     );
     expect(project, contains('RunnerTests.swift in Sources'));
-    expect(
-      nativeTest,
-      contains('func testRunnerHostHasNativeExecutable()'),
-    );
-    expect(
-      nativeTest,
-      contains('FileManager.default.isExecutableFile'),
-    );
+    expect(nativeTest, contains('func testRunnerHostHasNativeExecutable()'));
+    expect(nativeTest, contains('FileManager.default.isExecutableFile'));
   });
 }
