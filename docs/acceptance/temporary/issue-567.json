@@ -33,10 +33,6 @@
             {
               "file": "test/workflow_dsl_unknown_fields_test.dart",
               "name": "ac1 unknown workflow step fields fail closed"
-            },
-            {
-              "file": "test/workflow_dsl_unknown_fields_test.dart",
-              "name": "ac1 permitted optional fields still round-trip unchanged"
             }
           ]
         },
@@ -72,8 +68,8 @@
           "type": "automated",
           "tests": [
             {
-              "file": "test/workflow_dsl_test.dart",
-              "name": "schema round-trip is stable"
+              "file": "test/workflow_dsl_unknown_fields_test.dart",
+              "name": "ac1 permitted optional fields still round-trip unchanged"
             }
           ]
         },
