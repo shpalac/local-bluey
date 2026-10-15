@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 600,
+      "title": "BLU-044 CI sharding and dependency caching",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Cache correctness and shard parity (shard parity only; cache validation remains unverified)",
+          "tests": [
+            {
+              "file": "test/ci_test_shards_test.dart",
+              "name": "issue 600 AC-1 shard parity covers every impacted test exactly once"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Results are deterministic and reproducible; failures are explicit and actionable (partition contract)",
+          "tests": [
+            {
+              "file": "test/ci_test_shards_test.dart",
+              "name": "issue 600 AC-2 shard results are order independent"
+            },
+            {
+              "file": "test/ci_test_shards_test.dart",
+              "name": "issue 600 AC-2 malformed shard inputs fail explicitly"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secrets, personal data, raw screenshots, or unapproved network egress in logs and artifacts",
+          "type": "gap",
+          "reason": "Runner artifact and egress behavior requires workflow security review; pure Dart partition tests cannot certify it."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Backwards compatibility and cross-platform behavior reviewed with no unsupported capability advertised",
+          "type": "gap",
+          "reason": "Cross-platform runner review and full-suite behavior are not proven by partition unit tests."
+        }
+      ]
+    }
+  ]
+}
