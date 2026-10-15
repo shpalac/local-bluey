@@ -43,7 +43,9 @@ class FileIndex {
 
   bool get isEnabled => _root != null;
   List<String> search(String query) {
-    if (_root == null || state != FileIndexState.ready || query.trim().isEmpty) {
+    if (_root == null ||
+        state != FileIndexState.ready ||
+        query.trim().isEmpty) {
       return const [];
     }
     final needle = query.toLowerCase();
