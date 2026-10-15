@@ -134,7 +134,7 @@ test('source-backed guides are discoverable, navigable and honest about validati
     expect(html).toContain('href="https://shpalac.github.io/local-bluey/' + route + '"');
     await page.goto('./' + route);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
-    await expect(page.getByRole('link', { name: 'All guides' })).toHaveAttribute('href', '/local-bluey/#resources');
+    await expect(page.getByRole('navigation', { name: 'Guide navigation' }).getByRole('link', { name: 'All guides' })).toHaveAttribute('href', '/local-bluey/#resources');
     await page.goto('/local-bluey/');
   }
 });
