@@ -8,7 +8,20 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
 
   final Directory directory;
 
-  File _file(String id) => File('${directory.path}/$id.json');
+  File _file(String id) {
+    if (id.trim().isEmpty ||
+        id == '.' ||
+        id.contains('..') ||
+        id.contains('/') ||
+        id.contains('\\')) {
+      throw ArgumentError.value(
+        id,
+        'operationId',
+        'Invalid checkpoint identifier',
+      );
+    }
+    return File('${directory.path}/$id.json');
+  }
 
   @override
   Future<RetryCheckpoint?> read(String operationId) async {
@@ -17,6 +30,9 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
     try {
       final json =
           jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      if (json['operationId'] != operationId) {
+        throw const FormatException('Checkpoint identifier mismatch');
+      }
       return RetryCheckpoint(
         operationId: json['operationId'] as String,
         phase: RetryPhase.values.byName(json['phase'] as String),
@@ -28,8 +44,8 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
 
   @override
   Future<bool> claim(String operationId) async {
-    await directory.create(recursive: true);
     final file = _file(operationId);
+    await directory.create(recursive: true);
     try {
       await file.create(exclusive: true);
       await file.writeAsString(
@@ -41,15 +57,13 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
       return true;
     } on PathExistsException {
       return false;
-    } catch (_) {
-      return false;
     }
   }
 
   @override
   Future<void> write(RetryCheckpoint checkpoint) async {
-    await directory.create(recursive: true);
     final target = _file(checkpoint.operationId);
+    await directory.create(recursive: true);
     final temp = File('${target.path}.tmp');
     await temp.writeAsString(
       jsonEncode({
