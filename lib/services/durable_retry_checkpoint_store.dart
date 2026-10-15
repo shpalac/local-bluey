@@ -53,6 +53,7 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
           'operationId': operationId,
           'phase': RetryPhase.started.name,
         }),
+        flush: true,
       );
       return true;
     } on PathExistsException {
@@ -65,12 +66,20 @@ class DurableRetryCheckpointStore implements RetryCheckpointStore {
     final target = _file(checkpoint.operationId);
     await directory.create(recursive: true);
     final temp = File('${target.path}.tmp');
-    await temp.writeAsString(
-      jsonEncode({
-        'operationId': checkpoint.operationId,
-        'phase': checkpoint.phase.name,
-      }),
-    );
-    await temp.rename(target.path);
+    // Do not overwrite a concurrent or crash-left staging file.
+    // An uncertain checkpoint is safer than an uncoordinated completion.
+    await temp.create(exclusive: true);
+    try {
+      await temp.writeAsString(
+        jsonEncode({
+          'operationId': checkpoint.operationId,
+          'phase': checkpoint.phase.name,
+        }),
+        flush: true,
+      );
+      await temp.rename(target.path);
+    } finally {
+      if (await temp.exists()) await temp.delete();
+    }
   }
 }
