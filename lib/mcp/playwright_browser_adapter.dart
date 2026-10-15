@@ -46,18 +46,26 @@ abstract interface class BrowserTransport {
 class BrowserSession {
   int _generation = 0;
   bool _cancelled = false;
+  Completer<void> _invalidated = Completer<void>();
 
   int get generation => _generation;
   bool get cancelled => _cancelled;
+  Future<void> get whenInvalidated => _invalidated.future;
+
+  void _invalidate() {
+    _generation++;
+    _invalidated.complete();
+    _invalidated = Completer<void>();
+  }
 
   void cancel() {
     _cancelled = true;
-    _generation++;
+    _invalidate();
   }
 
   void restart() {
     _cancelled = false;
-    _generation++;
+    _invalidate();
   }
 }
 
@@ -154,6 +162,7 @@ class PlaywrightBrowserAdapter {
     }
 
     final initialGeneration = session.generation;
+    final invalidated = session.whenInvalidated;
     try {
       final spec = request.action == BrowserAction.navigate
           ? _navigateSpec
@@ -163,14 +172,24 @@ class PlaywrightBrowserAdapter {
       final transportGate = McpToolSafetyGate(
         isServerAllowed: gate.isServerAllowed,
         requestPermission: gate.requestPermission,
-        invoke: (_, _, _) => transport.execute(request),
+        invoke: (_, _, _) {
+          if (session.cancelled || session.generation != initialGeneration) {
+            throw const BrowserException(BrowserFailure.cancelled);
+          }
+          return transport.execute(request);
+        },
       );
-      final value = await transportGate.execute(
-        serverId: 'playwright-local',
-        spec: spec,
-        arguments: {'url': url.toString()},
-        timeout: timeout,
-      );
+      final value = await Future.any<Object?>([
+        transportGate.execute(
+          serverId: 'playwright-local',
+          spec: spec,
+          arguments: {'url': url.toString()},
+          timeout: timeout,
+        ),
+        invalidated.then<Object?>(
+          (_) => throw const BrowserException(BrowserFailure.cancelled),
+        ),
+      ]);
       // Returned page content is never executable instructions.
       if (session.cancelled || session.generation != initialGeneration) {
         throw const BrowserException(BrowserFailure.cancelled);
