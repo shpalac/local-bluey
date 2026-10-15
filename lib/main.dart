@@ -125,12 +125,12 @@ Widget homeForProfile(PlatformProfile profile) {
     return UnsupportedScreen(profile: profile);
   }
   return switch (profile.role) {
-  AppRole.host => const MacHome(),
-  AppRole.phoneClient => LockGate(
-    reason: Strings.t('Unlock the Bluey remote', 'ביטול נעילת השלט של Bluey'),
-    child: const IosHome(),
-  ),
-  AppRole.unsupported => UnsupportedScreen(profile: profile),
+    AppRole.host => const MacHome(),
+    AppRole.phoneClient => LockGate(
+      reason: Strings.t('Unlock the Bluey remote', 'ביטול נעילת השלט של Bluey'),
+      child: const IosHome(),
+    ),
+    AppRole.unsupported => UnsupportedScreen(profile: profile),
   };
 }
 
