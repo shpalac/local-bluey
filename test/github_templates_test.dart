@@ -49,8 +49,10 @@ void main() {
       );
       expect(
         text,
-        contains('only when all original acceptance criteria have executable '
-            'evidence and no manual/gap rows remain'),
+        contains(
+          'only when all original acceptance criteria have executable '
+          'evidence and no manual/gap rows remain',
+        ),
       );
       expect(
         text,
@@ -61,8 +63,10 @@ void main() {
       expect(text, contains('avoid it for this workflow'));
       expect(
         text,
-        contains('`AutoClose #N` appears on its own line only for complete '
-            'criteria; `Refs #N` is used otherwise'),
+        contains(
+          '`AutoClose #N` appears on its own line only for complete '
+          'criteria; `Refs #N` is used otherwise',
+        ),
       );
     });
 
