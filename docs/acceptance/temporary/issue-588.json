@@ -21,6 +21,10 @@
             {
               "file": "test/bluey_character_test.dart",
               "name": "reduced motion suppresses idle animation"
+            },
+            {
+              "file": "test/rive_renderer_fallback_test.dart",
+              "name": "unavailable Rive renderer resolves to native fallback"
             }
           ]
         },
