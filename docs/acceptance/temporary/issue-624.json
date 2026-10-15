@@ -12,7 +12,7 @@
           "tests": [
             {
               "file": "test/watch_suggestions_preferences_624_test.dart",
-              "name": "AC-1 persisted never-app preference suppresses repeated suggestions after restart"
+              "name": "AC-1 suppression persists after restart"
             }
           ]
         },
