@@ -41,8 +41,8 @@
           "requirement": "No unintended egress, secret retention, or unsafe auto-execution",
           "tests": [
             {
-              "file": "test/workflow_execution_integration_test.dart",
-              "name": "WorkflowExecution rejects interrupted restart without replay"
+              "file": "test/workflow_execution_test.dart",
+              "name": "permission denied fails closed"
             }
           ]
         },
@@ -52,8 +52,8 @@
           "requirement": "Dart analyze and focused tests pass in CI",
           "tests": [
             {
-              "file": "test/workflow_execution_integration_test.dart",
-              "name": "WorkflowExecution integrates approval host and audit happy path"
+              "file": "test/workflow_execution_test.dart",
+              "name": "invalid DSL is rejected before execution"
             }
           ]
         },

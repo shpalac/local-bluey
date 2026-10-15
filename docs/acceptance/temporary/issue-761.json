@@ -53,8 +53,8 @@
           "requirement": "No egress or secrets in standalone retry module; uncertain operations fail closed",
           "tests": [
             {
-              "file": "test/idempotent_retry_test.dart",
-              "name": "crash after send before completion fails closed on restart"
+              "file": "test/durable_retry_checkpoint_hardening_test.dart",
+              "name": "checkpoint with mismatched operation id fails closed"
             }
           ]
         },

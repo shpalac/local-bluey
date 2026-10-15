@@ -34,10 +34,6 @@
             {
               "file": "test/fault_injection_retention_test.dart",
               "name": "every store failing differently is reported per store"
-            },
-            {
-              "file": "test/fault_injection_retention_test.dart",
-              "name": "a persistent fault keeps failing without side effects or a stuck lock"
             }
           ]
         },
