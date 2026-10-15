@@ -133,10 +133,10 @@ class LocalSemanticRetriever {
         }
       }
     }
-    if (!index.isEnabled ||
+    if ((isCancelled != null && await isCancelled()) ||
+        !index.isEnabled ||
         index.state != FileIndexState.ready ||
-        !index.matchesRetrievalSnapshot(snapshot) ||
-        (isCancelled != null && await isCancelled())) {
+        !index.matchesRetrievalSnapshot(snapshot)) {
       return const LocalRetrievalResult(LocalRetrievalStatus.cancelled, []);
     }
     if (clock.elapsed >= timeout) {
