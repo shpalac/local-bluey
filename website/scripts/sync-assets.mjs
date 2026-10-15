@@ -5,6 +5,7 @@ const root = resolve(import.meta.dirname, '../..');
 const site = resolve(import.meta.dirname, '..');
 const sourceFiles = {
   'bluey-desktop.png': 'assets/icons/bluey-desktop.png',
+  'joyful-bluey.svg': 'assets/mascot/joyful-bluey.svg',
   'bluey-mobile.png': 'assets/icons/bluey-mobile.png',
   'showcase-hero.png': 'docs/screenshots/showcase/hero.png',
   'showcase-gallery.png': 'docs/screenshots/showcase/gallery.png',

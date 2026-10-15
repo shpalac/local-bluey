@@ -45,6 +45,7 @@ def load_manifest(root: Path, source: Path) -> dict:
         if not isinstance(issue["criteria"], list) or not issue["criteria"]:
             raise ManifestError("issue must declare criteria")
         seen_criteria = set()
+        evidence_owners = {}
         for c in issue["criteria"]:
             if not isinstance(c, dict) or not {"id", "requirement", "type"} <= set(c):
                 raise ManifestError(f"#{number}: invalid criterion")
@@ -71,6 +72,10 @@ def load_manifest(root: Path, source: Path) -> dict:
                     source_text = candidate.read_text(encoding="utf-8")
                     if name not in {m.group(2) for m in CASE.finditer(source_text)}:
                         raise ManifestError(f"#{number}/{identifier}: declared test name missing in {path}")
+                    evidence_key = (path, name)
+                    previous = evidence_owners.setdefault(evidence_key, identifier)
+                    if previous != identifier:
+                        raise ManifestError(f"#{number}/{identifier}: one named test has duplicate evidence ownership")
             else:
                 if set(c) != {"id", "requirement", "type", "reason"} or not isinstance(c["reason"], str) or not c["reason"].strip():
                     raise ManifestError(f"#{number}/{identifier}: explicit gap/manual reason required")

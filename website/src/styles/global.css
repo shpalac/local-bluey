@@ -361,3 +361,16 @@ img { max-width: 100%; height: auto; }
   .story-track { transform: none !important; }
   .story-step { opacity: 1 !important; }
 }
+
+/* The static SVG doubles as an accessible, lightweight animated mascot. */
+@keyframes joyful-bluey-float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-16px) rotate(2deg); }
+}
+.mascot-stage .mascot-image {
+  animation: joyful-bluey-float 3.2s ease-in-out infinite;
+  transform-origin: 50% 75%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascot-stage .mascot-image { animation: none; transform: none; }
+}

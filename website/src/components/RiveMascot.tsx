@@ -33,7 +33,7 @@ export default function RiveMascot({ src, fallbackSrc }: MascotProps) {
     <img
       className="mascot-image"
       src={fallbackSrc}
-      alt="The original glowing blue Bluey character from the project icon"
+      alt="Joyful Bluey bird with wide eyes, orange beak and welcoming wings"
       width={580}
       height={580}
       decoding="async"

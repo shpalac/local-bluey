@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../link/models.dart';
+import 'joyful_bluey_painter.dart';
 
 /// Renderer selection is deliberately local until a licensed Rive asset and
 /// runtime have passed platform validation.
@@ -23,9 +24,13 @@ class BlueyCharacter extends StatelessWidget {
     required this.tint,
     this.phase = 0,
     this.requestedRenderer = FaceRenderer.native,
+    this.legacyArtwork = false,
   });
 
   final FaceRenderer requestedRenderer;
+
+  /// Retains pre-refresh reference screenshots without affecting production.
+  final bool legacyArtwork;
   final FaceState face;
   final bool awake;
   final Color tint;
@@ -38,15 +43,25 @@ class BlueyCharacter extends StatelessWidget {
     assert(resolveFaceRenderer(requestedRenderer) == FaceRenderer.native);
     return RepaintBoundary(
       child: CustomPaint(
-        painter: _BlueyPainter(
-          gazeX: _bounded(face.gazeX, -1, 1),
-          gazeY: _bounded(face.gazeY, -1, 1),
-          talk: _bounded(face.talk, 0, 1),
-          mood: face.mood,
-          awake: awake,
-          tint: tint,
-          phase: _bounded(phase, 0, 1),
-        ),
+        painter: legacyArtwork
+            ? _BlueyPainter(
+                gazeX: _bounded(face.gazeX, -1, 1),
+                gazeY: _bounded(face.gazeY, -1, 1),
+                talk: _bounded(face.talk, 0, 1),
+                mood: face.mood,
+                awake: awake,
+                tint: tint,
+                phase: _bounded(phase, 0, 1),
+              )
+            : JoyfulBlueyPainter(
+                gazeX: _bounded(face.gazeX, -1, 1),
+                gazeY: _bounded(face.gazeY, -1, 1),
+                talk: _bounded(face.talk, 0, 1),
+                mood: face.mood,
+                awake: awake,
+                tint: tint,
+                phase: _bounded(phase, 0, 1),
+              ),
         child: const SizedBox.expand(),
       ),
     );

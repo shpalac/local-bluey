@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 831,
+      "title": "Local models answer tool calls in content and the call is dropped",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "A tool call written into content is executed, in the Llama 3.x form, the Qwen function form with or without a closing tag, the Qwen per-parameter form, and the documented JSON form.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "reads the Llama 3.x tool_call block"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "reads a closed Qwen tag with arguments"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "reads the unterminated Qwen tag a truncated reply ends on"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "reads the per-parameter XML form qwen3-coder uses"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "reads the documented tool JSON block after some prose"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "survives malformed JSON where arguments were expected"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "Ollama: tool call in content with null tool_calls"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "OpenAI-compatible: tool call in content only"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "A structured tool_calls channel still wins over content when both are present.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "Ollama: structured tool_calls still win over content"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "A tool name outside the advertised tool list is dropped, never dispatched.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "drops an invented tool name"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "drops an invented name in the Llama block"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "drops a per-parameter call naming an unknown tool"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "does not dispatch an unclosed tag sitting mid-prose"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "rejects a tool JSON line naming an unknown tool"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "kToolNames matches the advertised tool list"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Tool-call markup no claimed pattern strips out of the spoken text, including a call that was recognised by shape but rejected by name.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "strips a stray tool_call tag left in the prose"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "strips a rejected call out of the prose it was found in"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "strips a rejected per-parameter call from the prose"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "strips a rejected Llama block out of the prose"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "still finds a real call after a rejected one"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "keeps prose on either side of a rejected call readable"
+            },
+            {
+              "file": "test/inline_tool_call_test.dart",
+              "name": "leaves an ordinary reply untouched"
+            }
+          ]
+        },
+        {
+          "id": "ac_5",
+          "requirement": "dart format lib test, flutter analyze, and flutter test are clean, and a test covers each accepted encoding, a rejected name, and the structured-channel precedence.",
+          "type": "manual",
+          "reason": "The required CI lanes run on the PR; a local toolchain below the pinned Dart SDK cannot resolve dependencies to reproduce the gate."
+        }
+      ]
+    }
+  ]
+}

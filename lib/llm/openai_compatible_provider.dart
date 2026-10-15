@@ -113,6 +113,7 @@ class OpenAiCompatibleProvider extends LlmProvider {
       final message = Map<String, dynamic>.from(
         (choices.first as Map)['message'] as Map? ?? const {},
       );
+      final content = message['content'] as String? ?? '';
       final toolCalls = message['tool_calls'] as List? ?? const [];
       ToolCall? call;
       if (toolCalls.isNotEmpty) {
@@ -134,7 +135,15 @@ class OpenAiCompatibleProvider extends LlmProvider {
           );
         }
       }
-      return LlmResponse(message['content'] as String? ?? '', toolCall: call);
+      // Self-hosted and local endpoints are the ones that answer in `content`
+      // with tool_calls null, so both providers need the same fallback.
+      var spoken = content;
+      if (call == null) {
+        final inline = extractInlineToolCall(content);
+        call = inline.toolCall;
+        spoken = inline.spoken;
+      }
+      return LlmResponse(spoken, toolCall: call);
     });
   }
 

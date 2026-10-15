@@ -8,6 +8,7 @@ import '../llm/ollama_provider.dart';
 import '../llm/openai_compatible_provider.dart';
 
 import 'characters.dart';
+import 'secure_storage.dart';
 
 /// Supported brain backends: local Ollama or any OpenAI-compatible API.
 enum BrainBackend { ollama, openAiCompatible }
@@ -128,11 +129,11 @@ class SettingsStore {
   /// Current settings layout version; bump and migrate on layout changes (#123).
   static const schemaVersion = 1;
 
-  static FlutterSecureStorage _secure = const FlutterSecureStorage();
+  static FlutterSecureStorage _secure = secureStorage();
 
   /// Test seam: swap in a throwing or fake secure store (#123).
   static set debugSecureStorage(FlutterSecureStorage? value) {
-    _secure = value ?? const FlutterSecureStorage();
+    _secure = value ?? secureStorage();
   }
 
   /// Set when the last [load] could not reach secure storage; the UI shows
