@@ -5,7 +5,9 @@ import 'package:local_bluey/services/durable_retry_checkpoint_store.dart';
 import 'package:local_bluey/services/idempotent_retry.dart';
 
 void main() {
-  test('ac1 half-created claim never permits a repeated send', () async {
+  test(
+    'ac1 half-created claim never permits a repeated send',
+    () async {
     final dir = await Directory.systemTemp.createTemp('retry-partial');
     await File('${dir.path}/send.json').create(exclusive: true);
 
@@ -24,9 +26,12 @@ void main() {
       throwsStateError,
     );
     expect(sends, 0);
-  });
+    },
+  );
 
-  test('ac2 existing stage blocks a concurrent completion write', () async {
+  test(
+    'ac2 existing stage blocks a concurrent completion write',
+    () async {
     final dir = await Directory.systemTemp.createTemp('retry-stage');
     final store = DurableRetryCheckpointStore(dir);
     expect(await store.claim('op'), isTrue);
@@ -46,9 +51,12 @@ void main() {
     expect(await stage.readAsString(), 'unfinished stage');
     expect((await store.read('op'))?.phase, RetryPhase.started);
     expect(await DurableRetryCheckpointStore(dir).claim('op'), isFalse);
-  });
+    },
+  );
 
-  test('ac3 successful completion leaves no partial stage', () async {
+  test(
+    'ac3 successful completion leaves no partial stage',
+    () async {
     final dir = await Directory.systemTemp.createTemp('retry-complete');
     final store = DurableRetryCheckpointStore(dir);
     expect(await store.claim('op'), isTrue);
@@ -65,5 +73,6 @@ void main() {
       (await DurableRetryCheckpointStore(dir).read('op'))?.phase,
       RetryPhase.completed,
     );
-  });
+    },
+  );
 }
