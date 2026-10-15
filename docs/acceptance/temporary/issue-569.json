@@ -37,25 +37,15 @@
         },
         {
           "id": "ac_3",
-          "type": "automated",
+          "type": "gap",
           "requirement": "No unintended egress, secret retention, or unsafe auto-execution",
-          "tests": [
-            {
-              "file": "test/workflow_execution_test.dart",
-              "name": "permission denied fails closed"
-            }
-          ]
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         },
         {
           "id": "ac_4",
-          "type": "automated",
+          "type": "gap",
           "requirement": "Dart analyze and focused tests pass in CI",
-          "tests": [
-            {
-              "file": "test/workflow_execution_test.dart",
-              "name": "invalid DSL is rejected before execution"
-            }
-          ]
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         },
         {
           "id": "runtime_integration_gap",
