@@ -43,6 +43,14 @@
             {
               "file": "test/mcp_safety_gate_runtime_integration_test.dart",
               "name": "fake transport stays in approved path and redacts secrets"
+            },
+            {
+              "file": "test/mcp/safety_gate_secret_alias_test.dart",
+              "name": "ac3 MCP runtime redacts additional secret key conventions"
+            },
+            {
+              "file": "test/mcp/safety_gate_secret_alias_test.dart",
+              "name": "ac3 redaction cannot bypass a denied MCP permission"
             }
           ]
         },
