@@ -45,7 +45,7 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
           ),
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not delete local data. Please retry.')),
@@ -100,7 +100,7 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
           ),
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Could not delete local data. Please retry.')),
