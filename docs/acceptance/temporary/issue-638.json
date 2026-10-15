@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 638,
+      "title": "[BLU-080] Traceability and coverage map",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Every P0/P1 requirement traceable.",
+          "type": "gap",
+          "reason": "Repository-wide P0/P1 inventory and full requirement-to-issue-to-test-to-workflow-to-release-gate evidence are not yet verified; this PR only hardens evidence ownership."
+        },
+        {
+          "id": "ac_2",
+          "requirement": "No silent failure, secrets in artifacts, unapproved egress or bypass of human approval.",
+          "type": "gap",
+          "reason": "End-to-end security and human-approval verification is outside this bounded manifest contract test; no approval or egress change is made."
+        },
+        {
+          "id": "ac_3",
+          "requirement": "CI and relevant tests green with documented reproduction commands.",
+          "type": "manual",
+          "reason": "CI status must be checked on the PR head by a reviewer; run flutter test test/acceptance_traceability_test.dart and python3 -m unittest discover -s tool -p test_acceptance_criteria.py."
+        },
+        {
+          "id": "slice_traceability",
+          "requirement": "Issue acceptance evidence cannot reuse one named test across distinct criteria, and unique test ownership remains accepted.",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/acceptance_traceability_test.dart",
+              "name": "traceability rejects one named test claimed by two criteria"
+            },
+            {
+              "file": "test/acceptance_traceability_test.dart",
+              "name": "traceability accepts independently named criterion evidence"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
