@@ -20,14 +20,8 @@ void main() {
     expect(preview.warnings, contains(contains('omitted')));
     expect(preview.requiresReview, isTrue);
     expect(preview.canAutoExecute, isFalse);
-    expect(
-      () => preview.steps.clear(),
-      throwsUnsupportedError,
-    );
-    expect(
-      () => preview.warnings.clear(),
-      throwsUnsupportedError,
-    );
+    expect(() => preview.steps.clear(), throwsUnsupportedError);
+    expect(() => preview.warnings.clear(), throwsUnsupportedError);
   });
 
   test('ac2 exact preview boundary retains all sanitized steps', () {
