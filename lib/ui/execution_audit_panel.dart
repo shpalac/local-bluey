@@ -66,7 +66,13 @@ class _ExecutionAuditPanelState extends State<ExecutionAuditPanel> {
         widget.execution.status == WorkflowStatus.failed ||
         widget.execution.status == WorkflowStatus.cancelled;
     final failure = widget.audit.entries.reversed
-        .where((entry) => entry.status == 'denied' || entry.status == 'timeout' || entry.status == 'failed' || entry.status == 'offline')
+        .where(
+          (entry) =>
+              entry.status == 'denied' ||
+              entry.status == 'timeout' ||
+              entry.status == 'failed' ||
+              entry.status == 'offline',
+        )
         .firstOrNull;
     final failureMessage = switch (failure?.status) {
       'denied' => 'Permission denied. Review approval settings before retrying.',
