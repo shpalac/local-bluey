@@ -625,6 +625,9 @@ jobs:
       - name: Verify actions are pinned by SHA
         run: .github/scripts/check-pinned-actions.sh
 
+      - name: Reject privileged PR triggers and inherited secrets
+        run: python3 tool/check_workflow_trust.py
+
       # Workflow lint (#160): actionlint for semantics, zizmor for security
       # audits. Both pinned by version + sha256 like the OSV scan (#144);
       # bump deliberately after verifying the new checksum.
