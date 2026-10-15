@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 626,
+      "title": "BLU-069 Local data control center",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "gap",
+          "requirement": "Deletion verifiable and clear UX.",
+          "reason": "Existing registry clear behavior and Settings UI are not fully verified by new tests; native deletion remains unverified."
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Deterministic, reproducible results; explicit errors rather than silent fallbacks.",
+          "tests": [
+            {
+              "file": "test/local_data_control_center_failure_test.dart",
+              "name": "deletion failure reports the failed registered store id"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "type": "automated",
+          "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions.",
+          "tests": [
+            {
+              "file": "test/local_data_control_center_failure_test.dart",
+              "name": "deletion errors never print secret exception contents"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "type": "gap",
+          "requirement": "Existing Routines and supported platform behavior remain compatible.",
+          "reason": "No new Routines or supported-platform integration tests; native validation outstanding."
+        }
+      ]
+    }
+  ]
+}
