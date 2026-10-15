@@ -45,10 +45,14 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
           ),
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not delete local data: $error')),
+          const SnackBar(
+            content: Text(
+              'Could not delete local data: operation failed. Please retry.',
+            ),
+          ),
         );
       }
     } finally {
@@ -100,10 +104,14 @@ class _DataPrivacySectionState extends State<DataPrivacySection> {
           ),
         );
       }
-    } catch (error) {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not delete local data: $error')),
+          const SnackBar(
+            content: Text(
+              'Could not delete local data: operation failed. Please retry.',
+            ),
+          ),
         );
       }
     } finally {
