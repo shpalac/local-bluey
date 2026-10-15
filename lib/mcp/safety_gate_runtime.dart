@@ -83,22 +83,26 @@ class SafetyGateRuntime {
       }
     }
 
-    return _redactSecrets(result);
+    return _redactSecrets(result, <int>[10000]);
   }
 
-  Object? _redactSecrets(Object? value) {
+  Object? _redactSecrets(Object? value, List<int> remaining) {
+    remaining[0]--;
+    if (remaining[0] < 0 || (value is String && value.length > 1048576)) {
+      throw const McpToolException(McpToolFailure.resourceLimit);
+    }
     if (value is Map) {
       final redacted = <Object?, Object?>{};
       for (final entry in value.entries) {
         final key = entry.key.toString().toLowerCase();
         redacted[entry.key] = _isSecretKey(key)
             ? '[REDACTED]'
-            : _redactSecrets(entry.value);
+            : _redactSecrets(entry.value, remaining);
       }
       return redacted;
     }
     if (value is List) {
-      return value.map(_redactSecrets).toList();
+      return value.map((item) => _redactSecrets(item, remaining)).toList();
     }
     return value;
   }
