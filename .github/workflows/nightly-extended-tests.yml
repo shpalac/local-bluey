@@ -1,0 +1,46 @@
+name: BLU-042 nightly extended tests
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extended-dart:
+    name: Extended deterministic Dart checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Read Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Fetch locked dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Run extended suites and publish sanitized report
+        shell: bash
+        run: |
+          set +e
+          flutter test --reporter json \
+            test/nightly_summary_test.dart \
+            test/activity_storage_migration_matrix_test.dart \
+            test/event_normalization_fuzz_test.dart \
+            test/fault_injection_retention_test.dart \
+            > "$RUNNER_TEMP/nightly-machine.jsonl" \
+            2> "$RUNNER_TEMP/nightly-stderr.log"
+          test_status=$?
+          set -e
+          if ! dart run tool/nightly_report.dart "$RUNNER_TEMP/nightly-machine.jsonl"; then
+            echo 'Nightly reporting failed; inspect the suite locally.' >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if [ "$test_status" -ne 0 ]; then
+            exit "$test_status"
+          fi
