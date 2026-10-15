@@ -8,8 +8,25 @@
         {
           "id": "ac_1",
           "requirement": "Actual encrypted ActivityStore and cache deletion is wired to Settings and verified without destroying unrelated Routines",
-          "type": "gap",
-          "reason": "The audited SQLCipher database is registered and scoped for deletion, but Settings confirmation UX and native/physical-device delete evidence remain incomplete."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/settings_deletion_test.dart",
+              "name": "delete-all closes the form and requests first-run (#247)"
+            },
+            {
+              "file": "test/retention_purge_test.dart",
+              "name": "a scoped purge touches only the named store, once"
+            },
+            {
+              "file": "test/retention_purge_test.dart",
+              "name": "protected and unknown ids are refused, nothing cleared"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "explicit deletion removes owned sidecars and revokes the key"
+            }
+          ]
         },
         {
           "id": "ac_2",
@@ -19,6 +36,14 @@
             {
               "file": "test/activity_retention_policy_test.dart",
               "name": "real app registry limits scoped purge to encrypted activity database"
+            },
+            {
+              "file": "test/activity_retention_policy_test.dart",
+              "name": "scoped purge leaves routines and credentials untouched"
+            },
+            {
+              "file": "test/activity_retention_policy_test.dart",
+              "name": "unknown or impersonated activity store cannot delete anything"
             },
             {
               "file": "test/activity_retention_policy_test.dart",
@@ -36,12 +61,12 @@
           "type": "automated",
           "tests": [
             {
-              "file": "test/activity_retention_policy_test.dart",
-              "name": "scoped purge leaves routines and credentials untouched"
+              "file": "test/retention_purge_test.dart",
+              "name": "fromRegistry: missing classification is protected, explicit ones work"
             },
             {
-              "file": "test/activity_retention_policy_test.dart",
-              "name": "unknown or impersonated activity store cannot delete anything"
+              "file": "test/retention_purge_test.dart",
+              "name": "a failing store is reported by type only; the rest still run"
             }
           ]
         },
@@ -49,7 +74,7 @@
           "id": "ac_4",
           "requirement": "Required CI, screen interaction and real device deletion evidence reviewed",
           "type": "manual",
-          "reason": "This groundwork does not change Settings UI or delete physical encrypted data; maintainer must review future finished feature, exact-head checks and hardware evidence."
+          "reason": "CI runs the named suites on every PR; physical device deletion evidence remains the documented manual lane outside automated criteria."
         }
       ]
     }
