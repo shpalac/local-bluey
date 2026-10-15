@@ -42,6 +42,17 @@
           "requirement": "Existing Routines and supported platform behavior remain compatible",
           "type": "gap",
           "reason": "Full platform compatibility requires native MCP and UI validation on device; pure Dart suite cannot prove it."
+        },
+        {
+          "id": "ac_1_output_budget",
+          "requirement": "Hostile MCP returned output exceeding the runtime traversal budget fails explicitly",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/mcp/hostile_mcp_output_budget_test.dart",
+              "name": "hostile MCP oversized output fails with explicit resource limit"
+            }
+          ]
         }
       ]
     }
