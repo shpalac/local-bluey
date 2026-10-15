@@ -1,6 +1,6 @@
 ## Objective
 
-Describe the deliverable and its linked task issue. Use `Refs #<issue-number>` while work is incomplete. For full CI-driven closure, add a standalone `AutoClose #<issue-number>` line only when **all** original ACs have executable evidence and no manual/gap rows remain. GitHub-native `Closes` closes immediately on merge, before main CI; avoid it for this workflow.
+Describe the deliverable and link each issue on its own `Refs #<issue-number>` line. A merged PR closes its linked issue after green main CI **only when all original acceptance criteria have executable evidence and no manual/gap rows remain**; partial PRs leave issues open. Add a standalone `AutoClose #<issue-number>` line only for a fully complete issue when you also want automatic squash merge after green PR CI. GitHub-native `Closes` closes immediately on merge, before main CI; avoid it for this workflow.
 
 ## Scope and implementation
 
