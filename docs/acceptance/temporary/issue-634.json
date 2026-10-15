@@ -41,8 +41,8 @@
           "type": "automated",
           "tests": [
             {
-              "file": "test/issues/issue_634_test.dart",
-              "name": "acceptance map and ADR template document review and rollback"
+              "file": "test/acceptance_traceability_test.dart",
+              "name": "traceability accepts independently named criterion evidence"
             }
           ]
         }

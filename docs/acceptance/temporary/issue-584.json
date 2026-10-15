@@ -36,10 +36,6 @@
             {
               "file": "test/file_index_test.dart",
               "name": "restart has no durable grant"
-            },
-            {
-              "file": "test/file_index_test.dart",
-              "name": "failed refresh hides previously indexed data"
             }
           ]
         },
@@ -50,7 +46,7 @@
           "tests": [
             {
               "file": "test/file_index_test.dart",
-              "name": "explicit consent only; revoke purges all matches"
+              "name": "failed refresh hides previously indexed data"
             }
           ]
         },

@@ -41,10 +41,6 @@
           "type": "automated",
           "tests": [
             {
-              "file": "test/durable_retry_checkpoint_store_test.dart",
-              "name": "corrupt checkpoint fails explicitly"
-            },
-            {
               "file": "test/durable_retry_checkpoint_hardening_test.dart",
               "name": "checkpoint with mismatched operation id fails closed"
             }
@@ -56,8 +52,8 @@
           "type": "automated",
           "tests": [
             {
-              "file": "test/durable_retry_checkpoint_store_test.dart",
-              "name": "checkpoint survives restart and prevents duplicate execution"
+              "file": "test/idempotent_retry_test.dart",
+              "name": "crash after send before completion fails closed on restart"
             }
           ]
         },

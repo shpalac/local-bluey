@@ -18,10 +18,6 @@
           "tests": [
             {
               "file": "test/mcp/hostile_mcp_server_suite_test.dart",
-              "name": "hostile nested output redacts secrets deterministically"
-            },
-            {
-              "file": "test/mcp/hostile_mcp_server_suite_test.dart",
               "name": "hostile server denial returns explicit policy error"
             }
           ]

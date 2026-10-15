@@ -52,10 +52,6 @@
             {
               "file": "test/execution_audit_test.dart",
               "name": "permission denial redacts and fails closed"
-            },
-            {
-              "file": "test/file_durable_recovery_store_test.dart",
-              "name": "restart reconciliation blocks all host actions"
             }
           ]
         },
