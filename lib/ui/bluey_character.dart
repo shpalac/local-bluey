@@ -37,18 +37,18 @@ class BlueyCharacter extends StatelessWidget {
   Widget build(BuildContext context) {
     assert(resolveFaceRenderer(requestedRenderer) == FaceRenderer.native);
     return RepaintBoundary(
-    child: CustomPaint(
-      painter: _BlueyPainter(
-        gazeX: _bounded(face.gazeX, -1, 1),
-        gazeY: _bounded(face.gazeY, -1, 1),
-        talk: _bounded(face.talk, 0, 1),
-        mood: face.mood,
-        awake: awake,
-        tint: tint,
-        phase: _bounded(phase, 0, 1),
+      child: CustomPaint(
+        painter: _BlueyPainter(
+          gazeX: _bounded(face.gazeX, -1, 1),
+          gazeY: _bounded(face.gazeY, -1, 1),
+          talk: _bounded(face.talk, 0, 1),
+          mood: face.mood,
+          awake: awake,
+          tint: tint,
+          phase: _bounded(phase, 0, 1),
+        ),
+        child: const SizedBox.expand(),
       ),
-      child: const SizedBox.expand(),
-    ),
     );
   }
 }

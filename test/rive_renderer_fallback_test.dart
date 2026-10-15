@@ -10,18 +10,20 @@ void main() {
   });
 
   testWidgets('Rive request still renders native face painter', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: SizedBox(
-        width: 200,
-        height: 200,
-        child: BlueyCharacter(
-          face: FaceState(),
-          awake: true,
-          tint: Colors.blue,
-          requestedRenderer: FaceRenderer.rive,
+    await tester.pumpWidget(
+      MaterialApp(
+        home: SizedBox(
+          width: 200,
+          height: 200,
+          child: BlueyCharacter(
+            face: FaceState(),
+            awake: true,
+            tint: Colors.blue,
+            requestedRenderer: FaceRenderer.rive,
+          ),
         ),
       ),
-    ));
+    );
     expect(find.byType(CustomPaint), findsWidgets);
     expect(tester.takeException(), isNull);
   });
