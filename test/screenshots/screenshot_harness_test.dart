@@ -133,7 +133,7 @@ void main() {
     await shot(
       tester,
       'face-listening-light.png',
-      FaceScreen(face: FaceState(), awake: true),
+      FaceScreen(face: FaceState(), awake: true, legacyArtwork: true),
     );
   });
 
@@ -142,6 +142,7 @@ void main() {
       tester,
       'face-thinking-light.png',
       FaceScreen(
+        legacyArtwork: true,
         face: FaceState(mood: Mood.thinking),
         awake: true,
         status: BlueyStatus.thinking,
@@ -154,6 +155,7 @@ void main() {
       tester,
       'face-answer-short-light.png',
       FaceScreen(
+        legacyArtwork: true,
         face: FaceState(mood: Mood.talking, talk: 0.6),
         awake: true,
         bubble: 'On it.',
@@ -166,6 +168,7 @@ void main() {
       tester,
       'face-answer-long-light.png',
       FaceScreen(
+        legacyArtwork: true,
         face: FaceState(mood: Mood.talking, talk: 0.4),
         awake: true,
         bubble:
@@ -179,7 +182,7 @@ void main() {
     await shot(
       tester,
       'face-sleepy-light.png',
-      FaceScreen(face: FaceState(mood: Mood.sleepy)),
+      FaceScreen(face: FaceState(mood: Mood.sleepy), legacyArtwork: true),
     );
   });
 
@@ -188,6 +191,7 @@ void main() {
       tester,
       'face-error-light.png',
       FaceScreen(
+        legacyArtwork: true,
         face: FaceState(),
         awake: true,
         status: BlueyStatus.error,
@@ -200,7 +204,7 @@ void main() {
     await shot(
       tester,
       'face-listening-dark.png',
-      FaceScreen(face: FaceState(), awake: true),
+      FaceScreen(face: FaceState(), awake: true, legacyArtwork: true),
       dark: true,
     );
   });
@@ -392,6 +396,7 @@ void main() {
         height: 700,
         child: UnsupportedScreen(
           profile: SupportMatrix.profile(operatingSystem: 'linux'),
+          showMascot: false,
         ),
       ),
     );

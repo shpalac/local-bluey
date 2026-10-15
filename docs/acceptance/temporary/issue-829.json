@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 829,
+      "title": "Refresh joyful Bluey mascot across Flutter and website",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "Default Flutter FaceScreen renders the joyful bird and follows mood and gaze",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/joyful_mascot_test.dart",
+              "name": "new joyful mascot is the default on every screen size"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "Reduced-motion preferences suppress idle movement without suppressing speech state",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/joyful_mascot_test.dart",
+              "name": "reduced motion freezes the mascot animation"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Four CI Flutter render artifacts are available at platform viewport dimensions",
+          "type": "manual",
+          "reason": "The macOS, Linux, iOS, and Android viewport artifacts are published by the preview workflow and require visual review; they are not native-device evidence."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Website and README use the bird and preserve accurate platform disclosures",
+          "type": "manual",
+          "reason": "Website browser tests and README screenshots run independently; generated art and marketing copy still require reviewer approval."
+        },
+        {
+          "id": "ac_5",
+          "requirement": "Native builds and real hardware behavior validated before issue closure",
+          "type": "gap",
+          "reason": "Builds run on hosted CI but physical macOS, Linux, iOS, and Android device validation is not yet complete; Linux remains an unsupported host/client."
+        }
+      ]
+    }
+  ]
+}
