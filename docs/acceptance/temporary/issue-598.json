@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 598,
+      "title": "[BLU-042] Nightly extended test matrix",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "type": "automated",
+          "requirement": "Nightly report and failure triage",
+          "tests": [
+            {
+              "file": "test/nightly_summary_test.dart",
+              "name": "nightly summary gives actionable failure triage"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "type": "automated",
+          "requirement": "Results are deterministic and reproducible; all failures are explicit and actionable",
+          "tests": [
+            {
+              "file": "test/nightly_summary_test.dart",
+              "name": "nightly results are deterministic and invalid input fails closed"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "No secrets, personal data or raw screenshots in logs/artifacts; no unapproved network egress",
+          "type": "gap",
+          "reason": "Sanitized summary is unit-tested, but proving all dependencies and platform integration have no unapproved egress requires further audit."
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Backwards compatibility and cross-platform behavior reviewed; no unsupported capability falsely advertised",
+          "type": "gap",
+          "reason": "Native macOS, Android, iOS, Windows and physical device execution are not certified by this scheduled Linux Dart test slice."
+        }
+      ]
+    }
+  ]
+}
