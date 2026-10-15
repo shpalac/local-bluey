@@ -7,14 +7,9 @@
       "criteria": [
         {
           "id": "ac_1",
-          "type": "automated",
-          "requirement": "Cache correctness and shard parity (shard parity only; cache validation remains unverified)",
-          "tests": [
-            {
-              "file": "test/ci_test_shards_test.dart",
-              "name": "issue 600 AC-1 shard parity covers every impacted test exactly once"
-            }
-          ]
+          "type": "gap",
+          "requirement": "Cache correctness and shard parity",
+          "reason": "Shard partition parity is unit-tested, but cache correctness and runner restoration have not been demonstrated. The full AC remains incomplete."
         },
         {
           "id": "ac_2",
