@@ -48,6 +48,7 @@ class BlueyCharacter extends StatelessWidget {
         phase: _bounded(phase, 0, 1),
       ),
       child: const SizedBox.expand(),
+    ),
     );
   }
 }
