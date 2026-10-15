@@ -69,7 +69,7 @@ Status: $outcome
 | ---: | ---: | ---: |
 | $passed | $failed | $skipped |
 
-Triage: Inspect the failing test locally with `flutter test --reporter expanded`.
+Triage: Re-run failing suites locally with `flutter test --reporter expanded`.
 Raw machine events, stack traces and screenshots are not uploaded.
 ''';
   }
