@@ -16,7 +16,10 @@ void main(List<String> arguments) {
     if (destination == null || destination.isEmpty) {
       throw const FormatException('GitHub job summary destination missing');
     }
-    File(destination).writeAsStringSync(summary.toMarkdown(), mode: FileMode.append);
+    File(destination).writeAsStringSync(
+      summary.toMarkdown(),
+      mode: FileMode.append,
+    );
     if (summary.failed > 0) exitCode = 1;
   } on FileSystemException {
     stderr.writeln('Nightly summary input or output is unavailable.');
