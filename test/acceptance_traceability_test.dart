@@ -56,7 +56,7 @@ void main() {
       ],
     );
 
-    expect(result.exitCode, isNonZero);
+    expect(result.exitCode, isNot(0));
     expect(result.stderr.toString(), contains('duplicate evidence ownership'));
   });
 
