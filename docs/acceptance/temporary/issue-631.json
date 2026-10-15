@@ -32,6 +32,14 @@
             {
               "file": "test/workflows_import_test.dart",
               "name": "rejects oversized workflow documents deterministically"
+            },
+            {
+              "file": "test/workflow_export_contract_test.dart",
+              "name": "versioned export is deterministic and round-trips"
+            },
+            {
+              "file": "test/workflow_export_contract_test.dart",
+              "name": "export refuses documents above the import size limit"
             }
           ]
         },

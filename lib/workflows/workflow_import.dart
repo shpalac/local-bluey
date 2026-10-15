@@ -11,6 +11,16 @@ final class WorkflowImporter {
 
   final int maxBytes;
 
+  /// Exports the current versioned contract without changing workflow state.
+  ///
+  /// Exporting uses the same validator as importing, so unsupported or
+  /// invalid definitions fail explicitly instead of producing unusable JSON.
+  String exportJson(WorkflowDefinition definition) {
+    final encoded = definition.encode();
+    importJson(encoded);
+    return encoded;
+  }
+
   WorkflowImportResult importJson(String source) {
     if (utf8.encode(source).length > maxBytes) {
       throw const FormatException('Workflow import exceeds size limit');
