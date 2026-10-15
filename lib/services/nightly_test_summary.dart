@@ -50,11 +50,7 @@ class NightlyTestSummary {
       throw const FormatException('No completed Flutter tests were reported');
     }
 
-    return NightlyTestSummary(
-      passed: passed,
-      failed: failed,
-      skipped: skipped,
-    );
+    return NightlyTestSummary(passed: passed, failed: failed, skipped: skipped);
   }
 
   /// Fixed template: never includes test names, error messages or source data.

@@ -36,10 +36,7 @@ void main() {
       () => NightlyTestSummary.parse('{"type":"start"}'),
       throwsFormatException,
     );
-    expect(
-      () => NightlyTestSummary.parse('not-json'),
-      throwsFormatException,
-    );
+    expect(() => NightlyTestSummary.parse('not-json'), throwsFormatException);
     expect(
       () => NightlyTestSummary.parse('{"type":"testDone","result":"unknown"}'),
       throwsFormatException,
