@@ -13,6 +13,10 @@
             {
               "file": "test/workflow_security_guard_test.dart",
               "name": "finds the workflow files"
+            },
+            {
+              "file": "test/workflow_trust_guard_test.dart",
+              "name": "privileged pull request trigger fails closed"
             }
           ]
         },
@@ -32,6 +36,10 @@
             {
               "file": "test/workflow_security_guard_test.dart",
               "name": "short SHA fails"
+            },
+            {
+              "file": "test/workflow_trust_guard_test.dart",
+              "name": "missing workflow directory yields actionable failure"
             }
           ]
         },
