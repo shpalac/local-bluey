@@ -158,14 +158,20 @@ class PlaywrightBrowserAdapter {
       final spec = request.action == BrowserAction.navigate
           ? _navigateSpec
           : _snapshotSpec;
-      final value = await gate.execute(
+      // Preserve the host's authorization checks while routing the approved
+      // operation only through this adapter's injected transport.
+      final transportGate = McpToolSafetyGate(
+        isServerAllowed: gate.isServerAllowed,
+        requestPermission: gate.requestPermission,
+        invoke: (_, _, _) => transport.execute(request),
+      );
+      final value = await transportGate.execute(
         serverId: 'playwright-local',
         spec: spec,
         arguments: {'url': url.toString()},
         timeout: timeout,
       );
-      // The gate's invoker must be wired by the host to the injected
-      // transport; returned page content is never executable instructions.
+      // Returned page content is never executable instructions.
       if (session.cancelled || session.generation != initialGeneration) {
         throw const BrowserException(BrowserFailure.cancelled);
       }
