@@ -221,12 +221,17 @@ jobs:
         env:
           TEST_FILES: ${{ needs.detect.outputs.test_files }}
         run: |
-          mapfile -t test_files < <(python3 -c 'import json, os; print("\n".join(json.loads(os.environ["TEST_FILES"])))')
-          if [ "${#test_files[@]}" -eq 0 ]; then
-            echo "::error::no impacted tests selected; fail closed"
-            exit 1
-          fi
-          flutter test "${test_files[@]}" --reporter expanded 2>&1 | tee test-output.log
+          # Split the deterministic impacted selection into disjoint batches.
+          # The full-suite coverage lane above remains a single run.
+          shards=$(dart run tool/ci_test_shards.dart "$TEST_FILES")
+          : > test-output.log
+          for shard in 0 1; do
+            mapfile -t test_files < <(SHARDS="$shards" SHARD="$shard" python3 -c 'import json, os; print("\\n".join(json.loads(os.environ["SHARDS"])[int(os.environ["SHARD"])]))')
+            if [ "${#test_files[@]}" -eq 0 ]; then
+              continue
+            fi
+            flutter test "${test_files[@]}" --reporter expanded 2>&1 | tee -a test-output.log
+          done
         timeout-minutes: 8
 
       - name: Coverage thresholds (services/, link/) (#136)
