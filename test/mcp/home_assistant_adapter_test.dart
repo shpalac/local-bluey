@@ -205,50 +205,55 @@ void main() {
       HomeAssistantFailure.timeout,
     );
   });
-  test('revoked server permission during lock approval blocks transport', () async {
-    final enteredApproval = Completer<void>();
-    final approval = Completer<bool>();
-    adapter = HomeAssistantAdapter(
-      serverId: 'ha-local',
-      allowedEntities: {'lock.front_door'},
-      enabled: true,
-      isLocalEndpoint: () => local,
-      isOnline: () => online,
-      approve: (_, _) {
-        enteredApproval.complete();
-        return approval.future;
-      },
-      gate: McpToolSafetyGate(
-        isServerAllowed: (_) => allowed,
-        requestPermission: (_, _) async => true,
-        invoke: (_, _, _) async => true,
-      ),
-      transport: (_, _) async {
-        transportCalls++;
-        return 'ok';
-      },
-    );
+  test(
+    'revoked server permission during lock approval blocks transport',
+    () async {
+      final enteredApproval = Completer<void>();
+      final approval = Completer<bool>();
+      adapter = HomeAssistantAdapter(
+        serverId: 'ha-local',
+        allowedEntities: {'lock.front_door'},
+        enabled: true,
+        isLocalEndpoint: () => local,
+        isOnline: () => online,
+        approve: (_, _) {
+          enteredApproval.complete();
+          return approval.future;
+        },
+        gate: McpToolSafetyGate(
+          isServerAllowed: (_) => allowed,
+          requestPermission: (_, _) async => true,
+          invoke: (_, _, _) async => true,
+        ),
+        transport: (_, _) async {
+          transportCalls++;
+          return 'ok';
+        },
+      );
 
-    final pending = adapter.call(
-      entityId: 'lock.front_door',
-      service: 'unlock',
-      dryRun: false,
-      timeout: const Duration(seconds: 1),
-    );
-    await enteredApproval.future;
-    allowed = false;
-    approval.complete(true);
+      final pending = adapter.call(
+        entityId: 'lock.front_door',
+        service: 'unlock',
+        dryRun: false,
+        timeout: const Duration(seconds: 1),
+      );
+      await enteredApproval.future;
+      allowed = false;
+      approval.complete(true);
 
-    await expectLater(
-      pending,
-      throwsA(isA<HomeAssistantException>().having(
-        (error) => error.reason,
-        'reason',
-        HomeAssistantFailure.denied,
-      )),
-    );
-    expect(transportCalls, 0);
-  });
+      await expectLater(
+        pending,
+        throwsA(
+          isA<HomeAssistantException>().having(
+            (error) => error.reason,
+            'reason',
+            HomeAssistantFailure.denied,
+          ),
+        ),
+      );
+      expect(transportCalls, 0);
+    },
+  );
 
   test('offline transition during MCP gate blocks transport', () async {
     final enteredGate = Completer<void>();
@@ -286,13 +291,14 @@ void main() {
 
     await expectLater(
       pending,
-      throwsA(isA<HomeAssistantException>().having(
-        (error) => error.reason,
-        'reason',
-        HomeAssistantFailure.offline,
-      )),
+      throwsA(
+        isA<HomeAssistantException>().having(
+          (error) => error.reason,
+          'reason',
+          HomeAssistantFailure.offline,
+        ),
+      ),
     );
     expect(transportCalls, 0);
   });
-
 }
