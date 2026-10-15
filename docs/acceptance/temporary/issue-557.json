@@ -12,6 +12,10 @@
           "tests": [
             {
               "file": "test/encrypted_activity_store_test.dart",
+              "name": "real SQLCipher encrypts on-disk records and excludes raw text"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
               "name": "wrong key fails closed and preserves original ciphertext"
             },
             {
@@ -20,19 +24,15 @@
             },
             {
               "file": "test/encrypted_activity_store_test.dart",
+              "name": "clear revokes session, erases rows and leaves no WAL/journal"
+            },
+            {
+              "file": "test/encrypted_activity_store_test.dart",
               "name": "schema rejects unknown versions without migrating or dropping data"
             },
             {
               "file": "test/encrypted_activity_store_test.dart",
               "name": "explicit deletion removes owned sidecars and revokes the key"
-            },
-            {
-              "file": "test/encrypted_activity_store_test.dart",
-              "name": "real SQLCipher encrypts on-disk records and excludes raw text"
-            },
-            {
-              "file": "test/encrypted_activity_store_test.dart",
-              "name": "clear revokes session, erases rows and leaves no WAL/journal"
             }
           ]
         },
@@ -44,6 +44,10 @@
             {
               "file": "test/activity_store_test.dart",
               "name": "observation cannot record without per-session consent and approval"
+            },
+            {
+              "file": "test/activity_store_test.dart",
+              "name": "stop and fresh instance never resurrect observation data"
             },
             {
               "file": "test/activity_store_test.dart",
@@ -63,11 +67,11 @@
             },
             {
               "file": "test/encrypted_activity_store_test.dart",
-              "name": "TTL purge, capacity and denied writes survive restart"
+              "name": "key unavailable and no opt-in never create a database"
             },
             {
-              "file": "test/activity_store_test.dart",
-              "name": "stop and fresh instance never resurrect observation data"
+              "file": "test/encrypted_activity_store_test.dart",
+              "name": "TTL purge, capacity and denied writes survive restart"
             }
           ]
         },
@@ -79,10 +83,6 @@
             {
               "file": "test/activity_store_test.dart",
               "name": "clear purges data without granting consent"
-            },
-            {
-              "file": "test/encrypted_activity_store_test.dart",
-              "name": "key unavailable and no opt-in never create a database"
             }
           ]
         },

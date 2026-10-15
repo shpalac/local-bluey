@@ -38,13 +38,8 @@
         {
           "id": "ac_3",
           "requirement": "Reproducible focused tests and links documented; required CI must pass at the exact PR commit.",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/acceptance_traceability_test.dart",
-              "name": "traceability accepts independently named criterion evidence"
-            }
-          ]
+          "type": "gap",
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         }
       ]
     }

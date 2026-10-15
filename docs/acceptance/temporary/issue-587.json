@@ -15,6 +15,10 @@
               "name": "spoofed voice still asks approval"
             },
             {
+              "file": "test/voice_verification_test.dart",
+              "name": "successful secondary signal still requires SafetyGate approval"
+            },
+            {
               "file": "test/voice_safety_gate_integration_test.dart",
               "name": "spoofed voice at SafetyGate seam still asks for human approval"
             }
@@ -25,10 +29,6 @@
           "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart paths",
           "type": "automated",
           "tests": [
-            {
-              "file": "test/voice_verification_test.dart",
-              "name": "successful secondary signal still requires SafetyGate approval"
-            },
             {
               "file": "test/voice_verification_test.dart",
               "name": "invalid score and unavailable spoof evidence deny verification"
