@@ -16,7 +16,7 @@
             },
             {
               "file": "test/ios_simulator_mode_guard_test.dart",
-              "name": "AC-1 unsupported simulator mode fails closed before native commands"
+              "name": "AC-1 invalid simulator mode fails closed"
             }
           ]
         },
