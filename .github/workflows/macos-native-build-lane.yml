@@ -16,7 +16,22 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Read pinned Flutter version
+        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
-      - run: flutter pub get
-      - run: flutter test test/macos_build_lane_manifest_test.dart
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter test test/macos_build_lane_manifest_test.dart test/macos_native_xctest_lane_test.dart
       - run: flutter build macos --debug
+      - name: Run macOS XCTest target
+        run: |
+          xcodebuild test \
+            -workspace macos/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -only-testing:RunnerTests \
+            CODE_SIGNING_ALLOWED=NO \
+            -quiet

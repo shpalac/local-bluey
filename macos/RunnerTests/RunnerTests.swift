@@ -3,10 +3,13 @@ import FlutterMacOS
 import XCTest
 
 class RunnerTests: XCTestCase {
-
-  func testExample() {
-    // If you add code to the Runner application, consider adding tests here.
-    // See https://developer.apple.com/documentation/xctest for more information about using XCTest.
+  func testRunnerHostHasNativeExecutable() {
+    let host = Bundle.main
+    XCTAssertEqual(host.bundleURL.pathExtension, "app")
+    guard let executable = host.executableURL else {
+      XCTFail("macOS Runner host does not contain an executable")
+      return
+    }
+    XCTAssertTrue(FileManager.default.isExecutableFile(atPath: executable.path))
   }
-
 }
