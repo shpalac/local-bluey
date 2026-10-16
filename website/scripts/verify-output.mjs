@@ -7,13 +7,56 @@ const read = async (p) => readFile(resolve(root, 'dist', p), 'utf8');
 const html = await read('index.html');
 
 for (const phrase of [
-  'Local Bluey', 'A little', 'Screenshots are deterministic',
-  'YOUR MAC. YOUR RULES.', 'WHAT BLUEY CAN DO'
+  'Local Bluey', 'HAS AN AI', 'Set up Bluey on Mac',
+  'HOW BLUEY HELPS', 'Screenshots are deterministic',
+  'YOUR MAC. YOUR RULES.', 'WHAT BLUEY CAN DO',
+  'PHONE COMPANIONS', 'Linux has experimental host backends'
 ]) {
   assert.ok(html.includes(phrase), 'Missing meaningful page content: ' + phrase);
 }
 assert.ok(html.includes('/local-bluey/'), 'Broken GitHub Pages subpath');
+assert.ok(html.includes('href="#approval-demo"') && html.includes('id="approval-demo"'), 'Broken demo anchor');
+assert.ok(html.includes('href="#platforms"') && html.includes('id="platforms"'), 'Broken platform navigation');
+assert.ok(html.includes('Real-device validation is still pending'), 'Missing physical-device disclosure');
 assert.ok(!html.includes('Download for macOS'), 'Do not advertise unverified release downloads');
+
+// SEO must reference the GitHub Pages project URL, not the github.io domain root.
+const canonicalUrl = 'https://shpalac.github.io/local-bluey/';
+const sitemapUrl = canonicalUrl + 'sitemap-index.xml';
+assert.ok(html.includes('rel="canonical" href="' + canonicalUrl + '"'), 'Incorrect canonical URL');
+assert.ok(html.includes('rel="sitemap" type="application/xml" href="' + sitemapUrl + '"'), 'Missing sitemap discovery link');
+for (const attribute of ['og:url', 'og:image', 'og:image:alt', 'twitter:card', 'twitter:title', 'twitter:description', 'twitter:image', 'twitter:image:alt']) {
+  const kind = attribute.startsWith('og:') ? 'property' : 'name';
+  assert.ok(html.includes(kind + '="' + attribute + '"'), 'Missing social metadata: ' + attribute);
+}
+assert.match(html, /name="twitter:card" content="summary_large_image"/);
+
+const jsonLdBlocks = [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/g)];
+assert.equal(jsonLdBlocks.length, 1, 'Expected exactly one SoftwareApplication schema block');
+const app = JSON.parse(jsonLdBlocks[0][1]);
+assert.equal(app['@context'], 'https://schema.org');
+assert.equal(app['@type'], 'SoftwareApplication');
+assert.equal(app.name, 'Local Bluey');
+assert.equal(app.url, canonicalUrl);
+assert.equal(app.operatingSystem, 'macOS');
+assert.equal(app.applicationCategory, 'DesktopEnhancementApplication');
+assert.equal(app.isAccessibleForFree, true);
+assert.equal(app.offers.price, 0);
+assert.ok(app.codeRepository.endsWith('/shpalac/local-bluey'));
+for (const inventedClaim of ['aggregateRating', 'review', 'downloadUrl', 'installUrl']) {
+  assert.ok(!(inventedClaim in app), 'Unverified schema claim: ' + inventedClaim);
+}
+if (!process.env.PUBLIC_GOOGLE_SITE_VERIFICATION) {
+  assert.ok(!html.includes('name="google-site-verification"'), 'Verification requires an account token');
+}
+if (!process.env.PUBLIC_PLAUSIBLE_SCRIPT_URL) {
+  assert.ok(!html.includes('https://plausible.io/js/pa-'), 'Analytics must be opt-in');
+}
+
+const sitemapIndex = await read('sitemap-index.xml');
+const pageSitemap = await read('sitemap-0.xml');
+assert.ok(sitemapIndex.includes('https://shpalac.github.io/local-bluey/sitemap-0.xml'), 'Incorrect sitemap index URL');
+assert.ok(pageSitemap.includes('<loc>' + canonicalUrl + '</loc>'), 'Missing canonical page from sitemap');
 for (const name of ['bluey-desktop.png', 'showcase-gallery.png', 'settings-dark.png']) {
   assert.ok((await stat(resolve(root, 'dist/media', name))).size > 1000, 'Missing authentic image: ' + name);
 }

@@ -2,8 +2,16 @@ import { test, expect } from '@playwright/test';
 
 test('hero, genuine screenshots, trust disclosures and navigation render', async ({ page }, testInfo) => {
   await page.goto('./');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('AI');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('sidekick');
-  await expect(page.getByRole('link', { name: /Get started/i }).first()).toHaveAttribute('href', /github.com\/shpalac\/local-bluey/);
+  await expect(page.getByRole('link', { name: /Set up Bluey on Mac/i })).toHaveAttribute('href', /github.com\/shpalac\/local-bluey/);
+  await expect(page.getByRole('link', { name: /See how it works/i })).toHaveAttribute('href', '#how');
+  await expect(page.getByRole('link', { name: /Try the interactive approval demo/i })).toHaveAttribute('href', '#approval-demo');
+  await expect(page.getByRole('heading', { name: 'macOS' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'iOS & Android' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Linux & Windows' })).toBeVisible();
+  await expect(page.getByText(/not phone-control assistants/i)).toBeVisible();
+  await expect(page.getByText(/End-to-end behavior on physical devices is not yet verified/i)).toBeVisible();
   await expect(page.getByText('Screenshots are deterministic')).toBeVisible();
   await expect(page.getByText(/Real-device validation is still pending/)).toBeVisible();
   const image = page.locator('img[alt*="Bluey"]').first();
@@ -19,6 +27,7 @@ test('hero, genuine screenshots, trust disclosures and navigation render', async
     ['story', '#how'],
     ['control', '.control'],
     ['features', '.features'],
+    ['platforms', '#platforms'],
     ['gallery', '#look'],
     ['privacy', '.privacy'],
     ['final', '.last-call']
@@ -39,6 +48,21 @@ test('hero, genuine screenshots, trust disclosures and navigation render', async
   });
 });
 
+test('walkthrough and navigation point to real sections, not decorative links', async ({ page }) => {
+  await page.goto('./');
+  const invalidAnchors = await page.locator('a[href^="#"]').evaluateAll((anchors) =>
+    anchors.map((anchor) => anchor.getAttribute('href')?.slice(1) ?? '')
+      .filter((id) => id !== '' && !document.getElementById(id))
+  );
+  expect(invalidAnchors).toEqual([]);
+
+  const decorativeLabels = await page.locator('.story-step-footer, .feature-end, .gallery-mosaic figcaption').allTextContents();
+  expect(decorativeLabels.every((text) => !text.includes('↗'))).toBe(true);
+  await page.getByRole('link', { name: /Try the interactive approval demo/i }).click();
+  await expect(page).toHaveURL(/#approval-demo$/);
+  await expect(page.getByRole('button', { name: /Approve demo action/i })).toBeVisible();
+});
+
 test('approval illustration is interactive without claiming to perform real actions', async ({ page }) => {
   await page.goto('./');
   await page.getByRole('button', { name: /Approve demo action/i }).click();
@@ -52,4 +76,41 @@ test('reduced motion retains information and avoids scroll pinning', async ({ pa
   await page.goto('./');
   await expect(page.getByRole('heading', { name: /Your Mac.*Your rules/i })).toBeVisible();
   await expect(page.locator('.story-step')).toHaveCount(4);
+});
+
+
+test('SEO metadata, structured data and the sitemap describe the actual Mac host', async ({ page, request }) => {
+  await page.goto('./');
+
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://shpalac.github.io/local-bluey/');
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', 'https://shpalac.github.io/local-bluey/');
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+  await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', /https:\/\/shpalac\.github\.io\/local-bluey\/media\//);
+  await expect(page.locator('link[rel="sitemap"]')).toHaveAttribute('href', 'https://shpalac.github.io/local-bluey/sitemap-index.xml');
+
+  const jsonLd = await page.locator('script[type="application/ld+json"]').textContent();
+  expect(jsonLd).toBeTruthy();
+  const app = JSON.parse(jsonLd!);
+  expect(app['@type']).toBe('SoftwareApplication');
+  expect(app.operatingSystem).toBe('macOS');
+  expect(app.offers.price).toBe(0);
+  expect(app.aggregateRating).toBeUndefined();
+  expect(app.downloadUrl).toBeUndefined();
+
+  const sitemapIndex = await request.get('./sitemap-index.xml');
+  expect(sitemapIndex.ok()).toBe(true);
+  expect(await sitemapIndex.text()).toContain('https://shpalac.github.io/local-bluey/sitemap-0.xml');
+  const sitemap = await request.get('./sitemap-0.xml');
+  expect(sitemap.ok()).toBe(true);
+  expect(await sitemap.text()).toContain('<loc>https://shpalac.github.io/local-bluey/</loc>');
+});
+
+test('verification and analytics are absent unless configured', async ({ page }) => {
+  await page.goto('./');
+  if (!process.env.PUBLIC_GOOGLE_SITE_VERIFICATION) {
+    await expect(page.locator('meta[name="google-site-verification"]')).toHaveCount(0);
+  }
+  if (!process.env.PUBLIC_PLAUSIBLE_SCRIPT_URL) {
+    await expect(page.locator('script[src^="https://plausible.io/js/pa-"]')).toHaveCount(0);
+  }
 });

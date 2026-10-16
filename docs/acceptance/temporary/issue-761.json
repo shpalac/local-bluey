@@ -49,14 +49,9 @@
         },
         {
           "id": "ac_3",
-          "type": "automated",
+          "type": "gap",
           "requirement": "No egress or secrets in standalone retry module; uncertain operations fail closed",
-          "tests": [
-            {
-              "file": "test/idempotent_retry_test.dart",
-              "name": "crash after send before completion fails closed on restart"
-            }
-          ]
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         },
         {
           "id": "ac_4",

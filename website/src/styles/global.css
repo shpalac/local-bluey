@@ -54,6 +54,14 @@ img { max-width: 100%; height: auto; }
 .pill-button-primary:hover { background: #f3ffb1; }
 .text-link { border-bottom: 1px solid currentColor; padding-bottom: 5px; font-size: 14px; font-weight: 900; }
 .text-link span { margin-left: 9px; }
+
+.hero-walkthrough { max-width: 550px; margin-top: 28px; padding-top: 19px; border-top: 1px solid var(--line); }
+.hero-walkthrough-kicker { font-size: 10px; font-weight: 900; letter-spacing: .12em; color: var(--lime); }
+.hero-walkthrough-steps { list-style: none; margin: 12px 0 10px; padding: 0; display: flex; flex-wrap: wrap; gap: 11px 20px; }
+.hero-walkthrough-steps li { font-size: 13px; font-weight: 800; white-space: nowrap; }
+.hero-walkthrough-steps li span { color: var(--lime); margin-right: 5px; font-size: 10px; }
+.hero-walkthrough-link { display: inline-block; border-bottom: 1px solid currentColor; padding-bottom: 3px; font-size: 12px; font-weight: 800; color: var(--cream); }
+.hero-walkthrough-link:hover { color: var(--lime); }
 .hero-honesty { margin-top: 24px; font-size: 11px; max-width: 430px; color: #b9b4d1; line-height: 1.7; }
 .hero-art { min-height: 660px; position: relative; display: grid; place-items: center; transform: translateX(6%); }
 .scene-orbit { position: absolute; inset: -9%; z-index: 1; }
@@ -153,6 +161,19 @@ img { max-width: 100%; height: auto; }
 .feature-row h3 { font-family: var(--display); font-size: clamp(26px, 3vw, 50px); letter-spacing: -.07em; line-height: 1; margin: 0; }
 .feature-row p { color: #c6c0da; font-size: 14px; line-height: 1.65; max-width: 410px; }
 .feature-end { color: var(--lime); font-size: 27px; }
+
+.platforms { padding-bottom: 130px; }
+.platforms-head { display: grid; grid-template-columns: 60% 1fr; align-items: end; gap: 40px; margin: 60px 0 45px; }
+.platforms-head h2 { font: 1000 clamp(58px, 7vw, 112px)/.95 var(--display); letter-spacing: -.09em; margin: 0; }
+.platforms-head h2 em { font: 400 .85em Georgia, serif; color: var(--lime); letter-spacing: -.06em; }
+.platforms-head p { max-width: 390px; font-size: 18px; line-height: 1.6; }
+.platform-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.platform-card { border: 1px solid var(--line); border-radius: 20px; padding: 29px 25px; background: var(--ink-soft); }
+.platform-tag { color: var(--lime); font-size: 10px; font-weight: 900; letter-spacing: .1em; }
+.platform-card h3 { font: 900 clamp(29px, 3.2vw, 44px)/1 var(--display); letter-spacing: -.05em; margin: 25px 0 14px; }
+.platform-card p { color: #d2cde0; font-size: 14px; line-height: 1.6; margin: 0; }
+.platforms-note { max-width: 800px; color: #c5c0d7; font-size: 13px; line-height: 1.7; margin-top: 24px; }
+.platforms-note a { color: var(--lime); text-decoration: underline; text-underline-offset: 4px; }
 .gallery { background: #c5cdfa; color: var(--ink); padding-top: 120px; padding-bottom: 120px; }
 .gallery .section-index { border-color: #48466b; }
 .gallery-head { display: grid; grid-template-columns: 65% 1fr; align-items: end; gap: 30px; margin: 65px 0 70px; }
@@ -242,6 +263,10 @@ img { max-width: 100%; height: auto; }
   .feature-row { grid-template-columns: 45px 1fr 35px; }
   .feature-row p { grid-column: 2; grid-row: 2; margin-top: -8px; }
   .feature-end { grid-column: 3; grid-row: 1; }
+  .platforms-head { grid-template-columns: 1fr; gap: 12px; }
+  .platform-grid { grid-template-columns: 1fr; }
+  .platform-card { padding: 26px; }
+  .platforms { padding-bottom: 90px; }
   .gallery { padding-top: 100px; }
   .gallery-head { grid-template-columns: 1fr; margin: 65px 0 48px; }
   .gallery-mosaic .gallery-large img { height: 380px; }
@@ -290,6 +315,12 @@ img { max-width: 100%; height: auto; }
   .feature-row { padding: 25px 0; gap: 10px; grid-template-columns: 40px 1fr 24px; }
   .feature-row h3 { font-size: 30px; }
   .feature-row p { font-size: 13px; }
+  .platforms-head { margin: 45px 0 32px; }
+  .platforms-head h2 { font-size: clamp(48px, 11.5vw, 64px); }
+  .platforms-head p { font-size: 16px; }
+  .platform-card h3 { font-size: 33px; }
+  .hero-walkthrough-steps { gap: 10px 13px; }
+  .hero-walkthrough-steps li { font-size: 12px; }
   .gallery h2 { font-size: 62px; }
   .gallery-head p { font-size: 16px; }
   .gallery-mosaic { grid-template-columns: 1fr; gap: 17px; }

@@ -10,6 +10,7 @@ import 'egress_monitor.dart';
 import 'endpoint.dart';
 import 'privacy_guard.dart';
 import 'request_interfaces.dart';
+import 'secure_storage.dart';
 import 'strings.dart';
 
 /// Speech-to-text provider kinds (#196): explicit HTTP endpoint today,
@@ -53,11 +54,11 @@ class SttSettings {
   static const _kLegacyModel = 'brain.transcriptionModel';
   static const _kLegacyApiKey = 'brain.apiKey';
 
-  static FlutterSecureStorage _secure = const FlutterSecureStorage();
+  static FlutterSecureStorage _secure = secureStorage();
 
   /// Test seam, same pattern as BrainSettings.debugSecureStorage (#123).
   static set debugSecureStorage(FlutterSecureStorage? value) {
-    _secure = value ?? const FlutterSecureStorage();
+    _secure = value ?? secureStorage();
   }
 
   /// The out-of-box configuration (HTTP kind, no endpoint set).

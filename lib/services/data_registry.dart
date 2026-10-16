@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'hold_key_controller.dart';
 
@@ -21,6 +20,7 @@ import 'privacy_guard.dart';
 import 'routines.dart';
 import 'settings_store.dart';
 import 'safety_gate.dart';
+import 'secure_storage.dart';
 import 'stt.dart';
 import 'strings.dart';
 import '../ui/theme.dart';
@@ -395,7 +395,7 @@ class DataRegistry {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     try {
-      await const FlutterSecureStorage().deleteAll();
+      await secureStorage().deleteAll();
     } on MissingPluginException {
       // Tests without a platform channel: prefs clear above already ran.
     }

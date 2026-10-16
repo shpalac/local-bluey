@@ -59,6 +59,7 @@ jobs:
           python3 -m unittest discover -s tool -p test_ci_gate.py
           python3 -m unittest discover -s tool -p test_ci_impacted_tests.py
           python3 -m unittest discover -s tool -p test_ci_speed_wiring.py
+          python3 -m unittest discover -s tool -p test_ci_consolidation.py
       - name: Select affected CI lanes
         id: impact
         env:
@@ -162,6 +163,8 @@ jobs:
         run: python3 -m unittest discover -s tool -p test_acceptance_criteria.py
       - name: Validate issue task lifecycle test fixtures
         run: python3 -m unittest discover -s tool -p test_issue_task_ci.py
+      - name: Verify specialist workflows use acceptance manifests
+        run: python3 -m unittest discover -s tool -p test_acceptance_workflow_wiring.py
       - name: Validate acceptance-driven merge and closure fixtures
         run: |
           python3 -m unittest discover -s tool -p test_issue_auto_merge.py

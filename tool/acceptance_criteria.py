@@ -45,6 +45,7 @@ def load_manifest(root: Path, source: Path) -> dict:
         if not isinstance(issue["criteria"], list) or not issue["criteria"]:
             raise ManifestError("issue must declare criteria")
         seen_criteria = set()
+        evidence_owners = {}
         for c in issue["criteria"]:
             if not isinstance(c, dict) or not {"id", "requirement", "type"} <= set(c):
                 raise ManifestError(f"#{number}: invalid criterion")
@@ -71,10 +72,39 @@ def load_manifest(root: Path, source: Path) -> dict:
                     source_text = candidate.read_text(encoding="utf-8")
                     if name not in {m.group(2) for m in CASE.finditer(source_text)}:
                         raise ManifestError(f"#{number}/{identifier}: declared test name missing in {path}")
+                    evidence_key = (path, name)
+                    previous = evidence_owners.setdefault(evidence_key, identifier)
+                    if previous != identifier:
+                        raise ManifestError(f"#{number}/{identifier}: one named test has duplicate evidence ownership")
             else:
                 if set(c) != {"id", "requirement", "type", "reason"} or not isinstance(c["reason"], str) or not c["reason"].strip():
                     raise ManifestError(f"#{number}/{identifier}: explicit gap/manual reason required")
     return data
+
+
+def expected_tests(issues: list[dict], mode: str = "all") -> dict[str, set[str]]:
+    """Derive named test selection solely from validated issue manifests.
+
+    The same planner drives issue-linked PR checks and specialist workflows.
+    Unit/integration filtering never silently changes the declared names.
+    """
+    prefixes = {
+        "all": ("test/", "integration_test/"),
+        "unit": ("test/",),
+        "integration": ("integration_test/",),
+    }
+    if mode not in prefixes:
+        raise ValueError(f"unsupported acceptance test mode: {mode}")
+    selected = {}
+    for issue in issues:
+        for criterion in issue["criteria"]:
+            if criterion["type"] != "automated":
+                continue
+            for case in criterion["tests"]:
+                path = case["file"]
+                if path.startswith(prefixes[mode]):
+                    selected.setdefault(path, set()).add(case["name"])
+    return dict(sorted(selected.items()))
 
 
 def run_suites(expected: dict[str, set[str]], root: Path, timeout: int) -> dict[tuple[str, str], bool]:
@@ -175,13 +205,7 @@ def main(argv=None) -> int:
         return 1
     suites = None
     if args.run_tests:
-        expected = {}
-        for issue in data["issues"]:
-            for criterion in issue["criteria"]:
-                if criterion["type"] == "automated":
-                    for test in criterion["tests"]:
-                        expected.setdefault(test["file"], set()).add(test["name"])
-        suites = run_suites(expected, root, args.timeout)
+        suites = run_suites(expected_tests(data["issues"]), root, args.timeout)
     report, markdown = render(data, suites)
     output = (root / args.out_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)
