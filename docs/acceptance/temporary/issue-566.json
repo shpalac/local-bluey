@@ -57,7 +57,7 @@
           "id": "ac_4",
           "requirement": "Flutter analysis and relevant tests pass with reproducible CI evidence",
           "type": "manual",
-          "reason": "CI runs static analysis and named tests; reviewer must verify final CI and native behavior when integrated."
+          "reason": "flutter analyze and the named suites run on every PR CI; native macOS device validation when drafts are integrated remains the documented manual lane."
         }
       ]
     }

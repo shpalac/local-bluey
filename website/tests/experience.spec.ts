@@ -77,3 +77,40 @@ test('reduced motion retains information and avoids scroll pinning', async ({ pa
   await expect(page.getByRole('heading', { name: /Your Mac.*Your rules/i })).toBeVisible();
   await expect(page.locator('.story-step')).toHaveCount(4);
 });
+
+
+test('SEO metadata, structured data and the sitemap describe the actual Mac host', async ({ page, request }) => {
+  await page.goto('./');
+
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://shpalac.github.io/local-bluey/');
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', 'https://shpalac.github.io/local-bluey/');
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+  await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute('content', /https:\/\/shpalac\.github\.io\/local-bluey\/media\//);
+  await expect(page.locator('link[rel="sitemap"]')).toHaveAttribute('href', 'https://shpalac.github.io/local-bluey/sitemap-index.xml');
+
+  const jsonLd = await page.locator('script[type="application/ld+json"]').textContent();
+  expect(jsonLd).toBeTruthy();
+  const app = JSON.parse(jsonLd!);
+  expect(app['@type']).toBe('SoftwareApplication');
+  expect(app.operatingSystem).toBe('macOS');
+  expect(app.offers.price).toBe(0);
+  expect(app.aggregateRating).toBeUndefined();
+  expect(app.downloadUrl).toBeUndefined();
+
+  const sitemapIndex = await request.get('./sitemap-index.xml');
+  expect(sitemapIndex.ok()).toBe(true);
+  expect(await sitemapIndex.text()).toContain('https://shpalac.github.io/local-bluey/sitemap-0.xml');
+  const sitemap = await request.get('./sitemap-0.xml');
+  expect(sitemap.ok()).toBe(true);
+  expect(await sitemap.text()).toContain('<loc>https://shpalac.github.io/local-bluey/</loc>');
+});
+
+test('verification and analytics are absent unless configured', async ({ page }) => {
+  await page.goto('./');
+  if (!process.env.PUBLIC_GOOGLE_SITE_VERIFICATION) {
+    await expect(page.locator('meta[name="google-site-verification"]')).toHaveCount(0);
+  }
+  if (!process.env.PUBLIC_PLAUSIBLE_SCRIPT_URL) {
+    await expect(page.locator('script[src^="https://plausible.io/js/pa-"]')).toHaveCount(0);
+  }
+});

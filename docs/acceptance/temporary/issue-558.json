@@ -22,14 +22,6 @@
             },
             {
               "file": "test/activity_retention_policy_test.dart",
-              "name": "scoped purge leaves routines and credentials untouched"
-            },
-            {
-              "file": "test/activity_retention_policy_test.dart",
-              "name": "unknown or impersonated activity store cannot delete anything"
-            },
-            {
-              "file": "test/activity_retention_policy_test.dart",
               "name": "concurrent activity purge is refused while original is executing"
             },
             {

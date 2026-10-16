@@ -6,6 +6,10 @@ on:
       - 'macos/**'
       - 'ios/**'
       - 'lib/**'
+      - 'test/macos*'
+      - 'pubspec.yaml'
+      - 'pubspec.lock'
+      - '.flutter-version'
       - '.github/workflows/macos-native-build-lane.yml'
 
 permissions:
