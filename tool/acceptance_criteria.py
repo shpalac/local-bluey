@@ -82,6 +82,31 @@ def load_manifest(root: Path, source: Path) -> dict:
     return data
 
 
+def expected_tests(issues: list[dict], mode: str = "all") -> dict[str, set[str]]:
+    """Derive named test selection solely from validated issue manifests.
+
+    The same planner drives issue-linked PR checks and specialist workflows.
+    Unit/integration filtering never silently changes the declared names.
+    """
+    prefixes = {
+        "all": ("test/", "integration_test/"),
+        "unit": ("test/",),
+        "integration": ("integration_test/",),
+    }
+    if mode not in prefixes:
+        raise ValueError(f"unsupported acceptance test mode: {mode}")
+    selected = {}
+    for issue in issues:
+        for criterion in issue["criteria"]:
+            if criterion["type"] != "automated":
+                continue
+            for case in criterion["tests"]:
+                path = case["file"]
+                if path.startswith(prefixes[mode]):
+                    selected.setdefault(path, set()).add(case["name"])
+    return dict(sorted(selected.items()))
+
+
 def run_suites(expected: dict[str, set[str]], root: Path, timeout: int) -> dict[tuple[str, str], bool]:
     """Require every named case to be observed as successful, not skipped.
 
@@ -180,13 +205,7 @@ def main(argv=None) -> int:
         return 1
     suites = None
     if args.run_tests:
-        expected = {}
-        for issue in data["issues"]:
-            for criterion in issue["criteria"]:
-                if criterion["type"] == "automated":
-                    for test in criterion["tests"]:
-                        expected.setdefault(test["file"], set()).add(test["name"])
-        suites = run_suites(expected, root, args.timeout)
+        suites = run_suites(expected_tests(data["issues"]), root, args.timeout)
     report, markdown = render(data, suites)
     output = (root / args.out_dir).resolve()
     output.mkdir(parents=True, exist_ok=True)

@@ -46,3 +46,17 @@ a real flag and whether it introduced persistent data or network flows. If no
 flag exists, follow the reviewed deployment revert procedure instead; do not
 invent a preference key or delete retained user data. Check SafetyGate remains
 enabled and verify subsequent risky actions still require approval.
+
+## Default-off rollback smoke test
+
+Use `flutter test test/blu_035_feature_defaults_test.dart` to verify that
+newly created, consent-sensitive integrations default to disabled:
+`FileIndex`, `VoiceVerifier`, `HomeAssistantAdapter` and
+`PlaywrightBrowserAdapter`. The test uses rejecting fake providers and
+constructs no network transport, native runner, stored credential or
+background worker.
+
+A green smoke test checks construction defaults, not a completed deployment
+rollback. For each real feature, independently verify revoked consent,
+running sessions, on-disk data, explicit tool approval and Mac/iOS/Android
+behavior. Do not disable SafetyGate to simulate rollback.

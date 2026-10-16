@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Conservative pull-request impact planner for the Flutter CI lanes.
 
-Unknown paths and shared runtime changes run the full suite. Only explicitly
-isolated workflow models and test-only changes may select individual tests.
+Unknown paths and shared runtime changes run the full suite. Isolated Dart
+modules may select individual tests only when the reverse import graph proves
+coverage and no application entrypoint depends on them. Changes to a selected
+set of compatibility workflows avoid unrelated native lanes.
 Full regression continues on main, with a separate weekly security schedule.
 """
 from __future__ import annotations
@@ -32,6 +34,23 @@ FULL_INPUTS = {
     "analysis_options.yaml", "build.yaml",
 }
 DOCUMENT_NAMES = {"README.md", "CONTRIBUTING.md", "LICENSE", "CHANGELOG.md"}
+RUNTIME_ENTRYPOINTS = {"lib/main.dart", "lib/app.dart"}
+# These legacy workflows retain their PR check names, but their CI responsibilities
+# are already covered by the central gate or their own targeted job.
+ISOLATED_WORKFLOW_LANES = {
+    ".github/workflows/pr-fast-ci.yml": (),
+    ".github/workflows/macos-native-build-lane.yml": ("build_macos",),
+    ".github/workflows/temp-issue-596.yml": ("build_ios", "simulator"),
+    ".github/workflows/temp-issue-580.yml": ("test",),
+    ".github/workflows/temp-issue-590.yml": ("test",),
+    ".github/workflows/windows-ci-lane.yml": ("test",),
+    ".github/workflows/website.yml": (),
+}
+# Unit tests for this routing mechanism still run in detect on every PR.
+ISOLATED_TOOL_FILES = {
+    "tool/test_ci_impact.py", "tool/test_ci_consolidation.py",
+    "tool/ci_metrics.py", "tool/test_ci_metrics.py",
+}
 
 
 def changed_files(base_sha: str, root: Path) -> list[str]:
@@ -78,7 +97,7 @@ def impacted_tests(root: Path, paths: list[str]) -> list[str] | None:
     """
     sources = [p for p in paths if p.startswith("lib/") and p.endswith(".dart")]
     test_changes = [p for p in paths if p.startswith("test/")]
-    if any(not is_workflow_model(p) for p in sources):
+    if any(p in RUNTIME_ENTRYPOINTS for p in sources):
         return None
     if any(not p.endswith(TEST_SUFFIX) for p in test_changes):
         return None
@@ -91,7 +110,7 @@ def impacted_tests(root: Path, paths: list[str]) -> list[str] | None:
 
     if sources:
         graph: dict[Path, set[Path]] = {}
-        for folder in ("lib", "test"):
+        for folder in ("lib", "test", "integration_test"):
             for file in (root / folder).rglob("*.dart"):
                 try:
                     imports = DART_DEPENDENCY.findall(file.read_text(encoding="utf-8"))
@@ -116,6 +135,13 @@ def impacted_tests(root: Path, paths: list[str]) -> list[str] | None:
                     seen.add(dependent)
                     queue.append(dependent)
                     relative = dependent.relative_to(root.resolve()).as_posix()
+                    # A runtime-reachable source can affect application wiring even
+                    # when its unit tests import only a subset of that wiring.
+                    if not is_workflow_model(source) and (
+                        relative in RUNTIME_ENTRYPOINTS
+                        or relative.startswith("integration_test/")
+                    ):
+                        return None
                     if relative.startswith("test/") and relative.endswith(TEST_SUFFIX):
                         tests.add(relative)
                         found = True
@@ -137,12 +163,24 @@ def plan(paths: list[str], event_name: str, root: Path) -> dict:
                 or "\\" in path or "\n" in path):
             run_full = True
             break
-        if path in FULL_INPUTS or path.startswith((".github/", "tool/", "integration_test/")):
+        if path in FULL_INPUTS or path.startswith("integration_test/"):
+            run_full = True
+            continue
+        if path in ISOLATED_WORKFLOW_LANES:
+            for lane in ISOLATED_WORKFLOW_LANES[path]:
+                flags[lane] = True
+            continue
+        if path in ISOLATED_TOOL_FILES:
+            if path in ("tool/ci_metrics.py", "tool/test_ci_metrics.py"):
+                flags["static"] = True
+            continue
+        if path.startswith((".github/", "tool/")):
+            # Unknown workflow or tooling changes can modify CI behavior.
             run_full = True
             continue
         if path.startswith("lib/"):
             flags.update(static=True, test=True, acceptance=True)
-            if not is_workflow_model(path):
+            if not path.endswith(".dart") or path in RUNTIME_ENTRYPOINTS:
                 run_full = True
             continue
         if path.startswith("test/"):
@@ -171,21 +209,56 @@ def plan(paths: list[str], event_name: str, root: Path) -> dict:
         flags["acceptance"] = True
 
     selected_tests = None if run_full else impacted_tests(root, normalized)
+    # For non-workflow production code, a missing dependency/test mapping or
+    # application-entrypoint reachability must preserve full CI behavior.
+    if not run_full and selected_tests is None and any(
+        path.startswith("lib/") and not is_workflow_model(path)
+        for path in normalized
+    ):
+        run_full = True
     if run_full:
         flags = dict.fromkeys(LANES, True)
-    else:
-        if flags["test"] and selected_tests is None:
-            selected_tests = None
-        if any(path.startswith("lib/") for path in normalized):
-            flags["docs"] = True
+    elif any(path.startswith("lib/") for path in normalized):
+        flags["docs"] = True
 
+    # Bounded reason codes only: no PR filenames or issue contents in summaries.
+    reasons = set()
+    if event_name != "pull_request":
+        reasons.add("non_pr_event")
+    if not normalized:
+        reasons.add("empty_change_set")
+    for path in normalized:
+        parts = PurePosixPath(path).parts
+        if (not parts or path.startswith("/") or ".." in parts
+                or "\\" in path or "\n" in path):
+            reasons.add("unsafe_path")
+        elif path in FULL_INPUTS:
+            reasons.add("shared_config")
+        elif path.startswith((".github/", "tool/", "integration_test/")):
+            reasons.add("ci_tooling_or_integration")
+        elif path.startswith("lib/") and not is_workflow_model(path):
+            reasons.add("shared_runtime")
+        elif path in ("android", "ios", "macos", "linux"):
+            reasons.add("native_root")
+        elif not (path.startswith(("lib/", "test/", "docs/"))
+                  or path in DOCUMENT_NAMES or is_document(path)
+                  or any(path.startswith(prefix) for prefix in PLATFORMS)):
+            reasons.add("unrecognized_path")
+    full_tests = bool(run_full or (flags["test"] and selected_tests is None))
+    if not run_full and full_tests:
+        reasons.add("unmapped_or_fixture_tests")
+    if not reasons:
+        reasons.add("mapped_impact")
     return {
         "lanes": flags,
-        "full_tests": run_full or (flags["test"] and selected_tests is None),
+        "full_tests": full_tests,
         "test_files": [] if selected_tests is None else selected_tests,
         "android_matrix": [29, 34] if run_full else [34],
         "changed_files": normalized,
         "full_ci": run_full,
+        "selection_kind": "full_ci" if run_full else
+                          ("full_tests" if full_tests else "selective"),
+        "selection_reasons": sorted(reasons),
     }
 
 
@@ -204,6 +277,16 @@ def main(argv: list[str] | None = None) -> int:
         result = plan(paths, args.event_name, root)
         serialized = json.dumps(result, separators=(",", ":"), sort_keys=True)
         print(serialized)
+        summary = os.environ.get("GITHUB_STEP_SUMMARY")
+        if summary:
+            with open(summary, "a", encoding="utf-8") as handle:
+                handle.write("### Impact selection\n\n")
+                handle.write("- Mode: " + result["selection_kind"] + "\n")
+                handle.write("- Reasons: " +
+                             ", ".join(result["selection_reasons"]) + "\n")
+                selected = sorted(name for name, enabled in
+                                  result["lanes"].items() if enabled)
+                handle.write("- Lanes: " + ", ".join(selected) + "\n")
         if args.output:
             with args.output.open("a", encoding="utf-8") as output:
                 output.write(f"plan={serialized}\n")

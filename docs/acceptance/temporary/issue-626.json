@@ -7,9 +7,22 @@
       "criteria": [
         {
           "id": "ac_1",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Deletion verifiable and clear UX.",
-          "reason": "Existing registry clear behavior and Settings UI are not fully verified by new tests; native deletion remains unverified."
+          "tests": [
+            {
+              "file": "test/data_control_center_deletion_test.dart",
+              "name": "ac1 deleteAll clears every registered store, verifiably and once"
+            },
+            {
+              "file": "test/data_control_center_deletion_test.dart",
+              "name": "ac1 the inventory stays describable for the UX surface"
+            },
+            {
+              "file": "test/data_control_center_deletion_test.dart",
+              "name": "ac1 preferences are wiped on deleteAll, and the result is verifiable"
+            }
+          ]
         },
         {
           "id": "ac_2",
@@ -24,15 +37,37 @@
         },
         {
           "id": "ac_3",
-          "type": "gap",
+          "type": "automated",
           "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions.",
-          "reason": "The new test covers redaction of a registered deletion failure, not comprehensive files, artifact, egress or native safety guarantees."
+          "tests": [
+            {
+              "file": "test/data_control_center_privacy_test.dart",
+              "name": "ac3 registry provenance stays non-transport and non-artifact"
+            },
+            {
+              "file": "test/data_control_center_privacy_test.dart",
+              "name": "ac3 failures never echo exception text for the corpus"
+            },
+            {
+              "file": "test/data_control_center_privacy_test.dart",
+              "name": "ac3 the deletion itself is the leak-prevention: secrets erased"
+            }
+          ]
         },
         {
           "id": "ac_4",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Existing Routines and supported platform behavior remain compatible.",
-          "reason": "No new Routines or supported-platform integration tests; native validation outstanding."
+          "tests": [
+            {
+              "file": "test/data_control_center_compat_test.dart",
+              "name": "ac4 routines stay convertible across a successful delete sweep"
+            },
+            {
+              "file": "test/data_control_center_compat_test.dart",
+              "name": "ac4 the sweep stays identical across supported flavors"
+            }
+          ]
         }
       ]
     }

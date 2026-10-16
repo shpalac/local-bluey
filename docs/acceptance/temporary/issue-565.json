@@ -18,9 +18,30 @@
         },
         {
           "id": "ac_2",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Happy path, malformed input, timeout, cancellation, permission denied, offline and restart cases where applicable",
-          "reason": "Consent, duration refusal and denied-app test added, but complete timeout, offline, restart and permission-revocation cases are not demonstrated."
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_lifecycle_565_test.dart",
+              "name": "ac2 timeout expiry refuses observation and stops capture"
+            },
+            {
+              "file": "test/teach_mode/capture_lifecycle_565_test.dart",
+              "name": "ac2 offline refusal is explicit and stays off"
+            },
+            {
+              "file": "test/teach_mode/capture_lifecycle_565_test.dart",
+              "name": "ac2 mid-session policy tightening denies the next observation"
+            },
+            {
+              "file": "test/teach_mode/capture_lifecycle_565_test.dart",
+              "name": "ac2 malformed capture results are refused without retention"
+            },
+            {
+              "file": "test/teach_mode/capture_lifecycle_565_test.dart",
+              "name": "ac2 restart yields a clean session state"
+            }
+          ]
         },
         {
           "id": "ac_3",
@@ -37,7 +58,7 @@
           "id": "ac_4",
           "type": "manual",
           "requirement": "flutter analyze and relevant tests pass; PR includes commands and evidence",
-          "reason": "CI verification required. Native macOS TCC validation remains manual."
+          "reason": "flutter analyze and the relevant suites run on every PR CI; native macOS TCC validation remains the documented manual lane."
         }
       ]
     }

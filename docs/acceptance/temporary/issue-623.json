@@ -18,21 +18,60 @@
         },
         {
           "id": "ac_2",
+          "type": "automated",
           "requirement": "Deterministic, reproducible results; explicit errors rather than silent fallbacks.",
-          "type": "gap",
-          "reason": "The new widget test does not cover deterministic history across runs, restarts, or storage failures."
+          "tests": [
+            {
+              "file": "test/workflow_history_determinism_test.dart",
+              "name": "ac2 identical runs leave byte-identical redacted timelines"
+            },
+            {
+              "file": "test/workflow_history_determinism_test.dart",
+              "name": "ac2 storage failure is explicit, redacted and repeatable"
+            },
+            {
+              "file": "test/workflow_history_determinism_test.dart",
+              "name": "ac2 cancel is deterministic and drops further work"
+            },
+            {
+              "file": "test/workflow_history_determinism_test.dart",
+              "name": "ac2 stop request before the run yields an explicit stale verdict"
+            }
+          ]
         },
         {
           "id": "ac_3",
+          "type": "automated",
           "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions.",
-          "type": "gap",
-          "reason": "The new test checks one redacted UI path, not all files, logs, artifacts, or network interactions."
+          "tests": [
+            {
+              "file": "test/workflow_history_privacy_test.dart",
+              "name": "ac3 history surface keeps no-io, no-network, no-writer provenance"
+            },
+            {
+              "file": "test/workflow_history_privacy_test.dart",
+              "name": "ac3 audit retains no payload text for any corpus secret"
+            },
+            {
+              "file": "test/workflow_history_privacy_test.dart",
+              "name": "ac3 panel shows targets neither secrets nor raw payloads"
+            }
+          ]
         },
         {
           "id": "ac_4",
+          "type": "automated",
           "requirement": "Existing Routines and supported platform behavior remain compatible.",
-          "type": "gap",
-          "reason": "Requires broader Routines regression and platform CI; no new test proves this criterion."
+          "tests": [
+            {
+              "file": "test/workflow_history_compat_test.dart",
+              "name": "ac4 routine adapters stay intact while history is recorded"
+            },
+            {
+              "file": "test/workflow_history_compat_test.dart",
+              "name": "ac4 history panel renders identically across flavors"
+            }
+          ]
         }
       ]
     }

@@ -1,7 +1,7 @@
 # BLU-015 — Legacy Routine compatibility adapter
 
-Depends on BLU-014 (#567). This branch is stacked on
-`feat/blu-014-versioned-workflow-dsl-567` because the DSL is not yet on main.
+Depends on the BLU-014 (#567) DSL contract, now present on `main`.
+This adapter remains an opt-in converter and does not enable workflows.
 
 ## Scope and ownership
 
@@ -15,6 +15,9 @@ Depends on BLU-014 (#567). This branch is stacked on
 - Every other legacy instruction, disabled routine, automatic/scheduled trigger,
   retry, extra steps, privileges and postconditions is rejected instead of
   guessing how to execute it. Never interpret arbitrary instructions as actions.
+- Control characters in legacy names and trigger metadata fail closed before
+  import into a Routine, preventing malformed DSL preconditions from becoming
+  executable legacy triggers. Existing stored Routines are not rewritten.
 - No registration, persistence, side effects, egress, logging of contents,
   or SafetyGate bypass. Callers must still explicitly approve any later
   execution through the existing safety layer.
@@ -25,7 +28,7 @@ Depends on BLU-014 (#567). This branch is stacked on
 
 Run `dart format --output=none --set-exit-if-changed lib/workflows/legacy_routine_adapter.dart test/legacy_routine_adapter_test.dart`,
 `dart analyze lib/workflows/legacy_routine_adapter.dart test/legacy_routine_adapter_test.dart`,
-`flutter test test/legacy_routine_adapter_test.dart test/workflow_dsl_test.dart test/routines_test.dart`,
+`flutter test test/legacy_routine_adapter_test.dart test/legacy_routine_control_test.dart test/workflow_dsl_test.dart test/routines_test.dart`,
 and `flutter analyze`.
 
 AC-1: existing Routine implementation and golden fixtures unchanged;

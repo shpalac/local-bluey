@@ -40,6 +40,34 @@
             {
               "file": "test/workflow_dsl_target_validation_test.dart",
               "name": "malformed step target newline is rejected"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "permission denied fails closed"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "timeout fails closed"
+            },
+            {
+              "file": "test/workflow_execution_test.dart",
+              "name": "cancelled execution never verifies"
+            },
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "safety gate rejection blocks host action"
+            },
+            {
+              "file": "test/workflow_action_approval_test.dart",
+              "name": "offline prompt fails closed"
+            },
+            {
+              "file": "test/workflow_execution_integration_test.dart",
+              "name": "WorkflowExecution rejects interrupted restart without replay"
+            },
+            {
+              "file": "test/workflow_execution_recovery_test.dart",
+              "name": "interrupted execution surfaces for manual acknowledgement"
             }
           ]
         },
@@ -60,16 +88,10 @@
           "type": "automated",
           "tests": [
             {
-              "file": "test/workflow_dsl_test.dart",
-              "name": "schema round-trip is stable"
+              "file": "test/workflows_import_test.dart",
+              "name": "imports workflow without enabling it"
             }
           ]
-        },
-        {
-          "id": "runtime_integration_gap",
-          "requirement": "End-to-end SafetyGate, fake-host permission, timeout, cancel, offline and restart integration",
-          "type": "gap",
-          "reason": "This PR defines the parser only; no action executor or persistence boundary is enabled. These require separate runtime work before promotion to permanent CI."
         }
       ]
     }

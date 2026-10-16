@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@astrojs/react": "^7.0.1",
+    "@astrojs/sitemap": "^3.7.4",
     "@react-three/fiber": "^9.4.0",
     "@rive-app/react-canvas": "^4.36.0",
     "@tailwindcss/postcss": "^4.1.0",
