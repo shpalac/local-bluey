@@ -34,11 +34,8 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          builder: (context, child) => WatchBanner(
-            watch: watch,
-            teachSession: session,
-            child: child!,
-          ),
+          builder: (context, child) =>
+              WatchBanner(watch: watch, teachSession: session, child: child!),
           home: Scaffold(
             body: SingleChildScrollView(
               child: TeachCapturePanel(session: session, watch: watch),
@@ -154,11 +151,8 @@ void main() {
       });
       await tester.pumpWidget(
         MaterialApp(
-          builder: (context, child) => WatchBanner(
-            watch: watch,
-            teachSession: session,
-            child: child!,
-          ),
+          builder: (context, child) =>
+              WatchBanner(watch: watch, teachSession: session, child: child!),
           home: Scaffold(
             body: TeachCapturePanel(session: session, watch: watch),
           ),
