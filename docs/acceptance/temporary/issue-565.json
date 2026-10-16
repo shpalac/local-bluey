@@ -8,7 +8,7 @@
         {
           "id": "ac_1",
           "type": "automated",
-          "requirement": "Cancel discards; restart does not resume; denied apps not captured",
+          "requirement": "Opt-in Teach Mode never captures denied or unknown apps; cancel destroys uncommitted steps; a restarted session remains off and empty.",
           "tests": [
             {
               "file": "test/teach_mode/capture_session_test.dart",
@@ -19,7 +19,7 @@
         {
           "id": "ac_2",
           "type": "automated",
-          "requirement": "Happy path, malformed input, timeout, cancellation, permission denied, offline and restart cases where applicable",
+          "requirement": "Fake-host tests cover successful capture, malformed input, expiry, cancellation in flight, revoked permissions, offline failure, capture error and restart without implicit resume.",
           "tests": [
             {
               "file": "test/teach_mode/capture_negative_paths_test.dart",
@@ -44,25 +44,42 @@
             {
               "file": "test/teach_mode/capture_negative_paths_test.dart",
               "name": "ac2 cancellation fences in-flight result and restart is off"
+            },
+            {
+              "file": "test/teach_mode/capture_lifecycle_565_test.dart",
+              "name": "ac2 malformed capture results are refused without retention"
             }
           ]
         },
         {
           "id": "ac_3",
           "type": "automated",
-          "requirement": "No unintended egress, secret retention, or unsafe auto-execution",
+          "requirement": "Teach Mode retains only validated identifiers, rejects secret payloads and unapproved I/O, and produces non-executable drafts requiring separate approval.",
           "tests": [
             {
               "file": "test/teach_mode/capture_session_test.dart",
               "name": "ac3 secret-bearing input discarded and draft cannot execute"
+            },
+            {
+              "file": "test/teach_mode/capture_privacy_test.dart",
+              "name": "ac3 teach capture retains no payloads and uses no io or network"
             }
           ]
         },
         {
           "id": "ac_4",
-          "type": "manual",
-          "requirement": "flutter analyze and relevant tests pass; PR includes commands and evidence",
-          "reason": "flutter analyze and the relevant suites run on every PR CI; native macOS TCC validation remains the documented manual lane."
+          "type": "automated",
+          "requirement": "A mounted Flutter Teach Mode UI shows active, paused and off from the real session, responds to denied/permission changes and cancel or restart, and never misidentifies ordinary screen watching.",
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_indicator_widget_test.dart",
+              "name": "teach mode indicator shows active paused and off on revoke cancel restart"
+            },
+            {
+              "file": "test/teach_mode/capture_indicator_widget_test.dart",
+              "name": "ordinary watching never becomes Teach Mode and cannot be cancelled by teaching"
+            }
+          ]
         }
       ]
     }
