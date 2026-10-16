@@ -8,8 +8,9 @@ import 'draft_builder.dart';
 class TeachCaptureSession extends ChangeNotifier {
   /// Shared, in-memory Teach Mode controller for the macOS app UI.
   /// Regular ScreenWatch sessions do not count as teaching sessions.
-  static final TeachCaptureSession instance =
-      TeachCaptureSession(watch: ScreenWatch.instance);
+  static final TeachCaptureSession instance = TeachCaptureSession(
+    watch: ScreenWatch.instance,
+  );
 
   TeachCaptureSession({required ScreenWatch watch})
     : _watch = watch,
@@ -26,9 +27,8 @@ class TeachCaptureSession extends ChangeNotifier {
   bool _starting = false;
   bool _ownsSession = false;
 
-  CaptureIndicator get indicator => _disposed || !_ownsSession
-      ? CaptureIndicator.off
-      : _monitor.indicator;
+  CaptureIndicator get indicator =>
+      _disposed || !_ownsSession ? CaptureIndicator.off : _monitor.indicator;
   int get stepCount => _steps.length;
 
   /// Scope shown to the user before asking for consent. Fails on policy load.
