@@ -19,6 +19,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Validate issue task contract fixture tests
         run: python3 -m unittest discover -s tool -p test_issue_task_hygiene.py
+      - name: Validate hosted-runner-only contract fixtures
+        run: python3 -m unittest discover -s tool -p test_runner_only_issue_contract.py
       - name: Require issue acceptance criteria and CI validation plan
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
