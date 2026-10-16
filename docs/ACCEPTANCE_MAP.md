@@ -709,3 +709,15 @@ a live OS build, or native accessibility labels — those need device
 validation, not more fake-host tests. Rollback: the three tests, the
 manifest entries and this paragraph; production code unchanged.
 
+
+## BLU-028 index privacy — acceptance evidence (Refs #584)
+
+ac_3 was left stranded by an early evidence-ownership correction. It is
+now proven by a uniquely-owned suite `test/file_index_privacy_584_test.dart`:
+`lib/services/file_index.dart` stays transport-free and artifact-writer-free
+despite its allowed locally-granted `dart:io` reads, and a revoked index
+exposes no citation surface — empty snapshot, empty search, zero counts and
+a stale-snapshot `matchesRetrievalSnapshot` refusal — for the full secret
+corpus. ac_4 and the physical-macos integration gap stay as recorded
+manual/native items. Rollback: one new suite, the manifest promotion and
+this paragraph; production code unchanged.
