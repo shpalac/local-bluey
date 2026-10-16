@@ -20,9 +20,12 @@ defaults:
   run:
     shell: bash
 
+# Superseded PR checks may be cancelled, but each merged main commit must
+# get its own independent CI result for post-merge issue closure. Using only
+# github.ref would also cancel main's previous verification on every push.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # Least privilege by default; jobs escalate only when they must.
 permissions:
@@ -57,6 +60,7 @@ jobs:
         run: |
           python3 -m unittest discover -s tool -p test_ci_impact.py
           python3 -m unittest discover -s tool -p test_ci_gate.py
+          python3 -m unittest discover -s tool -p test_ci_concurrency.py
           python3 -m unittest discover -s tool -p test_ci_impacted_tests.py
           python3 -m unittest discover -s tool -p test_ci_speed_wiring.py
           python3 -m unittest discover -s tool -p test_ci_consolidation.py
