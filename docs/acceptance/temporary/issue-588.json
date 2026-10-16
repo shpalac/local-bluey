@@ -25,6 +25,10 @@
             {
               "file": "test/rive_renderer_fallback_test.dart",
               "name": "unavailable Rive renderer resolves to native fallback"
+            },
+            {
+              "file": "test/rive_reduced_motion_fallback_test.dart",
+              "name": "ac2 Rive fallback honors reduced motion when mounted alone"
             }
           ]
         },
