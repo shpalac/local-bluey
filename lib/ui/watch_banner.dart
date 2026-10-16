@@ -9,7 +9,12 @@ import '../services/strings.dart';
 /// runs (#212): red dot, countdown, one-tap stop. Sits above the Navigator
 /// via the app builder, so no route can hide it.
 class WatchBanner extends StatelessWidget {
-  const WatchBanner({super.key, required this.child, this.watch, this.teachSession});
+  const WatchBanner({
+    super.key,
+    required this.child,
+    this.watch,
+    this.teachSession,
+  });
 
   final Widget child;
   final ScreenWatch? watch;
@@ -28,19 +33,16 @@ class WatchBanner extends StatelessWidget {
         final stop = isTeaching ? teaching.cancel : currentWatch.stop;
         final bannerLabel = isTeaching
             ? isPaused
-                ? Strings.t('Teach Mode paused', 'מצב לימוד מושהה')
-                : Strings.t('Teach Mode active', 'מצב לימוד פעיל')
-            : Strings.t(
-                'Screen watching is active',
-                'צפייה במסך פעילה',
-              );
+                  ? Strings.t('Teach Mode paused', 'מצב לימוד מושהה')
+                  : Strings.t('Teach Mode active', 'מצב לימוד פעיל')
+            : Strings.t('Screen watching is active', 'צפייה במסך פעילה');
         final actionLabel = isTeaching
             ? Strings.t('Cancel Teach Mode', 'ביטול מצב לימוד')
             : Strings.t('Stop screen watching', 'עצירת צפייה במסך');
         final visualLabel = isTeaching
             ? isPaused
-                ? Strings.t('Teach Mode paused', 'מצב לימוד מושהה')
-                : Strings.t('Teach Mode active', 'מצב לימוד פעיל')
+                  ? Strings.t('Teach Mode paused', 'מצב לימוד מושהה')
+                  : Strings.t('Teach Mode active', 'מצב לימוד פעיל')
             : Strings.t(
                 'Watching ${_mmss(currentWatch.remaining)}',
                 'צופה ${_mmss(currentWatch.remaining)}',
