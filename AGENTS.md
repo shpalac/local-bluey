@@ -2,6 +2,8 @@
 
 This repository is developed through GitHub Issues and pull requests. GitHub Issues are the source of truth for planned features, defects and tasks. Read this file **before creating or implementing an issue**. Detailed test/merge behavior is in [docs/acceptance/TASK_LIFECYCLE.md](docs/acceptance/TASK_LIFECYCLE.md).
 
+For the portable factory architecture and this repository's adoption status, see [docs/factory/ALIGNMENT.md](docs/factory/ALIGNMENT.md) and [.factory/config.yaml](.factory/config.yaml).
+
 ## Opening an issue — mandatory
 
 1. Inspect existing open issues, relevant code, CI workflows and related work; avoid duplicates.
