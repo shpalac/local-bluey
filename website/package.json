@@ -20,7 +20,7 @@
     "@react-three/fiber": "^9.4.0",
     "@rive-app/react-canvas": "^4.36.0",
     "@tailwindcss/postcss": "^4.1.0",
-    "astro": "^6.0.6",
+    "astro": "^7.2.8",
     "gsap": "^3.13.0",
     "motion": "^12.23.0",
     "postcss": "^8.5.0",
