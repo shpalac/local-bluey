@@ -20,6 +20,31 @@ class ExecutionAuditPanel extends StatefulWidget {
 }
 
 class _ExecutionAuditPanelState extends State<ExecutionAuditPanel> {
+  @override
+  void initState() {
+    super.initState();
+    widget.audit.addListener(_onAuditChanged);
+  }
+
+  @override
+  void didUpdateWidget(ExecutionAuditPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.audit != widget.audit) {
+      oldWidget.audit.removeListener(_onAuditChanged);
+      widget.audit.addListener(_onAuditChanged);
+    }
+  }
+
+  void _onAuditChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    widget.audit.removeListener(_onAuditChanged);
+    super.dispose();
+  }
+
   Future<void> _showDiagnostics() async {
     final approved = await showDialog<bool>(
       context: context,

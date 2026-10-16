@@ -28,6 +28,22 @@
             {
               "file": "test/blu_022_invalid_frame_test.dart",
               "name": "invalid pilot frame differences never trigger vision"
+            },
+            {
+              "file": "test/benchmark/mac_pilot_metrics_test.dart",
+              "name": "ac2 aggregate CPU and false suggestion metrics are reproducible"
+            },
+            {
+              "file": "test/benchmark/mac_pilot_metrics_test.dart",
+              "name": "ac2 missing samples remain unknown, not a passing zero"
+            },
+            {
+              "file": "test/benchmark/mac_pilot_metrics_test.dart",
+              "name": "ac2 invalid counts and CPU samples fail closed"
+            },
+            {
+              "file": "test/benchmark/mac_pilot_metrics_test.dart",
+              "name": "ac2 privacy incidents and retained records prohibit clean summary"
             }
           ]
         },

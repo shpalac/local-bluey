@@ -11,6 +11,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "test:static": "node scripts/verify-output.mjs",
+    "test:gtm": "node --test scripts/gtm-links.test.mjs",
+    "gtm:links": "node scripts/gtm-links.mjs",
     "test:visual": "playwright test",
     "test:lighthouse": "lhci autorun --config=./lighthouserc.cjs"
   },
@@ -20,7 +22,7 @@
     "@react-three/fiber": "^9.4.0",
     "@rive-app/react-canvas": "^4.36.0",
     "@tailwindcss/postcss": "^4.1.0",
-    "astro": "^6.0.6",
+    "astro": "^7.4.0",
     "gsap": "^3.13.0",
     "motion": "^12.23.0",
     "postcss": "^8.5.0",

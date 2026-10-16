@@ -55,6 +55,10 @@
             {
               "file": "test/host_ax_postcondition_reader_test.dart",
               "name": "live AX reader requires explicit consent and trusted host"
+            },
+            {
+              "file": "test/postcondition_timeout_fence_test.dart",
+              "name": "ac2 timeout does not start later postcondition reads"
             }
           ],
           "requirement": "Verify BLU-018 ac_2 with named deterministic tests"
@@ -70,6 +74,10 @@
             {
               "file": "test/host_ax_postcondition_reader_test.dart",
               "name": "kill and reset during AX observation cannot certify success"
+            },
+            {
+              "file": "test/postcondition_timeout_fence_test.dart",
+              "name": "ac3 cancellation does not start later postcondition reads"
             }
           ],
           "requirement": "Verify BLU-018 ac_3 with named deterministic tests"
@@ -88,7 +96,7 @@
         {
           "id": "end_to_end_gap",
           "type": "gap",
-          "reason": "Production SafetyGate/HostControl readers, TCC permissions and persisted restart integration are not implemented; temporary CI remains.",
+          "reason": "AX reader is opt-in with consent/trust/kill fencing; local artifact/tool readers, persisted restart integration and native macOS/TCC acceptance remain unverified.",
           "requirement": "Production SafetyGate, HostControl and restart integration"
         }
       ]
