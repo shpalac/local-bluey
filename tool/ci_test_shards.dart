@@ -9,9 +9,15 @@ List<List<String>> partitionImpactedTests(
   if (shardCount < 1) {
     throw ArgumentError.value(shardCount, 'shardCount', 'must be positive');
   }
-  if (files.isEmpty || files.any((file) => !file.startsWith('test/') ||
-      !file.endsWith('_test.dart') || file.contains('..') ||
-      file.contains('\\') || file.contains('\n'))) {
+  if (files.isEmpty ||
+      files.any(
+        (file) =>
+            !file.startsWith('test/') ||
+            !file.endsWith('_test.dart') ||
+            file.contains('..') ||
+            file.contains('\\') ||
+            file.contains('\n'),
+      )) {
     throw const FormatException('expected nonempty test/*_test.dart paths');
   }
   if (files.toSet().length != files.length) {
