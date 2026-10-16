@@ -21,6 +21,10 @@ class TeachDraft {
 class TeachDraftBuilder {
   const TeachDraftBuilder();
 
+  /// Only a bounded prefix of untrusted observations enters a review draft.
+  /// Overflow is always reported as a warning, never silently accepted.
+  static const int maxReviewSteps = 256;
+
   /// Derives a safe review preview without granting execution rights.
   TeachDraftPreview preview(List<Map<String, Object?>> observations) =>
       TeachDraftPreview(build(observations));
@@ -28,7 +32,13 @@ class TeachDraftBuilder {
   TeachDraft build(List<Map<String, Object?>> observations) {
     final steps = <DraftStep>[];
     final warnings = <String>[];
-    for (var index = 0; index < observations.length; index++) {
+    if (observations.length > maxReviewSteps) {
+      warnings.add('Additional captured steps omitted; review required');
+    }
+    final reviewCount = observations.length > maxReviewSteps
+        ? maxReviewSteps
+        : observations.length;
+    for (var index = 0; index < reviewCount; index++) {
       final item = observations[index];
       final action = item['action'];
       final target = item['target'];
