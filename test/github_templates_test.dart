@@ -36,7 +36,9 @@ void main() {
     expect(text, contains('Those MUST NOT appear as acceptance criteria.'));
     expect(
       text,
-      contains('If indispensable for safe delivery, scope separately and flag as blocked'),
+      contains(
+        'If indispensable for safe delivery, scope separately and flag as blocked',
+      ),
     );
   });
 
