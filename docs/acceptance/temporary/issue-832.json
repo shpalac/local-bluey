@@ -30,13 +30,8 @@
         {
           "id": "ac_3",
           "requirement": "A test asserts the constructed options, so the platform configuration cannot silently regress.",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/data_registry_test.dart",
-              "name": "every persistence source file is registered"
-            }
-          ]
+          "type": "gap",
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         },
         {
           "id": "ac_4",

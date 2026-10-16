@@ -18,6 +18,10 @@
           "tests": [
             {
               "file": "test/mcp/hostile_mcp_server_suite_test.dart",
+              "name": "hostile nested output redacts secrets deterministically"
+            },
+            {
+              "file": "test/mcp/hostile_mcp_server_suite_test.dart",
               "name": "hostile server denial returns explicit policy error"
             }
           ]
@@ -25,13 +29,8 @@
         {
           "id": "ac_3",
           "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/mcp/hostile_mcp_server_suite_test.dart",
-              "name": "hostile nested output redacts secrets deterministically"
-            }
-          ]
+          "type": "gap",
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         },
         {
           "id": "ac_4",

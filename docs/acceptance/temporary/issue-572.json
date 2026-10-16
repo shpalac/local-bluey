@@ -49,13 +49,8 @@
         {
           "id": "ac_4",
           "requirement": "Flutter tests validate durable retry checkpoint implementation",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/idempotent_retry_test.dart",
-              "name": "crash after send before completion fails closed on restart"
-            }
-          ]
+          "type": "gap",
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         },
         {
           "id": "runtime_integration_gap",

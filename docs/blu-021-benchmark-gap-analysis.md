@@ -16,3 +16,15 @@ Refs #577 only.
 Real BLU-006/BLU-008 production capture integration requires runtime validation against the real capture pipeline, privacy controls, and device permissions.
 
 The in-repo follow-up wires only deterministic adapters around existing pure Dart components. Hardware/TCC validation remains a manual validation step.
+
+## Bounded synthetic trace collection (Refs #577)
+
+`SyntheticTraceHarness` now defaults to a 10,000-event in-memory cap.
+Callers may configure a positive cap no larger than 100,000. Once full,
+`record` rejects new samples before changing stored ids, traces or
+calculated metrics. This protects deterministic stress tests from
+accidentally accumulating an unbounded number of synthetic observations.
+
+Run `flutter test test/benchmark/synthetic_trace_capacity_test.dart`.
+The limit adds no telemetry, persistent state, device capture or permission
+requirements. Native privacy and real BLU-006/008 integration remain open.
