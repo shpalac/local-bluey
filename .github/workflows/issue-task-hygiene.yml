@@ -15,10 +15,6 @@ jobs:
     permissions:
       contents: read
       issues: write
-jobs:
-  task-contract:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Validate issue task contract fixture tests
