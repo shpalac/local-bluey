@@ -47,18 +47,18 @@ class _TeachCapturePanelState extends State<TeachCapturePanel> {
           content: Text(
             _t(
               'Allowlisted apps: ${scope.apps.join(', ')}.\n'
-              'Session lasts at most 10 minutes. You can pause or cancel '
-              'at any time. Sensitive or unknown apps stop observation.\n'
-              'Only validated action identifiers can enter an in-memory '
-              'draft; no screen content or typed values are saved. '
-              'No actions are executed. Automatic capture of host actions '
-              'is not yet connected.',
+                  'Session lasts at most 10 minutes. You can pause or cancel '
+                  'at any time. Sensitive or unknown apps stop observation.\n'
+                  'Only validated action identifiers can enter an in-memory '
+                  'draft; no screen content or typed values are saved. '
+                  'No actions are executed. Automatic capture of host actions '
+                  'is not yet connected.',
               'אפליקציות מורשות: ${scope.apps.join(', ')}.\n'
-              'משך הסשן לכל היותר עשר דקות. ניתן לעצור או לבטל בכל רגע. '
-              'אפליקציה רגישה או לא מוכרת עוצרת את התצפית.\n'
-              'רק מזהי פעולות מאומתים נשמרים בזיכרון לטיוטה. '
-              'לא נשמרים תוכן המסך או טקסט מוקלד, ולא מבוצעות פעולות. '
-              'קליטת פעולות אוטומטית עדיין אינה מחוברת.',
+                  'משך הסשן לכל היותר עשר דקות. ניתן לעצור או לבטל בכל רגע. '
+                  'אפליקציה רגישה או לא מוכרת עוצרת את התצפית.\n'
+                  'רק מזהי פעולות מאומתים נשמרים בזיכרון לטיוטה. '
+                  'לא נשמרים תוכן המסך או טקסט מוקלד, ולא מבוצעות פעולות. '
+                  'קליטת פעולות אוטומטית עדיין אינה מחוברת.',
             ),
           ),
           actions: [
@@ -80,16 +80,18 @@ class _TeachCapturePanelState extends State<TeachCapturePanel> {
         consent: scope,
       );
       if (mounted && refusal != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(refusal)),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(refusal)));
       }
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              _t('Teach Mode policy is unavailable.', 'מדיניות מצב לימוד אינה זמינה.'),
+              _t(
+                'Teach Mode policy is unavailable.',
+                'מדיניות מצב לימוד אינה זמינה.',
+              ),
             ),
           ),
         );
@@ -107,8 +109,14 @@ class _TeachCapturePanelState extends State<TeachCapturePanel> {
         final indicator = _session.indicator;
         final status = switch (indicator) {
           CaptureIndicator.off => _t('Teach Mode: off', 'מצב לימוד: כבוי'),
-          CaptureIndicator.active => _t('Teach Mode: active', 'מצב לימוד: פעיל'),
-          CaptureIndicator.paused => _t('Teach Mode: paused', 'מצב לימוד: מושהה'),
+          CaptureIndicator.active => _t(
+            'Teach Mode: active',
+            'מצב לימוד: פעיל',
+          ),
+          CaptureIndicator.paused => _t(
+            'Teach Mode: paused',
+            'מצב לימוד: מושהה',
+          ),
         };
         return Card(
           child: Padding(
@@ -133,9 +141,9 @@ class _TeachCapturePanelState extends State<TeachCapturePanel> {
                 Text(
                   _t(
                     'Session controls only. Automatic demonstration recording '
-                    'is not enabled. Drafts cannot execute actions.',
+                        'is not enabled. Drafts cannot execute actions.',
                     'בקרת סשן בלבד. הקלטת הדגמה אוטומטית עדיין אינה פעילה. '
-                    'טיוטות אינן יכולות לבצע פעולות.',
+                        'טיוטות אינן יכולות לבצע פעולות.',
                   ),
                 ),
                 const SizedBox(height: 12),
