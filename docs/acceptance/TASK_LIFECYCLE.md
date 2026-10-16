@@ -81,9 +81,12 @@ Create `docs/acceptance/temporary/issue-123.json`:
       },
       {
         "id": "ac_2",
-        "requirement": "Physical macOS permission revocation works",
-        "type": "manual",
-        "reason": "Requires a real Mac TCC grant/revoke scenario and signed evidence"
+        "requirement": "Mocked host permission denial fails closed",
+        "type": "automated",
+        "tests": [{
+          "file": "test/issues/issue_123_test.dart",
+          "name": "mocked permission denial fails closed"
+        }]
       }
     ]
   }]
