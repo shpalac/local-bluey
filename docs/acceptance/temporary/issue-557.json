@@ -82,23 +82,7 @@
           "tests": [
             {
               "file": "test/activity_store_test.dart",
-              "name": "stop and fresh instance never resurrect observation data"
-            },
-            {
-              "file": "test/activity_store_test.dart",
               "name": "clear purges data without granting consent"
-            },
-            {
-              "file": "test/encrypted_activity_store_test.dart",
-              "name": "real SQLCipher encrypts on-disk records and excludes raw text"
-            },
-            {
-              "file": "test/encrypted_activity_store_test.dart",
-              "name": "key unavailable and no opt-in never create a database"
-            },
-            {
-              "file": "test/encrypted_activity_store_test.dart",
-              "name": "clear revokes session, erases rows and leaves no WAL/journal"
             }
           ]
         },

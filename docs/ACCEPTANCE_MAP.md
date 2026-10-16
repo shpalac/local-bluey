@@ -258,8 +258,6 @@ Exact unmet original condition: "issue acceptance stays open if native semantics
 
 Delivered: PR396 shared caller for startup load, listener sync and close plus independent notice.
 
-Original evidence coverage:
-
 - Actual HoldKeySettings/Controller with fake entered read/permission/enable/disable/close, fresh OFF invalidation, stale/current/disposed, coalesced fresh-load retry and contained sync/async failures: [caller fixtures](../test/hold_key_caller_test.dart), [caller source](../lib/services/hold_key_caller.dart).
 - Same helper in startup/listener/close and independent normal/onboarding notice placement: source assertions in that fixture and [main](../lib/main.dart).
 - Complete synthetic failure/disabled retry/recovery notice: [widget fixture](../test/hold_key_caller_notice_test.dart), [evidence](evidence/issue395/README.md). Existing hold/key/capture regressions and full checks: PR396 ledger.
@@ -269,8 +267,6 @@ Unmet bounded criterion: none identified. Ready for manager disposition. Retaine
 ### #397 Appearance-only startup caller
 
 Delivered: PR398 appearance containment/main wiring/notice; PR400 repairs the separately reported banner defect; PR410 adds pre-notification lifecycle/latest guards.
-
-Original evidence coverage:
 
 - Actual ThemeController read failure/reconciliation/fresh retry/stale/disposed and contained sync/async failures: [appearance fixtures](../test/appearance_startup_test.dart), [caller source](../lib/services/appearance_startup.dart).
 - Exact last-theme-load main helper/order, retained mode without verified-storage/reset claim, independent app notice: source audit and [main](../lib/main.dart), [notice](../lib/ui/appearance_startup_notice.dart).
@@ -282,8 +278,6 @@ Unmet bounded criterion: none identified after follow-ups. Ready for manager dis
 
 Delivered: PR400 banner-local light/dark palette and reverse-column reserved placement, preserving countdown, wording, Stop action and semantics.
 
-Original evidence coverage:
-
 - Actual LocalBlueyApp synthetic active watch/pushed route; 320/390 width, scales 1/1.5/2, EN/Hebrew RTL, light/dark, independent appearance failure/entered retry/recovery: [visual fixture](../test/watch_banner_visual_test.dart), [72-pixel evidence and four sheets](evidence/issue399/README.md).
 - Visible Stop/back/body, actual contrast threshold and minimum 48x48 geometry: that fixture and [banner source](../lib/ui/watch_banner.dart). It taps back and exact Stop and verifies the synthetic session ends; [existing status-card semantics fixture](../test/home_status_cards_test.dart) is retained.
 - Full banner/app/watch/appearance regressions: PR400 required checks and PR410 historical and PR422 current-snapshot test SUCCESS. Local historical timing failures/count conflict are recorded below, not erased by later success.
@@ -293,8 +287,6 @@ Unmet bounded synthetic visual criterion: none identified. Ready for manager dis
 ### #401 Test-only wake lifecycle cleanup observation
 
 Delivered: PR402 changes only wake_word_test.dart, with actual service/capture fake-driver cleanup gates and settled teardown.
-
-Original evidence coverage:
 
 - Start failure before/after partial open publishes lastError while cleanup/listening remain pending: [wake fixtures](../test/wake_word_test.dart) hold stop entry/release, assert joined service.stop stays incomplete, then assert exact file removal, cleanupPending=false, listening=false/open=0 and fresh restart maxOpen=1 without scoring/transcription/wake.
 - Window-delay failure has a different order: stop enters before error publication. Adjacent score/transcriber/failed-stop fixtures join service.stop before final assertions; tracked services/captures and isolated temp directories settle before teardown.
@@ -306,8 +298,6 @@ Unmet bounded test-only criterion: none identified. Ready for manager dispositio
 
 Delivered: PR404 character caller/main/notice and concurrent app proof; PR410 pre-entry guard.
 
-Original evidence coverage:
-
 - Actual CharacterStore entered failure/reconciliation/fresh retry/stale/disposed, retained exact choice/verified=false, pending-before-notify and sync/async/reentrant cases: [character fixtures](../test/character_startup_test.dart), [caller](../lib/services/character_startup.dart).
 - Same main helper and unchanged owner/persona/roster semantics: fixture source audit, [main](../lib/main.dart), [notice](../lib/ui/character_startup_notice.dart).
 - Actual app concurrent character/appearance notices, Watch/Stop/back/body at compact/scaled EN/RTL light/dark: [visual fixture](../test/character_startup_visual_test.dart), [corrected 72-pixel evidence](evidence/issue403/README.md). PR404/410 full checks passed.
@@ -317,8 +307,6 @@ Unmet bounded criterion: none identified. Ready for manager disposition. Missing
 ### #405 Language-only startup caller and shared RTL retry
 
 Delivered: PR406 caller/main/independent notice, actual language observer and route-preserving EN-to-Hebrew retry; PR410 pre-entry guard.
-
-Original acceptance coverage:
 
 - Actual LanguagePreferences first/second-read failures, retained UI/speech choices, reconciliation/fresh retry/latest/disposed, sync/async/reentrant and caller-success versus owner state: [language fixtures](../test/language_startup_test.dart), [caller](../lib/services/language_startup.dart).
 - Same main helper/load order, app replacement/disposal and no skipped security loads: source audit and [main](../lib/main.dart).
@@ -331,8 +319,6 @@ Unmet bounded criterion: none identified. Ready for manager disposition. Storage
 
 Delivered: PR408 pending-before-notify identical completion, pre-entry guard and deferred idempotent notifier disposal.
 
-Original acceptance coverage:
-
 - Actual BrainHostState held load/refusal with success/error: [host fixtures](../test/host_reload_controller_test.dart) assert work/retry/reentrant future identity, unsettled before release, one load and coherent final failure/loading state.
 - Loading listener retry/fresh latest; disposal during loading/success/failure, repeated dispose and post-disposal no-op; no obsolete dependency entry/late publication: same fixture and [caller source](../lib/services/host_reload_controller.dart). Exactly-once notifier disposal is supported by `_notifierDisposed` guard and repeated/reentrant fixture assertions, not an instrumented native cleanup counter.
 - Actual retained host failures/source audit of five main calls and both notice placements remain: same fixture; [historical unchanged notice proof](evidence/issue381/README.md), [notice test](../test/host_reload_notice_test.dart). PR408 full required checks passed.
@@ -342,8 +328,6 @@ Unmet bounded caller criterion: none identified. Ready for manager disposition. 
 ### #409 Startup caller pre-notification lifecycle/current guards
 
 Delivered: PR410 one guard each in appearance/character/language _run plus direct tests.
-
-Original acceptance coverage:
 
 - Reload then immediate synchronous disposal: zero loading mutation/notification/read; returned futures resolve; repeated dispose/post-disposal retries do not enter.
 - Two synchronously queued reloads: obsolete work does not notify/read; latest alone enters and installed retry is identical/unsettled before release; all pending futures settle.
@@ -700,3 +684,27 @@ The temporary [acceptance manifest](acceptance/temporary/issue-590.json) maps AC
 ### BLU-031 voice verification (#587)
 
 Temporary criterion-by-criterion evidence: [`docs/acceptance/temporary/issue-587.json`](acceptance/temporary/issue-587.json). Fake-only Dart tests cover spoofed/matched speakers retaining SafetyGate confirmation, invalid scores, absent spoof evidence, denied permission, offline, timeout, cancellation, revocation and restart. The default-off module makes no network or persistence calls. Accessibility/RTL device UI, calibrated anti-spoof accuracy, real enrollment and device permission evidence remain **manual gaps**. Keep #587 open pending native verification.
+
+## BLU-064 Teach Mode UX flow — acceptance evidence (Refs #621)
+
+`test/teach_mode/capture_validation_test.dart` (ac_2) pins explicit refusal
+reasons for consent and duration errors, observation outside an active
+session, a capture that races a stop (dropped by the epoch guard, never
+joined to a later draft), byte-identical previews for identical observations,
+and a clean restart. `test/teach_mode/capture_privacy_test.dart` (ac_3)
+separately rejects every payload key carrying a secret-corpus entry at
+capture time (individually), pins a static no-`dart:io`/`package:http`/
+storage/artifact-writer contract over `lib/teach_mode/capture_session.dart`
+and `lib/teach_mode/draft_builder.dart`, and asserts no retained — or
+discarded — projection (`toString`, steps, placeholders, warnings) ever
+contains the corpus. `test/teach_mode/routine_platform_compat_test.dart`
+(ac_4) proves legacy `Routine` JSON equality, `LegacyRoutineAdapter`
+round-trip and fail-closed conversion before, during and after active
+capture, and identical start, allowlist-refusal, pause-lowers-then-resumes
+behavior across the macOS, iOS and Android gate flavors. Together with PR
+#817's ac_1 review/abort test, all four criteria in
+`docs/acceptance/temporary/issue-621.json` are automated and passing. Not
+claimed here: the on-device consent flow UI, visual indicator verification on
+a live OS build, or native accessibility labels — those need device
+validation, not more fake-host tests. Rollback: the three tests, the
+manifest entries and this paragraph; production code unchanged.

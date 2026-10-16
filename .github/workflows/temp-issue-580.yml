@@ -5,6 +5,9 @@ on:
       - 'tools/stt_bench/**'
       - 'docs/blu-024-hebrew-stt-benchmark.md'
       - 'docs/acceptance/temporary/issue-580.json'
+      - 'test/local_stt_tools_test.dart'
+      - 'test/issue_580_stt_benchmark_test.dart'
+      - 'tool/acceptance_criteria.py'
       - 'docs/ACCEPTANCE_MAP.md'
       - 'docs/architecture.md'
       - 'README.md'
@@ -37,7 +40,10 @@ jobs:
         run: python3 -m unittest discover -s tools/stt_bench -p 'test_hebrew_baseline.py' -v
       - name: Existing STT regression
         run: python3 -m unittest discover -s tools/stt_bench -p 'test_wer.py' -v
-      - name: Flutter STT test seam
-        run: flutter test test/local_stt_tools_test.dart
+      - name: Run manifest-declared Flutter STT acceptance
+        run: |
+          python3 tool/acceptance_criteria.py \
+            --manifest docs/acceptance/temporary/issue-580.json \
+            --run-tests --out-dir build/acceptance/blu-024
       - name: Build
         run: flutter build apk --debug

@@ -61,13 +61,8 @@
         {
           "id": "ac_4",
           "requirement": "If Linux face support is approved, Linux desktop rendering is tested and screenshot evidence is reviewed; otherwise no Linux character parity claim is published.",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/linux_support_policy_test.dart",
-              "name": "README Linux row matches the policy and claims no parity"
-            }
-          ]
+          "type": "gap",
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         },
         {
           "id": "ac_5",

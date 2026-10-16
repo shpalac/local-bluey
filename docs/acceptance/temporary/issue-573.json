@@ -70,10 +70,6 @@
             },
             {
               "file": "test/file_durable_recovery_store_test.dart",
-              "name": "restart reconciliation blocks all host actions"
-            },
-            {
-              "file": "test/file_durable_recovery_store_test.dart",
               "name": "corrupt recovery metadata fails closed"
             }
           ]

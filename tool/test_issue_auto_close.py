@@ -105,8 +105,13 @@ class IssueAutoCloseTests(unittest.TestCase):
         self.assertEqual(self.process(), [])
         self.assertEqual(len(self.api.writes), 2)
 
-    def test_refs_and_github_native_closes_do_not_trigger(self):
-        for body in ["Refs #42", "Closes #42", "No issue references"]:
+    def test_verified_refs_close_after_successful_main_ci(self):
+        self.api.routes[f"{BASE}/pulls/85"]["body"] = "Refs #42"
+        self.assertEqual(self.process(), [42])
+        self.assertEqual([action[0] for action in self.api.writes], ["POST", "PATCH"])
+
+    def test_native_closes_and_unlinked_prs_do_not_trigger(self):
+        for body in ["Closes #42", "No issue references", "```md\nRefs #42\n```"]:
             self.api.routes[f"{BASE}/pulls/85"]["body"] = body
             self.assertEqual(self.process(), [])
         self.assertEqual(self.api.writes, [])
@@ -150,6 +155,28 @@ class IssueAutoCloseTests(unittest.TestCase):
             }])
             with self.assertRaises(ContractError):
                 self.process()
+        self.assertEqual(self.api.writes, [])
+
+    def test_refs_with_manual_or_gap_evidence_leave_issue_open(self):
+        self.api.routes[f"{BASE}/pulls/85"]["body"] = "Refs #42"
+        original = json.loads(self.manifest.read_text())["issues"][0]["criteria"]
+        for kind in ["manual", "gap"]:
+            self.write_manifest(original + [{
+                "id": "ac_2", "requirement": "Real-device verification",
+                "type": kind, "reason": "Unverified on hosted CI",
+            }])
+            self.assertEqual(self.process(), [])
+        self.assertEqual(self.api.writes, [])
+
+    def test_refs_with_missing_criterion_leave_issue_open(self):
+        self.api.routes[f"{BASE}/pulls/85"]["body"] = "Refs #42"
+        self.api.routes[f"{BASE}/issues/42"]["body"] = (
+            "## Acceptance criteria\n"
+            "- [ ] AC-1: Reject malformed inputs with no side effects.\n"
+            "- [ ] AC-2: Reject actions when offline.\n"
+            "## CI and validation\nRun issue-specific tests.\n"
+        )
+        self.assertEqual(self.process(), [])
         self.assertEqual(self.api.writes, [])
 
     def test_missing_criterion_blocks_closure(self):
