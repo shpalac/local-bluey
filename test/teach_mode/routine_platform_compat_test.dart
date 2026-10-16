@@ -103,7 +103,8 @@ void main() {
         expect(await session.start(consentConfirmed: true), isNull);
         expect(session.indicator, CaptureIndicator.active);
 
-        // Non-allowlisted app stays refused on every flavor.
+        // Non-allowlisted app stays refused on every flavor, fail closed:
+        // capture pauses until an explicit resume, identical everywhere.
         expect(
           await session.observe(
             frontApp: 'not-on-list',
@@ -112,6 +113,8 @@ void main() {
           isFalse,
         );
         expect(session.stepCount, 0);
+        expect(session.indicator, CaptureIndicator.paused);
+        expect(session.resume(), isTrue);
 
         // Allowlisted app captures the same way, pause/resume gates it, and
         // restart is clean on every flavor.

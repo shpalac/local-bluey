@@ -45,7 +45,7 @@ void main() {
       expect(session.indicator, CaptureIndicator.active);
       expect(
         await session.start(consentConfirmed: true),
-        'A session is already active.',
+        'A session is already active or starting.',
       );
 
       // Observation outside an active session is refused to the caller, not
