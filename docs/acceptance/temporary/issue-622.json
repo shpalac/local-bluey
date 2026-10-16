@@ -29,15 +29,37 @@
         },
         {
           "id": "ac_3",
-          "type": "gap",
+          "type": "automated",
           "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions",
-          "reason": "Full privacy and host/network audit not proven by bounded widget tests."
+          "tests": [
+            {
+              "file": "test/workflow_visual_editor_privacy_test.dart",
+              "name": "ac3 editor surface keeps a no-io, no-network, no-writer contract"
+            },
+            {
+              "file": "test/workflow_visual_editor_privacy_test.dart",
+              "name": "ac3 edits stay disabled-only and never persist"
+            },
+            {
+              "file": "test/workflow_visual_editor_privacy_test.dart",
+              "name": "ac3 off-contract edits fail closed without echo"
+            }
+          ]
         },
         {
           "id": "ac_4",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Existing Routines and supported platform behavior remain compatible",
-          "reason": "Native platform and full regression evidence not yet established."
+          "tests": [
+            {
+              "file": "test/workflow_visual_editor_compat_test.dart",
+              "name": "ac4 editor behavior is identical across flavors"
+            },
+            {
+              "file": "test/workflow_visual_editor_compat_test.dart",
+              "name": "ac4 live routines stay outside the editor"
+            }
+          ]
         }
       ]
     }
