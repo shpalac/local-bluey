@@ -21,6 +21,10 @@
             {
               "file": "test/retrieval/local_semantic_retrieval_test.dart",
               "name": "missing file is never hallucinated"
+            },
+            {
+              "file": "test/retrieval/local_semantic_ranked_bound_test.dart",
+              "name": "ac1 bounded ranking preserves grounded top citations"
             }
           ]
         },
@@ -75,6 +79,10 @@
             {
               "file": "test/retrieval/local_semantic_retrieval_test.dart",
               "name": "retrieval only returns local grounded paths"
+            },
+            {
+              "file": "test/retrieval/local_semantic_ranked_bound_test.dart",
+              "name": "ac3 empty or disabled index emits no ranked citations"
             }
           ]
         },

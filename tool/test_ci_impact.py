@@ -92,6 +92,17 @@ class ImpactPlanningTest(unittest.TestCase):
             with self.subTest(event=event):
                 self.assertTrue(plan(paths, event, self.root)["full_ci"])
 
+    def test_impact_reason_codes_are_safe_and_explicit(self):
+        full = plan([".github/workflows/ci.yml"], "pull_request", self.root)
+        self.assertEqual(full["selection_kind"], "full_ci")
+        self.assertIn("ci_tooling_or_integration", full["selection_reasons"])
+        narrow = plan(["README.md"], "pull_request", self.root)
+        self.assertEqual(narrow["selection_kind"], "selective")
+        self.assertEqual(narrow["selection_reasons"], ["mapped_impact"])
+        missing = plan(["test/deleted_test.dart"], "pull_request", self.root)
+        self.assertEqual(missing["selection_kind"], "full_tests")
+        self.assertIn("unmapped_or_fixture_tests", missing["selection_reasons"])
+
     def test_plan_json_is_serializable(self):
         result = plan(["README.md"], "pull_request", self.root)
         self.assertEqual(json.loads(json.dumps(result))["android_matrix"], [34])
@@ -100,6 +111,77 @@ class ImpactPlanningTest(unittest.TestCase):
         for path in ["../README.md", "/tmp/foo.md", "docs/evil\nname.md"]:
             with self.subTest(path=path):
                 self.assertTrue(plan([path], "pull_request", self.root)["full_ci"])
+
+    def test_isolated_non_workflow_module_uses_reverse_graph(self):
+        (self.root / "lib/mcp").mkdir()
+        (self.root / "lib/mcp/tool_spec.dart").write_text("class ToolSpec {}\n")
+        (self.root / "test/mcp_tool_spec_test.dart").write_text(
+            "import 'package:local_bluey/mcp/tool_spec.dart';\n"
+        )
+        result = plan(["lib/mcp/tool_spec.dart"], "pull_request", self.root)
+        self.assertFalse(result["full_ci"])
+        self.assertEqual(result["test_files"], ["test/mcp_tool_spec_test.dart"])
+        self.assertFalse(result["lanes"]["android"])
+        self.assertFalse(result["lanes"]["build_macos"])
+
+    def test_runtime_reachable_module_falls_back_to_full_ci(self):
+        (self.root / "lib/services").mkdir()
+        (self.root / "lib/services/engine.dart").write_text("class Engine {}\n")
+        (self.root / "lib/workflows/workflow_execution.dart").write_text(
+            "import '../services/engine.dart';\n"
+        )
+        (self.root / "lib/main.dart").write_text(
+            "import 'workflows/workflow_execution.dart';\n"
+        )
+        result = plan(["lib/services/engine.dart"], "pull_request", self.root)
+        self.assertTrue(result["full_ci"])
+        self.assertTrue(result["lanes"]["build_ios"])
+        self.assertTrue(result["full_tests"])
+
+    def test_integration_test_dependency_falls_back_to_full_ci(self):
+        (self.root / "lib/mcp").mkdir()
+        (self.root / "integration_test").mkdir()
+        (self.root / "lib/mcp/device.dart").write_text("class Device {}\n")
+        (self.root / "test/device_test.dart").write_text(
+            "import 'package:local_bluey/mcp/device.dart';\n"
+        )
+        (self.root / "integration_test/device_test.dart").write_text(
+            "import 'package:local_bluey/mcp/device.dart';\n"
+        )
+        result = plan(["lib/mcp/device.dart"], "pull_request", self.root)
+        self.assertTrue(result["full_ci"])
+
+    def test_unmapped_non_workflow_module_is_full_ci(self):
+        (self.root / "lib/mcp").mkdir()
+        (self.root / "lib/mcp/new.dart").write_text("class NewTool {}\n")
+        result = plan(["lib/mcp/new.dart"], "pull_request", self.root)
+        self.assertTrue(result["full_ci"])
+
+    def test_legacy_workflow_changes_route_to_relevant_lanes(self):
+        cases = [
+            (".github/workflows/pr-fast-ci.yml", set()),
+            (".github/workflows/macos-native-build-lane.yml", {"build_macos"}),
+            (".github/workflows/temp-issue-596.yml", {"build_ios", "simulator"}),
+            (".github/workflows/website.yml", set()),
+        ]
+        for path, selected in cases:
+            with self.subTest(path=path):
+                result = plan([path], "pull_request", self.root)
+                self.assertFalse(result["full_ci"])
+                self.assertTrue(result["lanes"]["acceptance"])
+                active = {key for key, value in result["lanes"].items()
+                          if value and key != "acceptance"}
+                self.assertEqual(active, selected)
+
+    def test_unknown_workflow_still_fails_closed(self):
+        result = plan([".github/workflows/new-security.yml"], "pull_request", self.root)
+        self.assertTrue(result["full_ci"])
+
+    def test_metrics_tool_uses_static_without_native_builds(self):
+        result = plan(["tool/ci_metrics.py"], "pull_request", self.root)
+        self.assertFalse(result["full_ci"])
+        self.assertTrue(result["lanes"]["static"])
+        self.assertFalse(result["lanes"]["build_ios"])
 
 
 if __name__ == "__main__":

@@ -28,6 +28,10 @@
             {
               "file": "test/issue_580_stt_benchmark_test.dart",
               "name": "issue 580 AC-2 empty successful STT output fails closed"
+            },
+            {
+              "file": "test/issue_580_stt_benchmark_test.dart",
+              "name": "issue 580 AC-2 negative timing records fail closed"
             }
           ]
         },

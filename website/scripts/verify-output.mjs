@@ -57,6 +57,30 @@ const sitemapIndex = await read('sitemap-index.xml');
 const pageSitemap = await read('sitemap-0.xml');
 assert.ok(sitemapIndex.includes('https://shpalac.github.io/local-bluey/sitemap-0.xml'), 'Incorrect sitemap index URL');
 assert.ok(pageSitemap.includes('<loc>' + canonicalUrl + '</loc>'), 'Missing canonical page from sitemap');
+const newPages = [
+  ['guides/mac-setup', 'Set up Local Bluey on Mac'],
+  ['guides/ollama', 'Using Ollama with Local Bluey'],
+  ['features/screen-understanding', 'Understand your Mac screen with Bluey'],
+  ['features/approval-safety', 'Computer actions stay under your approval']
+];
+for (const [route, title] of newPages) {
+  const expectedUrl = canonicalUrl + route + '/';
+  const guideHtml = await read(route + '/index.html');
+  assert.ok(guideHtml.includes('<h1>' + title + '</h1>'), 'Missing guide heading: ' + route);
+  assert.ok(guideHtml.includes('rel="canonical" href="' + expectedUrl + '"'), 'Incorrect canonical: ' + route);
+  assert.ok(guideHtml.includes('real-device verification is still pending'), 'Missing maturity disclaimer: ' + route);
+  assert.ok(pageSitemap.includes('<loc>' + expectedUrl + '</loc>'), 'Missing sitemap location: ' + route);
+  assert.ok(html.includes('href="/local-bluey/' + route + '/"'), 'Missing home link: ' + route);
+}
+assert.ok(html.includes('id="resources"') && html.includes('id="faq-title"'), 'Missing resources FAQ');
+for (const name of ['Setup Click', 'GitHub Click', 'Guide Click', 'Contribute Click']) {
+  assert.ok(html.includes('data-gtm-event="' + name + '"'), 'Missing CTA event: ' + name);
+}
+if (!process.env.PUBLIC_PLAUSIBLE_SCRIPT_URL) {
+  for (const route of ['guides/mac-setup/index.html', 'guides/ollama/index.html']) {
+    assert.ok(!(await read(route)).includes('plausible.io/js/pa-'), 'Guide unexpectedly enables analytics: ' + route);
+  }
+}
 for (const name of ['bluey-desktop.png', 'showcase-gallery.png', 'settings-dark.png']) {
   assert.ok((await stat(resolve(root, 'dist/media', name))).size > 1000, 'Missing authentic image: ' + name);
 }

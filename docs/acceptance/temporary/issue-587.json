@@ -15,10 +15,6 @@
               "name": "spoofed voice still asks approval"
             },
             {
-              "file": "test/voice_verification_test.dart",
-              "name": "successful secondary signal still requires SafetyGate approval"
-            },
-            {
               "file": "test/voice_safety_gate_integration_test.dart",
               "name": "spoofed voice at SafetyGate seam still asks for human approval"
             }
@@ -48,6 +44,10 @@
             {
               "file": "test/voice_verification_test.dart",
               "name": "revocation and restart remove consent and stale results"
+            },
+            {
+              "file": "test/voice_consent_replacement_test.dart",
+              "name": "ac2 rejected replacement revokes previous consent"
             }
           ]
         },
@@ -67,6 +67,10 @@
             {
               "file": "test/voice_safety_gate_integration_test.dart",
               "name": "voice provider stays unused without explicit opt-in"
+            },
+            {
+              "file": "test/voice_consent_replacement_test.dart",
+              "name": "ac3 invalid replacement discards an in-flight voice result"
             }
           ]
         },

@@ -60,3 +60,16 @@ process; restart means initiating a new comparison from clean inputs.
 Rollback is deletion/reversion of the added offline tool and CI; production
 behavior requires no migration. BLU-024 cannot be considered hardware
 verified until a human reviews consent, privacy and measurement evidence.
+
+## Invalid measurement rejection (Refs #580)
+
+The existing Python benchmark scorer rejects malformed, negative or
+non-integral latency and peak-memory readings before they enter p50/p95
+or model comparisons. A failed benchmark remains non-comparable rather
+than reporting an unrealistically favorable negative latency.
+
+Verify with:
+`python3 -m unittest discover -s tools/stt_bench -p test_issue_580.py`
+and `flutter test test/issue_580_stt_benchmark_test.dart`.
+No recorded audio, cloud model, microphone access or secrets are required
+for these deterministic checks. Real on-device results remain mandatory.

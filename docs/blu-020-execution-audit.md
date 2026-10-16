@@ -48,3 +48,16 @@ Keep #573 open until those are verified. Once the integration is enabled and
 covered, replace the temporary CI with a permanent end-to-end acceptance job.
 
 Rollback: omit the optional audit argument and panel, or revert this isolated PR.
+
+## Live timeline and stop notifications (Refs #573)
+
+`ExecutionAudit` now notifies listeners when bounded audit entries change
+or the stop flag is raised, even when history retention is disabled. The
+optional panel subscribes while mounted, detaches from a previous audit when
+its widget is updated, and detaches on disposal. This keeps step history and
+stop-button state in sync with execution events from outside the widget.
+
+Run `flutter test test/execution_audit_live_panel_test.dart` for the
+redacted live update, externally initiated stop and listener cleanup cases.
+No new persistence, egress, permission grant or automatic execution is added.
+Real macOS TCC and production host integration remain unverified.

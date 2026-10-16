@@ -1,0 +1,10 @@
+---
+import GuideLayout from '../../../layouts/GuideLayout.astro';
+---
+<GuideLayout title="Human-Approved AI Computer Control | Local Bluey" description="Review Local Bluey's Mac SafetyGate, confirmation model, kill switch, privacy limits and current real-device validation gaps." heading="Computer actions stay under your approval" eyebrow="PRIVACY & SAFETY" intro="Local Bluey distinguishes screen observation from actions that change the Mac. The code includes an explicit approval gate and an emergency-stop path.">
+<h2>How approvals are intended to work</h2><p>Computer-changing actions pass through the project's SafetyGate and require confirmation. The homepage approval demo is illustrative and does not control a computer.</p>
+<h2>Risk checklist</h2>
+<ul><li><strong>Permissions:</strong> Accessibility and Screen Recording are powerful capabilities that require deliberate user approval.</li><li><strong>Action confirmation:</strong> review proposed clicks, typing or shortcuts before allowing them.</li><li><strong>Stop control:</strong> a kill-switch path exists; its behavior still requires physical-device validation.</li><li><strong>Privacy:</strong> local-only behavior depends on configured endpoints, and text redaction can miss secrets.</li></ul>
+<h2>Known limitations</h2><p>The phone link has documented unencrypted transport, and some runtime behavior remains unverified on actual devices. Do not use this project for unattended or critical workflows.</p>
+<p>Read the <a href="https://github.com/shpalac/local-bluey/blob/main/docs/README_TECHNICAL_REFERENCE.md#privacy-what-stays-local">technical privacy reference</a>, <a href="https://github.com/shpalac/local-bluey/blob/main/docs/SUPPORT.md">platform support matrix</a>, and <a href="https://github.com/shpalac/local-bluey/issues">open issues</a>.</p>
+</GuideLayout>

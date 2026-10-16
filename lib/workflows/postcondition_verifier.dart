@@ -75,11 +75,20 @@ final class PostconditionVerifier {
     if (conditions.isEmpty || timeout <= Duration.zero) {
       return VerificationOutcome.inconclusive;
     }
+    // A timeout is terminal for this verification even when a reader's
+    // outstanding Future cannot be interrupted. Never issue the next read.
+    final timedOut = VerificationCancellation();
+    VerificationOutcome onTimeout() {
+      timedOut.cancel();
+      return VerificationOutcome.inconclusive;
+    }
+
     try {
       final result = await _check(
         conditions,
         cancellation,
-      ).timeout(timeout, onTimeout: () => VerificationOutcome.inconclusive);
+        timedOut,
+      ).timeout(timeout, onTimeout: onTimeout);
       if (cancellation?.isCancelled ?? false) {
         return VerificationOutcome.cancelled;
       }
@@ -94,12 +103,15 @@ final class PostconditionVerifier {
   Future<VerificationOutcome> _check(
     List<Postcondition> conditions,
     VerificationCancellation? cancellation,
+    VerificationCancellation timedOut,
   ) async {
     for (final condition in conditions) {
+      if (timedOut.isCancelled) return VerificationOutcome.inconclusive;
       if (cancellation?.isCancelled ?? false) {
         return VerificationOutcome.cancelled;
       }
       final observed = await reader.read(condition);
+      if (timedOut.isCancelled) return VerificationOutcome.inconclusive;
       if (cancellation?.isCancelled ?? false) {
         return VerificationOutcome.cancelled;
       }
