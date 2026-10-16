@@ -721,3 +721,16 @@ a stale-snapshot `matchesRetrievalSnapshot` refusal — for the full secret
 corpus. ac_4 and the physical-macos integration gap stay as recorded
 manual/native items. Rollback: one new suite, the manifest promotion and
 this paragraph; production code unchanged.
+
+## BLU-073 offline fallback privacy — acceptance evidence (Refs #630)
+
+ac_3 was left stranded by the duplicate-ownership correction. It is now
+proven by a uniquely-owned suite `test/offline_provider_privacy_630_test.dart`:
+`lib/llm/offline_provider_fallback_policy.dart` stays transport-free and
+artifact-writer-free, and the chat path is stateless — the cloud failure
+falls back locally deterministically with transient call counters only,
+no corpus secret appears anywhere in the policy or provider projections
+(`toString`), and repeated calls leave no artifacts from prior runs. ac_4
+requires native device validation and stays the recorded manual gap.
+Rollback: one new suite, the manifest promotion and this paragraph;
+production code unchanged.

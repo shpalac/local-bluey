@@ -41,9 +41,18 @@
         },
         {
           "id": "ac_3",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Policy tests do not expose secrets or perform unapproved network calls",
-          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
+          "tests": [
+            {
+              "file": "test/offline_provider_privacy_630_test.dart",
+              "name": "ac3 the fallback policy keeps a transport-free provenance"
+            },
+            {
+              "file": "test/offline_provider_privacy_630_test.dart",
+              "name": "ac3 chat is stateless: text rides as transient counters only"
+            }
+          ]
         },
         {
           "id": "ac_4",
