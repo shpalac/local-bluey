@@ -101,6 +101,27 @@ class LocalSemanticRetriever {
       return const LocalRetrievalResult(LocalRetrievalStatus.invalidQuery, []);
     }
     final hits = <LocalRetrievalHit>[];
+
+    // Keep only the highest-ranked requested candidates, even for very
+    // large consented indexes. Do not retain every matching excerpt.
+    void addRanked(LocalRetrievalHit hit) {
+      var low = 0;
+      var high = hits.length;
+      while (low < high) {
+        final mid = (low + high) ~/ 2;
+        final score = hits[mid].score.compareTo(hit.score);
+        final order = score != 0 ? score : hit.path.compareTo(hits[mid].path);
+        if (order < 0) {
+          high = mid;
+        } else {
+          low = mid + 1;
+        }
+      }
+      if (low >= limit) return;
+      hits.insert(low, hit);
+      if (hits.length > limit) hits.removeLast();
+    }
+
     final clock = Stopwatch()..start();
     for (final entry in snapshot.entries) {
       if (!index.isEnabled ||
@@ -127,7 +148,7 @@ class LocalSemanticRetriever {
         final excerpt = source.substring(start, end);
         final score = _similarity(queryVector, _embed(excerpt));
         if (score > 0) {
-          hits.add(
+          addRanked(
             LocalRetrievalHit(path: entry.key, excerpt: excerpt, score: score),
           );
         }
@@ -142,15 +163,11 @@ class LocalSemanticRetriever {
     if (clock.elapsed >= timeout) {
       return const LocalRetrievalResult(LocalRetrievalStatus.timedOut, []);
     }
-    hits.sort((a, b) {
-      final score = b.score.compareTo(a.score);
-      return score != 0 ? score : a.path.compareTo(b.path);
-    });
     return LocalRetrievalResult(
       hits.isEmpty
           ? LocalRetrievalStatus.noMatches
           : LocalRetrievalStatus.ready,
-      List.unmodifiable(hits.take(limit)),
+      List.unmodifiable(hits),
     );
   }
 }
