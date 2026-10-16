@@ -77,3 +77,10 @@ This website does not claim an app-store release, verified native device support
 ## Visual principles
 
 Make Bluey the star. Cream editorial type against ink-violet, vivid blueberry and citron accents; playful orbit marks and deliberately asymmetric layouts; small motion where it adds delight, scroll narrative only where it tells the real product story. Avoid stock illustrations, generic SaaS feature-card grids, overpromised AI magic, and invented UI.
+
+## Source-backed feature guides
+
+The four Week 3 Astro pages are accessible from the homepage resources section and generated sitemap:
+`guides/mac-setup/`, `guides/ollama/`, `features/screen-understanding/` and `features/approval-safety/`.
+
+The shared `src/layouts/GuideLayout.astro` provides canonical URLs, accessible navigation and a consistent status disclaimer. These guides document source-level functionality and limitations; they do not claim real-device validation.

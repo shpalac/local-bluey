@@ -1,0 +1,13 @@
+---
+import GuideLayout from '../../../layouts/GuideLayout.astro';
+---
+<GuideLayout title="Ollama with Local Bluey | Local-First AI for Mac" description="Learn how to connect a local Ollama brain to Local Bluey on Mac, with clear speech-transcription and privacy limitations." heading="Using Ollama with Local Bluey" eyebrow="LOCAL-FIRST AI" intro="Ollama can provide a local brain for Bluey. It does not automatically provide speech-to-text or make every optional service work offline.">
+<h2>Connect a local brain</h2>
+<p>Install Ollama from its official instructions and run a compatible model. Ollama commonly serves its local API at <code>http://127.0.0.1:11434</code>; confirm the actual supported endpoint and model format in Local Bluey Settings.</p>
+<ol><li><a href="/local-bluey/guides/mac-setup/">Start the macOS host</a> from source.</li><li>Configure the model and a supported brain endpoint.</li><li>Use local-only mode when you want supported requests restricted to loopback endpoints.</li><li>Review separate transcription and speech endpoint settings before attempting voice input.</li></ol>
+<h2>Voice is not automatically offline</h2>
+<p>A working Ollama chat endpoint is <strong>not</strong> an audio transcription endpoint. Offline native STT is not shipped; the active transcription configuration workflow has documented gaps. The project does not support a typed-request fallback today.</p>
+<h2>Protect your screen</h2>
+<p>Remote configured services may receive prompts, screenshots or voice. Local pattern-based redaction is not a guarantee. Read the <a href="https://github.com/shpalac/local-bluey/blob/main/docs/USER_GUIDE.md#transcription-configuration-and-limits">voice configuration limits</a> and <a href="https://github.com/shpalac/local-bluey/blob/main/docs/README_TECHNICAL_REFERENCE.md#privacy-what-stays-local">privacy reference</a>.</p>
+<p><a href="/local-bluey/features/screen-understanding/">Next: screen understanding →</a></p>
+</GuideLayout>
