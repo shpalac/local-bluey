@@ -8,7 +8,30 @@ permissions:
   contents: read
 
 jobs:
+  detect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      relevant: ${{ steps.impact.outputs.relevant }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Select iOS feasibility changes
+        id: impact
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git diff --name-only "$PR_BASE_SHA" HEAD -- > "$RUNNER_TEMP/changed-files"
+          if grep -Eq '^(ios/|lib/main\.dart$|test/ios_simulator_.*_test\.dart$|pubspec\.yaml$|pubspec\.lock$|\.flutter-version$|\.github/workflows/temp-issue-596\.yml$|docs/acceptance/temporary/issue-596\.json$)' "$RUNNER_TEMP/changed-files"; then
+            echo 'relevant=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'relevant=false' >> "$GITHUB_OUTPUT"
+          fi
+
   ios-simulator-feasibility:
+    needs: detect
+    if: ${{ needs.detect.outputs.relevant == 'true' }}
     runs-on: macos-latest
     timeout-minutes: 20
     steps:

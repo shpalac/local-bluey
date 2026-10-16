@@ -33,4 +33,10 @@ void main() {
     skip: Platform.isWindows,
     timeout: const Timeout(Duration(seconds: 30)),
   );
+  test(
+    'issue 580 AC-2 negative timing records fail closed',
+    () => runOfflineFixture('test_negative_latency_and_rss_are_rejected'),
+    skip: Platform.isWindows,
+    timeout: const Timeout(Duration(seconds: 30)),
+  );
 }

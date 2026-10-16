@@ -1,0 +1,68 @@
+---
+import '../styles/global.css';
+import '../styles/guides.css';
+import OptInAnalytics from '../components/OptInAnalytics.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  heading: string;
+  eyebrow: string;
+  intro: string;
+}
+const { title, description, heading, eyebrow, intro } = Astro.props;
+const base = import.meta.env.BASE_URL;
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+const ogImage = new URL(base + 'media/showcase-hero.png', Astro.site).toString();
+const github = 'https://github.com/shpalac/local-bluey';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#14142e" />
+    <meta name="description" content={description} />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:alt" content="Local Bluey character and deterministic Flutter test screenshots" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <link rel="canonical" href={canonical} />
+    <OptInAnalytics />
+    <link rel="icon" type="image/png" href={base + 'media/bluey-mobile.png'} />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="guide-header">
+      <a class="wordmark" href={base} aria-label="Local Bluey homepage"><span class="wordmark-orb"></span>local<span class="wordmark-blue">bluey</span><span class="wordmark-dot">.</span></a>
+      <nav aria-label="Guide navigation">
+        <a data-gtm-event="Guide Click" href={base + '#resources'}>All guides</a>
+        <a data-gtm-event="GitHub Click" href={github} target="_blank" rel="noopener noreferrer">View source ↗</a>
+      </nav>
+    </header>
+    <main class="guide-main" id="main">
+      <p class="guide-eyebrow">{eyebrow} / OPEN-SOURCE PROJECT</p>
+      <h1>{heading}</h1>
+      <p class="guide-intro">{intro}</p>
+      <aside class="guide-warning"><strong>Development status:</strong> Source-level features are implemented but real-device verification is still pending. These guides do not imply a consumer-ready release.</aside>
+      <article class="guide-article"><slot /></article>
+      <aside class="guide-next">
+        <h2>Built in the open</h2>
+        <p>Explore the code, share reproducible feedback, or contribute to platform validation.</p>
+        <a data-gtm-event="Contribute Click" href={github + '/blob/main/CONTRIBUTING.md'}>Contribution guide ↗</a>
+        <a href={base + '#resources'}>All guides →</a>
+      </aside>
+    </main>
+    <footer class="guide-footer">
+      <span>Local Bluey · Open-source, local-first by configuration.</span>
+      <a href={github + '/issues/15'}>Device-validation tracker ↗</a>
+    </footer>
+  </body>
+</html>
