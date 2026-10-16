@@ -18,18 +18,26 @@ void main() {
       final text = read(path);
       expect(text, contains('## Objective'));
       expect(text, contains('## Acceptance criteria'));
-      expect(text, contains('AC-1'));
-      expect(text, contains('AC-3'));
+      expect(text, contains('- [ ] AC-1:'));
+      expect(text, contains('- [ ] AC-2:'));
       expect(text, contains('## CI and validation'));
+      expect(text, contains('GitHub-hosted runner: ubuntu-latest'));
+      expect(text, contains('- AC-1:'));
+      expect(text, contains('- AC-2:'));
       expect(text, contains('docs/acceptance/temporary/issue-<number>.json'));
-      expect(text, contains('## Definition of'));
+      expect(text, contains('## Non-goals and runner limits'));
+      expect(text, contains('## Definition of done'));
     });
   }
 
   test('task template separates device-only criteria from hosted CI', () {
     final text = read('.github/ISSUE_TEMPLATE/task.md');
-    expect(text, contains('Manual or device-only criteria'));
-    expect(text, contains('never claim hosted CI proves them'));
+    expect(text, contains('## Non-goals and runner limits'));
+    expect(text, contains('Those MUST NOT appear as acceptance criteria.'));
+    expect(
+      text,
+      contains('If indispensable for safe delivery, scope separately and flag as blocked'),
+    );
   });
 
   group('pull request template', () {
