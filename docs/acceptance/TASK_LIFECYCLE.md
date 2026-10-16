@@ -1,21 +1,29 @@
 # Issue tasks: acceptance-driven CI
 
 Every issue is a task: a scoped objective, a numbered observable acceptance
-checklist, a concrete validation plan, and a definition of done. An issue is not
+checklist, a concrete validation plan, and a definition of done. For **new**
+issues, every criterion must be fully verifiable on GitHub-hosted runners; physical
+devices and human/manual validation are non-goals, not acceptance criteria.
+See repository `AGENTS.md` for the canonical AI-agent creation contract. An issue is not
 completed merely because a PR merges or an unrelated CI check turns green.
 
 ## Lifecycle
 
 New or edited issues are checked by `.github/workflows/issue-task-hygiene.yml`.
-If an acceptance checklist or CI plan is missing, the check fails and adds
-one remediation comment; it never invents the missing requirements.
+New issues additionally require a hosted-runner declaration, an exact numbered
+CI plan entry for every AC, and explicit non-goals; missing or explicitly
+manual/physical acceptance conditions fail the hygiene check. Edits to historical
+issues use the existing migration path. The check adds one remediation comment;
+it never invents missing requirements or claims planned tests have run.
 
 1. **Triage.** Create from the task, bug, or feature template. Replace all
    placeholders with testable outcomes. Number every checklist item as
    `AC-1:`, `AC-2:`, etc.; the matching manifest IDs must be
-   `ac_1`, `ac_2`, etc. Specify real platform/device limits,
-   negative cases (bad inputs, permission denial, offline, restart,
-   cancellation) and explicit exclusions.
+   `ac_1`, `ac_2`, etc. Specify runner-testable negative cases (bad inputs, permission-denial stubs,
+   offline, restart, cancellation) where meaningful, plus explicit exclusions.
+   Real-device/TCC/manual scenarios belong in `## Non-goals and runner limits`,
+   **not** in ACs. If physical hardware is essential for safe shipping, block or
+   split that work rather than falsely certifying it through a mock.
 2. **Start work.** Reference work with a standalone `Refs #123` line in the PR body. A merged `Refs` PR closes the issue only if **every** numbered criterion is proven; incremental PRs leave it open. Add a separate `AutoClose #123` line when the completed PR should also opt in to automatic squash merge after green PR CI. Add
    `docs/acceptance/temporary/issue-123.json` and real issue-only tests in
    `test/issues/issue_123_test.dart` (or a suitable existing `test/` file).
@@ -73,9 +81,12 @@ Create `docs/acceptance/temporary/issue-123.json`:
       },
       {
         "id": "ac_2",
-        "requirement": "Physical macOS permission revocation works",
-        "type": "manual",
-        "reason": "Requires a real Mac TCC grant/revoke scenario and signed evidence"
+        "requirement": "Mocked host permission denial fails closed",
+        "type": "automated",
+        "tests": [{
+          "file": "test/issues/issue_123_test.dart",
+          "name": "mocked permission denial fails closed"
+        }]
       }
     ]
   }]
@@ -87,8 +98,9 @@ Every referenced test name must exist as a literal Dart `test` or
 example is illustrative: do not commit it without real code and matching
 tests. For the permanent manifest, change the file to a real
 `integration_test/features/..._test.dart` and update the requirement to
-describe the complete user journey. Keep any unresolved manual row; CI does
-not turn it green by relabeling it.
+describe the complete user journey. For new issues, include only runner-executable ACs. Historical `manual`/`gap`
+rows remain incomplete until explicitly migrated; CI does not turn them green
+by relabeling them or by deleting genuine requirements.
 
 ## CI commands
 
@@ -111,15 +123,16 @@ have passed. The baseline `docs/acceptance/criteria.json` and older
 migration. Those *legacy* mappings are useful evidence for `Refs` PRs, but
 do not authorize automated issue closure.
 
-**Boundaries:** Android emulators verify the flows they can actually run.
-macOS Screen Recording/Accessibility (TCC), physical audio behavior, real
-iPhone/macOS parity, hardware pairing and production-model locality cannot
-be fully certified by hosted Flutter mocks. Leave those criteria explicit,
-retain issue state until separately verified, and never assert 100% coverage
-from a simulation-only run. Research, security review, documentation and
-native-only issues may require specific non-Flutter checks or human sign-off
-rather than an artificial app integration test; introduce a suitable audited
-verification contract for those before trying to auto-close them.
+**Boundaries:** GitHub-hosted Ubuntu, macOS and Windows runners and the Android
+emulator validate only behavior actually executed there. They cannot certify
+physical macOS Screen Recording/Accessibility (TCC), real-device audio, real
+iPhone/macOS parity, hardware pairing or production-model locality. New issues
+must explicitly exclude those from acceptance rather than naming them as ACs;
+never equate runner mocks with physical certification. Previously opened issues
+with manual criteria are still blocked from automated closure until genuine
+requirements are reviewed and appropriately scoped, not silently deleted.
+Research, security and documentation issues may use Python/static assertions or
+other audited runner-verifiable checks instead of artificial Flutter app tests.
 
 ## Automatic merge and closure contract
 

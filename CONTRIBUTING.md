@@ -14,13 +14,13 @@ Thanks for helping. This file covers the dev loop; architecture lives in
 
 ## Issue-driven delivery
 
-Treat every issue as a task with explicit acceptance criteria and a CI plan. See [issue task lifecycle](docs/acceptance/TASK_LIFECYCLE.md) for temporary issue acceptance manifests and permanent integration-test promotion. Use `Refs #n` during implementation; do not use `Closes #n` until the task gate, end-to-end coverage and manual reviews are complete.
+Treat every issue as a task with complete, numbered GitHub-hosted-runner-verifiable acceptance criteria and a separate test plan for each criterion. Start with [AGENTS.md](AGENTS.md); no physical-device or human approval acceptance conditions. See [issue task lifecycle](docs/acceptance/TASK_LIFECYCLE.md) for temporary issue acceptance manifests and permanent integration-test promotion. Use standalone `Refs #n` throughout implementation, and standalone `AutoClose #n` only for complete, exclusively automated acceptance evidence. Never use GitHub-native `Closes #n`, `Fixes #n`, or `Resolves #n`: they bypass the verified post-main-CI closer.
 
 ## Branches and PRs
 
 - Branch per issue or per tight cluster: `fix/<issue>-short-name`,
   `docs/<issue>-short-name`.
-- PR body lists what changed and why, and closes its issues (`Closes #n`).
+- PR body lists what changed and why, with a standalone `Refs #n` for each issue. Add `AutoClose #n` for a finished issue only after its named acceptance tests and manifest are complete.
 - Keep PRs small enough to review in one sitting; stack dependent PRs and
   say so in the body.
 

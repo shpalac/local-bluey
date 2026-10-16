@@ -11,7 +11,7 @@ It replaces every earlier instruction you received over WhatsApp or Slack.
 - `.team/project.md` — rules specific to this repo. They override nothing here except thresholds.
 - `.team/roles/<role>.md` — your loop.
 - `.team/formats.md` — the only Slack message formats.
-- GitHub is the source of truth for who is doing what. Slack is the event feed.
+- GitHub is the source of truth for who is doing what. Slack is the event feed. Before creating any issue, follow this repo's `AGENTS.md`: its numbered acceptance criteria must be verifiable only on GitHub-hosted runners; put physical-device constraints in non-goals, not in ACs.
 
 ## State on GitHub
 
@@ -31,8 +31,8 @@ The worker who owns the issue keeps its status label correct. Anyone may add a
 ## PRs
 
 - Create with `gh pr create -R <repo> --base main` (see `project.md` for fork quirks).
-- The PR that finishes an issue says `Closes #N`. Partial slices say `Refs #N`; keep them rare.
-- Merge only after an `APPROVED` verdict at the PR's current head commit, by enabling auto-merge: `gh pr merge <n> --auto --squash`.
+- Each PR links its issue with standalone `Refs #N`. For fully satisfied, runner-verifiable AC evidence, also add standalone `AutoClose #N`. Never use GitHub-native `Closes`, `Fixes` or `Resolves`: these close before successful merged-main CI. See repository `AGENTS.md`.
+- Merge only after an `APPROVED` verdict at the PR's current head commit and successful required CI; enable auto-merge with `gh pr merge <n> --auto --squash`. A successful merge alone does not complete an issue. The repository trusted closer verifies exact-head PR CI, merged-main CI and complete acceptance evidence.
 - The manager's own PRs are approved by a worker in the same way.
 
 ## Limits

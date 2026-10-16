@@ -1,31 +1,35 @@
 ---
 name: Feature request
-about: New functionality described as a testable task
+about: New functionality deliverable and verifiable entirely by GitHub-hosted CI
 labels: enhancement
 ---
 
 ## Objective
 
-Which user problem does this solve, and what behavior should result?
+Describe the user problem and expected observable behavior.
 
 ## Scope and dependencies
 
-Describe affected platforms, non-goals and dependencies.
+Affected platforms, dependencies, in-scope behavior and explicit non-goals.
 
 ## Acceptance criteria
 
-- [ ] AC-1: Given a supported starting state, the complete feature journey produces the expected observable result.
-- [ ] AC-2: Invalid input, offline, permission denial, cancellation and restart behavior are tested where applicable.
-- [ ] AC-3: Existing features, accessibility, localization and privacy/SafetyGate behavior do not regress.
+- [ ] AC-1: Given <supported input>, when <feature action>, then <observable user journey result on emulator or simulator>.
+- [ ] AC-2: Given <invalid or offline input>, when <action>, then <safe runner-testable behavior>.
 
 ## CI and validation
 
-- Temporary issue-specific suite: `test/issues/issue_<number>_test.dart`.
-- Register exact named cases in `docs/acceptance/temporary/issue-<number>.json`.
-- For user-facing feature journeys, promote to `integration_test/features/<feature>_test.dart` and `docs/acceptance/permanent/issue-<number>.json`; pure-Dart contracts can close with complete temporary evidence.
-- Remove temporary checks only after the permanent suite runs in CI; record any physical-device verification separately.
+- GitHub-hosted runner: ubuntu-latest
+- AC-1: integration_test/features/<feature>_test.dart — <proposed named integration assertion using runner/emulator>.
+- AC-2: test/issues/issue_<number>_test.dart — <proposed named negative-path test>.
+- Record each AC in docs/acceptance/temporary/issue-<number>.json, or a permanent manifest once promoted. The PR gate verifies actual named tests and successful execution.
+
+## Non-goals and runner limits
+
+Do not include physical device, real Mac TCC consent, human review, local hardware pairing or other unavailable evidence in acceptance criteria. Explicitly state what runner tests cannot establish; split indispensable device-only work into a separately blocked task.
 
 ## Definition of done
 
-- [ ] Every AC has a real named passing test and no manual/gap rows; PR CI passes at exact head and main CI passes after merge.
-- [ ] Feature-level regression coverage exists when relevant, with documented limitations. Use `AutoClose #N` for automatic closure; `Refs #N` for partial work.
+- [ ] One distinct real passing GitHub-hosted test per AC with exact manifest mapping.
+- [ ] Relevant feature journeys have automated integration coverage where possible.
+- [ ] PR head CI and merged-main CI succeed before the automated issue closer marks done.

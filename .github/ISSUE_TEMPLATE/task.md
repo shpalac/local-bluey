@@ -1,12 +1,12 @@
 ---
 name: Task
-about: A single deliverable with testable acceptance criteria and CI evidence
+about: A scoped deliverable with acceptance criteria provable on GitHub-hosted runners
 labels: task
 ---
 
 ## Objective
 
-Describe the observable result and the user or system behavior that must change.
+Describe the observable behavior/result that must change.
 
 ## Scope
 
@@ -16,25 +16,24 @@ Describe the observable result and the user or system behavior that must change.
 
 ## Acceptance criteria
 
-- [ ] AC-1: Given <initial state>, when <action>, then <observable outcome>.
-- [ ] AC-2: Failure, cancellation, offline, permissions and restart behavior is defined where relevant.
-- [ ] AC-3: Existing workflows, privacy boundaries and platform support do not regress.
+- [ ] AC-1: Given <state>, when <action>, then <observable, runner-testable result>.
+- [ ] AC-2: Given <negative/edge case>, when <action>, then <safe, runner-testable result>.
 
 ## CI and validation
 
-- **Temporary issue test file:** `test/issues/issue_<number>_test.dart`
-- **Temporary manifest:** `docs/acceptance/temporary/issue-<number>.json`
-- **Required negative/edge tests:** Document applicable cases and explicitly justify exclusions.
-- **Permanent feature integration test (when relevant):** `integration_test/features/<feature>_test.dart`
-- **Permanent manifest (when promoted):** `docs/acceptance/permanent/issue-<number>.json`
-- **Runner:** Ubuntu unit/widget and Android emulator integration; macOS/iOS where applicable.
-- **Manual or device-only criteria:** Name the device, evidence and reviewer; never claim hosted CI proves them.
+- GitHub-hosted runner: ubuntu-latest
+- AC-1: test/issues/issue_<number>_test.dart — <exact proposed assertion and test name>.
+- AC-2: test/issues/issue_<number>_test.dart — <exact proposed assertion and test name>.
+- Issue manifest after implementation: docs/acceptance/temporary/issue-<number>.json
+- Add integration_test/features/<feature>_test.dart and a permanent manifest when user-journey coverage is relevant.
+
+## Non-goals and runner limits
+
+Explicitly exclude any real-device, physical Mac, interactive permission/TCC, human sign-off or unavailable-hardware validation. Those MUST NOT appear as acceptance criteria. If indispensable for safe delivery, scope separately and flag as blocked rather than falsely certifying them.
 
 ## Definition of done
 
-- [ ] Every applicable acceptance criterion has observed evidence on the exact PR head.
-- [ ] Temporary tests fail before the fix and pass afterwards (when feasible).
-- [ ] Every AC is proven by temporary or permanent named tests; feature journeys have integration coverage when relevant.
-- [ ] Temporary manifest and redundant temporary tests are removed only after promotion.
-- [ ] Existing required CI and security checks pass. `AutoClose #N` enables automated squash merge and post-main-CI closure only when all ACs are automated.
-- [ ] Docs, rollback notes and traceability are updated; any manual/device or implementation gap blocks automatic closure.
+- [ ] Every live AC maps to its own named automated test in a temporary or permanent manifest.
+- [ ] Named tests execute successfully on GitHub-hosted CI at the exact PR head (no skipped tests).
+- [ ] Required PR CI passes; post-merge main CI succeeds before automatic issue closure.
+- [ ] No uncovered/manual/gap acceptance rows are silently considered complete.
