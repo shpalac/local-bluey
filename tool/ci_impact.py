@@ -221,13 +221,44 @@ def plan(paths: list[str], event_name: str, root: Path) -> dict:
     elif any(path.startswith("lib/") for path in normalized):
         flags["docs"] = True
 
+    # Bounded reason codes only: no PR filenames or issue contents in summaries.
+    reasons = set()
+    if event_name != "pull_request":
+        reasons.add("non_pr_event")
+    if not normalized:
+        reasons.add("empty_change_set")
+    for path in normalized:
+        parts = PurePosixPath(path).parts
+        if (not parts or path.startswith("/") or ".." in parts
+                or "\\" in path or "\n" in path):
+            reasons.add("unsafe_path")
+        elif path in FULL_INPUTS:
+            reasons.add("shared_config")
+        elif path.startswith((".github/", "tool/", "integration_test/")):
+            reasons.add("ci_tooling_or_integration")
+        elif path.startswith("lib/") and not is_workflow_model(path):
+            reasons.add("shared_runtime")
+        elif path in ("android", "ios", "macos", "linux"):
+            reasons.add("native_root")
+        elif not (path.startswith(("lib/", "test/", "docs/"))
+                  or path in DOCUMENT_NAMES or is_document(path)
+                  or any(path.startswith(prefix) for prefix in PLATFORMS)):
+            reasons.add("unrecognized_path")
+    full_tests = bool(run_full or (flags["test"] and selected_tests is None))
+    if not run_full and full_tests:
+        reasons.add("unmapped_or_fixture_tests")
+    if not reasons:
+        reasons.add("mapped_impact")
     return {
         "lanes": flags,
-        "full_tests": run_full or (flags["test"] and selected_tests is None),
+        "full_tests": full_tests,
         "test_files": [] if selected_tests is None else selected_tests,
         "android_matrix": [29, 34] if run_full else [34],
         "changed_files": normalized,
         "full_ci": run_full,
+        "selection_kind": "full_ci" if run_full else
+                          ("full_tests" if full_tests else "selective"),
+        "selection_reasons": sorted(reasons),
     }
 
 
@@ -246,6 +277,16 @@ def main(argv: list[str] | None = None) -> int:
         result = plan(paths, args.event_name, root)
         serialized = json.dumps(result, separators=(",", ":"), sort_keys=True)
         print(serialized)
+        summary = os.environ.get("GITHUB_STEP_SUMMARY")
+        if summary:
+            with open(summary, "a", encoding="utf-8") as handle:
+                handle.write("### Impact selection\n\n")
+                handle.write("- Mode: " + result["selection_kind"] + "\n")
+                handle.write("- Reasons: " +
+                             ", ".join(result["selection_reasons"]) + "\n")
+                selected = sorted(name for name, enabled in
+                                  result["lanes"].items() if enabled)
+                handle.write("- Lanes: " + ", ".join(selected) + "\n")
         if args.output:
             with args.output.open("a", encoding="utf-8") as output:
                 output.write(f"plan={serialized}\n")
