@@ -39,15 +39,15 @@
           "tests": [
             {
               "file": "test/activity_step_test.dart",
-              "name": "canonical round-trip"
+              "name": "only canonical millisecond UTC timestamps decode"
             },
             {
               "file": "test/activity_step_test.dart",
-              "name": "unknown enum, malformed json and invalid types rejected"
+              "name": "sub-millisecond timestamps are rejected, not truncated"
             },
             {
               "file": "test/activity_step_test.dart",
-              "name": "UTC and opaque safe IDs required"
+              "name": "oversized or deeply nested input is rejected before parsing"
             }
           ]
         },
@@ -59,10 +59,6 @@
             {
               "file": "test/activity_step_test.dart",
               "name": "no capture, IO, or lifecycle side effects in DTO"
-            },
-            {
-              "file": "test/activity_step_test.dart",
-              "name": "unknown version and extra payload fields fail closed"
             }
           ]
         },
