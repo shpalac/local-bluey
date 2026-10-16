@@ -20,8 +20,9 @@ The issue creation workflow validates this contract and comments when it fails. 
 ## PRs and completion
 
 - Use **standalone** `Refs #N` for any incremental work. A merged Refs PR does not automatically mean the issue is done; the trusted post-main-CI closer rechecks complete issue evidence.
-- Use standalone `AutoClose #N` **in addition to** `Refs #N` only when **all** acceptance criteria have exact named automated evidence in the temporary/permanent issue manifest and no manual or gap rows remain. This opts a green PR into GitHub squash auto-merge.
+- Use standalone `AutoClose #N` **in addition to** `Refs #N` only when **all** acceptance criteria have exact named automated evidence in the temporary/permanent issue manifest and no manual or gap rows remain. This declares a complete issue-delivery candidate; it does not bypass acceptance CI.
 - **Never use GitHub-native `Closes #N`, `Fixes #N`, or `Resolves #N`.** Those can close the issue on merge, before merged-main CI and acceptance verification.
+- Ready, same-repository PRs opened by allowlisted authors (`AUTO_MERGE_APPROVED_AUTHORS`, default `shpalac`) are queued for GitHub squash auto-merge by `.github/workflows/approved-author-auto-merge.yml`. This also applies to incremental `Refs` PRs; GitHub branch protection and required CI remain mandatory. Drafts wait until ready. Other authors never receive automatic merging through either workflow.
 - An issue is marked completed only by the existing trusted `.github/workflows/issue-automation.yml` after successful CI for the exact PR head **and** exact main merge SHA and matching complete issue evidence.
 - Security, privacy, human authorization and physical-device limits are **not** waived by a passing simulated test. Do not delete unmet criteria from an existing issue to force auto-closure.
 

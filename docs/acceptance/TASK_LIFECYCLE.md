@@ -24,7 +24,7 @@ it never invents missing requirements or claims planned tests have run.
    Real-device/TCC/manual scenarios belong in `## Non-goals and runner limits`,
    **not** in ACs. If physical hardware is essential for safe shipping, block or
    split that work rather than falsely certifying it through a mock.
-2. **Start work.** Reference work with a standalone `Refs #123` line in the PR body. A merged `Refs` PR closes the issue only if **every** numbered criterion is proven; incremental PRs leave it open. Add a separate `AutoClose #123` line when the completed PR should also opt in to automatic squash merge after green PR CI. Add
+2. **Start work.** Reference work with a standalone `Refs #123` line in the PR body. A merged `Refs` PR closes the issue only if **every** numbered criterion is proven; incremental PRs leave it open. Add a separate `AutoClose #123` line only when all acceptance evidence is complete. Automatic squash merge is configured separately for approved, same-repo PR authors and does not require the `AutoClose` marker. Add
    `docs/acceptance/temporary/issue-123.json` and real issue-only tests in
    `test/issues/issue_123_test.dart` (or a suitable existing `test/` file).
    Each automated criterion names exact file and test case, not only a path.
@@ -44,8 +44,8 @@ it never invents missing requirements or claims planned tests have run.
    successful unskipped execution and an exact match between all live issue
    AC identifiers and the temporary **or** permanent manifest. Any `manual`
    or `gap` criterion, legacy manifest, missing test or skipped result blocks
-   closure. For `AutoClose` PRs the trusted workflow enables GitHub squash
-   auto-merge only after CI succeeds at the exact PR head. After any linked
+   closure. For ready PRs by approved authors, the trusted workflow queues GitHub squash
+   auto-merge; required branch protection still waits for green CI at the PR head. After any linked
    `Refs` or `AutoClose` PR merges, a separate trusted workflow waits for
    successful CI on the merge commit in `main`, rechecks the live issue and
    manifest, and closes the issue **only** if every criterion is complete.
@@ -137,12 +137,23 @@ other audited runner-verifiable checks instead of artificial Flutter app tests.
 ## Automatic merge and closure contract
 
 - Existing `Refs` PRs are eligible for **post-merge issue closure** when all
-  acceptance criteria are satisfied; they never enable automatic PR merging.
-  `AutoClose #N` remains the explicit opt-in for automatic squash merge and
-  strict pre-merge acceptance validation. Incremental `Refs` PRs leave their
+  acceptance criteria are satisfied. An incremental `Refs` PR from an approved
+  author may auto-merge once all required checks pass, without prematurely
+  closing incomplete issues. `AutoClose #N` marks complete acceptance evidence
+  and remains subject to strict pre-merge validation. Incremental `Refs` PRs leave their
   issues open without failing post-merge issue automation.
-- Both workflows execute trusted `main` code only. Neither checks out or
-  executes a contributor branch with a privileged token.
+- The privileged auto-merge and post-merge-closure workflows execute trusted
+  `main` code only. They never execute a contributor branch with a write token.
+- `.github/workflows/approved-author-auto-merge.yml` runs when the trusted
+  `CI` workflow is requested for a PR; the existing `issue-automation.yml`
+  provides a fallback after completed, successful CI. It queues same-repository
+  PRs targeting `main` if the PR author is in the case-insensitive, comma/space-separated
+  repository variable `AUTO_MERGE_APPROVED_AUTHORS` (default: `shpalac`).
+  Draft PRs and forks are not queued. The existing `AutoClose` CI-completion
+  path uses the same allowlist; unapproved authors must be merged manually.
+  Changes to this variable should be treated as trusted maintainer operations.
+  GitHub Actions PRs authored with the default `GITHUB_TOKEN` may not emit
+  events that trigger this workflow; use a GitHub App token if applicable.
 - The PR CI must succeed at the exact head SHA, including issue-specific
   test evidence and the required aggregate gate. Main CI must succeed at the
   exact merged SHA before the issue is closed. Documentation-only merges also

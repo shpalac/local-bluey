@@ -29,6 +29,7 @@ jobs:
       - name: Enable automatic squash merge for complete AutoClose PRs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPROVED_PR_AUTHORS: ${{ vars.AUTO_MERGE_APPROVED_AUTHORS || 'shpalac' }}
         run: python3 tool/issue_auto_merge.py
 
   close-complete-issues:

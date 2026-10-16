@@ -1,0 +1,34 @@
+name: Approved-author squash auto-merge
+
+# Privileged workflow_run uses PR metadata and checks out trusted main only.
+on: # zizmor: ignore[dangerous-triggers] No PR code, cache or artifacts are consumed.
+  workflow_run:
+    workflows: [CI]
+    types: [requested]
+
+permissions:
+  contents: read
+
+jobs:
+  queue-auto-merge:
+    if: ${{ github.event.workflow_run.event == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Verify approved-author and exact-head auto-merge contracts
+        run: |
+          python3 -m unittest discover -s tool -p test_approved_author_auto_merge.py
+          python3 -m unittest discover -s tool -p test_issue_auto_merge.py
+      - name: Queue squash auto-merge for approved PR authors
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPROVED_PR_AUTHORS: ${{ vars.AUTO_MERGE_APPROVED_AUTHORS || 'shpalac' }}
+        run: python3 tool/issue_auto_merge.py
