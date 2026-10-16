@@ -67,6 +67,8 @@ import 'ui/appearance_startup_notice.dart';
 import 'ui/settings_screen.dart';
 import 'ui/unsupported_screen.dart';
 import 'services/screen_watch.dart';
+import 'services/capture_monitor.dart';
+import 'teach_mode/capture_session.dart';
 import 'services/tray_publication_caller.dart';
 import 'ui/tray_publication_notice.dart';
 import 'ui/watch_banner.dart';
@@ -342,10 +344,21 @@ class _MacHomeState extends State<MacHome>
     if (state == AppLifecycleState.resumed) {
       unawaited(_permissions.resume());
       unawaited(_trust.resume());
+    } else if (state != AppLifecycleState.resumed) {
+      // An inactive, hidden or detached host must never retain an opt-in
+      // Teach Mode session through a background or lock transition.
+      TeachCaptureSession.instance.cancel();
     }
   }
 
   void _onPermissionsChanged() {
+    if (TeachCaptureSession.instance.indicator != CaptureIndicator.off &&
+        (_permissions.status == PermissionObservationStatus.failed ||
+            (_permissions.status == PermissionObservationStatus.current &&
+                _permissions.revoked.isNotEmpty))) {
+      // A failed or revoked native permission observation is not consent.
+      TeachCaptureSession.instance.cancel();
+    }
     if (mounted) setState(() {});
   }
 
@@ -410,7 +423,11 @@ class _MacHomeState extends State<MacHome>
   /// selected provider, never conversation history or memory.
   void _syncWatchDriver() {
     final watch = ScreenWatch.instance;
-    if (watch.isActive && _watchDriver == null) {
+    final teaching =
+        TeachCaptureSession.instance.indicator != CaptureIndicator.off;
+    // Teach Mode controls must not implicitly enable the separate watcher
+    // pipeline (screen snapshots, suggestions, or model inference).
+    if (watch.isActive && !teaching && _watchDriver == null) {
       final differ = FrameDiffer();
       final pipeline = WatchPipeline(
         // The cheap signal read enforces exclusions; heavier work below
@@ -439,7 +456,7 @@ class _MacHomeState extends State<MacHome>
         if (mounted) setState(() => _suggestion = s);
       });
       pipeline.stream.listen(_watchSuggestions.onEvent);
-    } else if (!watch.isActive && _watchDriver != null) {
+    } else if ((!watch.isActive || teaching) && _watchDriver != null) {
       _watchDriver!.stop();
       _watchDriver = null;
       _watchSuggestionSub?.cancel();

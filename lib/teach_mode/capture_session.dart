@@ -6,6 +6,12 @@ import 'draft_builder.dart';
 
 /// Explicit-consent, memory-only Teach Mode lifecycle.
 class TeachCaptureSession extends ChangeNotifier {
+  /// Shared, in-memory Teach Mode controller for the macOS app UI.
+  /// Regular ScreenWatch sessions do not count as teaching sessions.
+  static final TeachCaptureSession instance = TeachCaptureSession(
+    watch: ScreenWatch.instance,
+  );
+
   TeachCaptureSession({required ScreenWatch watch})
     : _watch = watch,
       _monitor = CaptureMonitor(watch: watch) {
@@ -19,14 +25,21 @@ class TeachCaptureSession extends ChangeNotifier {
   int _epoch = 0;
   bool _disposed = false;
   bool _starting = false;
+  bool _ownsSession = false;
 
   CaptureIndicator get indicator =>
-      _disposed ? CaptureIndicator.off : _monitor.indicator;
+      _disposed || !_ownsSession ? CaptureIndicator.off : _monitor.indicator;
   int get stepCount => _steps.length;
+
+  /// Scope shown to the user before asking for consent. Fails on policy load.
+  Future<WatchConsent> prepareConsent({
+    Duration duration = const Duration(minutes: 10),
+  }) => _watch.prepareConsent(length: duration);
 
   Future<String?> start({
     required bool consentConfirmed,
     Duration duration = const Duration(minutes: 10),
+    WatchConsent? consent,
   }) async {
     if (_disposed) return 'Teach Mode is disposed.';
     if (!consentConfirmed) return 'Explicit user consent is required.';
@@ -37,9 +50,26 @@ class TeachCaptureSession extends ChangeNotifier {
       return 'A session is already active or starting.';
     }
     _starting = true;
+    // Mark ownership *before* ScreenWatch publishes its active transition,
+    // so global banners never miss the first frame. A failed or cancelled
+    // start releases ownership and cannot turn normal watching into teaching.
+    _ownsSession = true;
     try {
       _discard();
-      return await _watch.start(length: duration, consentConfirmed: true);
+      final refusal = await _watch.start(
+        length: duration,
+        consentConfirmed: true,
+        consent: consent,
+      );
+      if (refusal != null) {
+        _ownsSession = false;
+        if (!_disposed) notifyListeners();
+      }
+      return refusal;
+    } catch (_) {
+      _ownsSession = false;
+      if (!_disposed) notifyListeners();
+      rethrow;
     } finally {
       _starting = false;
     }
@@ -51,20 +81,27 @@ class TeachCaptureSession extends ChangeNotifier {
   }
 
   void _onChanged() {
-    if (_monitor.indicator != CaptureIndicator.active) {
+    if (_ownsSession && _monitor.indicator != CaptureIndicator.active) {
       _discard();
+      if (_monitor.indicator == CaptureIndicator.off) {
+        _ownsSession = false;
+      }
     }
     if (!_disposed) {
       notifyListeners();
     }
   }
 
-  bool pause() => _monitor.pause();
-  bool resume() => _monitor.resume();
+  bool pause() => _ownsSession && _monitor.pause();
+  bool resume() => _ownsSession && _monitor.resume();
 
   void cancel() {
     _discard();
-    _monitor.stop();
+    // Never stop a separate, ordinary screen-watching session on teardown.
+    if (_ownsSession) {
+      _ownsSession = false;
+      _monitor.stop();
+    }
     if (!_disposed) {
       notifyListeners();
     }

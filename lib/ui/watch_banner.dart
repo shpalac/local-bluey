@@ -1,29 +1,59 @@
 import 'package:flutter/material.dart';
 
 import '../services/screen_watch.dart';
+import '../services/capture_monitor.dart';
+import '../teach_mode/capture_session.dart';
 import '../services/strings.dart';
 
 /// Persistent in-app indicator shown on every screen while a watch session
 /// runs (#212): red dot, countdown, one-tap stop. Sits above the Navigator
 /// via the app builder, so no route can hide it.
 class WatchBanner extends StatelessWidget {
-  const WatchBanner({super.key, required this.child});
+  const WatchBanner({
+    super.key,
+    required this.child,
+    this.watch,
+    this.teachSession,
+  });
 
   final Widget child;
+  final ScreenWatch? watch;
+  final TeachCaptureSession? teachSession;
 
   @override
   Widget build(BuildContext context) {
+    final currentWatch = watch ?? ScreenWatch.instance;
+    final teaching = teachSession ?? TeachCaptureSession.instance;
     return ListenableBuilder(
-      listenable: ScreenWatch.instance,
+      listenable: Listenable.merge([currentWatch, teaching]),
       builder: (context, _) {
-        final active = ScreenWatch.instance.isActive;
+        final active = currentWatch.isActive;
+        final isTeaching = teaching.indicator != CaptureIndicator.off;
+        final isPaused = teaching.indicator == CaptureIndicator.paused;
+        final stop = isTeaching ? teaching.cancel : currentWatch.stop;
+        final bannerLabel = isTeaching
+            ? isPaused
+                  ? Strings.t('Teach Mode paused', 'מצב לימוד מושהה')
+                  : Strings.t('Teach Mode active', 'מצב לימוד פעיל')
+            : Strings.t('Screen watching is active', 'צפייה במסך פעילה');
+        final actionLabel = isTeaching
+            ? Strings.t('Cancel Teach Mode', 'ביטול מצב לימוד')
+            : Strings.t('Stop screen watching', 'עצירת צפייה במסך');
+        final visualLabel = isTeaching
+            ? isPaused
+                  ? Strings.t('Teach Mode paused', 'מצב לימוד מושהה')
+                  : Strings.t('Teach Mode active', 'מצב לימוד פעיל')
+            : Strings.t(
+                'Watching ${_mmss(currentWatch.remaining)}',
+                'צופה ${_mmss(currentWatch.remaining)}',
+              );
         final dark = Theme.of(context).brightness == Brightness.dark;
-        final background = dark
-            ? const Color(0xFF5F1414)
-            : const Color(0xFFFFEAEA);
-        final foreground = dark
-            ? const Color(0xFFFFEAEA)
-            : const Color(0xFF5F1414);
+        final background = isPaused
+            ? (dark ? const Color(0xFF5F4214) : const Color(0xFFFFF1D8))
+            : (dark ? const Color(0xFF5F1414) : const Color(0xFFFFEAEA));
+        final foreground = isPaused
+            ? (dark ? const Color(0xFFFFF1D8) : const Color(0xFF5F4214))
+            : (dark ? const Color(0xFFFFEAEA) : const Color(0xFF5F1414));
         // Paint/traverse the route first so Navigator semantics cannot hide the
         // persistent control. Reverse layout reserves the banner above the route.
         return Column(
@@ -51,10 +81,7 @@ class WatchBanner extends StatelessWidget {
                       children: [
                         Semantics(
                           container: true,
-                          label: Strings.t(
-                            'Screen watching is active',
-                            'צפייה במסך פעילה',
-                          ),
+                          label: bannerLabel,
                           child: ExcludeSemantics(
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -67,10 +94,7 @@ class WatchBanner extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Flexible(
                                   child: Text(
-                                    Strings.t(
-                                      'Watching ${_mmss(ScreenWatch.instance.remaining)}',
-                                      'צופה ${_mmss(ScreenWatch.instance.remaining)}',
-                                    ),
+                                    visualLabel,
                                     style: Theme.of(context)
                                         .textTheme
                                         .labelLarge
@@ -83,20 +107,21 @@ class WatchBanner extends StatelessWidget {
                         ),
                         Semantics(
                           container: true,
-                          label: Strings.t(
-                            'Stop screen watching',
-                            'עצירת צפייה במסך',
-                          ),
+                          label: actionLabel,
                           button: true,
-                          onTap: ScreenWatch.instance.stop,
+                          onTap: stop,
                           child: ExcludeSemantics(
                             child: TextButton(
                               style: TextButton.styleFrom(
                                 minimumSize: const Size(48, 48),
                                 foregroundColor: foreground,
                               ),
-                              onPressed: ScreenWatch.instance.stop,
-                              child: Text(Strings.t('Stop', 'עצירה')),
+                              onPressed: stop,
+                              child: Text(
+                                isTeaching
+                                    ? Strings.t('Cancel', 'ביטול')
+                                    : Strings.t('Stop', 'עצירה'),
+                              ),
                             ),
                           ),
                         ),
