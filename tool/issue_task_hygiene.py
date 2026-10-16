@@ -8,6 +8,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from issue_task_ci import ContractError, REPOSITORY, validate_issue_body
+from runner_only_issue_contract import validate_runner_only_contract
 
 MARKER = "<!-- local-bluey:task-contract -->"
 
@@ -44,7 +45,8 @@ def record_missing_contract(repository: str, number: int, token: str,
             "This issue needs an actionable task contract before implementation:\n\n"
             "- A **## Acceptance criteria** section with measurable checkboxes\n"
             "- A **## CI and validation** section with targeted temporary tests\n"
-            "- A permanent feature integration-test plan and manual test limits\n\n"
+            "- A hosted runner and named automated test plan per AC\n"
+            "- Explicit runner-only scope, non-goals and definition of done\n\n"
             "Use the repository Task issue template and "
             "docs/acceptance/TASK_LIFECYCLE.md.\n\n"
             f"Validation: {reason}"
@@ -64,10 +66,12 @@ def main() -> int:
         criteria = validate_issue_body(body, number)
         # Preserve migration of older issues, but never accept a newly opened
         # unnumbered task that could not obtain exact AC-to-test coverage.
-        if event.get("action") == "opened" and not criteria:
-            raise ContractError(
-                f"#{number}: new issues require numbered AC-1:, AC-2:, ... criteria"
-            )
+        if event.get("action") == "opened":
+            if not criteria:
+                raise ContractError(
+                    f"#{number}: new issues require numbered AC-1:, AC-2:, ... criteria"
+                )
+            validate_runner_only_contract(body, number)
         print(f"#{number}: acceptance criteria and CI plan present.")
         return 0
     except ContractError as exc:
