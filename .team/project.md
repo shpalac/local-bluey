@@ -9,6 +9,12 @@
 - Priority order P0 → P3 as in ADR-001.
 - Anything touching privacy, cost, permissions or paid CI → label `blocked:owner` and move on.
 
+## Issue contract (repository policy)
+
+- `AGENTS.md` is the canonical local instruction for authoring GitHub Issues, CI-only acceptance criteria, and verified issue closure. Every AC must be provable by GitHub-hosted runners; physical hardware and human approval are explicit non-goals rather than acceptance checks.
+- Use standalone `Refs #N` for all PRs, plus `AutoClose #N` only after complete runner-test evidence. Never use GitHub-native closing keywords. The trusted workflow closes complete issues only after merged-main CI succeeds.
+- This repository policy is intended to be synchronized to the vendored upstream `agent-team-kit` protocol; keep future syncs consistent.
+
 ## Repo quirks
 
 - This repo is a fork: always `gh pr create -R shpalac/local-bluey --base main`.
@@ -20,7 +26,7 @@
 
 On switch-over, about 25 issues were assigned and only partly done (PRs said `Refs #N`).
 Before taking new issues, each worker finishes or hands back its open ones: either
-land the remaining work with a `Closes #N` PR, or unassign the issue and remove its
+land the remaining work with a verified `Refs #N` / `AutoClose #N` PR, or unassign the issue and remove its
 status label so someone else can take it.
 
 ## CI
