@@ -108,9 +108,18 @@ class SafetyGateRuntime {
   }
 
   bool _isSecretKey(String key) {
-    return key.contains('token') ||
-        key.contains('secret') ||
-        key.contains('password') ||
-        key.contains('private_key');
+    // MCP servers can use snake_case, kebab-case or camelCase keys.
+    final normalized = key.replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return normalized.contains('token') ||
+        normalized.contains('secret') ||
+        normalized.contains('password') ||
+        normalized.contains('passphrase') ||
+        normalized.contains('privatekey') ||
+        normalized.contains('apikey') ||
+        normalized.contains('accesskey') ||
+        normalized.contains('authorization') ||
+        normalized.contains('credential') ||
+        normalized.contains('cookie') ||
+        normalized.contains('sessionid');
   }
 }

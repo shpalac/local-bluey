@@ -179,16 +179,8 @@ def validate_stage(root: Path, number: int, path: Path,
 
 
 def expected_tests(records: list[dict], mode: str) -> dict[str, set[str]]:
-    prefix = "integration_test/" if mode == "integration" else "test/"
-    expected = {}
-    for record in records:
-        for criterion in record["criteria"]:
-            if criterion["type"] != "automated":
-                continue
-            for test in criterion["tests"]:
-                if test["file"].startswith(prefix):
-                    expected.setdefault(test["file"], set()).add(test["name"])
-    return expected
+    """Reuse the manifest-owned selection used by standalone acceptance CI."""
+    return acceptance.expected_tests(records, mode)
 
 
 def check(root: Path, repository: str, body: str, token: str, mode: str,
@@ -229,6 +221,19 @@ def check(root: Path, repository: str, body: str, token: str, mode: str,
         records.append(record)
         print(f"#{number}: {stage} acceptance contract ({path.relative_to(root)})")
     tests = expected_tests(records, mode)
+    other_mode = "integration" if mode == "unit" else "unit"
+    outstanding = expected_tests(records, other_mode)
+    if outstanding:
+        pending = sum(len(names) for names in outstanding.values())
+        if any(refs.values()):
+            raise ContractError(
+                f"closing requires {pending} named {other_mode} tests not "
+                f"executed by the {mode} lane"
+            )
+        print(
+            f"INCOMPLETE: {pending} named {other_mode} acceptance tests "
+            f"are not executed by this {mode} lane."
+        )
     if tests:
         results = runner(tests, root, 240)
         if not all(results.values()) or len(results) != sum(map(len, tests.values())):

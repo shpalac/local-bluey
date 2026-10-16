@@ -35,10 +35,6 @@
           "tests": [
             {
               "file": "test/mcp/playwright_browser_adapter_test.dart",
-              "name": "hostile page text remains untrusted data after consent"
-            },
-            {
-              "file": "test/mcp/playwright_browser_adapter_test.dart",
               "name": "invalid timeout fails without invoking tools"
             },
             {
@@ -68,6 +64,14 @@
             {
               "file": "test/mcp/playwright_transport_wiring_test.dart",
               "name": "AC-2 denied permission never invokes transport"
+            },
+            {
+              "file": "test/mcp/playwright_pending_permission_test.dart",
+              "name": "ac2 cancellation while permission pending blocks late transport"
+            },
+            {
+              "file": "test/mcp/playwright_pending_permission_test.dart",
+              "name": "ac2 restart invalidates an older outstanding approval"
             }
           ]
         },

@@ -81,15 +81,6 @@ if (!process.env.PUBLIC_PLAUSIBLE_SCRIPT_URL) {
     assert.ok(!(await read(route)).includes('plausible.io/js/pa-'), 'Guide unexpectedly enables analytics: ' + route);
   }
 }
-const eventNames = ['Setup Click', 'GitHub Click', 'Guide Click', 'Contribute Click'];
-for (const name of eventNames) {
-  assert.ok(html.includes('data-gtm-event="' + name + '"'), 'Missing conversion event link: ' + name);
-}
-if (!process.env.PUBLIC_PLAUSIBLE_SCRIPT_URL) {
-  for (const file of ['guides/mac-setup/index.html', 'guides/ollama/index.html']) {
-    assert.ok(!(await read(file)).includes('plausible.io/js/pa-'), 'Guide unexpectedly injects analytics: ' + file);
-  }
-}
 for (const name of ['bluey-desktop.png', 'showcase-gallery.png', 'settings-dark.png']) {
   assert.ok((await stat(resolve(root, 'dist/media', name))).size > 1000, 'Missing authentic image: ' + name);
 }

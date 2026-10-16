@@ -48,6 +48,46 @@ class MetricsTest(unittest.TestCase):
         self.assertFalse(incomplete)
 
     @patch('ci_metrics.subprocess.run')
+    def test_pr_wall_runner_minutes_and_setup_proxy(self, run):
+        run.side_effect = [
+            self.response([dict(id=9, conclusion='success', event='pull_request',
+                                created_at='2026-10-01T00:00:00Z',
+                                updated_at='2026-10-01T00:03:00Z')]),
+            self.response([
+                {**self.job(40), 'labels': ['ubuntu-latest'],
+                 'steps': [{'name': 'Run subosito/flutter-action@pinned',
+                            'started_at': '2026-10-01T00:00:00Z',
+                            'completed_at': '2026-10-01T00:00:10Z'}]},
+                {**self.job(30, 'build-macos'), 'labels': ['macos-latest']},
+            ]),
+        ]
+        text, total, rate, incomplete = ci_metrics.report('owner/repo', 'date')
+        self.assertEqual((total, rate, incomplete), (1, 0, False))
+        self.assertIn('- p50: 180s', text)
+        self.assertIn('- p95: 180s', text)
+        self.assertIn('0.7 runner-minutes', text)
+        self.assertIn('0.5 runner-minutes', text)
+        self.assertIn('Repeated setup share: 14.3%', text)
+        self.assertIn('Actual cache hit rates are unavailable', text)
+
+    @patch('ci_metrics.subprocess.run')
+    def test_pagination_boundary_fails_closed(self, run):
+        run.return_value = self.response(
+            [dict(id=i, conclusion='success') for i in range(100)]
+        )
+        text, count, _, incomplete = ci_metrics.report('owner/repo', 'date')
+        self.assertEqual(count, 100)
+        self.assertTrue(incomplete)
+        self.assertIn('page limit', text)
+
+    def test_p95_and_unmapped_runner_are_explicit(self):
+        self.assertEqual(ci_metrics.p95([1, 2, 3, 4, 100]), 100)
+        self.assertEqual(ci_metrics.os_for_job({'labels': []}, 'unknown-job'),
+                         'unknown')
+        self.assertIsNone(ci_metrics.seconds_between(
+            '2026-10-01T00:00:05Z', '2026-10-01T00:00:00Z'))
+
+    @patch('ci_metrics.subprocess.run')
     def test_no_runs_is_valid(self, run):
         run.return_value = self.response([])
         text, total, rate, incomplete = ci_metrics.report('owner/repo', 'date')

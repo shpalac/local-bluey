@@ -41,14 +41,9 @@
         },
         {
           "id": "ac_3",
-          "type": "automated",
+          "type": "gap",
           "requirement": "Policy tests do not expose secrets or perform unapproved network calls",
-          "tests": [
-            {
-              "file": "test/offline_provider_fallback_policy_test.dart",
-              "name": "disabled cloud selects local provider and makes zero cloud requests"
-            }
-          ]
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         },
         {
           "id": "ac_4",

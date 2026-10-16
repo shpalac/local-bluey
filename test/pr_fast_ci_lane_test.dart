@@ -24,14 +24,26 @@ void main() {
     expect(text, isNot(contains('write')));
   });
 
+  // Preserve the BLU-037 acceptance-test name while verifying its
+  // responsibilities are delegated to the required central CI build gate.
   test('fast lane runs format, analyze and the full test suite', () {
+    final centralCi = File('.github/workflows/ci.yml').readAsStringSync();
+
+    expect(text, contains('name: Fast CI (format analyze test)'));
+    expect(text, contains('test_ci_impact.py'));
+    expect(text, contains('test_ci_gate.py'));
+    expect(text, isNot(contains('flutter analyze')));
+    expect(text, isNot(contains('flutter test')));
+
+    expect(centralCi, contains('      - name: Format check'));
+    expect(centralCi, contains('dart format lib test'));
+    expect(centralCi, contains('run: flutter analyze'));
+    expect(centralCi, contains('flutter test --coverage --reporter expanded'));
+    expect(centralCi, contains('run: python3 tool/ci_gate.py'));
     expect(
-      text,
-      contains('dart format --output=none --set-exit-if-changed lib test'),
+      centralCi,
+      contains('needs: [detect, static, docs, acceptance-evidence, test,'),
     );
-    expect(text, contains('flutter analyze'));
-    expect(text, contains('flutter test'));
-    expect(text, contains('flutter pub get --enforce-lockfile'));
   });
 
   test('fast lane actions are pinned to full commit SHAs', () {

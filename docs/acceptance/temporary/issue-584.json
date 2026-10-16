@@ -49,8 +49,12 @@
           "type": "automated",
           "tests": [
             {
-              "file": "test/file_index_test.dart",
-              "name": "explicit consent only; revoke purges all matches"
+              "file": "test/file_index_privacy_584_test.dart",
+              "name": "ac3 the index stays transport-free over its granted local reads"
+            },
+            {
+              "file": "test/file_index_privacy_584_test.dart",
+              "name": "ac3 a revoked index exposes no citation surface for the corpus"
             }
           ]
         },

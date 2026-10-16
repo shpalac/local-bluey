@@ -33,6 +33,10 @@
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "revoked server permission during lock approval blocks transport"
+            },
+            {
+              "file": "test/mcp/home_assistant_single_dispatch_test.dart",
+              "name": "ac1 dry run never invokes MCP action or HA transport"
             }
           ]
         },
@@ -43,23 +47,11 @@
           "tests": [
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
-              "name": "approved lock dispatches once"
-            },
-            {
-              "file": "test/mcp/home_assistant_adapter_test.dart",
-              "name": "unknown entity and invalid service fail closed"
-            },
-            {
-              "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "offline fails closed"
             },
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "timeout denies before transport when approval stalls"
-            },
-            {
-              "file": "test/mcp/home_assistant_adapter_test.dart",
-              "name": "denied permission and physical approval block transport"
             },
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
@@ -72,6 +64,10 @@
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "offline transition during MCP gate blocks transport"
+            },
+            {
+              "file": "test/mcp/home_assistant_single_dispatch_test.dart",
+              "name": "ac2 approved live action executes exactly one transport"
             }
           ]
         },

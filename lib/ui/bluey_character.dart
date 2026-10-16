@@ -41,6 +41,9 @@ class BlueyCharacter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     assert(resolveFaceRenderer(requestedRenderer) == FaceRenderer.native);
+    final reducedMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final effectivePhase = reducedMotion ? 0.0 : phase;
     return RepaintBoundary(
       child: CustomPaint(
         painter: legacyArtwork
@@ -51,7 +54,7 @@ class BlueyCharacter extends StatelessWidget {
                 mood: face.mood,
                 awake: awake,
                 tint: tint,
-                phase: _bounded(phase, 0, 1),
+                phase: _bounded(effectivePhase, 0, 1),
               )
             : JoyfulBlueyPainter(
                 gazeX: _bounded(face.gazeX, -1, 1),
@@ -60,7 +63,7 @@ class BlueyCharacter extends StatelessWidget {
                 mood: face.mood,
                 awake: awake,
                 tint: tint,
-                phase: _bounded(phase, 0, 1),
+                phase: _bounded(effectivePhase, 0, 1),
               ),
         child: const SizedBox.expand(),
       ),

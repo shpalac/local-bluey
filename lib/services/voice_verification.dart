@@ -61,6 +61,8 @@ class VoiceVerifier {
   /// Explicit local opt-in; production UI must disclose collection purpose.
   void enable({required String enrollmentId, required bool consent}) {
     if (!consent || enrollmentId.trim().isEmpty || enrollmentId.length > 128) {
+      // A denied replacement must not preserve an earlier voice grant.
+      revoke();
       throw ArgumentError('Explicit consent and valid enrollment required');
     }
     _revision++;

@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 /// Bounded, memory-only execution history. Never stores user-supplied labels.
-class ExecutionAudit {
+class ExecutionAudit extends ChangeNotifier {
   ExecutionAudit({this.maxEntries = 100})
     : assert(maxEntries >= 0, 'maxEntries cannot be negative');
 
@@ -16,7 +18,11 @@ class ExecutionAudit {
   void requestStop() {
     if (_stopRequested) return;
     _stopRequested = true;
-    record('execution', 'stopped');
+    if (maxEntries == 0) {
+      notifyListeners();
+    } else {
+      record('execution', 'stopped');
+    }
   }
 
   void record(
@@ -35,6 +41,7 @@ class ExecutionAudit {
       ),
     );
     if (_entries.length > maxEntries) _entries.removeAt(0);
+    notifyListeners();
   }
 
   /// Only an explicitly consented, local caller receives serialized data.
@@ -59,6 +66,7 @@ class ExecutionAudit {
       'denied',
       'offline',
       'recovered',
+      'recovery_storage_failed',
     };
     return allowed.contains(value) ? value : '[redacted]';
   }

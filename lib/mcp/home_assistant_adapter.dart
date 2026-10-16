@@ -116,8 +116,8 @@ class HomeAssistantAdapter {
     }
     bool stale() => _cancelled || generation != _generation;
     try {
-      // Even dry runs require SafetyGate permission and entity-scoped approval.
-      await gate.execute(
+      // Authorize without invoking the MCP action; dry runs never dispatch.
+      await gate.authorize(
         serverId: serverId,
         spec: _spec,
         arguments: {'entity_id': entityId, 'service': service},
