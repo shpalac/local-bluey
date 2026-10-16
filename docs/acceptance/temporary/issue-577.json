@@ -36,6 +36,10 @@
             {
               "file": "test/benchmark/synthetic_benchmark_harness_test.dart",
               "name": "invalid input timeout and cancellation have explicit outcomes"
+            },
+            {
+              "file": "test/benchmark/synthetic_trace_capacity_test.dart",
+              "name": "ac2 capacity rejection leaves benchmark trace immutable"
             }
           ]
         },
@@ -55,6 +59,10 @@
             {
               "file": "test/benchmark/synthetic_benchmark_harness_test.dart",
               "name": "offline in-memory seam performs no egress persistence or automatic action"
+            },
+            {
+              "file": "test/benchmark/synthetic_trace_capacity_test.dart",
+              "name": "ac3 trace capacity must be finite and positive"
             }
           ]
         },

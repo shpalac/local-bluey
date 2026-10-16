@@ -62,7 +62,7 @@
           "id": "ac_4",
           "type": "manual",
           "requirement": "flutter analyze and relevant tests pass; PR includes commands and evidence",
-          "reason": "CI verification required. Native macOS TCC validation remains manual."
+          "reason": "flutter analyze and the relevant suites run on every PR CI; native macOS TCC validation remains the documented manual lane."
         }
       ]
     }

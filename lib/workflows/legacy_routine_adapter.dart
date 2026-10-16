@@ -86,8 +86,13 @@ final class LegacyRoutineAdapter {
     return routine;
   }
 
+  static bool _hasControlCharacters(String value) =>
+      value.runes.any((codePoint) => codePoint < 0x20 || codePoint == 0x7f);
+
   static void _validateRoutine(Routine routine) {
-    if (routine.name.trim().isEmpty ||
+    if (_hasControlCharacters(routine.name) ||
+        _hasControlCharacters(routine.trigger) ||
+        routine.name.trim().isEmpty ||
         routine.name.length > RoutineStore.maxNameChars ||
         routine.trigger.trim().isEmpty ||
         routine.trigger.length > RoutineStore.maxTriggerChars ||

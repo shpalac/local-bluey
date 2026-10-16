@@ -48,9 +48,14 @@ class SyntheticTrace {
 }
 
 class SyntheticTraceHarness {
-  SyntheticTraceHarness(this.clock);
+  SyntheticTraceHarness(this.clock, {this.maxTraces = 10000}) {
+    if (maxTraces <= 0 || maxTraces > 100000) {
+      throw ArgumentError.value(maxTraces, 'maxTraces', 'Out of range');
+    }
+  }
 
   final BenchmarkClock clock;
+  final int maxTraces;
   final List<SyntheticTrace> _traces = [];
   final Set<String> _ids = {};
 
@@ -63,6 +68,9 @@ class SyntheticTraceHarness {
     required SyntheticExit exit,
     required Duration startedAt,
   }) {
+    if (_traces.length >= maxTraces) {
+      throw StateError('Synthetic trace capacity exceeded');
+    }
     if (id.trim().isEmpty || !_ids.add(id)) {
       throw ArgumentError.value(id, 'id', 'Must be nonempty and unique');
     }

@@ -18,21 +18,40 @@
         },
         {
           "id": "ac_2",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Deterministic, reproducible results; explicit errors rather than silent fallbacks.",
-          "reason": "Existing tests exercise validation, but this PR adds no independent AC-2 proof."
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_validation_test.dart",
+              "name": "ac2 validation is deterministic and every refusal is explicit"
+            }
+          ]
         },
         {
           "id": "ac_3",
-          "type": "gap",
+          "type": "automated",
           "requirement": "No secret/PII exposure in files, logs or artifacts; no unapproved network calls or unsafe actions.",
-          "reason": "Requires privacy and egress verification beyond the narrow in-memory review test."
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_privacy_test.dart",
+              "name": "ac3 teach capture retains no payloads and uses no io or network"
+            }
+          ]
         },
         {
           "id": "ac_4",
-          "type": "gap",
+          "type": "automated",
           "requirement": "Existing Routines and supported platform behavior remain compatible.",
-          "reason": "Requires broader Routine and platform compatibility coverage; the new test does not certify this criterion."
+          "tests": [
+            {
+              "file": "test/teach_mode/routine_platform_compat_test.dart",
+              "name": "ac4 legacy routines stay untouched during and after capture"
+            },
+            {
+              "file": "test/teach_mode/routine_platform_compat_test.dart",
+              "name": "ac4 capture gates behave identically across platform flavors"
+            }
+          ]
         }
       ]
     }

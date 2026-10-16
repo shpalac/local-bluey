@@ -26,10 +26,6 @@
           "type": "automated",
           "tests": [
             {
-              "file": "test/local_stt_tools_test.dart",
-              "name": "STT benchmark failure accounting fixtures (#270)"
-            },
-            {
               "file": "test/issue_580_stt_benchmark_test.dart",
               "name": "issue 580 AC-2 empty successful STT output fails closed"
             }

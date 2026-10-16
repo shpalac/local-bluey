@@ -41,10 +41,6 @@
           "type": "automated",
           "tests": [
             {
-              "file": "test/durable_retry_checkpoint_store_test.dart",
-              "name": "corrupt checkpoint fails explicitly"
-            },
-            {
               "file": "test/durable_retry_checkpoint_hardening_test.dart",
               "name": "checkpoint with mismatched operation id fails closed"
             }
@@ -53,13 +49,8 @@
         {
           "id": "ac_4",
           "requirement": "Flutter tests validate durable retry checkpoint implementation",
-          "type": "automated",
-          "tests": [
-            {
-              "file": "test/durable_retry_checkpoint_store_test.dart",
-              "name": "checkpoint survives restart and prevents duplicate execution"
-            }
-          ]
+          "type": "gap",
+          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
         },
         {
           "id": "runtime_integration_gap",

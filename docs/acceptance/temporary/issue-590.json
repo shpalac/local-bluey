@@ -35,10 +35,6 @@
           "tests": [
             {
               "file": "test/mcp/playwright_browser_adapter_test.dart",
-              "name": "hostile page text remains untrusted data after consent"
-            },
-            {
-              "file": "test/mcp/playwright_browser_adapter_test.dart",
               "name": "invalid timeout fails without invoking tools"
             },
             {
