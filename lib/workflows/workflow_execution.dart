@@ -157,7 +157,10 @@ final class WorkflowExecution {
         audit?.record('step', 'failed', stepIndex: nextStep);
         return status;
       }
-      audit?.record('step', 'completed', stepIndex: nextStep);
+      // Defer the final step's completion record until recovery cleanup ends.
+      if (nextStep + 1 < definition.steps.length) {
+        audit?.record('step', 'completed', stepIndex: nextStep);
+      }
       status = WorkflowStatus.running;
     }
     if (_cancelled || audit?.stopRequested == true) {
@@ -165,6 +168,19 @@ final class WorkflowExecution {
       return status;
     }
     if (recoveryStore != null) await recoveryStore!.clear();
+    // A stop during the asynchronous recovery cleanup must never turn
+    // a cancelled execution into a successful one.
+    if (_cancelled || audit?.stopRequested == true) {
+      cancel();
+      return status;
+    }
+    if (definition.steps.isNotEmpty) {
+      audit?.record(
+        'step',
+        'completed',
+        stepIndex: definition.steps.length - 1,
+      );
+    }
     status = WorkflowStatus.completed;
     audit?.record('execution', 'completed');
     return status;
