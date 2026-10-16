@@ -144,9 +144,10 @@ other audited runner-verifiable checks instead of artificial Flutter app tests.
   issues open without failing post-merge issue automation.
 - The privileged auto-merge and post-merge-closure workflows execute trusted
   `main` code only. They never execute a contributor branch with a write token.
-- `.github/workflows/approved-author-auto-merge.yml` runs on PR opened, reopened,
-  ready-for-review or synchronize events. It queues same-repository PRs targeting
-  `main` if the PR author is in the case-insensitive, comma/space-separated
+- `.github/workflows/approved-author-auto-merge.yml` runs when the trusted
+  `CI` workflow is requested for a PR; the existing `issue-automation.yml`
+  provides a fallback after completed, successful CI. It queues same-repository
+  PRs targeting `main` if the PR author is in the case-insensitive, comma/space-separated
   repository variable `AUTO_MERGE_APPROVED_AUTHORS` (default: `shpalac`).
   Draft PRs and forks are not queued. The existing `AutoClose` CI-completion
   path uses the same allowlist; unapproved authors must be merged manually.
