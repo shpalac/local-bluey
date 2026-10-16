@@ -177,6 +177,21 @@ class ImpactPlanningTest(unittest.TestCase):
         result = plan([".github/workflows/new-security.yml"], "pull_request", self.root)
         self.assertTrue(result["full_ci"])
 
+    def test_factory_policy_config_fails_closed_to_full_matrix(self):
+        result = plan([".factory/config.yaml"], "pull_request", self.root)
+        self.assertTrue(result["full_ci"])
+        self.assertTrue(result["full_tests"])
+        self.assertTrue(all(result["lanes"].values()))
+        self.assertIn("unrecognized_path", result["selection_reasons"])
+
+    def test_factory_markdown_docs_use_fast_path(self):
+        result = plan(["docs/factory/ALIGNMENT.md"], "pull_request", self.root)
+        self.assertFalse(result["full_ci"])
+        self.assertTrue(result["lanes"]["acceptance"])
+        self.assertFalse(result["lanes"]["build_macos"])
+        self.assertFalse(result["lanes"]["build_ios"])
+        self.assertFalse(result["lanes"]["test"])
+
     def test_metrics_tool_uses_static_without_native_builds(self):
         result = plan(["tool/ci_metrics.py"], "pull_request", self.root)
         self.assertFalse(result["full_ci"])
