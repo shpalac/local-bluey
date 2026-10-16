@@ -96,7 +96,8 @@ class McpToolSafetyGate {
   final McpPermissionCheck requestPermission;
   final McpToolInvoker invoke;
 
-  Future<Object?> execute({
+  /// Validate and request permission without dispatching a tool action.
+  Future<void> authorize({
     required String serverId,
     required McpToolSpec spec,
     required Map<String, Object?> arguments,
@@ -105,18 +106,36 @@ class McpToolSafetyGate {
     if (!isServerAllowed(serverId)) {
       throw const McpToolException(McpToolFailure.denied);
     }
-
     spec.validateArguments(arguments);
-
+    if (timeout <= Duration.zero) {
+      throw const McpToolException(McpToolFailure.timeout);
+    }
     try {
-      // A stalled approval must not keep an MCP invocation pending forever.
       final approved = await requestPermission(
         serverId,
         spec.name,
       ).timeout(timeout);
-      if (!approved) {
+      if (!approved || !isServerAllowed(serverId)) {
         throw const McpToolException(McpToolFailure.denied);
       }
+    } on TimeoutException {
+      throw const McpToolException(McpToolFailure.timeout);
+    }
+  }
+
+  Future<Object?> execute({
+    required String serverId,
+    required McpToolSpec spec,
+    required Map<String, Object?> arguments,
+    required Duration timeout,
+  }) async {
+    await authorize(
+      serverId: serverId,
+      spec: spec,
+      arguments: arguments,
+      timeout: timeout,
+    );
+    try {
       return await invoke(serverId, spec.name, arguments).timeout(timeout);
     } on TimeoutException {
       throw const McpToolException(McpToolFailure.timeout);

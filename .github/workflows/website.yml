@@ -46,6 +46,8 @@ jobs:
           node-version: '22'
       - name: Install site dependencies
         run: npm install --no-audit --no-fund
+      - name: Verify allowlisted GTM links
+        run: npm run test:gtm
       - name: Typecheck Astro and React islands
         run: npm run check
       - name: Build site at GitHub Pages subpath

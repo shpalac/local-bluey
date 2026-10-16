@@ -59,3 +59,18 @@ Disable the pilot feature flag, revoke macOS permissions, stop observation and p
 
 ## CI boundary
 Documentation validation may run on Ubuntu without hardware access. Real macOS TCC permissions, accessibility, CPU sampling and privacy/network verification are manual gates, not claims made by CI.
+
+## Aggregate measurement helper (Refs #578)
+
+`lib/benchmark/mac_pilot_metrics.dart` computes reproducible false-suggestion
+rates and nearest-rank CPU p50/p95 statistics from numeric pilot aggregates.
+A missing suggestion denominator or CPU data produces **unknown**, never
+an artificial passing zero. Negative/non-finite readings and inconsistent
+counts are rejected. CPU above 100% is permitted for multicore processes.
+Any privacy incident or retained records after deletion are explicitly
+flagged, but an incident-free summary is **not** evidence of zero egress.
+
+This helper never captures screen content, performs network access, writes
+files, or signs a pilot report. Run:
+`flutter test test/benchmark/mac_pilot_metrics_test.dart`.
+The signed real-Mac pilot, TCC, RTL and egress evidence remain mandatory.

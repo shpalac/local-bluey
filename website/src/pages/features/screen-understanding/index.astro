@@ -1,0 +1,12 @@
+---
+import GuideLayout from '../../../layouts/GuideLayout.astro';
+---
+<GuideLayout title="AI Screen Understanding on Mac | Local Bluey" description="What Local Bluey's macOS screen tools implement, how approvals work, and why screenshot privacy and real-device validation matter." heading="Understand your Mac screen with Bluey" eyebrow="SCREEN AWARENESS" intro="Ask about what you see on your Mac. The source contains screenshot, text-recognition, zoom, and pointing tools subject to permissions and configuration.">
+<h2>How screen understanding is designed</h2><p>The macOS host can request a screenshot, inspect recognized screen text, zoom into regions, and point at elements. Configured AI endpoints may help interpret the captured information.</p>
+<h2>Explore with caution</h2>
+<ol><li>Set up a Mac host and supported AI brain.</li><li>Review the macOS Screen Recording permission and its consequences.</li><li>Ask about a visible interface item through the supported voice flow.</li><li>Inspect any suggested computer-changing action before approving it.</li></ol>
+<h2>Screen capture is sensitive</h2>
+<p>Remote AI services may receive screenshots when enabled. Detection and redaction of secrets are pattern-based and imperfect; never assume a screen is safe because no sensitive text was detected.</p>
+<p>This describes implemented code paths, <strong>not independently verified end-to-end performance on physical devices</strong>. The website gallery uses deterministic test captures. <a href="https://github.com/shpalac/local-bluey/issues/15">Track real-device validation.</a></p>
+<p><a href="/local-bluey/features/approval-safety/">Next: approval and safety →</a></p>
+</GuideLayout>

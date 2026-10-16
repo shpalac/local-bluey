@@ -23,8 +23,13 @@
         {
           "id": "ac_2",
           "requirement": "Results are deterministic and reproducible; failures are explicit and actionable",
-          "type": "manual",
-          "reason": "Fail-closed aggregation is exercised by Python tests in tool/test_ci_gate.py, which are not Dart acceptance tests; reproducibility needs review of the lane in CI."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/pr_fast_ci_gate_repro_test.dart",
+              "name": "ac2 fail-closed CI gate fixtures are reproducible"
+            }
+          ]
         },
         {
           "id": "ac_3",

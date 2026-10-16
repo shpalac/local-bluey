@@ -36,3 +36,16 @@ flutter build bundle --release
 Rollback: disable or remove the isolated adapter; existing WebResearch and MCP
 implementations are unchanged. Acceptance evidence:
 `docs/acceptance/temporary/issue-590.json`.
+
+## Pending-approval cancellation fencing (Refs #590)
+
+`BrowserSession` now exposes a volatile invalidation Future for a single
+operation generation. Cancel and restart invalidate the pending permission
+wait promptly. A later permission grant cannot start an injected transport
+because the adapter rechecks its session generation at the invocation
+boundary. An already-started transport is not physically aborted; the
+caller still receives only a cancelled outcome and no late result.
+
+Run `flutter test test/mcp/playwright_pending_permission_test.dart`.
+This is an in-process fake boundary, not a substitute for native browser
+process cancellation, DNS rebinding protection or request interception.

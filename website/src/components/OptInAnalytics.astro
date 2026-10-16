@@ -1,0 +1,34 @@
+---
+const plausibleScriptUrl = import.meta.env.PUBLIC_PLAUSIBLE_SCRIPT_URL?.trim() ?? '';
+
+// This file only renders tracking after the owner supplies an approved
+// site-specific Plausible script URL. No script is shipped by default.
+if (plausibleScriptUrl && !/^https:\/\/plausible\.io\/js\/pa-[a-zA-Z0-9_-]+\.js$/.test(plausibleScriptUrl)) {
+  throw new Error('PUBLIC_PLAUSIBLE_SCRIPT_URL must be an official site-specific Plausible HTTPS script URL');
+}
+---
+{plausibleScriptUrl && (
+  <>
+    <script is:inline async src={plausibleScriptUrl}></script>
+    <script is:inline>
+      window.plausible = window.plausible || function () {
+        (window.plausible.q = window.plausible.q || []).push(arguments);
+      };
+      window.plausible.init = window.plausible.init || function (options) {
+        window.plausible.o = options || {};
+      };
+      window.plausible.init();
+
+      // Event labels are fixed; no URLs, query strings, text or personal data.
+      document.addEventListener('click', function (event) {
+        var target = event.target;
+        if (!(target instanceof Element)) return;
+        var link = target.closest('a[data-gtm-event]');
+        if (!link) return;
+        var name = link.getAttribute('data-gtm-event');
+        if (!['Setup Click', 'GitHub Click', 'Guide Click', 'Contribute Click'].includes(name)) return;
+        if (typeof window.plausible === 'function') window.plausible(name);
+      });
+    </script>
+  </>
+)}

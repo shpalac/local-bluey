@@ -46,8 +46,17 @@
         {
           "id": "ac_3",
           "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade",
-          "type": "gap",
-          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/file_index_privacy_584_test.dart",
+              "name": "ac3 the index stays transport-free over its granted local reads"
+            },
+            {
+              "file": "test/file_index_privacy_584_test.dart",
+              "name": "ac3 a revoked index exposes no citation surface for the corpus"
+            }
+          ]
         },
         {
           "id": "ac_4",

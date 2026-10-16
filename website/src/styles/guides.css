@@ -1,0 +1,23 @@
+/* Accessible editorial guides share the site's visual identity without animation. */
+.guide-header,.guide-footer { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:20px; width:min(100% - 48px, 1100px); margin-inline:auto; }
+.guide-header { padding:30px 0; border-bottom:1px solid var(--line); }
+.guide-header nav { display:flex; flex-wrap:wrap; gap:22px; font-size:13px; font-weight:800; }
+.guide-header a:hover,.guide-footer a:hover { color:var(--lime); }
+.guide-main { max-width:880px; padding:72px 24px 100px; margin-inline:auto; }
+.guide-eyebrow { font-size:11px; font-weight:900; letter-spacing:.12em; color:var(--lime); }
+.guide-main h1 { font:900 clamp(44px,7vw,85px)/1 var(--display); letter-spacing:-.07em; margin:20px 0 30px; }
+.guide-intro { color:#e1ddef; font-size:clamp(18px,2.5vw,24px); line-height:1.55; }
+.guide-warning { margin:45px 0; padding:22px 26px; background:var(--ink-soft); border-left:4px solid var(--lime); line-height:1.65; }
+.guide-article { color:#e7e3f0; font-size:17px; line-height:1.8; }
+.guide-article h2 { color:var(--cream); font:900 clamp(25px,3vw,36px)/1.2 var(--display); margin-top:55px; }
+.guide-article a,.guide-next a { color:var(--lime); text-decoration:underline; text-underline-offset:4px; }
+.guide-article a:hover,.guide-next a:hover { color:var(--cream); }
+.guide-article li { padding:4px 0; }
+.guide-article pre { padding:24px; background:#0c0d1c; border-radius:12px; max-width:100%; overflow-x:auto; font-size:14px; line-height:1.7; }
+.guide-article code { overflow-wrap:anywhere; }
+.guide-next { margin-top:75px; border-top:1px solid var(--line); padding-top:28px; }
+.guide-next h2 { font:900 30px var(--display); }
+.guide-next p { line-height:1.6; }
+.guide-next a { display:inline-block; margin:0 23px 15px 0; }
+.guide-footer { border-top:1px solid var(--line); padding:28px 0 45px; font-size:12px; color:#bdb7cf; }
+@media(max-width:560px) { .guide-header,.guide-footer { width:calc(100% - 36px); } .guide-main { padding:50px 18px 80px; } .guide-article { font-size:16px; } .guide-warning { padding:18px; } }

@@ -13,19 +13,15 @@ permissions:
 
 jobs:
   fast-ci:
+    # Preserve this legacy status/check name until branch protection is
+    # verified. Main CI owns format/analyze/tests and the fail-closed gate.
     name: Fast CI (format analyze test)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Read Flutter version
-        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-      - run: flutter pub get --enforce-lockfile
-      - run: dart format --output=none --set-exit-if-changed lib test
-      - run: flutter analyze
-      - run: flutter test --reporter expanded
+      - name: Validate central impact routing and fail-closed gate
+        run: |
+          python3 -m unittest discover -s tool -p test_ci_impact.py
+          python3 -m unittest discover -s tool -p test_ci_gate.py
+          python3 -m unittest discover -s tool -p test_ci_consolidation.py
