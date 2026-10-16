@@ -41,3 +41,16 @@ dart analyze lib/workflows/postcondition_verifier.dart test/postcondition_verifi
 flutter test test/postcondition_verifier_test.dart test/workflow_execution_test.dart
 flutter build bundle --release
 ```
+
+## Timeout and cancellation read fencing (Refs #571)
+
+A timeout now invalidates the remaining verification sequence. An already
+started asynchronous read may still complete, but no following condition is
+requested after its late result. Explicit cancellation has the same ordering
+guarantee. This avoids further potentially sensitive observations after the
+caller has abandoned verification and never upgrades an expired attempt to
+confirmed success.
+
+Run `flutter test test/postcondition_timeout_fence_test.dart` for the
+deterministic outstanding-read regression. The native permission and
+artifact/tool observation gaps remain and this work does not complete #571.

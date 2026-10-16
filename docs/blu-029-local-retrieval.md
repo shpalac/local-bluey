@@ -9,3 +9,16 @@ Safety/privacy: source bytes and paths are taken only from BLU-028's memory snap
 Rollback: stop constructing `LocalSemanticRetriever` and invoke `FileIndex.revoke()`; no schema, migration or cleanup process is required.
 
 Final-response boundary: cancellation, index permission state and timeout are checked again after the last ranked excerpt before returning citations. In-flight revocation and late cancellation yield no partial results. This is deterministic CI coverage; real-device permission, offline behavior, UI and model-quality validation remain manual gaps.
+
+## Bounded top-K excerpt ranking (Refs #585)
+
+`LocalSemanticRetriever` now maintains a sorted candidate list no larger
+than the requested limit (1–50), instead of accumulating every matching
+chunk in large selected indexes. Insertion uses a bounded binary search;
+ties remain deterministic by local file path. Returned excerpts still
+originate exclusively from the consented in-memory index snapshot, and
+cancellation/timeout/revocation checks are unchanged.
+
+Run `flutter test test/retrieval/local_semantic_ranked_bound_test.dart`.
+This improvement does not constitute physical-device permission evidence,
+a trained embedding model or an accessible RTL native search interface.

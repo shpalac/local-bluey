@@ -1,0 +1,17 @@
+---
+import GuideLayout from '../../../layouts/GuideLayout.astro';
+---
+<GuideLayout title="Set Up Local Bluey on Mac | Open-Source AI Desktop Assistant" description="Run Local Bluey on macOS from source: Flutter prerequisites, permissions, AI endpoints, and known real-device validation gaps." heading="Set up Local Bluey on Mac" eyebrow="GET STARTED" intro="Build and start the macOS host from source. Local Bluey is in active development; this is not a verified consumer installer.">
+<h2>Prerequisites</h2>
+<ul><li>A Mac with macOS 14+ and Xcode command-line tools.</li><li>The exact Flutter SDK release specified in the repository’s <a href="https://github.com/shpalac/local-bluey/blob/main/.flutter-version">.flutter-version</a> file.</li><li>A supported AI endpoint, such as compatible locally running Ollama. Speech and transcription require separate configuration.</li></ul>
+<h2>Run the macOS host</h2>
+<pre><code>git clone https://github.com/shpalac/local-bluey.git
+cd local-bluey
+flutter pub get
+flutter run -d macos</code></pre>
+<p>Configure the AI brain in Settings. Mac Accessibility and Screen Recording permissions enable sensitive computer-control and screen-reading capabilities; review them before granting access.</p>
+<h2>First-run checklist</h2>
+<ol><li>Start the Flutter app on macOS.</li><li>Configure the brain endpoint and verify its availability. A brain connection test does not validate speech transcription.</li><li>Review each native permission and the approval controls before testing actions.</li><li>Consult the <a href="https://github.com/shpalac/local-bluey/blob/main/docs/TROUBLESHOOTING.md">troubleshooting guide</a> for errors.</li></ol>
+<p>End-to-end operation on physical hardware is not yet verified. Read the authoritative <a href="https://github.com/shpalac/local-bluey/blob/main/docs/dev-setup.md">developer setup guide</a> and <a href="https://github.com/shpalac/local-bluey/blob/main/docs/SUPPORT.md">support matrix</a> for requirements.</p>
+<p><a href="/local-bluey/guides/ollama/">Next: connecting an Ollama brain →</a></p>
+</GuideLayout>
