@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/screen_watch.dart';
 import '../services/strings.dart';
 import '../services/watch_policy.dart';
+import 'teach_capture_panel.dart';
 
 /// Screen watching: consent, allowlist, explainer and session controls
 /// (#212). Everything on this screen is localized EN/HE and follows the
@@ -273,6 +274,8 @@ class _WatchScreenState extends State<WatchScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
+              const TeachCapturePanel(),
             ],
           );
         },
