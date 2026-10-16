@@ -12,6 +12,7 @@ import sys
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from approved_author_auto_merge import parse_approved_authors
 from issue_auto_close import GitHub, closing_numbers
 from issue_task_ci import ContractError, REPOSITORY
 
@@ -45,7 +46,7 @@ def enable_auto_merge(token, node_id):
         raise ContractError("GitHub rejected auto-merge request")
 
 
-def eligible_prs(event, repo, client):
+def eligible_prs(event, repo, client, approved_authors):
     run = event.get("workflow_run", {})
     if (event.get("repository", {}).get("full_name") != repo
             or run.get("event") != "pull_request"
@@ -64,6 +65,7 @@ def eligible_prs(event, repo, client):
         pr = client.request(f"/repos/{repo}/pulls/{number}")
         if (pr.get("state") != "open"
                 or pr.get("draft")
+                or pr.get("user", {}).get("login", "").casefold() not in approved_authors
                 or pr.get("base", {}).get("ref") != "main"
                 or pr.get("head", {}).get("sha") != head_sha
                 or not closing_numbers(pr.get("body"))):
@@ -86,7 +88,8 @@ def main():
             encoding="utf-8"
         ))
         client = GitHub(token)
-        for number, node_id in eligible_prs(event, repo, client):
+        approved = parse_approved_authors(os.environ.get("APPROVED_PR_AUTHORS", ""))
+        for number, node_id in eligible_prs(event, repo, client, approved):
             enable_auto_merge(token, node_id)
             print(f"PR #{number}: automatic squash merge enabled after green CI.")
         return 0

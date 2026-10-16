@@ -1,0 +1,30 @@
+name: Approved-author squash auto-merge
+
+# Privileged metadata-only event: never checkout or execute pull-request code.
+on: # zizmor: ignore[dangerous-triggers] Trusted main code only; no untrusted checkout, cache or artifacts.
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  queue-auto-merge:
+    if: ${{ github.event.pull_request.base.ref == 'main' && !github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Verify the approved-author policy
+        run: python3 -m unittest discover -s tool -p test_approved_author_auto_merge.py
+      - name: Queue a squash merge only for approved PR authors
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPROVED_PR_AUTHORS: ${{ vars.AUTO_MERGE_APPROVED_AUTHORS || 'shpalac' }}
+        run: python3 tool/approved_author_auto_merge.py

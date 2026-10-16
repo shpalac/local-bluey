@@ -17,6 +17,7 @@ class FakeGitHub:
             "state": "open", "draft": False,
             "base": {"ref": "main"}, "head": {"sha": SHA},
             "body": "AutoClose #42", "node_id": "PR_NODE_ID",
+            "user": {"login": "shpalac"},
             "auto_merge": None,
         }
 
@@ -39,7 +40,7 @@ class AutoMergeTests(unittest.TestCase):
         }
 
     def eligible(self):
-        return merge.eligible_prs(self.event, REPO, self.client)
+        return merge.eligible_prs(self.event, REPO, self.client, {"shpalac"})
 
     def test_green_checked_autoclose_pr_is_eligible(self):
         self.assertEqual(self.eligible(), [(85, "PR_NODE_ID")])
@@ -67,6 +68,10 @@ class AutoMergeTests(unittest.TestCase):
             self.client.pr[key] = value
             self.assertEqual(self.eligible(), [])
             self.client.pr[key] = original
+
+    def test_unapproved_autoclose_pr_is_not_eligible(self):
+        self.client.pr["user"]["login"] = "unapproved"
+        self.assertEqual(self.eligible(), [])
 
     def test_invalid_checked_sha_fails(self):
         self.event["workflow_run"]["head_sha"] = "bad"

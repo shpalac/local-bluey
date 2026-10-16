@@ -17,7 +17,7 @@ validation:
   allowed_test_roots: [test/, integration_test/, tool/]
 delivery:
   reference_syntax: [Refs] # no native Closes, Fixes or Resolves
-  auto_merge: true # ONLY explicit AutoClose #N candidates; GitHub rules still apply
+  auto_merge: true # approved same-repo authors; required GitHub checks still apply
   post_merge_close: verified # workflow_run on successful main CI
   independent_review_required: false # NOT independently enforced by current auto-merge script
 resources:
