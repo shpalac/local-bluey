@@ -138,3 +138,34 @@ test('source-backed guides are discoverable, navigable and honest about validati
     await page.goto('/local-bluey/');
   }
 });
+
+test('launch conversion links have only allowlisted event names and no default tracking', async ({ page }) => {
+  await page.goto('./');
+  const labels = await page.locator('a[data-gtm-event]').evaluateAll((links) =>
+    links.map((link) => link.getAttribute('data-gtm-event'))
+  );
+  for (const name of ['Setup Click', 'GitHub Click', 'Guide Click', 'Contribute Click']) {
+    expect(labels).toContain(name);
+  }
+  expect(labels.every((name) => ['Setup Click', 'GitHub Click', 'Guide Click', 'Contribute Click'].includes(name ?? ''))).toBe(true);
+  if (!process.env.PUBLIC_PLAUSIBLE_SCRIPT_URL) {
+    await expect(page.locator('script[src^="https://plausible.io/js/pa-"]')).toHaveCount(0);
+    await page.goto('/local-bluey/guides/mac-setup/');
+    await expect(page.locator('script[src^="https://plausible.io/js/pa-"]')).toHaveCount(0);
+  }
+});
+
+test('preview CTAs use only fixed event names without default analytics', async ({ page }) => {
+  await page.goto('./');
+  const names = await page.locator('a[data-gtm-event]').evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute('data-gtm-event'))
+  );
+  const allowed = ['Setup Click', 'GitHub Click', 'Guide Click', 'Contribute Click'];
+  for (const name of allowed) expect(names).toContain(name);
+  expect(names.every((name) => allowed.includes(name ?? ''))).toBe(true);
+  if (!process.env.PUBLIC_PLAUSIBLE_SCRIPT_URL) {
+    await expect(page.locator('script[src^="https://plausible.io/js/pa-"]')).toHaveCount(0);
+    await page.goto('/local-bluey/guides/mac-setup/');
+    await expect(page.locator('script[src^="https://plausible.io/js/pa-"]')).toHaveCount(0);
+  }
+});

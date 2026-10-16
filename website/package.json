@@ -11,6 +11,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "test:static": "node scripts/verify-output.mjs",
+    "test:gtm": "node --test scripts/gtm-links.test.mjs",
+    "gtm:links": "node scripts/gtm-links.mjs",
     "test:visual": "playwright test",
     "test:lighthouse": "lhci autorun --config=./lighthouserc.cjs"
   },

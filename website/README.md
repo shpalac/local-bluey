@@ -84,3 +84,15 @@ The four Week 3 Astro pages are accessible from the homepage resources section a
 `guides/mac-setup/`, `guides/ollama/`, `features/screen-understanding/` and `features/approval-safety/`.
 
 The shared `src/layouts/GuideLayout.astro` provides canonical URLs, accessible navigation and a consistent status disclaimer. These guides document source-level functionality and limitations; they do not claim real-device validation.
+
+## Week 4 GTM preview and optional CTA measurement
+
+The developer-preview launch kit is under `marketing/launch/`: channel hypotheses, reviewable (unposted) community drafts, and an evidence-based weekly scorecard.
+
+```sh
+cd website
+npm run gtm:links
+npm run test:gtm
+```
+
+The links contain only campaign/source tags and stay within the public project website. Both the homepage and shared guide layout use `OptInAnalytics.astro`, which injects **no analytics** unless `PUBLIC_PLAUSIBLE_SCRIPT_URL` is explicitly configured. In that case, named, fixed CTA events contain no dynamic link or visitor properties. Re-check privacy disclosures and community posting rules before going live.
