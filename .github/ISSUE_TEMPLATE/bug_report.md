@@ -1,36 +1,38 @@
 ---
 name: Bug report
-about: A reproducible defect with measurable acceptance and regression tests
+about: Reproducible defect and deterministic GitHub-hosted runner regression criteria
 labels: bug
 ---
 
 ## Objective
 
-Eliminate the reported failure without changing unrelated behavior.
+Eliminate the failure without changing unrelated behavior.
 
 ## Environment and reproduction
 
-**Platform:** macOS host / iOS companion / Android companion / link layer
-
-**Observed:** 
-
-**Expected:** 
-
-**Reproduction steps (sanitized):** 
+- Affected platform and runner-reproducible environment:
+- Observed:
+- Expected:
+- Sanitized reproduction steps:
 
 ## Acceptance criteria
 
-- [ ] AC-1: The supplied reproduction fails before the fix and passes after it.
-- [ ] AC-2: Similar valid operations continue to work; invalid inputs fail safely.
-- [ ] AC-3: No privacy, security, localization, accessibility or supported-platform regression.
+- [ ] AC-1: Given <failing input/reproducer>, when <operation>, then <fixed runner-testable behavior>.
+- [ ] AC-2: Given <related valid and invalid inputs>, when <operation>, then <no regression and safe failure>.
 
 ## CI and validation
 
-- Add a targeted reproducer in `test/issues/issue_<number>_test.dart` and map its exact name in `docs/acceptance/temporary/issue-<number>.json`.
-- When the bug affects an end-to-end feature journey, add a regression under `integration_test/features/<feature>_test.dart` and promote the manifest; isolated bugs may close with complete temporary tests.
-- Remove temporary CI evidence only after permanent integration validation is green; include real-device review where simulator checks are insufficient.
+- GitHub-hosted runner: ubuntu-latest
+- AC-1: test/issues/issue_<number>_test.dart — <proposed exact failing-first regression test>.
+- AC-2: test/issues/issue_<number>_test.dart — <proposed exact related regression test>.
+- Use integration_test/features/<feature>_test.dart for runner-testable end-to-end flow regressions, and record exact tests in docs/acceptance/temporary/issue-<number>.json.
+
+## Non-goals and runner limits
+
+Exclude physical Mac/real iPhone/human approval/manual device-only checks from acceptance. A runner mock cannot certify an actual OS permission flow. If actual hardware evidence is indispensable, file separately as blocked rather than pretending acceptance is complete.
 
 ## Definition of done
 
-- [ ] Regression test proves the original defect is repaired.
-- [ ] Required CI passes at the PR head and on main after merge; no unverified manual criterion is declared green. Use `AutoClose #N` only after full acceptance coverage.
+- [ ] Targeted regression demonstrably fails before the fix when feasible and passes afterward.
+- [ ] Each AC has a distinct executed named test on hosted CI, with no manual/gap evidence claimed green.
+- [ ] Required PR CI and merged-main CI pass before verified automatic issue closure.
