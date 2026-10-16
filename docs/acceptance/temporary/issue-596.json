@@ -23,8 +23,13 @@
         {
           "id": "ac_2",
           "requirement": "Results are deterministic and reproducible; all failures are explicit and actionable",
-          "type": "manual",
-          "reason": "Determinism of simulator runs depends on the macOS runner image; CI run history is the evidence, not a repository test."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/ios_simulator_dependency_routing_test.dart",
+              "name": "ac2 simulator dependency changes select feasibility lane"
+            }
+          ]
         },
         {
           "id": "ac_3",
