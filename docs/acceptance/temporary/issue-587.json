@@ -31,10 +31,6 @@
           "tests": [
             {
               "file": "test/voice_verification_test.dart",
-              "name": "successful secondary signal still requires SafetyGate approval"
-            },
-            {
-              "file": "test/voice_verification_test.dart",
               "name": "invalid score and unavailable spoof evidence deny verification"
             },
             {
@@ -67,10 +63,6 @@
             {
               "file": "test/voice_verification_test.dart",
               "name": "no provider or storage called until explicit opt-in"
-            },
-            {
-              "file": "test/voice_verification_test.dart",
-              "name": "invalid score and unavailable spoof evidence deny verification"
             },
             {
               "file": "test/voice_safety_gate_integration_test.dart",

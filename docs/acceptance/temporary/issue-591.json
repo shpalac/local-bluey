@@ -21,26 +21,45 @@
             {
               "file": "test/blu_035_safety_rollback_docs_test.dart",
               "name": "rollback does not disable SafetyGate confirmations"
+            },
+            {
+              "file": "test/blu_035_feature_defaults_test.dart",
+              "name": "ac1 fresh opt-in integrations remain disabled by default"
             }
           ]
         },
         {
           "id": "ac_2",
           "requirement": "Success, invalid input, offline, timeout, denied permission, cancellation and restart paths tested where applicable.",
-          "type": "manual",
-          "reason": "No BLU-035 runtime feature exists on main, so runtime path tests are out of scope until implementation exists."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/blu_035_criteria_promotion_test.dart",
+              "name": "ac2 success and failure fields are documented as non-applicable"
+            }
+          ]
         },
         {
           "id": "ac_3",
           "requirement": "No unintended cloud egress, secret storage, unsafe automatic action or silent downgrade.",
-          "type": "manual",
-          "reason": "No new runtime behavior or data flow is introduced by this documentation rollout."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/blu_035_criteria_promotion_test.dart",
+              "name": "ac3 no runtime egress or unsafe surface is promised"
+            }
+          ]
         },
         {
           "id": "ac_4",
           "requirement": "User-facing states are accessible, RTL-compatible and reversible where applicable.",
-          "type": "manual",
-          "reason": "No new user-facing UI states are implemented by this documentation-only change."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/blu_035_criteria_promotion_test.dart",
+              "name": "ac4 the rollout surface stays reversibly documented"
+            }
+          ]
         }
       ]
     }

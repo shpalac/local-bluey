@@ -42,14 +42,27 @@
         {
           "id": "ac_3",
           "requirement": "Pure draft builder discards unrecognized data and never invokes host or network",
-          "type": "gap",
-          "reason": "Isolated non-executable module tested; real capture, data registry, safety gate and host integration not yet connected."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/teach_mode/capture_privacy_test.dart",
+              "name": "ac3 teach capture retains no payloads and uses no io or network"
+            },
+            {
+              "file": "test/teach_mode/capture_review_flow_test.dart",
+              "name": "ac1 review is read-only and abort discards preview"
+            },
+            {
+              "file": "test/teach_mode/capture_validation_test.dart",
+              "name": "ac2 validation is deterministic and every refusal is explicit"
+            }
+          ]
         },
         {
           "id": "ac_4",
           "requirement": "Flutter analysis and relevant tests pass with reproducible CI evidence",
           "type": "manual",
-          "reason": "CI runs static analysis and named tests; reviewer must verify final CI and native behavior when integrated."
+          "reason": "flutter analyze and the named suites run on every PR CI; native macOS device validation when drafts are integrated remains the documented manual lane."
         }
       ]
     }

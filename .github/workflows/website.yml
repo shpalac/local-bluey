@@ -29,6 +29,10 @@ jobs:
     name: Build / browser / Lighthouse
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    # Optional public build-time values; an unset variable injects nothing.
+    env:
+      PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.PUBLIC_GOOGLE_SITE_VERIFICATION }}
+      PUBLIC_PLAUSIBLE_SCRIPT_URL: ${{ vars.PUBLIC_PLAUSIBLE_SCRIPT_URL }}
     defaults:
       run:
         working-directory: website

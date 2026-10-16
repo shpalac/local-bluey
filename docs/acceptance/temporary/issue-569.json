@@ -45,7 +45,7 @@
         },
         {
           "id": "ac_3",
-          "type": "automated",
+          "type": "gap",
           "requirement": "No unintended egress, secret retention, or unsafe auto-execution",
           "tests": [
             {
@@ -56,7 +56,7 @@
         },
         {
           "id": "ac_4",
-          "type": "automated",
+          "type": "gap",
           "requirement": "Dart analyze and focused tests pass in CI",
           "tests": [
             {

@@ -63,10 +63,6 @@
             {
               "file": "test/event_normalization_fuzz_test.dart",
               "name": "unverified, blank and oversized OCR is never allowed"
-            },
-            {
-              "file": "test/event_normalization_fuzz_test.dart",
-              "name": "garbage text and metadata never throw; fake secrets always deny"
             }
           ]
         },

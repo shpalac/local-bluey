@@ -47,6 +47,20 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(statuses, ['passed', 'manual_required', 'not_implemented'])
         self.assertIn('do not close automatically', markdown)
 
+    def test_manifest_plan_selects_only_declared_named_tests(self):
+        self.sample['issues'][0]['criteria'][0]['tests'].append({
+            'file': 'test/sample_test.dart',
+            'name': 'always rejects unknown',
+        })
+        self.write()
+        selected = ac.expected_tests(self.load()['issues'], 'unit')
+        self.assertEqual(selected, {
+            'test/sample_test.dart': {'always rejects unknown'},
+        })
+        self.assertEqual(ac.expected_tests(self.load()['issues'], 'integration'), {})
+        with self.assertRaisesRegex(ValueError, 'unsupported acceptance'):
+            ac.expected_tests(self.load()['issues'], 'unknown')
+
     def test_automated_failure_returns_failed_evidence(self):
         report, _ = ac.render(self.load(), {('test/sample_test.dart', 'always rejects unknown'): False})
         self.assertFalse(report['automatedSuitesPassed'])
