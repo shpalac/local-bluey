@@ -46,10 +46,17 @@ def load_attempts(out):
     with open(tfile, newline="") as f:
         for r in csv.DictReader(f):
             status = (r.get("exit_status") or "").strip()
+            try:
+                latency = int(r["latency_ms"] or 0)
+                rss = int(r["peak_rss_bytes"] or 0)
+            except (KeyError, TypeError, ValueError):
+                sys.exit("invalid benchmark timing row")
+            if latency < 0 or rss < 0:
+                sys.exit("negative benchmark timing or memory value")
             attempts.append({
                 "backend": r["backend"], "clip": r["clip"],
-                "latency": int(r["latency_ms"] or 0),
-                "rss": int(r["peak_rss_bytes"] or 0),
+                "latency": latency,
+                "rss": rss,
                 # Older runs have no exit_status column: unknown, not success.
                 "exit": int(status) if status.lstrip("-").isdigit() else None,
             })

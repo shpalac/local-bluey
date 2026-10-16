@@ -196,6 +196,24 @@ img { max-width: 100%; height: auto; }
 .privacy > p:not(.section-index) { font-size: 21px; line-height: 1.55; max-width: 700px; margin: 44px 0; }
 .pill-button-outline { border: 2px solid var(--cream); }
 .pill-button-outline:hover { background: var(--cream); color: var(--ink); }
+.resources { padding:110px 0 135px; }
+.resources>h2 { max-width:1000px; font:900 clamp(56px,8vw,110px)/.95 var(--display); letter-spacing:-.08em; margin:65px 0 28px; }
+.resources>h2 em { font:400 .95em Georgia,serif; color:var(--lime); }
+.resources-intro { max-width:740px; font-size:18px; line-height:1.6; color:#d6d1e4; margin-bottom:45px; }
+.resource-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.resource-card { display:flex; flex-direction:column; gap:16px; padding:32px; border:1px solid var(--line); border-radius:24px; background:var(--ink-soft); transition:transform .2s,border-color .2s; }
+.resource-card:hover { transform:translateY(-3px); border-color:var(--lime); }
+.resource-card>span { color:var(--lime); font-size:11px; font-weight:900; letter-spacing:.12em; }
+.resource-card h3 { font:900 clamp(29px,4vw,44px)/1.1 var(--display); letter-spacing:-.06em; margin:0; }
+.resource-card p { color:#d6d1e4; line-height:1.6; margin:0; }
+.resource-card strong { color:var(--lime); margin-top:auto; }
+.resources-faq { margin-top:100px; max-width:900px; }
+.resources-faq h3 { font:900 clamp(35px,5vw,60px)/1 var(--display); }
+.resources-faq details { border-bottom:1px solid var(--line); padding:20px 0; }
+.resources-faq summary { cursor:pointer; font-weight:900; font-size:17px; }
+.resources-faq details p { color:#d6d1e4; line-height:1.7; }
+.resources-faq details a { text-decoration:underline; color:var(--lime); }
+@media(max-width:699px) { .resource-grid { grid-template-columns:1fr; } .resources { padding:75px 0 95px; } .resources>h2 { font-size:clamp(50px,10vw,78px); margin-top:45px; } .resource-card { padding:25px; } .resources-faq { margin-top:70px; } }
 .last-call { background: var(--lime); color: var(--ink); overflow: hidden; }
 .last-call-inner { min-height: 680px; position: relative; padding-top: 110px; padding-bottom: 110px; }
 .last-eyebrow { display: block; }

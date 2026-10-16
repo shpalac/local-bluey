@@ -19,8 +19,13 @@
         {
           "id": "ac_2",
           "requirement": "Results are deterministic and reproducible; all failures are explicit and actionable",
-          "type": "manual",
-          "reason": "Deterministic emulator execution depends on the GitHub Actions runner image and Android emulator availability; CI run history is the evidence, not a local Dart test."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/blu_039_emulator_gate_test.dart",
+              "name": "ac2 Android emulator failures remain explicit and required"
+            }
+          ]
         },
         {
           "id": "ac_3",

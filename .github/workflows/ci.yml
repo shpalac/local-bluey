@@ -57,6 +57,8 @@ jobs:
         run: |
           python3 -m unittest discover -s tool -p test_ci_impact.py
           python3 -m unittest discover -s tool -p test_ci_gate.py
+          python3 -m unittest discover -s tool -p test_ci_impacted_tests.py
+          python3 -m unittest discover -s tool -p test_ci_speed_wiring.py
           python3 -m unittest discover -s tool -p test_ci_consolidation.py
       - name: Select affected CI lanes
         id: impact
@@ -224,17 +226,13 @@ jobs:
         env:
           TEST_FILES: ${{ needs.detect.outputs.test_files }}
         run: |
-          # Split the deterministic impacted selection into disjoint batches.
-          # The full-suite coverage lane above remains a single run.
-          shards=$(dart run tool/ci_test_shards.dart "$TEST_FILES")
-          : > test-output.log
-          for shard in 0 1; do
-            mapfile -t test_files < <(SHARDS="$shards" SHARD="$shard" python3 -c 'import json, os, sys; sys.stdout.write("\n".join(json.loads(os.environ["SHARDS"])[int(os.environ["SHARD"])]))')
-            if [ "${#test_files[@]}" -eq 0 ]; then
-              continue
-            fi
-            flutter test "${test_files[@]}" --reporter expanded 2>&1 | tee -a test-output.log
-          done
+          # Flutter's own test runner schedules files concurrently. Running
+          # two batches in a shell loop forced serial work and extra startup.
+          # Validate file paths before handing them to Flutter; empty or
+          # malformed selections fail closed instead of silently passing.
+          python3 tool/ci_impacted_tests.py --output "$RUNNER_TEMP/impacted-tests.txt"
+          mapfile -t test_files < "$RUNNER_TEMP/impacted-tests.txt"
+          flutter test "${test_files[@]}" --concurrency=6 --reporter expanded 2>&1 | tee test-output.log
         timeout-minutes: 8
 
       - name: Coverage thresholds (services/, link/) (#136)
@@ -257,13 +255,14 @@ jobs:
           path: test-output.log
           retention-days: 7
 
-  # Builds stay on macOS: iOS/macOS outputs need Xcode. Runs in parallel
-  # with the static/test fast lanes: the native builds never inspect Dart
-  # test results, so gating on them only added wall-clock (#144, #153).
+  # Builds stay on macOS: iOS/macOS outputs need Xcode. They wait only
+  # for static preflight, not the long full test suite. Successful PRs may
+  # start builds slightly later, but format failures stop expensive work.
   # Docs-only changes skip this 25-minute lane entirely.
   build-macos:
-    needs: detect
-    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.build_macos == 'true' }}
+    # Format/analyzer failures should not spend native/emulator runner minutes.
+    needs: [detect, static]
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.build_macos == 'true' && needs.static.result == 'success' }}
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -294,8 +293,9 @@ jobs:
           retention-days: 3
 
   build-ios:
-    needs: detect
-    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.build_ios == 'true' }}
+    # Format/analyzer failures should not spend native/emulator runner minutes.
+    needs: [detect, static]
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.build_ios == 'true' && needs.static.result == 'success' }}
     runs-on: macos-latest
     timeout-minutes: 25
     steps:
@@ -391,11 +391,12 @@ jobs:
           NEEDS_JSON: ${{ toJSON(needs) }}
         run: python3 tool/ci_gate.py
 
-  # Android debug APK on ubuntu - no Xcode needed (#153). Runs in parallel
-  # with the fast lanes for the same reason as the macOS builds.
+  # Android debug APK on Ubuntu. Static preflight blocks expensive builds
+  # on known formatting/analyzer failures without waiting for the test suite.
   android:
-    needs: detect
-    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.android == 'true' }}
+    # Format/analyzer failures should not spend native/emulator runner minutes.
+    needs: [detect, static]
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.android == 'true' && needs.static.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -444,8 +445,9 @@ jobs:
   # emulator and runs integration_test/ against it. The native MethodChannel
   # is mocked in-Dart, so no macOS host is needed.
   android-integration:
-    needs: detect
-    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.android_integration == 'true' }}
+    # Format/analyzer failures should not spend native/emulator runner minutes.
+    needs: [detect, static]
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.android_integration == 'true' && needs.static.result == 'success' }}
     permissions:
       contents: read
       issues: read
@@ -501,8 +503,9 @@ jobs:
   # flutter_secure_storage (libsecret, libjsoncpp), nsd (Avahi),
   # record/audioplayers (ALSA), window_manager (GTK).
   linux:
-    needs: detect
-    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.linux == 'true' }}
+    # Format/analyzer failures should not spend native/emulator runner minutes.
+    needs: [detect, static]
+    if: ${{ github.event_name != 'schedule' && needs.detect.outputs.linux == 'true' && needs.static.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

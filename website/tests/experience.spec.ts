@@ -114,3 +114,27 @@ test('verification and analytics are absent unless configured', async ({ page })
     await expect(page.locator('script[src^="https://plausible.io/js/pa-"]')).toHaveCount(0);
   }
 });
+
+test('source-backed guides are discoverable, navigable and honest about validation', async ({ page, request }) => {
+  await page.goto('./');
+  const guides = [
+    ['guides/mac-setup/', 'Set up Local Bluey on Mac'],
+    ['guides/ollama/', 'Using Ollama with Local Bluey'],
+    ['features/screen-understanding/', 'Understand your Mac screen with Bluey'],
+    ['features/approval-safety/', 'Computer actions stay under your approval']
+  ] as const;
+  await expect(page.locator('#resources .resource-card')).toHaveCount(4);
+  await expect(page.locator('#resources details')).toHaveCount(4);
+  for (const [route, title] of guides) {
+    await expect(page.locator('#resources a[href$="' + route + '"]')).toHaveCount(1);
+    const response = await request.get('./' + route);
+    expect(response.ok()).toBe(true);
+    const html = await response.text();
+    expect(html).toContain('real-device verification is still pending');
+    expect(html).toContain('href="https://shpalac.github.io/local-bluey/' + route + '"');
+    await page.goto('./' + route);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(title);
+    await expect(page.getByRole('navigation', { name: 'Guide navigation' }).getByRole('link', { name: 'All guides' })).toHaveAttribute('href', '/local-bluey/#resources');
+    await page.goto('/local-bluey/');
+  }
+});
