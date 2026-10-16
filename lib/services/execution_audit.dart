@@ -59,6 +59,7 @@ class ExecutionAudit {
       'denied',
       'offline',
       'recovered',
+      'recovery_storage_failed',
     };
     return allowed.contains(value) ? value : '[redacted]';
   }
