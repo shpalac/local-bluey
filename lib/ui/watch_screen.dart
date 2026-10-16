@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../services/screen_watch.dart';
+import '../services/capture_monitor.dart';
+import '../teach_mode/capture_session.dart';
 import '../services/strings.dart';
 import '../services/watch_policy.dart';
 import 'teach_capture_panel.dart';
@@ -238,6 +240,15 @@ class _WatchScreenState extends State<WatchScreen> {
                   onPressed: _consenting ? null : _start,
                   icon: const Icon(Icons.visibility_outlined),
                   label: Text(_t('Start a session', 'התחלת סשן')),
+                )
+              else if (TeachCaptureSession.instance.indicator !=
+                  CaptureIndicator.off)
+                Text(
+                  _t(
+                    'Teach Mode is running. Use Teach Mode controls below.',
+                    'מצב לימוד פועל. השתמשו בבקרת מצב לימוד למטה.',
+                  ),
+                  style: theme.textTheme.titleMedium,
                 )
               else ...[
                 Text(
