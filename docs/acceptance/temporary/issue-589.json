@@ -33,6 +33,10 @@
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "revoked server permission during lock approval blocks transport"
+            },
+            {
+              "file": "test/mcp/home_assistant_single_dispatch_test.dart",
+              "name": "ac1 dry run never invokes MCP action or HA transport"
             }
           ]
         },
@@ -60,6 +64,10 @@
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "offline transition during MCP gate blocks transport"
+            },
+            {
+              "file": "test/mcp/home_assistant_single_dispatch_test.dart",
+              "name": "ac2 approved live action executes exactly one transport"
             }
           ]
         },

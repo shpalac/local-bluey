@@ -257,7 +257,7 @@ void main() {
 
   test('offline transition during MCP gate blocks transport', () async {
     final enteredGate = Completer<void>();
-    final gateResult = Completer<Object?>();
+    final gateResult = Completer<bool>();
     adapter = HomeAssistantAdapter(
       serverId: 'ha-local',
       allowedEntities: {'light.desk'},
@@ -267,11 +267,11 @@ void main() {
       approve: (_, _) async => true,
       gate: McpToolSafetyGate(
         isServerAllowed: (_) => allowed,
-        requestPermission: (_, _) async => true,
-        invoke: (_, _, _) {
+        requestPermission: (_, _) {
           enteredGate.complete();
           return gateResult.future;
         },
+        invoke: (_, _, _) async => throw StateError('Must not dispatch'),
       ),
       transport: (_, _) async {
         transportCalls++;
