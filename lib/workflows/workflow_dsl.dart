@@ -22,6 +22,19 @@ final class WorkflowDefinition {
   final int retryLimit;
 
   factory WorkflowDefinition.fromJson(Map<String, dynamic> json) {
+    const allowedFields = {
+      'version',
+      'id',
+      'trigger',
+      'steps',
+      'permissions',
+      'preconditions',
+      'postconditions',
+      'retryLimit',
+    };
+    if (json.keys.any((key) => !allowedFields.contains(key))) {
+      throw const FormatException('Unknown workflow field');
+    }
     if (json['version'] != schemaVersion) {
       throw const FormatException('Unsupported workflow schema version');
     }
@@ -85,6 +98,9 @@ final class WorkflowStep {
   final String target;
 
   factory WorkflowStep.fromJson(Map<String, dynamic> json) {
+    if (json.keys.any((key) => key != 'type' && key != 'target')) {
+      throw const FormatException('Unknown workflow step field');
+    }
     final type = _requiredString(json['type'], 'step.type');
     if (!const {'notify', 'wait', 'hostAction'}.contains(type)) {
       throw const FormatException('Unsupported step type');

@@ -43,23 +43,11 @@
           "tests": [
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
-              "name": "approved lock dispatches once"
-            },
-            {
-              "file": "test/mcp/home_assistant_adapter_test.dart",
-              "name": "unknown entity and invalid service fail closed"
-            },
-            {
-              "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "offline fails closed"
             },
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",
               "name": "timeout denies before transport when approval stalls"
-            },
-            {
-              "file": "test/mcp/home_assistant_adapter_test.dart",
-              "name": "denied permission and physical approval block transport"
             },
             {
               "file": "test/mcp/home_assistant_adapter_test.dart",

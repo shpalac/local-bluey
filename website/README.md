@@ -23,6 +23,40 @@ npm run test:visual
 npm run test:lighthouse
 ```
 
+## Search visibility and privacy-conscious analytics
+
+The site generates `sitemap-index.xml` and `sitemap-0.xml` via the official Astro sitemap integration. URLs must include the GitHub Pages project path:
+
+- Canonical homepage: `https://shpalac.github.io/local-bluey/`
+- Sitemap to submit: `https://shpalac.github.io/local-bluey/sitemap-index.xml`
+
+Google Search Console setup (requires the repository/site owner's Google account):
+
+1. Add a **URL-prefix property** for `https://shpalac.github.io/local-bluey/` in Search Console.
+2. Copy the HTML verification tag's `content` value (not the whole tag).
+3. Set `PUBLIC_GOOGLE_SITE_VERIFICATION` as a GitHub Actions **variable** for the website build, then rebuild/deploy. The output contains the meta tag only when this value is present.
+4. After deployment, verify site ownership in Search Console and submit `sitemap-index.xml`.
+5. Monitor Search Console indexing, queries and click-through rate. Verification and submission require the owner's action and are **not performed by CI**.
+
+Example for a local preview:
+
+```sh
+PUBLIC_GOOGLE_SITE_VERIFICATION="your-verification-content" npm run build
+```
+
+**Privacy-conscious analytics are disabled by default.** To opt into Plausible:
+
+1. Create a site in Plausible for the appropriate GitHub Pages domain/path and review its data collection settings and disclosure requirements.
+2. Copy the **site-specific HTTPS script URL** (`https://plausible.io/js/pa-XXXXX.js`) from its installation settings.
+3. Supply it as the build variable `PUBLIC_PLAUSIBLE_SCRIPT_URL` in the website workflow when deliberately enabling analytics. Other script origins and legacy script paths are rejected during build.
+4. Confirm that the script and data collection work as expected, and update the site's public privacy documentation before enabling tracking.
+
+No Google Analytics, ad trackers, cookies or external analytics scripts are injected when those variables are unset. A Search Console verification meta tag by itself does not track visitors.
+
+**GitHub Pages limitation:** Project Pages sites do not control the domain-root `/robots.txt`, so placing a robots file under `/local-bluey/` would not enforce host-wide crawler rules. We rely on the project sitemap and Search Console instead; do not describe a project-path robots file as controlling indexing.
+
+Structured data describes the source-available macOS host and a free project setup, not a verified downloadable release. Ratings, reviews and download links are intentionally omitted until proven.
+
 ## Motion system
 
 - **GSAP + ScrollTrigger:** cinematic reveals, pinned horizontal narrative on larger screens, and progressive captions.
