@@ -13,6 +13,10 @@
             {
               "file": "test/durable_retry_checkpoint_store_test.dart",
               "name": "checkpoint survives restart and prevents duplicate execution"
+            },
+            {
+              "file": "test/durable_retry_atomic_write_test.dart",
+              "name": "ac1 half-created claim never permits a repeated send"
             }
           ]
         },
@@ -32,6 +36,10 @@
             {
               "file": "test/durable_retry_checkpoint_hardening_test.dart",
               "name": "checkpoint identifiers cannot escape their storage directory"
+            },
+            {
+              "file": "test/durable_retry_atomic_write_test.dart",
+              "name": "ac2 existing stage blocks a concurrent completion write"
             }
           ]
         },
@@ -43,14 +51,23 @@
             {
               "file": "test/durable_retry_checkpoint_hardening_test.dart",
               "name": "checkpoint with mismatched operation id fails closed"
+            },
+            {
+              "file": "test/durable_retry_atomic_write_test.dart",
+              "name": "ac3 successful completion leaves no partial stage"
             }
           ]
         },
         {
           "id": "ac_4",
           "requirement": "Flutter tests validate durable retry checkpoint implementation",
-          "type": "gap",
-          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/idempotent_retry_test.dart",
+              "name": "crash after send before completion fails closed on restart"
+            }
+          ]
         },
         {
           "id": "runtime_integration_gap",
