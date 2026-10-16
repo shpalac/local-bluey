@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 891,
+      "title": "Align AI issue contracts and verify runner-only auto-closure lifecycle",
+      "criteria": [
+        {
+          "id": "ac_1",
+          "requirement": "AI issue creation instructions and templates require GitHub-hosted-runner-verifiable acceptance criteria",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/issues/issue_891_test.dart",
+              "name": "runner only instructions and templates"
+            }
+          ]
+        },
+        {
+          "id": "ac_2",
+          "requirement": "New issue hygiene rejects manual/device-only and unmapped acceptance criteria",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/issues/issue_891_test.dart",
+              "name": "new issue validator and fixtures"
+            }
+          ]
+        },
+        {
+          "id": "ac_3",
+          "requirement": "Regression fixtures and documentation use deferred Refs/AutoClose semantics",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/issues/issue_891_test.dart",
+              "name": "deferred closure documentation"
+            }
+          ]
+        },
+        {
+          "id": "ac_4",
+          "requirement": "Exact-head PR and post-merge main CI closure safeguards retain automated regression coverage",
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/issues/issue_891_test.dart",
+              "name": "closure safeguard fixtures"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
