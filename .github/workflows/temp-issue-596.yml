@@ -23,7 +23,7 @@ jobs:
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           git diff --name-only "$PR_BASE_SHA" HEAD -- > "$RUNNER_TEMP/changed-files"
-          if grep -Eq '^(ios/|lib/main\\.dart$|test/ios_simulator_.*_test\\.dart$|pubspec\\.yaml$|pubspec\\.lock$|\\.flutter-version$|\\.github/workflows/temp-issue-596\\.yml$|docs/acceptance/temporary/issue-596\\.json$)' "$RUNNER_TEMP/changed-files"; then
+          if grep -Eq '^(ios/|lib/main\.dart$|test/ios_simulator_.*_test\.dart$|pubspec\.yaml$|pubspec\.lock$|\.flutter-version$|\.github/workflows/temp-issue-596\.yml$|docs/acceptance/temporary/issue-596\.json$)' "$RUNNER_TEMP/changed-files"; then
             echo 'relevant=true' >> "$GITHUB_OUTPUT"
           else
             echo 'relevant=false' >> "$GITHUB_OUTPUT"
