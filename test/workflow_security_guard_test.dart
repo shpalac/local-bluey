@@ -41,6 +41,44 @@ void main() {
     'issue-task-hygiene.yml': {'issues'},
   };
 
+  /// The workflow's single or multi-job blocks. Returns each `job:` child
+  /// name and its `permissions:` scope lines when present.
+  List<String> writeJobs(String text) {
+    final lines = text.split('\n');
+    final jobsIndex = lines.indexOf('jobs:');
+    if (jobsIndex < 0) return const [];
+    final blocks = <String>[];
+    final depth = RegExp(r'^  [a-zA-Z0-9_-]+:$');
+    final inner = RegExp(r'^    permissions:');
+    for (var i = jobsIndex + 1; i < lines.length; i++) {
+      if (depth.hasMatch(lines[i])) {
+        final jobStart = lines[i];
+        var j = i + 1;
+        final scopeLines = <String>[];
+        while (j < lines.length && !depth.hasMatch(lines[j])) {
+          if (inner.hasMatch(lines[j])) {
+            for (var k = j + 1; k < lines.length; k++) {
+              if (!lines[k].startsWith('      ') || lines[k].trim().isEmpty) {
+                break;
+              }
+              scopeLines.add(lines[k].trim());
+            }
+          }
+          j++;
+        }
+        final writes = <String, List<String>>{};
+        writes[jobStart.trim().replaceAll(':', '')] = scopeLines;
+        for (final entry in writes.entries) {
+          if (entry.value.any((l) => l.endsWith(': write'))) {
+            blocks.add('${entry.key}: ${entry.value.join(', ')}');
+          }
+        }
+        i = j - 1;
+      }
+    }
+    return blocks;
+  }
+
   test('finds the workflow files', () {
     expect(workflows, isNotEmpty);
   });
@@ -119,5 +157,26 @@ void main() {
         1,
       );
     });
+  });
+
+  test('write-scoped workflows scope token rights at job level too', () {
+    final hardened = {
+      'ci-metrics.yml': {'report'},
+      'flutter-version-check.yml': {'check'},
+      'issue-task-hygiene.yml': {'task-contract'},
+    };
+    for (final f in workflows) {
+      final fileName = name(f);
+      final expectedJobs = hardened[fileName];
+      if (expectedJobs == null) continue;
+      final text = f.readAsStringSync();
+      final blocks = writeJobs(text);
+      final jobNames = blocks.map((b) => b.split(':').first.trim()).toSet();
+      expect(
+        jobNames,
+        containsAll(expectedJobs),
+        reason: '$fileName must scope its write rights only in $expectedJobs',
+      );
+    }
   });
 }
