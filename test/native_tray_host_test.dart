@@ -20,6 +20,7 @@ class _FakeItem extends _FakeHandle implements TrayNativeMenuItem {
     click = callback;
     return subscription;
   }
+
   void invoke() {
     if (!subscription.disposed) click?.call();
   }
@@ -51,6 +52,7 @@ class _FakeIcon extends _FakeHandle implements TrayNativeIcon {
     rightClick = onRightClick;
     return subscription;
   }
+
   @override
   void show(TrayNativeImage value) => image = value;
   @override
@@ -77,18 +79,21 @@ class _FakeBackend implements TrayNativeBackend {
     images.add(image);
     return image;
   }
+
   @override
   TrayNativeIcon createIcon() {
     final icon = _FakeIcon();
     icons.add(icon);
     return icon;
   }
+
   @override
   TrayNativeMenu createMenu() {
     final menu = _FakeMenu();
     menus.add(menu);
     return menu;
   }
+
   @override
   TrayNativeMenuItem createItem(String label) {
     if (failItem) throw StateError('item unavailable');
@@ -148,42 +153,42 @@ void main() {
     );
     expect(() => validateTrayMenuEntries(entries), returnsNormally);
   });
-  test('native host allocates one icon and dispatches clicks and menu IDs', () async {
-    final backend = _FakeBackend();
-    final host = NativeTrayHost.testing(backend);
-    final actions = <String>[];
-    var iconClicks = 0;
-    host.onIconClick = () => iconClicks++;
-    host.onMenuAction = actions.add;
-    await host.publishIcon();
-    await host.publishTitle('● 05:00');
-    await host.publishMenu([
-      const TrayMenuEntry('stopwatch', 'Stop watching'),
-      const TrayMenuEntry.separator(),
-      const TrayMenuEntry('quit', 'Quit'),
-    ]);
-    expect(backend.assets, ['assets/tray_icon.png']);
-    expect(backend.icons.length, 1);
-    expect(backend.icons.single.title, '● 05:00');
-    expect(backend.menus.single.separators, 1);
-    backend.icons.single.click?.call();
-    backend.icons.single.rightClick?.call();
-    backend.items.first.invoke();
-    backend.items.last.invoke();
-    expect(iconClicks, 1);
-    expect(backend.icons.single.opened, 1);
-    expect(actions, ['stopwatch', 'quit']);
-    host.dispose();
-    expect(backend.icons.single.disposed, isTrue);
-    expect(backend.icons.single.subscription.disposed, isTrue);
-    expect(backend.images.single.disposed, isTrue);
-    expect(backend.menus.single.disposed, isTrue);
-    expect(backend.items.every((item) => item.disposed), isTrue);
-    expect(
-      backend.items.every((item) => item.subscription.disposed),
-      isTrue,
-    );
-  });
+  test(
+    'native host allocates one icon and dispatches clicks and menu IDs',
+    () async {
+      final backend = _FakeBackend();
+      final host = NativeTrayHost.testing(backend);
+      final actions = <String>[];
+      var iconClicks = 0;
+      host.onIconClick = () => iconClicks++;
+      host.onMenuAction = actions.add;
+      await host.publishIcon();
+      await host.publishTitle('● 05:00');
+      await host.publishMenu([
+        const TrayMenuEntry('stopwatch', 'Stop watching'),
+        const TrayMenuEntry.separator(),
+        const TrayMenuEntry('quit', 'Quit'),
+      ]);
+      expect(backend.assets, ['assets/tray_icon.png']);
+      expect(backend.icons.length, 1);
+      expect(backend.icons.single.title, '● 05:00');
+      expect(backend.menus.single.separators, 1);
+      backend.icons.single.click?.call();
+      backend.icons.single.rightClick?.call();
+      backend.items.first.invoke();
+      backend.items.last.invoke();
+      expect(iconClicks, 1);
+      expect(backend.icons.single.opened, 1);
+      expect(actions, ['stopwatch', 'quit']);
+      host.dispose();
+      expect(backend.icons.single.disposed, isTrue);
+      expect(backend.icons.single.subscription.disposed, isTrue);
+      expect(backend.images.single.disposed, isTrue);
+      expect(backend.menus.single.disposed, isTrue);
+      expect(backend.items.every((item) => item.disposed), isTrue);
+      expect(backend.items.every((item) => item.subscription.disposed), isTrue);
+    },
+  );
 
   test('native host defers old menu cleanup until callbacks return', () async {
     final backend = _FakeBackend();
@@ -212,20 +217,23 @@ void main() {
     host.dispose();
   });
 
-  test('native host rejects allocation failures and releases partial menu', () async {
-    final backend = _FakeBackend()..failItem = true;
-    final host = NativeTrayHost.testing(backend);
-    await expectLater(
-      host.publishMenu([const TrayMenuEntry('show', 'Show')]),
-      throwsStateError,
-    );
-    expect(backend.menus.single.disposed, isTrue);
-    expect(backend.icons, isEmpty);
-    backend.failItem = false;
-    await host.publishMenu([const TrayMenuEntry('show', 'Show')]);
-    expect(backend.icons.length, 1);
-    host.dispose();
-  });
+  test(
+    'native host rejects allocation failures and releases partial menu',
+    () async {
+      final backend = _FakeBackend()..failItem = true;
+      final host = NativeTrayHost.testing(backend);
+      await expectLater(
+        host.publishMenu([const TrayMenuEntry('show', 'Show')]),
+        throwsStateError,
+      );
+      expect(backend.menus.single.disposed, isTrue);
+      expect(backend.icons, isEmpty);
+      backend.failItem = false;
+      await host.publishMenu([const TrayMenuEntry('show', 'Show')]);
+      expect(backend.icons.length, 1);
+      host.dispose();
+    },
+  );
 
   test('native host dispose disables callbacks and is idempotent', () async {
     final backend = _FakeBackend();
@@ -245,5 +253,4 @@ void main() {
     expect(icon.subscription.disposed, isTrue);
     expect(item.subscription.disposed, isTrue);
   });
-
 }
