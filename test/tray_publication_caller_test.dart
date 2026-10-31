@@ -172,4 +172,153 @@ void main() {
       caller.dispose();
     },
   );
+  test('native operation failure preserves prior marker through unchanged ticks', () async {
+    var current = state(false);
+    var fail = false;
+    var attempts = 0;
+    final published = <bool>[];
+    final caller = TrayPublicationCaller.operations(
+      read: () => current,
+      icon: () async {},
+      title: (_) async {},
+      menu: (active) async {
+        attempts++;
+        if (fail) throw StateError('native menu failed');
+        published.add(active);
+      },
+    );
+    await caller.request();
+    expect(caller.publishedActive, false);
+    current = state(true);
+    fail = true;
+    await caller.request();
+    expect(caller.failed, true);
+    expect(caller.publishedActive, false);
+    final failedAttempts = attempts;
+    current = state(true, '● 04:59');
+    await caller.request();
+    expect(attempts, failedAttempts);
+    expect(caller.publishedActive, false);
+    fail = false;
+    await caller.request(explicitRetry: true);
+    expect(caller.failed, false);
+    expect(published, [false, true]);
+    expect(caller.publishedActive, true);
+    caller.dispose();
+  });
+
+  for (final step in ['icon', 'title', 'menu']) {
+    test('native $step error consumed and explicitly recovered', () async {
+      var failing = true;
+      final calls = <String>[];
+      Future<void> operation(String name) async {
+        calls.add(name);
+        if (name == step && failing) throw StateError('private');
+      }
+
+      final caller = TrayPublicationCaller.operations(
+        read: () => state(true),
+        icon: () => operation('icon'),
+        title: (_) => operation('title'),
+        menu: (_) => operation('menu'),
+      );
+      await caller.request();
+      expect(caller.failed, true);
+      final before = calls.length;
+      await caller.request();
+      expect(calls.length, before);
+      failing = false;
+      await caller.request(explicitRetry: true);
+      expect(caller.failed, false);
+      expect(caller.publishedActive, true);
+      expect(caller.publishedTitle, '● 05:00');
+      caller.dispose();
+    });
+
+    test('native $step samples latest state while operation is held', () async {
+      var current = state(false);
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      final calls = <String>[];
+      Future<void> operation(String name) async {
+        calls.add(name);
+        if (name == step) {
+          entered.complete();
+          await release.future;
+        }
+      }
+
+      final caller = TrayPublicationCaller.operations(
+        read: () => current,
+        icon: () => operation('icon'),
+        title: (title) => operation('title:$title'.split(':').first),
+        menu: (_) => operation('menu'),
+      );
+      final pending = caller.request();
+      await entered.future;
+      current = state(true, '● 03:02');
+      expect(identical(pending, caller.request()), true);
+      release.complete();
+      await pending;
+      expect(caller.publishedTitle, '● 03:02');
+      expect(caller.publishedActive, true);
+      expect(calls.where((value) => value == 'icon').length, 1);
+      caller.dispose();
+    });
+  }
+
+  test('native icon asset failure rejects subsequent writes and supports retry', () async {
+    var validAsset = false;
+    final calls = <String>[];
+    final caller = TrayPublicationCaller.operations(
+      read: () => state(false),
+      icon: () async {
+        calls.add('asset');
+        if (!validAsset) throw StateError('native image decode returned null');
+      },
+      title: (_) async => calls.add('title'),
+      menu: (_) async => calls.add('menu'),
+    );
+    await caller.request();
+    expect(caller.failed, true);
+    expect(calls, ['asset']);
+    await caller.request();
+    expect(calls, ['asset']);
+    validAsset = true;
+    await caller.request(explicitRetry: true);
+    expect(caller.failed, false);
+    expect(calls, ['asset', 'asset', 'title', 'menu']);
+    caller.dispose();
+  });
+
+  test('native menu reentrancy coalesces updates and keeps latest marker', () async {
+    var current = state(false);
+    final entered = Completer<void>();
+    final released = Completer<void>();
+    final menus = <bool>[];
+    final caller = TrayPublicationCaller.operations(
+      read: () => current,
+      icon: () async {},
+      title: (_) async {},
+      menu: (active) async {
+        menus.add(active);
+        if (menus.length == 1) {
+          entered.complete();
+          await released.future;
+        }
+      },
+    );
+    final first = caller.request();
+    await entered.future;
+    current = state(true);
+    for (var i = 0; i < 20; i++) {
+      expect(identical(first, caller.request()), true);
+    }
+    released.complete();
+    await first;
+    expect(menus, [false, true]);
+    expect(caller.publishedActive, true);
+    caller.dispose();
+  });
+
 }
