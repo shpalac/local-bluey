@@ -12,6 +12,26 @@ class TrayMenuEntry {
   final bool isSeparator;
 }
 
+/// Reject malformed native-menu definitions before allocating OS handles.
+void validateTrayMenuEntries(List<TrayMenuEntry> entries) {
+  final keys = <String>{};
+  for (final entry in entries) {
+    if (entry.isSeparator) {
+      if (entry.key != null || entry.label.isNotEmpty) {
+        throw ArgumentError('Separators cannot have actions or labels');
+      }
+      continue;
+    }
+    final key = entry.key;
+    if (key == null || key.isEmpty || entry.label.isEmpty) {
+      throw ArgumentError('Native tray actions require a key and label');
+    }
+    if (!keys.add(key)) {
+      throw ArgumentError.value(key, 'key', 'Duplicate native tray action');
+    }
+  }
+}
+
 /// Owns all native tray handles. Never shares a disposed menu with the host.
 class NativeTrayHost {
   NativeTrayHost._();
@@ -54,6 +74,7 @@ class NativeTrayHost {
   }
 
   Future<void> publishMenu(List<TrayMenuEntry> entries) async {
+    validateTrayMenuEntries(entries);
     final menu = Menu.create();
     if (menu == null) throw StateError('Cannot create native tray menu');
     final items = <MenuItem>[];
