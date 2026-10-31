@@ -5,7 +5,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tray_manager/tray_manager.dart';
+import 'package:tray_manager/legacy.dart';
 import 'package:local_bluey/services/screen_watch.dart';
 import 'package:local_bluey/services/tray_publication_caller.dart';
 
