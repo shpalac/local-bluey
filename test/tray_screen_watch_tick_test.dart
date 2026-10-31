@@ -23,8 +23,15 @@ void main() {
         title: (title) async => titles.add(title),
         menu: (active) async => menus.add(active),
       );
-      watch.addListener(() {
+      void onTick() {
         caller.request();
+      }
+
+      watch.addListener(onTick);
+      addTearDown(() {
+        watch.removeListener(onTick);
+        caller.dispose();
+        watch.dispose();
       });
 
       String? startResult;
@@ -50,8 +57,6 @@ void main() {
       expect(titles.last, '');
       expect(menus, [true, false]);
       expect(icons, 1);
-      caller.dispose();
-      watch.dispose();
     });
   });
 }
