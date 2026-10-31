@@ -357,11 +357,7 @@ jobs:
         timeout-minutes: 3
 
       - name: Build iOS for the simulator
-        run: |
-          # Dependencies were resolved above; avoid a redundant pub solve during the timed native build.
-          # Capture timings for diagnosis without increasing the existing 15-minute limit.
-          set -o pipefail
-          /usr/bin/time -p flutter build ios --simulator --debug --no-codesign --no-pub 2>&1 | tee build-simulator.log
+        run: flutter build ios --simulator --debug --no-codesign 2>&1 | tee build-simulator.log
         timeout-minutes: 15
 
       - name: Boot, install, launch, verify
