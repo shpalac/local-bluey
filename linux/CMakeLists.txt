@@ -74,15 +74,6 @@ set_target_properties(${BINARY_NAME}
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
-# Keep deprecations in third-party plugins visible without failing release builds.
-# These warnings originate in upstream plugin code, not the application.
-if(TARGET tray_manager_plugin)
-  target_compile_options(tray_manager_plugin PRIVATE -Wno-error=deprecated-declarations)
-endif()
-if(TARGET flutter_secure_storage_linux_plugin)
-  target_compile_options(flutter_secure_storage_linux_plugin PRIVATE -Wno-error=deprecated-literal-operator)
-endif()
-
 
 # === Installation ===
 # By default, "installing" just makes a relocatable bundle in the build
