@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:tray_manager/legacy.dart';
+import 'native_tray_host.dart';
 
 import 'screen_watch.dart';
 
@@ -27,9 +27,9 @@ class TrayPublicationCaller extends ChangeNotifier {
   TrayPublicationCaller({TrayPublicationState Function()? read})
     : this.operations(
         read: read ?? () => TrayPublicationState.watch(ScreenWatch.instance),
-        icon: () => trayManager.setIcon('assets/tray_icon.png'),
-        title: trayManager.setTitle,
-        menu: (active) => trayManager.setContextMenu(menuFor(active)),
+        icon: NativeTrayHost.instance.publishIcon,
+        title: NativeTrayHost.instance.publishTitle,
+        menu: (active) => NativeTrayHost.instance.publishMenu(menuFor(active)),
       );
   TrayPublicationCaller.operations({
     required TrayPublicationState Function() read,
@@ -66,23 +66,20 @@ class TrayPublicationCaller extends ChangeNotifier {
   bool? get publishedActive => _publishedActive;
   TrayPublicationState? get desired => _desired;
 
-  static Menu menuFor(bool active) => Menu(
-    items: [
-      MenuItem(key: 'show', label: 'Show Bluey'),
-      MenuItem(key: 'hide', label: 'Hide'),
-      MenuItem.separator(),
-      MenuItem(key: 'ask', label: 'Ask Bluey (wake)'),
-      MenuItem(key: 'mute', label: 'Mute replies'),
-      MenuItem(key: 'status', label: 'Status'),
-      MenuItem.separator(),
-      if (active)
-        MenuItem(key: 'stopwatch', label: 'Stop watching (kill switch)'),
-      MenuItem(key: 'stop', label: 'Stop Bluey (kill switch)'),
-      MenuItem(key: 'resume', label: 'Resume Bluey'),
-      MenuItem.separator(),
-      MenuItem(key: 'quit', label: 'Quit'),
-    ],
-  );
+  static List<TrayMenuEntry> menuFor(bool active) => [
+    const TrayMenuEntry('show', 'Show Bluey'),
+    const TrayMenuEntry('hide', 'Hide'),
+    const TrayMenuEntry.separator(),
+    const TrayMenuEntry('ask', 'Ask Bluey (wake)'),
+    const TrayMenuEntry('mute', 'Mute replies'),
+    const TrayMenuEntry('status', 'Status'),
+    const TrayMenuEntry.separator(),
+    if (active) const TrayMenuEntry('stopwatch', 'Stop watching (kill switch)'),
+    const TrayMenuEntry('stop', 'Stop Bluey (kill switch)'),
+    const TrayMenuEntry('resume', 'Resume Bluey'),
+    const TrayMenuEntry.separator(),
+    const TrayMenuEntry('quit', 'Quit'),
+  ];
 
   Future<void> request({bool explicitRetry = false}) {
     if (_disposed) return Future<void>.value();
