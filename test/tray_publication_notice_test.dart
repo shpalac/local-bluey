@@ -34,10 +34,30 @@ import 'package:local_bluey/ui/speech_mute_notice.dart';
 import 'package:local_bluey/ui/window_action_notice.dart';
 
 import 'window_action_caller_test.dart' show WindowChannel;
-import 'tray_publication_caller_test.dart' show TrayChannel;
 
 import 'package:local_bluey/services/tray_publication_caller.dart';
 import 'package:local_bluey/ui/tray_publication_notice.dart';
+
+/// Simulates native calls without a removed MethodChannel-based tray API.
+class _TrayOperationsFixture {
+  final calls = <MethodCall>[];
+  String? failing, heldStep;
+  final entered = Completer<void>();
+  final released = Completer<void>();
+
+  Future<void> _run(String method) async {
+    calls.add(MethodCall(method));
+    if (method == heldStep) {
+      if (!entered.isCompleted) entered.complete();
+      await released.future;
+    }
+    if (method == failing) throw StateError('native tray unavailable');
+  }
+
+  Future<void> icon() => _run('setIcon');
+  Future<void> title(String title) => _run('setTitle');
+  Future<void> menu(bool active) => _run('setContextMenu');
+}
 
 class _Checker extends PermissionChecker {
   @override
@@ -157,21 +177,16 @@ void main() {
                     .setMockMethodCallHandler(channel, null);
               });
               await tester.runAsync(() => window.request(WindowIntent.show));
-              final trayNative = TrayChannel()..failing = 'setContextMenu';
-              const trayChannel = MethodChannel('tray_manager');
-              TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-                  .setMockMethodCallHandler(trayChannel, trayNative.handle);
-              final tray = TrayPublicationCaller(
+              final trayNative = _TrayOperationsFixture()
+                ..failing = 'setContextMenu';
+              final tray = TrayPublicationCaller.operations(
                 read: () =>
                     const TrayPublicationState(active: false, title: ''),
+                icon: trayNative.icon,
+                title: trayNative.title,
+                menu: trayNative.menu,
               );
-              addTearDown(() {
-                tray.dispose();
-                TestDefaultBinaryMessengerBinding
-                    .instance
-                    .defaultBinaryMessenger
-                    .setMockMethodCallHandler(trayChannel, null);
-              });
+              addTearDown(tray.dispose);
               await tester.runAsync(tray.request);
               final trust = TrustObservation(read: () async => false);
               await tester.runAsync(trust.check);
