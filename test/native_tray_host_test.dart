@@ -158,6 +158,7 @@ void main() {
     () async {
       final backend = _FakeBackend();
       final host = NativeTrayHost.testing(backend);
+      addTearDown(host.dispose);
       final actions = <String>[];
       var iconClicks = 0;
       host.onIconClick = () => iconClicks++;
@@ -193,6 +194,7 @@ void main() {
   test('native host defers old menu cleanup until callbacks return', () async {
     final backend = _FakeBackend();
     final host = NativeTrayHost.testing(backend);
+    addTearDown(host.dispose);
     await host.publishMenu([const TrayMenuEntry('first', 'First')]);
     final oldMenu = backend.menus.first;
     final oldItem = backend.items.first;
@@ -222,6 +224,7 @@ void main() {
     () async {
       final backend = _FakeBackend()..failItem = true;
       final host = NativeTrayHost.testing(backend);
+      addTearDown(host.dispose);
       await expectLater(
         host.publishMenu([const TrayMenuEntry('show', 'Show')]),
         throwsStateError,
@@ -238,6 +241,7 @@ void main() {
   test('native host dispose disables callbacks and is idempotent', () async {
     final backend = _FakeBackend();
     final host = NativeTrayHost.testing(backend);
+    addTearDown(host.dispose);
     var callbacks = 0;
     host.onIconClick = () => callbacks++;
     host.onMenuAction = (_) => callbacks++;
