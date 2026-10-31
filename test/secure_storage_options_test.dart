@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_bluey/services/secure_storage.dart';
 
 void main() {
@@ -9,8 +8,8 @@ void main() {
     // Without this a locally signed macOS build fails every secure-storage
     // write with -34018 errSecMissingEntitlement.
     expect(
-      (secureStorage().mOptions as MacOsOptions).useDataProtectionKeyChain,
-      false,
+      secureStorage().mOptions.toMap()['useDataProtectionKeyChain'],
+      'false',
     );
   });
 
