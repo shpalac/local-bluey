@@ -50,8 +50,7 @@ void main() {
     caller.dispose();
   });
 
-  for (final held in ['icon', 'title', 'menu']) {
-    test('pending $held requests join and disposal fences successor', () async {
+  Future<void> verifyHeldRequest(String held) async {
       final entered = Completer<void>();
       final release = Completer<void>();
       final calls = <String>[];
@@ -85,8 +84,17 @@ void main() {
       );
       await caller.request(explicitRetry: true);
       expect(caller.loading, false);
-    });
   }
+
+  test('pending icon requests join and disposal fences successor', () async {
+    await verifyHeldRequest('icon');
+  });
+  test('pending title requests join and disposal fences successor', () async {
+    await verifyHeldRequest('title');
+  });
+  test('pending menu requests join and disposal fences successor', () async {
+    await verifyHeldRequest('menu');
+  });
 
   test('only active changes publish a new menu; title ticks do not', () async {
     var current = state(false);
@@ -210,8 +218,7 @@ void main() {
     },
   );
 
-  for (final step in ['icon', 'title', 'menu']) {
-    test('native $step error consumed and explicitly recovered', () async {
+  Future<void> verifyNativeError(String step) async {
       var failing = true;
       final calls = <String>[];
       Future<void> operation(String name) async {
@@ -236,9 +243,9 @@ void main() {
       expect(caller.publishedActive, true);
       expect(caller.publishedTitle, '● 05:00');
       caller.dispose();
-    });
+  }
 
-    test('native $step samples latest state while operation is held', () async {
+  Future<void> verifyNativeHeldSampling(String step) async {
       var current = state(false);
       final entered = Completer<void>();
       final release = Completer<void>();
@@ -269,8 +276,26 @@ void main() {
       expect(caller.publishedActive, true);
       expect(calls.where((value) => value == 'icon').length, 1);
       caller.dispose();
-    });
   }
+
+  test('native icon error consumed and explicitly recovered', () async {
+    await verifyNativeError('icon');
+  });
+  test('native title error consumed and explicitly recovered', () async {
+    await verifyNativeError('title');
+  });
+  test('native menu error consumed and explicitly recovered', () async {
+    await verifyNativeError('menu');
+  });
+  test('native icon samples latest state while operation is held', () async {
+    await verifyNativeHeldSampling('icon');
+  });
+  test('native title samples latest state while operation is held', () async {
+    await verifyNativeHeldSampling('title');
+  });
+  test('native menu samples latest state while operation is held', () async {
+    await verifyNativeHeldSampling('menu');
+  });
 
   test(
     'native icon asset failure rejects subsequent writes and supports retry',
