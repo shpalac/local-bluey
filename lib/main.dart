@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'services/mac_home_tray_wiring.dart';
 import 'services/native_tray_host.dart';
 
 import 'package:window_manager/window_manager.dart';
@@ -267,6 +268,15 @@ class _MacHomeState extends State<MacHome> with WidgetsBindingObserver {
   );
   final _tools = ToolExecutor();
   final _safety = SafetyGate();
+  late final _trayWiring = MacHomeTrayWiring(
+    publication: _trayPublication,
+    host: NativeTrayHost.instance,
+    watch: ScreenWatch.instance,
+    mounted: () => mounted,
+    killed: () => _safety.killed,
+    onIconClick: _onTrayIconClick,
+    onMenuAction: _onTrayMenuAction,
+  );
   late final HoldKeyController _holdKey = HoldKeyController(
     settings: HoldKeySettings.instance,
     supported: Platform.isMacOS,
@@ -297,10 +307,7 @@ class _MacHomeState extends State<MacHome> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    NativeTrayHost.instance
-      ..onIconClick = _onTrayIconClick
-      ..onMenuAction = _onTrayMenuAction;
-    unawaited(_trayPublication.request());
+    _trayWiring.attach();
     _server.onPairRequest = _askToPair;
     _server.start();
     _server.requests.listen(_onPhoneRequest);
@@ -316,7 +323,6 @@ class _MacHomeState extends State<MacHome> with WidgetsBindingObserver {
     _keyCleanup.refreshGuard();
     HoldKeySettings.instance.addListener(_syncHoldKey);
     unawaited(_holdKeyCaller.loadAndSync());
-    ScreenWatch.instance.addListener(_syncWatchTray);
     ScreenWatch.instance.addListener(_syncWatchDriver);
     unawaited(_hostReload.reload());
     ConversationStore.instance.load();
@@ -469,8 +475,6 @@ class _MacHomeState extends State<MacHome> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _syncWatchTray() => _trayPublication.request();
-
   void _onTrayIconClick() {
     unawaited(_windowAction.request(WindowIntent.show));
   }
@@ -504,6 +508,7 @@ class _MacHomeState extends State<MacHome> with WidgetsBindingObserver {
       case 'resume':
         _safety.reset();
         _keyCleanup.refreshGuard();
+        _trayWiring.onSafetyChanged();
       case 'quit':
         exit(0);
     }
@@ -663,7 +668,7 @@ class _MacHomeState extends State<MacHome> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    _trayPublication.dispose();
+    _trayWiring.dispose();
     _windowAction.dispose();
     _speechMute.dispose();
     _permissions.removeListener(_onPermissionsChanged);
@@ -674,8 +679,6 @@ class _MacHomeState extends State<MacHome> with WidgetsBindingObserver {
     _keyRecording.removeListener(_onKeyRecordingChanged);
     _tutorial.removeListener(_onTutorialChanged);
     WidgetsBinding.instance.removeObserver(this);
-    NativeTrayHost.instance.dispose();
-    ScreenWatch.instance.removeListener(_syncWatchTray);
     ScreenWatch.instance.removeListener(_syncWatchDriver);
     _watchDriver?.stop();
     HoldKeySettings.instance.removeListener(_syncHoldKey);
