@@ -4,7 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tray_manager/legacy.dart';
+import 'services/native_tray_host.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'link/mac_link.dart' show DiscoveredMac, MacLink;
@@ -243,7 +243,7 @@ class MacHome extends StatefulWidget {
 }
 
 class _MacHomeState extends State<MacHome>
-    with TrayListener, WidgetsBindingObserver {
+    with WidgetsBindingObserver {
   bool _showOnboarding = false;
   final _hostReload = HostReloadController();
   final _watchdog = PermissionWatchdog(checker: const LivePermissionChecker());
@@ -296,7 +296,9 @@ class _MacHomeState extends State<MacHome>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    trayManager.addListener(this);
+    NativeTrayHost.instance
+      ..onIconClick = _onTrayIconClick
+      ..onMenuAction = _onTrayMenuAction;
     unawaited(_trayPublication.request());
     _server.onPairRequest = _askToPair;
     _server.start();
@@ -468,14 +470,12 @@ class _MacHomeState extends State<MacHome>
 
   Future<void> _syncWatchTray() => _trayPublication.request();
 
-  @override
-  void onTrayIconMouseDown() {
+  void _onTrayIconClick() {
     unawaited(_windowAction.request(WindowIntent.show));
   }
 
-  @override
-  void onTrayMenuItemClick(MenuItem menuItem) {
-    switch (menuItem.key) {
+  void _onTrayMenuAction(String key) {
+    switch (key) {
       case 'show':
         unawaited(_windowAction.request(WindowIntent.show));
       case 'hide':
@@ -673,7 +673,7 @@ class _MacHomeState extends State<MacHome>
     _keyRecording.removeListener(_onKeyRecordingChanged);
     _tutorial.removeListener(_onTutorialChanged);
     WidgetsBinding.instance.removeObserver(this);
-    trayManager.removeListener(this);
+    NativeTrayHost.instance.dispose();
     ScreenWatch.instance.removeListener(_syncWatchTray);
     ScreenWatch.instance.removeListener(_syncWatchDriver);
     _watchDriver?.stop();
