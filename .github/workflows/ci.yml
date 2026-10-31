@@ -275,7 +275,9 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-logs
-          path: test-output.log
+          path: |
+            test-output.log
+            test-phase-timing.log
           retention-days: 7
 
   # Builds stay on macOS: iOS/macOS outputs need Xcode. They wait only
