@@ -1,13 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_bluey/services/secure_storage.dart';
 
 void main() {
   test('the shared store avoids the data-protection keychain', () {
     // Without this a locally signed macOS build fails every secure-storage
     // write with -34018 errSecMissingEntitlement.
-    expect(secureStorage().mOptions.usesDataProtectionKeychain, false);
+    expect((secureStorage().mOptions as MacOsOptions).usesDataProtectionKeychain, false);
   });
 
   test('every secure-storage call site goes through the shared factory', () {
