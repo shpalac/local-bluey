@@ -8,7 +8,10 @@ void main() {
   test('the shared store avoids the data-protection keychain', () {
     // Without this a locally signed macOS build fails every secure-storage
     // write with -34018 errSecMissingEntitlement.
-    expect((secureStorage().mOptions as MacOsOptions).usesDataProtectionKeychain, false);
+    expect(
+      (secureStorage().mOptions as MacOsOptions).usesDataProtectionKeychain,
+      false,
+    );
   });
 
   test('every secure-storage call site goes through the shared factory', () {
