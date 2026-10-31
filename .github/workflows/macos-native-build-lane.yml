@@ -30,6 +30,8 @@ jobs:
       # The central CI test lane runs the Dart suites and build-macos checks
       # the Flutter build. This lane uniquely validates the native XCTest.
       - run: flutter build macos --config-only
+      - name: Install macOS CocoaPods dependencies
+        run: cd macos && pod install
       - name: Run macOS XCTest target
         run: |
           xcodebuild test \
