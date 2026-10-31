@@ -78,6 +78,11 @@ void main() {
         onMenuAction: (_) {},
       );
 
+      addTearDown(() {
+        wiring.dispose();
+        watch.dispose();
+      });
+
       wiring.attach();
       wiring.attach();
       await Future<void>.delayed(Duration.zero);
@@ -93,8 +98,6 @@ void main() {
         'title:active',
         'menu:true',
       ]);
-      wiring.dispose();
-      watch.dispose();
     },
   );
 
@@ -129,6 +132,11 @@ void main() {
         },
       );
 
+      addTearDown(() {
+        wiring.dispose();
+        watch.dispose();
+      });
+
       wiring.attach();
       await Future<void>.delayed(Duration.zero);
       await Future<void>.delayed(Duration.zero);
@@ -154,8 +162,6 @@ void main() {
         'title:active',
         'menu:true',
       ]);
-      wiring.dispose();
-      watch.dispose();
     },
   );
 
@@ -181,6 +187,11 @@ void main() {
         onMenuAction: (_) {},
       );
 
+      addTearDown(() {
+        wiring.dispose();
+        watch.dispose();
+      });
+
       wiring.attach();
       await Future<void>.delayed(Duration.zero);
       wiring.dispose();
@@ -191,7 +202,6 @@ void main() {
       expect(host.onIconClick, isNull);
       expect(host.onMenuAction, isNull);
       expect(backendDisposed(host), isTrue);
-      watch.dispose();
     },
   );
 }
