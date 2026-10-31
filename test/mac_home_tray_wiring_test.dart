@@ -201,4 +201,3 @@ bool backendDisposed(NativeTrayHost host) {
   // ownership boundary, while the host's own lifecycle is covered separately.
   return host.onIconClick == null && host.onMenuAction == null;
 }
-Formatted 1 file (1 changed) in 0.01 seconds.

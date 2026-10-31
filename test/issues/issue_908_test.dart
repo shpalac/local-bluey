@@ -94,4 +94,3 @@ void main() {
     expect(_hashBytes(utf8.encode(original)), _originalJsonHash);
   });
 }
-Formatted 1 file (1 changed) in 0.01 seconds.
