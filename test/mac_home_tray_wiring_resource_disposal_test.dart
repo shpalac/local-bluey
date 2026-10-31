@@ -78,8 +78,9 @@ class _TrackedBackend implements TrayNativeBackend {
 }
 
 void main() {
-  test('MacHome disposal releases every allocated native tray handle once',
-      () async {
+  test(
+    'MacHome disposal releases every allocated native tray handle once',
+    () async {
     final backend = _TrackedBackend();
     final host = NativeTrayHost.testing(backend);
     final watch = ScreenWatch.forTesting();
@@ -111,7 +112,8 @@ void main() {
     expect(
       backend.handles.every((handle) => handle.disposeCalls == 1),
       true,
-      reason: 'Every allocated icon, image, menu, item and listener is released once.',
+      reason:
+          'Every allocated icon, image, menu, item and listener is released once.',
     );
 
     final allocatedBeforeNotification = backend.handles.length;
@@ -123,5 +125,6 @@ void main() {
       true,
     );
     watch.dispose();
-  });
+    },
+  );
 }
