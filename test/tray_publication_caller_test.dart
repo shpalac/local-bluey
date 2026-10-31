@@ -75,9 +75,14 @@ void main() {
       caller.dispose();
       release.complete();
       await pending;
-      expect(calls, ['icon', 'title', 'menu'].take(
-        ['icon', 'title', 'menu'].indexOf(held) + 1,
-      ));
+      expect(
+        calls,
+        [
+          'icon',
+          'title',
+          'menu',
+        ].take(['icon', 'title', 'menu'].indexOf(held) + 1),
+      );
       await caller.request(explicitRetry: true);
       expect(caller.loading, false);
     });
@@ -109,56 +114,62 @@ void main() {
     caller.dispose();
   });
 
-  test('failed publication requires explicit retry for unchanged state', () async {
-    var failing = true;
-    var attempts = 0;
-    final caller = TrayPublicationCaller.operations(
-      read: () => state(true),
-      icon: () async {},
-      title: (_) async {},
-      menu: (_) async {
-        attempts++;
-        if (failing) throw StateError('unavailable');
-      },
-    );
-    await caller.request();
-    expect(caller.failed, true);
-    expect(caller.publishedActive, null);
-    await caller.request();
-    expect(attempts, 1);
-    failing = false;
-    await caller.request(explicitRetry: true);
-    expect(attempts, 2);
-    expect(caller.failed, false);
-    expect(caller.publishedActive, true);
-    caller.dispose();
-  });
+  test(
+    'failed publication requires explicit retry for unchanged state',
+    () async {
+      var failing = true;
+      var attempts = 0;
+      final caller = TrayPublicationCaller.operations(
+        read: () => state(true),
+        icon: () async {},
+        title: (_) async {},
+        menu: (_) async {
+          attempts++;
+          if (failing) throw StateError('unavailable');
+        },
+      );
+      await caller.request();
+      expect(caller.failed, true);
+      expect(caller.publishedActive, null);
+      await caller.request();
+      expect(attempts, 1);
+      failing = false;
+      await caller.request(explicitRetry: true);
+      expect(attempts, 2);
+      expect(caller.failed, false);
+      expect(caller.publishedActive, true);
+      caller.dispose();
+    },
+  );
 
-  test('reentrant requests converge on latest state before completion', () async {
-    var current = state(false);
-    final entered = Completer<void>();
-    final release = Completer<void>();
-    final menus = <bool>[];
-    final caller = TrayPublicationCaller.operations(
-      read: () => current,
-      icon: () async {},
-      title: (_) async {},
-      menu: (active) async {
-        menus.add(active);
-        if (menus.length == 1) {
-          entered.complete();
-          await release.future;
-        }
-      },
-    );
-    final pending = caller.request();
-    await entered.future;
-    current = state(true);
-    expect(identical(caller.request(), pending), true);
-    release.complete();
-    await pending;
-    expect(menus, [false, true]);
-    expect(caller.publishedActive, true);
-    caller.dispose();
-  });
+  test(
+    'reentrant requests converge on latest state before completion',
+    () async {
+      var current = state(false);
+      final entered = Completer<void>();
+      final release = Completer<void>();
+      final menus = <bool>[];
+      final caller = TrayPublicationCaller.operations(
+        read: () => current,
+        icon: () async {},
+        title: (_) async {},
+        menu: (active) async {
+          menus.add(active);
+          if (menus.length == 1) {
+            entered.complete();
+            await release.future;
+          }
+        },
+      );
+      final pending = caller.request();
+      await entered.future;
+      current = state(true);
+      expect(identical(caller.request(), pending), true);
+      release.complete();
+      await pending;
+      expect(menus, [false, true]);
+      expect(caller.publishedActive, true);
+      caller.dispose();
+    },
+  );
 }
