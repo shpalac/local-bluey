@@ -288,6 +288,8 @@ jobs:
           cache: true
 
       - run: flutter pub get --enforce-lockfile
+      - name: Sync macOS CocoaPods after plugin upgrade
+        run: cd macos && pod install
 
       - name: Build macOS
         run: flutter build macos 2>&1 | tee build-macos.log
