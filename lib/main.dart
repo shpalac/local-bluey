@@ -4,7 +4,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'services/native_tray_host.dart';
+
 import 'package:window_manager/window_manager.dart';
 
 import 'link/mac_link.dart' show DiscoveredMac, MacLink;
@@ -242,8 +244,7 @@ class MacHome extends StatefulWidget {
   State<MacHome> createState() => _MacHomeState();
 }
 
-class _MacHomeState extends State<MacHome>
-    with WidgetsBindingObserver {
+class _MacHomeState extends State<MacHome> with WidgetsBindingObserver {
   bool _showOnboarding = false;
   final _hostReload = HostReloadController();
   final _watchdog = PermissionWatchdog(checker: const LivePermissionChecker());
