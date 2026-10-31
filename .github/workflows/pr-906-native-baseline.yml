@@ -69,37 +69,3 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-  regenerate-plugin-lockfile:
-    if: ${{ github.event_name == 'pull_request' && github.head_ref == 'ci/pr-906-native-baseline-and-fixes' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 12
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          ref: ${{ github.head_ref }}
-          persist-credentials: true
-      - name: Read pinned Flutter version
-        run: echo "FLUTTER_VERSION=$(cat .flutter-version)" >> "$GITHUB_ENV"
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-      - name: Resolve plugin lockfile and push only on change
-        env:
-          PR_BRANCH: ${{ github.head_ref }}
-        run: |
-          set -euo pipefail
-          flutter pub upgrade tray_manager flutter_secure_storage flutter_secure_storage_linux
-          flutter pub get --enforce-lockfile
-          if git diff --quiet -- pubspec.lock; then
-            echo "pubspec.lock already current"
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add pubspec.lock
-          git commit -m "Refs #906: regenerate Flutter native plugin lockfile"
-          git push origin "HEAD:$PR_BRANCH"
