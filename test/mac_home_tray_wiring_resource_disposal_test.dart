@@ -64,7 +64,8 @@ class _TrackedBackend implements TrayNativeBackend {
   }
 
   @override
-  TrayNativeImage loadImage(String assetPath) => track<_TrackedImage>(_TrackedImage());
+  TrayNativeImage loadImage(String assetPath) =>
+      track<_TrackedImage>(_TrackedImage());
 
   @override
   TrayNativeIcon createIcon() => track<_TrackedIcon>(_TrackedIcon(this));
@@ -73,7 +74,8 @@ class _TrackedBackend implements TrayNativeBackend {
   TrayNativeMenu createMenu() => track<_TrackedMenu>(_TrackedMenu());
 
   @override
-  TrayNativeMenuItem createItem(String label) => track<_TrackedItem>(_TrackedItem(this));
+  TrayNativeMenuItem createItem(String label) =>
+      track<_TrackedItem>(_TrackedItem(this));
 }
 
 void main() {
