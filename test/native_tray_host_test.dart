@@ -8,21 +8,28 @@ void main() {
       final entries = TrayPublicationCaller.menuFor(active);
       expect(() => validateTrayMenuEntries(entries), returnsNormally);
       expect(
-        entries.where((entry) => !entry.isSeparator).map((entry) => entry.key).toSet().length,
+        entries
+            .where((entry) => !entry.isSeparator)
+            .map((entry) => entry.key)
+            .toSet()
+            .length,
         entries.where((entry) => !entry.isSeparator).length,
       );
     }
   });
 
-  test('native tray menu rejects duplicate actions before native allocation', () {
-    expect(
-      () => validateTrayMenuEntries([
-        const TrayMenuEntry('quit', 'Quit'),
-        const TrayMenuEntry('quit', 'Quit again'),
-      ]),
-      throwsArgumentError,
-    );
-  });
+  test(
+    'native tray menu rejects duplicate actions before native allocation',
+    () {
+      expect(
+        () => validateTrayMenuEntries([
+          const TrayMenuEntry('quit', 'Quit'),
+          const TrayMenuEntry('quit', 'Quit again'),
+        ]),
+        throwsArgumentError,
+      );
+    },
+  );
 
   test('native tray menu rejects missing action keys and labels', () {
     expect(
@@ -37,12 +44,12 @@ void main() {
 
   test('native tray separators cannot dispatch a menu action', () {
     final entries = TrayPublicationCaller.menuFor(true);
-    expect(entries.where((entry) => entry.isSeparator).every(
-      (entry) => entry.key == null && entry.label.isEmpty,
-    ), isTrue);
     expect(
-      () => validateTrayMenuEntries(entries),
-      returnsNormally,
+      entries
+          .where((entry) => entry.isSeparator)
+          .every((entry) => entry.key == null && entry.label.isEmpty),
+      isTrue,
     );
+    expect(() => validateTrayMenuEntries(entries), returnsNormally);
   });
 }
