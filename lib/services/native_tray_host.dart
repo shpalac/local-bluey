@@ -50,7 +50,10 @@ abstract class TrayNativeMenu implements TrayNativeHandle {
 }
 
 abstract class TrayNativeIcon implements TrayNativeHandle {
-  TrayNativeHandle listen(void Function() onClick, void Function() onRightClick);
+  TrayNativeHandle listen(
+    void Function() onClick,
+    void Function() onRightClick,
+  );
   void show(TrayNativeImage image);
   void setTitle(String title);
   void setContextMenu(TrayNativeMenu menu);
@@ -88,6 +91,7 @@ class _PluginMenuItem implements TrayNativeMenuItem {
     });
     return _DisposableListener(() => item.removeListener(id));
   }
+
   @override
   void dispose() => item.dispose();
 }
@@ -118,11 +122,13 @@ class _PluginIcon implements TrayNativeIcon {
     });
     return _DisposableListener(() => icon.removeListener(id));
   }
+
   @override
   void show(TrayNativeImage image) {
     icon.icon = (image as _PluginImage).image;
     icon.setVisible(true);
   }
+
   @override
   void setTitle(String title) => icon.setTitle(title);
   @override
@@ -142,18 +148,21 @@ class _PluginBackend implements TrayNativeBackend {
     if (image == null) throw StateError('Cannot load tray icon asset');
     return _PluginImage(image);
   }
+
   @override
   TrayNativeIcon createIcon() {
     final icon = TrayIcon.create();
     if (icon == null) throw StateError('Cannot create native tray icon');
     return _PluginIcon(icon);
   }
+
   @override
   TrayNativeMenu createMenu() {
     final menu = Menu.create();
     if (menu == null) throw StateError('Cannot create native tray menu');
     return _PluginMenu(menu);
   }
+
   @override
   TrayNativeMenuItem createItem(String label) {
     final item = MenuItem.createWithLabelAndType(label, MenuItemType.normal);
