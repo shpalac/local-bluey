@@ -124,7 +124,7 @@ void main() {
       backend.handles.every((handle) => handle.disposeCalls == 1),
       true,
     );
-    watch.dispose();
+      watch.dispose();
     },
   );
 }
