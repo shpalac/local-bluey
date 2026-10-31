@@ -73,57 +73,51 @@ class _TrackedBackend implements TrayNativeBackend {
   TrayNativeMenu createMenu() => track(_TrackedMenu());
 
   @override
-  TrayNativeMenuItem createItem(String label) =>
-      track(_TrackedItem(this));
+  TrayNativeMenuItem createItem(String label) => track(_TrackedItem(this));
 }
 
 void main() {
   test(
     'MacHome disposal releases every allocated native tray handle once',
     () async {
-    final backend = _TrackedBackend();
-    final host = NativeTrayHost.testing(backend);
-    final watch = ScreenWatch.forTesting();
-    final publication = TrayPublicationCaller.operations(
-      read: () => const TrayPublicationState(active: false, title: ''),
-      icon: host.publishIcon,
-      title: host.publishTitle,
-      menu: (active) => host.publishMenu(
-        TrayPublicationCaller.menuFor(active),
-      ),
-    );
-    final wiring = MacHomeTrayWiring(
-      publication: publication,
-      host: host,
-      watch: watch,
-      mounted: () => true,
-      killed: () => false,
-      onIconClick: () {},
-      onMenuAction: (_) {},
-    );
+      final backend = _TrackedBackend();
+      final host = NativeTrayHost.testing(backend);
+      final watch = ScreenWatch.forTesting();
+      final publication = TrayPublicationCaller.operations(
+        read: () => const TrayPublicationState(active: false, title: ''),
+        icon: host.publishIcon,
+        title: host.publishTitle,
+        menu: (active) =>
+            host.publishMenu(TrayPublicationCaller.menuFor(active)),
+      );
+      final wiring = MacHomeTrayWiring(
+        publication: publication,
+        host: host,
+        watch: watch,
+        mounted: () => true,
+        killed: () => false,
+        onIconClick: () {},
+        onMenuAction: (_) {},
+      );
 
-    wiring.attach();
-    await Future<void>.delayed(Duration.zero);
-    expect(backend.handles, isNotEmpty);
-    expect(backend.handles.every((handle) => handle.disposeCalls == 0), true);
+      wiring.attach();
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.handles, isNotEmpty);
+      expect(backend.handles.every((handle) => handle.disposeCalls == 0), true);
 
-    wiring.dispose();
-    wiring.dispose();
-    expect(
-      backend.handles.every((handle) => handle.disposeCalls == 1),
-      true,
-      reason:
-          'Every allocated icon, image, menu, item and listener is released once.',
-    );
+      wiring.dispose();
+      wiring.dispose();
+      expect(
+        backend.handles.every((handle) => handle.disposeCalls == 1),
+        true,
+        reason: 'Every allocated icon, image, menu, item and listener is released once.',
+      );
 
-    final allocatedBeforeNotification = backend.handles.length;
-    watch.notifyListeners();
-    await Future<void>.delayed(Duration.zero);
-    expect(backend.handles, hasLength(allocatedBeforeNotification));
-    expect(
-      backend.handles.every((handle) => handle.disposeCalls == 1),
-      true,
-    );
+      final allocatedBeforeNotification = backend.handles.length;
+      watch.notifyListeners();
+      await Future<void>.delayed(Duration.zero);
+      expect(backend.handles, hasLength(allocatedBeforeNotification));
+      expect(backend.handles.every((handle) => handle.disposeCalls == 1), true);
       watch.dispose();
     },
   );
