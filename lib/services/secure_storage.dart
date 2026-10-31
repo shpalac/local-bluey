@@ -13,5 +13,5 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 /// shape that reintroduces the bug, and
 /// `test/secure_storage_options_test.dart` fails the build when one returns.
 FlutterSecureStorage secureStorage() => const FlutterSecureStorage(
-  mOptions: MacOsOptions(useDataProtectionKeyChain: false),
+  mOptions: MacOsOptions(usesDataProtectionKeychain: false),
 );
