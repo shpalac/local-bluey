@@ -91,11 +91,16 @@ void main() {
   test('MacHome kill switch blocks icon but preserves Resume menu dispatch', () async {
     final watch = ScreenWatch.forTesting();
     final host = NativeTrayHost.testing(_Backend());
+    var active = false;
+    final calls = <String>[];
     final publication = TrayPublicationCaller.operations(
-      read: () => const TrayPublicationState(active: false, title: ''),
-      icon: () async {},
-      title: (_) async {},
-      menu: (_) async {},
+      read: () => TrayPublicationState(
+        active: active,
+        title: active ? 'active' : '',
+      ),
+      icon: () async => calls.add('icon'),
+      title: (value) async => calls.add('title:$value'),
+      menu: (value) async => calls.add('menu:$value'),
     );
     var killed = false;
     var iconClicks = 0;
@@ -116,15 +121,29 @@ void main() {
 
     wiring.attach();
     await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    expect(calls, ['icon', 'title:', 'menu:false']);
     host.onIconClick!();
     host.onMenuAction!('stop');
     wiring.onSafetyChanged();
+    active = true;
+    watch.notifyListeners();
+    await Future<void>.delayed(Duration.zero);
+    expect(calls, ['icon', 'title:', 'menu:false']);
     host.onIconClick!();
     host.onMenuAction!('resume');
     wiring.onSafetyChanged();
+    await Future<void>.delayed(Duration.zero);
 
     expect(iconClicks, 1);
     expect(menuActions, ['stop', 'resume']);
+    expect(calls, [
+      'icon',
+      'title:',
+      'menu:false',
+      'title:active',
+      'menu:true',
+    ]);
     wiring.dispose();
     watch.dispose();
   });
