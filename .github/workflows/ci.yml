@@ -223,11 +223,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libx11-dev libxi-dev pkg-config
 
-      - run: flutter pub get --enforce-lockfile
+      - name: Resolve test dependencies (timed)
+        run: |
+          start=$SECONDS
+          flutter pub get --enforce-lockfile
+          echo "Dependency setup: $((SECONDS - start))s" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Full unit + widget tests (coverage enforced)
         if: ${{ needs.detect.outputs.full_tests == 'true' }}
-        run: flutter test --coverage --reporter expanded 2>&1 | tee test-output.log
+        run: |
+          start=$SECONDS
+          printf 'Test step started: %s\\n' "$(date -u +%FT%TZ)" | tee test-phase-timing.log
+          flutter test --coverage --reporter expanded 2>&1 | tee test-output.log
+          echo "Flutter test with coverage (including startup and LCOV generation): $((SECONDS - start))s" | tee -a test-phase-timing.log
+          test -s coverage/lcov.info
+          echo "Coverage artifact bytes: $(wc -c < coverage/lcov.info)" | tee -a test-phase-timing.log
+          cat test-phase-timing.log >> "$GITHUB_STEP_SUMMARY"
         timeout-minutes: 8
 
       - name: Impacted unit + widget tests
@@ -246,7 +257,10 @@ jobs:
 
       - name: Coverage thresholds (services/, link/) (#136)
         if: ${{ needs.detect.outputs.full_tests == 'true' }}
-        run: dart run tool/check_coverage.dart
+        run: |
+          start=$SECONDS
+          dart run tool/check_coverage.dart
+          echo "Coverage validation: $((SECONDS - start))s" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage report
         if: ${{ needs.detect.outputs.full_tests == 'true' }}
