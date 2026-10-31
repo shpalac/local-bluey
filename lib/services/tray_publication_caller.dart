@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+
 import 'native_tray_host.dart';
 
 import 'screen_watch.dart';
