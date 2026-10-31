@@ -51,39 +51,39 @@ void main() {
   });
 
   Future<void> verifyHeldRequest(String held) async {
-      final entered = Completer<void>();
-      final release = Completer<void>();
-      final calls = <String>[];
-      Future<void> operation(String step) async {
-        calls.add(step);
-        if (step == held) {
-          entered.complete();
-          await release.future;
-        }
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    final calls = <String>[];
+    Future<void> operation(String step) async {
+      calls.add(step);
+      if (step == held) {
+        entered.complete();
+        await release.future;
       }
+    }
 
-      final caller = TrayPublicationCaller.operations(
-        read: () => state(false),
-        icon: () => operation('icon'),
-        title: (_) => operation('title'),
-        menu: (_) => operation('menu'),
-      );
-      final pending = caller.request();
-      await entered.future;
-      expect(identical(pending, caller.request()), true);
-      caller.dispose();
-      release.complete();
-      await pending;
-      expect(
-        calls,
-        [
-          'icon',
-          'title',
-          'menu',
-        ].take(['icon', 'title', 'menu'].indexOf(held) + 1),
-      );
-      await caller.request(explicitRetry: true);
-      expect(caller.loading, false);
+    final caller = TrayPublicationCaller.operations(
+      read: () => state(false),
+      icon: () => operation('icon'),
+      title: (_) => operation('title'),
+      menu: (_) => operation('menu'),
+    );
+    final pending = caller.request();
+    await entered.future;
+    expect(identical(pending, caller.request()), true);
+    caller.dispose();
+    release.complete();
+    await pending;
+    expect(
+      calls,
+      [
+        'icon',
+        'title',
+        'menu',
+      ].take(['icon', 'title', 'menu'].indexOf(held) + 1),
+    );
+    await caller.request(explicitRetry: true);
+    expect(caller.loading, false);
   }
 
   test('pending icon requests join and disposal fences successor', () async {
@@ -219,63 +219,63 @@ void main() {
   );
 
   Future<void> verifyNativeError(String step) async {
-      var failing = true;
-      final calls = <String>[];
-      Future<void> operation(String name) async {
-        calls.add(name);
-        if (name == step && failing) throw StateError('private');
-      }
+    var failing = true;
+    final calls = <String>[];
+    Future<void> operation(String name) async {
+      calls.add(name);
+      if (name == step && failing) throw StateError('private');
+    }
 
-      final caller = TrayPublicationCaller.operations(
-        read: () => state(true),
-        icon: () => operation('icon'),
-        title: (_) => operation('title'),
-        menu: (_) => operation('menu'),
-      );
-      await caller.request();
-      expect(caller.failed, true);
-      final before = calls.length;
-      await caller.request();
-      expect(calls.length, before);
-      failing = false;
-      await caller.request(explicitRetry: true);
-      expect(caller.failed, false);
-      expect(caller.publishedActive, true);
-      expect(caller.publishedTitle, '● 05:00');
-      caller.dispose();
+    final caller = TrayPublicationCaller.operations(
+      read: () => state(true),
+      icon: () => operation('icon'),
+      title: (_) => operation('title'),
+      menu: (_) => operation('menu'),
+    );
+    await caller.request();
+    expect(caller.failed, true);
+    final before = calls.length;
+    await caller.request();
+    expect(calls.length, before);
+    failing = false;
+    await caller.request(explicitRetry: true);
+    expect(caller.failed, false);
+    expect(caller.publishedActive, true);
+    expect(caller.publishedTitle, '● 05:00');
+    caller.dispose();
   }
 
   Future<void> verifyNativeHeldSampling(String step) async {
-      var current = state(false);
-      final entered = Completer<void>();
-      final release = Completer<void>();
-      final calls = <String>[];
-      var heldOnce = false;
-      Future<void> operation(String name) async {
-        calls.add(name);
-        if (name == step && !heldOnce) {
-          heldOnce = true;
-          entered.complete();
-          await release.future;
-        }
+    var current = state(false);
+    final entered = Completer<void>();
+    final release = Completer<void>();
+    final calls = <String>[];
+    var heldOnce = false;
+    Future<void> operation(String name) async {
+      calls.add(name);
+      if (name == step && !heldOnce) {
+        heldOnce = true;
+        entered.complete();
+        await release.future;
       }
+    }
 
-      final caller = TrayPublicationCaller.operations(
-        read: () => current,
-        icon: () => operation('icon'),
-        title: (title) => operation('title:$title'.split(':').first),
-        menu: (_) => operation('menu'),
-      );
-      final pending = caller.request();
-      await entered.future;
-      current = state(true, '● 03:02');
-      expect(identical(pending, caller.request()), true);
-      release.complete();
-      await pending;
-      expect(caller.publishedTitle, '● 03:02');
-      expect(caller.publishedActive, true);
-      expect(calls.where((value) => value == 'icon').length, 1);
-      caller.dispose();
+    final caller = TrayPublicationCaller.operations(
+      read: () => current,
+      icon: () => operation('icon'),
+      title: (title) => operation('title:$title'.split(':').first),
+      menu: (_) => operation('menu'),
+    );
+    final pending = caller.request();
+    await entered.future;
+    current = state(true, '● 03:02');
+    expect(identical(pending, caller.request()), true);
+    release.complete();
+    await pending;
+    expect(caller.publishedTitle, '● 03:02');
+    expect(caller.publishedActive, true);
+    expect(calls.where((value) => value == 'icon').length, 1);
+    caller.dispose();
   }
 
   test('native icon error consumed and explicitly recovered', () async {
@@ -359,3 +359,4 @@ void main() {
     },
   );
 }
+Formatted 1 file (1 changed) in 0.01 seconds.
