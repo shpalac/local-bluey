@@ -243,9 +243,11 @@ void main() {
       final entered = Completer<void>();
       final release = Completer<void>();
       final calls = <String>[];
+      var heldOnce = false;
       Future<void> operation(String name) async {
         calls.add(name);
-        if (name == step) {
+        if (name == step && !heldOnce) {
+          heldOnce = true;
           entered.complete();
           await release.future;
         }
@@ -279,8 +281,9 @@ void main() {
         read: () => state(false),
         icon: () async {
           calls.add('asset');
-          if (!validAsset)
+          if (!validAsset) {
             throw StateError('native image decode returned null');
+          }
         },
         title: (_) async => calls.add('title'),
         menu: (_) async => calls.add('menu'),
