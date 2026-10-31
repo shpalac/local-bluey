@@ -5,10 +5,7 @@ import 'package:tray_manager/tray_manager.dart';
 /// Immutable menu specification independent of native handles.
 class TrayMenuEntry {
   const TrayMenuEntry(this.key, this.label) : isSeparator = false;
-  const TrayMenuEntry.separator()
-    : key = null,
-      label = '',
-      isSeparator = true;
+  const TrayMenuEntry.separator() : key = null, label = '', isSeparator = true;
 
   final String? key;
   final String label;
