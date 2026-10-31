@@ -29,10 +29,7 @@ void main() {
 
       String? startResult;
       watch
-          .start(
-            length: const Duration(seconds: 3),
-            consentConfirmed: true,
-          )
+          .start(length: const Duration(seconds: 3), consentConfirmed: true)
           .then((value) => startResult = value);
       time.flushMicrotasks();
       expect(startResult, isNull);
