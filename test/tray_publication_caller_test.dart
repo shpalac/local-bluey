@@ -40,6 +40,7 @@ void main() {
       title: (value) async => calls.add('title:$value'),
       menu: (active) async => calls.add('menu:$active'),
     );
+    addTearDown(caller.dispose);
     await caller.request();
     await caller.request();
     expect(calls, ['icon', 'title:', 'menu:false']);
@@ -68,6 +69,7 @@ void main() {
       title: (_) => operation('title'),
       menu: (_) => operation('menu'),
     );
+    addTearDown(caller.dispose);
     final pending = caller.request();
     await entered.future;
     expect(identical(pending, caller.request()), true);
@@ -105,6 +107,7 @@ void main() {
       title: (title) async => calls.add('title:$title'),
       menu: (active) async => calls.add('menu:$active'),
     );
+    addTearDown(caller.dispose);
     await caller.request();
     current = state(true);
     await caller.request();
@@ -136,6 +139,7 @@ void main() {
           if (failing) throw StateError('unavailable');
         },
       );
+      addTearDown(caller.dispose);
       await caller.request();
       expect(caller.failed, true);
       expect(caller.publishedActive, null);
@@ -169,6 +173,7 @@ void main() {
           }
         },
       );
+      addTearDown(caller.dispose);
       final pending = caller.request();
       await entered.future;
       current = state(true);
@@ -197,6 +202,7 @@ void main() {
           published.add(active);
         },
       );
+      addTearDown(caller.dispose);
       await caller.request();
       expect(caller.publishedActive, false);
       current = state(true);
@@ -232,6 +238,7 @@ void main() {
       title: (_) => operation('title'),
       menu: (_) => operation('menu'),
     );
+    addTearDown(caller.dispose);
     await caller.request();
     expect(caller.failed, true);
     final before = calls.length;
@@ -266,6 +273,7 @@ void main() {
       title: (title) => operation('title:$title'.split(':').first),
       menu: (_) => operation('menu'),
     );
+    addTearDown(caller.dispose);
     final pending = caller.request();
     await entered.future;
     current = state(true, '● 03:02');
@@ -313,6 +321,7 @@ void main() {
         title: (_) async => calls.add('title'),
         menu: (_) async => calls.add('menu'),
       );
+      addTearDown(caller.dispose);
       await caller.request();
       expect(caller.failed, true);
       expect(calls, ['asset']);
@@ -345,6 +354,7 @@ void main() {
           }
         },
       );
+      addTearDown(caller.dispose);
       final first = caller.request();
       await entered.future;
       current = state(true);
