@@ -19,12 +19,12 @@ class SyntheticSecureStore extends FlutterSecureStorage {
   @override
   Future<String?> read({
     required String key,
-    AppleOptions? iOptions,
+    IOSOptions? iOptions,
     AndroidOptions? aOptions,
     LinuxOptions? lOptions,
     WindowsOptions? wOptions,
     WebOptions? webOptions,
-    AppleOptions? mOptions,
+    MacOsOptions? mOptions,
   }) async {
     expect(key, anyOf('stt.apiKey', 'brain.apiKey'));
     reads.add(key);
