@@ -102,6 +102,11 @@ void main() {
         onMenuAction: (_) {},
       );
 
+      addTearDown(() {
+        wiring.dispose();
+        watch.dispose();
+      });
+
       wiring.attach();
       await Future<void>.delayed(Duration.zero);
       expect(backend.handles, isNotEmpty);
@@ -120,7 +125,6 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(backend.handles, hasLength(allocatedBeforeNotification));
       expect(backend.handles.every((handle) => handle.disposeCalls == 1), true);
-      watch.dispose();
     },
   );
 }
