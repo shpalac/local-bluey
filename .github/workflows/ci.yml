@@ -233,12 +233,13 @@ jobs:
           flutter pub get --enforce-lockfile
           echo "Dependency setup: $((SECONDS - start))s" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Warm test toolchain (no tests run)
+      - name: Warm test toolchain
+        if: ${{ needs.detect.outputs.full_tests == 'true' }}
         run: |
           start=$SECONDS
-          flutter test --plain-name 'zzz-ci-warmup-no-match' --reporter compact > test-warmup.log 2>&1 || true
-          echo "Toolchain warm-up: $((SECONDS - start))s" >> "$GITHUB_STEP_SUMMARY"
-
+          flutter test test/phone_audio_test.dart --reporter compact 2>&1 | tee test-warmup.log
+          echo "Toolchain warm-up (startup + one fast test file): $((SECONDS - start))s" >> "$GITHUB_STEP_SUMMARY"
+        timeout-minutes: 3
       - name: Full unit + widget tests (coverage enforced)
         if: ${{ needs.detect.outputs.full_tests == 'true' }}
         run: |
@@ -288,6 +289,7 @@ jobs:
           path: |
             test-output.log
             test-phase-timing.log
+            test-warmup.log
           retention-days: 7
 
   # Builds stay on macOS: iOS/macOS outputs need Xcode. They wait only
