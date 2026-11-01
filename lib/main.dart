@@ -4,7 +4,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tray_manager/tray_manager.dart';
+
+import 'services/mac_home_tray_wiring.dart';
+import 'services/native_tray_host.dart';
+
 import 'package:window_manager/window_manager.dart';
 
 import 'link/mac_link.dart' show DiscoveredMac, MacLink;
@@ -242,8 +245,7 @@ class MacHome extends StatefulWidget {
   State<MacHome> createState() => _MacHomeState();
 }
 
-class _MacHomeState extends State<MacHome>
-    with TrayListener, WidgetsBindingObserver {
+class _MacHomeState extends State<MacHome> with WidgetsBindingObserver {
   bool _showOnboarding = false;
   final _hostReload = HostReloadController();
   final _watchdog = PermissionWatchdog(checker: const LivePermissionChecker());
@@ -266,6 +268,15 @@ class _MacHomeState extends State<MacHome>
   );
   final _tools = ToolExecutor();
   final _safety = SafetyGate();
+  late final _trayWiring = MacHomeTrayWiring(
+    publication: _trayPublication,
+    host: NativeTrayHost.instance,
+    watch: ScreenWatch.instance,
+    mounted: () => mounted,
+    killed: () => _safety.killed,
+    onIconClick: _onTrayIconClick,
+    onMenuAction: _onTrayMenuAction,
+  );
   late final HoldKeyController _holdKey = HoldKeyController(
     settings: HoldKeySettings.instance,
     supported: Platform.isMacOS,
@@ -296,8 +307,7 @@ class _MacHomeState extends State<MacHome>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    trayManager.addListener(this);
-    unawaited(_trayPublication.request());
+    _trayWiring.attach();
     _server.onPairRequest = _askToPair;
     _server.start();
     _server.requests.listen(_onPhoneRequest);
@@ -313,7 +323,6 @@ class _MacHomeState extends State<MacHome>
     _keyCleanup.refreshGuard();
     HoldKeySettings.instance.addListener(_syncHoldKey);
     unawaited(_holdKeyCaller.loadAndSync());
-    ScreenWatch.instance.addListener(_syncWatchTray);
     ScreenWatch.instance.addListener(_syncWatchDriver);
     unawaited(_hostReload.reload());
     ConversationStore.instance.load();
@@ -466,16 +475,12 @@ class _MacHomeState extends State<MacHome>
     }
   }
 
-  Future<void> _syncWatchTray() => _trayPublication.request();
-
-  @override
-  void onTrayIconMouseDown() {
+  void _onTrayIconClick() {
     unawaited(_windowAction.request(WindowIntent.show));
   }
 
-  @override
-  void onTrayMenuItemClick(MenuItem menuItem) {
-    switch (menuItem.key) {
+  void _onTrayMenuAction(String key) {
+    switch (key) {
       case 'show':
         unawaited(_windowAction.request(WindowIntent.show));
       case 'hide':
@@ -503,6 +508,7 @@ class _MacHomeState extends State<MacHome>
       case 'resume':
         _safety.reset();
         _keyCleanup.refreshGuard();
+        _trayWiring.onSafetyChanged();
       case 'quit':
         exit(0);
     }
@@ -662,7 +668,7 @@ class _MacHomeState extends State<MacHome>
 
   @override
   void dispose() {
-    _trayPublication.dispose();
+    _trayWiring.dispose();
     _windowAction.dispose();
     _speechMute.dispose();
     _permissions.removeListener(_onPermissionsChanged);
@@ -673,8 +679,6 @@ class _MacHomeState extends State<MacHome>
     _keyRecording.removeListener(_onKeyRecordingChanged);
     _tutorial.removeListener(_onTutorialChanged);
     WidgetsBinding.instance.removeObserver(this);
-    trayManager.removeListener(this);
-    ScreenWatch.instance.removeListener(_syncWatchTray);
     ScreenWatch.instance.removeListener(_syncWatchDriver);
     _watchDriver?.stop();
     HoldKeySettings.instance.removeListener(_syncHoldKey);

@@ -25,6 +25,10 @@ jobs:
         with:
           flutter-version-file: .flutter-version
           channel: stable
+      - name: Install nativeapi Linux build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libx11-dev libxi-dev pkg-config
       - run: flutter pub get --enforce-lockfile
       - run: flutter analyze
       - run: flutter test test/execution_audit_test.dart test/workflow_execution_test.dart test/file_durable_recovery_store_test.dart

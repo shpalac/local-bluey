@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "issues": [
+    {
+      "number": 908,
+      "title": "Linux strict build fails on third-party plugin code; restore v9 secure storage and native tray host coverage",
+      "criteria": [
+        {"id": "ac_1", "requirement": "Secure storage instances are constructed only through the shared factory with the macOS data-protection keychain option disabled", "type": "automated", "tests": [
+          {"file": "test/secure_storage_options_test.dart", "name": "the shared store avoids the data-protection keychain"},
+          {"file": "test/secure_storage_options_test.dart", "name": "every secure-storage call site goes through the shared factory"}]},
+        {"id": "ac_2", "requirement": "Vendored flutter_secure_storage_linux tree matches trusted pristine per-file SHA-256 hashes from the verified pub.dev 1.2.3 archive, with json.hpp matching the recorded patched hash of exactly the four upstream PR #923 UDL lines", "type": "automated", "tests": [
+          {"file": "test/issues/issue_908_test.dart", "name": "vendored linux storage tree matches trusted pristine hashes"},
+          {"file": "test/issues/issue_908_test.dart", "name": "vendored json.hpp matches recorded patched hash and four-line diff"}]},
+        {"id": "ac_3", "requirement": "Tray menu entries are validated before native allocation", "type": "automated", "tests": [
+          {"file": "test/native_tray_host_test.dart", "name": "native tray menu accepts all real inactive and active actions"},
+          {"file": "test/native_tray_host_test.dart", "name": "native tray menu rejects duplicate actions before native allocation"},
+          {"file": "test/native_tray_host_test.dart", "name": "native tray menu rejects missing action keys and labels"},
+          {"file": "test/native_tray_host_test.dart", "name": "native tray separators cannot dispatch a menu action"}]},
+        {"id": "ac_4", "requirement": "Native tray host lifecycle: single icon allocation, click and menu ID dispatch, deferred cleanup, partial-release on failure, idempotent dispose", "type": "automated", "tests": [
+          {"file": "test/native_tray_host_test.dart", "name": "native host allocates one icon and dispatches clicks and menu IDs"},
+          {"file": "test/native_tray_host_test.dart", "name": "native host defers old menu cleanup until callbacks return"},
+          {"file": "test/native_tray_host_test.dart", "name": "native host rejects allocation failures and releases partial menu"},
+          {"file": "test/native_tray_host_test.dart", "name": "native host dispose disables callbacks and is idempotent"}]},
+        {"id": "ac_5", "requirement": "Tray publication ordering, kill switch, held-request fencing, active-change-only republish, held sampling and explicit error recovery", "type": "automated", "tests": [
+          {"file": "test/tray_publication_caller_test.dart", "name": "native menu specification preserves order and kill switch"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "initial publication orders icon, title, menu exactly once"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "only active changes publish a new menu; title ticks do not"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "pending icon requests join and disposal fences successor"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "pending title requests join and disposal fences successor"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "pending menu requests join and disposal fences successor"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "native icon error consumed and explicitly recovered"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "native title error consumed and explicitly recovered"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "native menu error consumed and explicitly recovered"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "native icon samples latest state while operation is held"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "native title samples latest state while operation is held"},
+          {"file": "test/tray_publication_caller_test.dart", "name": "native menu samples latest state while operation is held"}]}
+      ]
+    }
+  ]
+}

@@ -62,7 +62,7 @@ void main() {
     final s = File('lib/main.dart').readAsStringSync();
     final section = s.substring(
       s.indexOf('  void _syncWatchDriver()'),
-      s.indexOf('  Future<void> _syncWatchTray()'),
+      s.indexOf('  void _onTrayIconClick()'),
     );
     expect(section, isNot(contains('WatchVision(')));
     expect(section, isNot(contains('onVision:')));
