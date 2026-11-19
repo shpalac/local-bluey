@@ -30,27 +30,24 @@ void main() {
     );
   });
 
-  test(
-    'issue 832 ac3 fake unit test guards the constructed macOS keychain options',
-    () {
-      // AC-2 owns the data-protection flag on its own. This one pins the whole
-      // option set the factory constructs, so a changed plugin default
-      // (accessibility, synchronizable, account name) or a dropped override fails
-      // here instead of on a locally signed Mac.
-      const expected = MacOsOptions(useDataProtectionKeyChain: false);
-      final built = secureStorage().mOptions;
+  test('issue 832 ac3 fake unit test guards the constructed macOS keychain options', () {
+    // AC-2 owns the data-protection flag on its own. This one pins the whole
+    // option set the factory constructs, so a changed plugin default
+    // (accessibility, synchronizable, account name) or a dropped override fails
+    // here instead of on a locally signed Mac.
+    const expected = MacOsOptions(useDataProtectionKeyChain: false);
+    final built = secureStorage().mOptions;
 
-      expect(built, isA<MacOsOptions>());
-      expect(
-        built.toMap().keys,
-        containsAll(<String>[
-          'accountName',
-          'accessibility',
-          'synchronizable',
-          'useDataProtectionKeyChain',
-        ]),
-      );
-      expect(built.toMap(), expected.toMap());
-    },
-  );
+    expect(built, isA<MacOsOptions>());
+    expect(
+      built.toMap().keys,
+      containsAll(<String>[
+        'accountName',
+        'accessibility',
+        'synchronizable',
+        'useDataProtectionKeyChain',
+      ]),
+    );
+    expect(built.toMap(), expected.toMap());
+  });
 }
