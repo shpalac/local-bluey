@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:local_bluey/services/secure_storage.dart';
 
@@ -27,5 +28,26 @@ void main() {
       isEmpty,
       reason: 'Construct secure storage through secureStorage() only.',
     );
+  });
+
+  test('issue 832 ac3 fake unit test guards the constructed macOS keychain options', () {
+    // AC-2 owns the data-protection flag on its own. This one pins the whole
+    // option set the factory constructs, so a changed plugin default
+    // (accessibility, synchronizable, account name) or a dropped override fails
+    // here instead of on a locally signed Mac.
+    const expected = MacOsOptions(useDataProtectionKeyChain: false);
+    final built = secureStorage().mOptions;
+
+    expect(built, isA<MacOsOptions>());
+    expect(
+      built.toMap().keys,
+      containsAll(<String>[
+        'accountName',
+        'accessibility',
+        'synchronizable',
+        'useDataProtectionKeyChain',
+      ]),
+    );
+    expect(built.toMap(), expected.toMap());
   });
 }
