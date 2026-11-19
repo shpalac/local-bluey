@@ -30,8 +30,13 @@
         {
           "id": "ac_3",
           "requirement": "A test asserts the constructed options, so the platform configuration cannot silently regress.",
-          "type": "gap",
-          "reason": "Evidence ownership was pruned to one criterion per named test; this criterion must gain its own uniquely-owned named suite."
+          "type": "automated",
+          "tests": [
+            {
+              "file": "test/secure_storage_options_test.dart",
+              "name": "issue 832 ac3 fake unit test guards the constructed macOS keychain options"
+            }
+          ]
         },
         {
           "id": "ac_4",
